@@ -42,3 +42,14 @@ owner tokens. Earlier test-only typing and lint failures were corrected without
 changing a production guard. The native codecs, budgets and helper bytes are
 unchanged from the preceding native/projection checkpoints. No tracked helper,
 pin, bundle, application or live transport was created by this work.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`961f3fa897dc354aa314c2dde1513129e14d7a8e`; its committed tree is
+`4811521173a24f45320ca47c9da5dd43a3b1779a`. Its Git author timestamp is
+`2026-11-08T05:17:35+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

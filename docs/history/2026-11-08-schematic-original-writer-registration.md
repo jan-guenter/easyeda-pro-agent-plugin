@@ -47,3 +47,14 @@ native owner, SDK registration or live writer case was run. The nine original
 Modify/Save/drain composition wrappers remain incomplete and public execution
 still refuses before allocation. Tracked helpers, native identities, bundles,
 installed payloads and active frozen cases were not changed.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`c8591333f4f08fae173d5f0115557b56cfb2c72b`; its committed tree is
+`b50549565146b080325886fb79e2677a1cc70711`. Its Git author timestamp is
+`2026-11-08T03:21:04+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

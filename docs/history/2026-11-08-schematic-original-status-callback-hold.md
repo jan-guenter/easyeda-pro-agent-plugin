@@ -39,3 +39,14 @@ installed payload or tracked native artifact was changed.
 The next continuation must prove the actual first callback receiver and its
 local C.messageBus call, then the remaining status callbacks, normal return and
 pending-data timer/worker publication before a Modify/Save completion can issue.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`ea0a9750a18f2f2870235ea1e871d066f394465d`; its committed tree is
+`ecac40fe0cfff4888729fb3561db17d8750b48f0`. Its Git author timestamp is
+`2026-11-08T00:35:28+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

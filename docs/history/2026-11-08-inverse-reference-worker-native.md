@@ -59,3 +59,21 @@ pre-commit dependency comparison found a protocol-text difference; the committed
 budget correction was then applied. Its final generated helper and compiler
 are byte-identical to the retained actual 31-smoke proof. These intermediate
 source failures do not establish connected runtime evidence.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`fec425731a2ec2e38b20ac21f6b987065331e1fd`; its committed tree is
+`aa88b79c54fe8545df2a07b81efcb0199e92dcdf`. Its Git author timestamp is
+`2026-11-08T04:49:31+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.
+
+The retained private `Native.cs` is exactly 2,088,939 bytes and matches the
+compiler SHA256 above. Its companion helper is 1,478,714 bytes with SHA256
+`766b11c31756cc0db6d96184eb0a5214d8544ac98d33a75076769f39c0f48be9`.
+This preserves the exact compiler-input identity for the reported pure C#
+checks. It does not identify the complete host source/test worktree or
+establish connected execution.

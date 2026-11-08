@@ -42,3 +42,14 @@ Thirteen preparation/group cases and the fixed-launch case pass. The earlier
 import; that import was corrected and the original fixed-launch path passed.
 Both TypeScript configurations and changed-file strict lint pass. No native
 helper, pin, bundle, app call or selected frozen payload was changed.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`4e1fc94c01be110b644923e992c814347ae9a400`; its committed tree is
+`293f99d57995f86409b1876ac6c98a2cf0e56dda`. Its Git author timestamp is
+`2026-11-08T01:45:39+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

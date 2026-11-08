@@ -67,3 +67,14 @@ are 2,051,165 / 1,507,524 bytes. The prior measurements above remain historical.
 The branch typecheck also exposed two inverse Inspector test typing errors
 already corrected in canonical 29631aff; those unrelated tests were not changed
 in this follow-up.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`42a48d8bb1edfbb2f04cc42346dc0366d0366470`; its committed tree is
+`f1baeb10d4c1374b3008dcbbdfbb671a04edc043`. Its Git author timestamp is
+`2026-11-08T05:13:12+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

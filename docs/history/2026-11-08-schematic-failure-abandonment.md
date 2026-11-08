@@ -37,3 +37,14 @@ The actual native workflow remains a separate integration and live-validation
 requirement. These tests allocate no application, open no design and claim no
 connected Modify, Save, inverse or persistence acceptance. Native helper and
 bundle regeneration belong to the final frozen payload.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`6bdb383831b13e3c3d5822e3bca24c9824f84f5b`; its committed tree is
+`cd2be37419d334f391f2fd219fc2ccdc26def824`. Its Git author timestamp is
+`2026-11-08T02:04:50+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

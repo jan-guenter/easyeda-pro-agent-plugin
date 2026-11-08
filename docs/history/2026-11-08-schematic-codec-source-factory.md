@@ -16,3 +16,14 @@ This source refactor changes no compiled/native payload byte, reservation,
 continuation rule, journal/result schema, app owner, MCP connection or installed
 artifact. It complements the earlier shared compiled encoder rather than
 replacing per-stage state and authority.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`d624e9253225187f56157cb39abc0dcc39e2b2ea`; its committed tree is
+`406a8a68658b3558d2018cad04fd81e0153c8dec`. Its Git author timestamp is
+`2026-11-08T01:33:46+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

@@ -9,3 +9,14 @@ The finite allowance is 218: 19 original-task reads, at most 194 clone-entry/nat
 Verification: 54 focused tests passed, including actual Node24 source-preserving clone guards for all three families, actual readonly reflection recipes, strict source/native metadata and the composed production pipe/controller. Both TypeScript projects and changed strict lint passed. Four purpose helpers generated twice identically and all four complete compiler graphs passed C#5 compilation plus fixed codec hashes (ten own7 codecs, diagnostic Via-local, inverse initial-cache and saved-scene). Compiler/helper byte pairs were diagnostic 1,865,158/1,411,947; inverse 2,055,196/1,456,612; schematic writer 1,985,278/1,456,209; saved reader 1,612,895/1,155,762. Every compiler remains below the unchanged 2MiB cap.
 
 An initial static compile command used `--no-restore` before the new temporary project had its assets file; it failed with NETSDK1004. The same full sources passed after normal local project restore. An earlier prototype with a nonempty clone breakpoint condition and an unfinished worker handshake timed out; the maintained source guard uses the exact empty condition and a retained inert worker message loop. No V8 unsupported claim is inferred from that prototype. No tracked helper, package pin, application, native owner, installed source or MCP connection changed.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`4ce8f9c81a2672af46214f56c1aae4ec9f4c2696`; its committed tree is
+`926e65cb0b792ed0fe7c25d94b0fa8ca151cc549`. Its Git author timestamp is
+`2026-11-08T02:02:56+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

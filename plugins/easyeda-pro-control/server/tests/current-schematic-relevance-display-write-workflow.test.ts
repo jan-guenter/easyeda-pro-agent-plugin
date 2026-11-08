@@ -8,6 +8,9 @@ void test("one fixed write joins its real journal, concurrent Save lanes and sep
   const f = await schematicDisplayWorkflowFixture(); const pending = f.workflow.execute(); assert.equal(f.workflow.execute(), pending);
   const result = await pending; f.workflow.requireOriginalResult(result); assert.throws(() => f.workflow.requireOriginalResult({ ...result }), /ORIGINAL_RESULT/u);
   assert.equal(f.counters.launches, 1); assert.equal(f.counters.modifications, 1); assert.equal(f.counters.saves, 1); assert.equal(f.counters.aborts, 0); assert.equal(f.counters.releases, 1); assert.equal(f.counters.leaseReleased, true);
+  for (const call of ["save-observer", "local-observer", "drain-observer", "generate-save", "normal-close", "capture-closed", "release-writer", "reader"]) {
+    assert.ok(f.calls.includes(call), `Missing required workflow call: ${call}`);
+  }
   for (const call of ["save-observer", "local-observer", "drain-observer"]) { assert.ok(f.calls.indexOf(call) < f.calls.indexOf("generate-save")); }
   assert.ok(f.calls.indexOf("normal-close") < f.calls.indexOf("capture-closed")); assert.ok(f.calls.indexOf("release-writer") < f.calls.indexOf("reader"));
   assert.equal(f.workflow.operationResult("inspect").state, "completed");

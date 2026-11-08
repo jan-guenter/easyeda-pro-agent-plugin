@@ -25,3 +25,14 @@ source-only skip; an explicitly configured empty or missing installation fails.
 
 Private logs are retained under the existing backlog implementation evidence
 root. These are source and inert execution checks, not connected query proof.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`dce3e66eba853f745d7584e213a108cdb56be348`; its committed tree is
+`c39d2de7b4b75305992827927c0d32c78028375a`. Its Git author timestamp is
+`2026-11-08T03:15:51+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

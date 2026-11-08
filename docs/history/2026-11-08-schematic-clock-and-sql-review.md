@@ -36,3 +36,14 @@ These are source and offline checks. No connected schematic Save or inverse
 DELETE is claimed. Tracked native artifacts, bundle regeneration, final complete
 CI and review of the final payload remain release work. This batch did not
 change the separately selected live-validation snapshot.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`8e07f6d13be774c0f8c9f33d12773839d485820c`; its committed tree is
+`955f03e456756e8695960796b9cbecaa920bf823`. Its Git author timestamp is
+`2026-11-08T01:31:39+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

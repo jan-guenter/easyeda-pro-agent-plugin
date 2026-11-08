@@ -11,3 +11,14 @@ The UI function body stays held before tab lookup/render/menu effects. Its recei
 Verification: 48 focused stream/controller/source/Inspector cases plus seven native-source/codec cases passed; both TypeScript projects and changed strict lint passed. Actual source-preserving Inspector runs prove both original caller layouts and both entry points before any UI body; synthetic mutations and accessor replacements are refused with zero invoked hooks. Four full purpose graphs generate twice identically and compile as C#5. Eleven own7 codec goldens and diagnostic Via-local, inverse initial-cache and saved-scene goldens pass. Final compiler/helper bytes are diagnostic 1,865,158/1,411,947; inverse 2,055,196/1,456,612; writer 1,998,090/1,466,217; saved 1,612,895/1,155,762. The three other layouts remain byte-identical to their previously compiled sources.
 
 Two first-check failures were corrected before commitment: the wrapper proof declared a local name twice, which actual readonly Inspector execution rejected; and the new remove-breakpoint smoke example used a different sample ID from the shared codec's fixed sample ID. The source program and inert sample were corrected and their checks passed without guard relaxation. No application, native owner, MCP connection, process signal, tracked helper, package pin or installed byte changed.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`f44765e74ef3adb922d71493d35d6ea0749729e9`; its committed tree is
+`18230130af3a2729b398293e50107dec184b8a26`. Its Git author timestamp is
+`2026-11-08T02:26:16+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

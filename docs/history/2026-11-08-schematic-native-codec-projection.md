@@ -33,3 +33,14 @@ changed-file lint pass. The complete schematic source compiled with Linux .NET
 C# language version 5, and all own7/Wire/saved-reader plus eight shared codec
 smokes passed. No cap, released role, tracked helper, pin or bundle changed, and
 no application or Windows helper was launched.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`dc6833890db88ad20c8a72f05a97536774bf6320`; its committed tree is
+`f5b4aa0218e0452abb8d35098848a66069d09830`. Its Git author timestamp is
+`2026-11-08T00:26:39+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

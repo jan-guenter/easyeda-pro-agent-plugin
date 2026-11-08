@@ -44,6 +44,11 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
     boundedTransactionErrorOutput: (): object => ({}),
     isRecord: (value: unknown): boolean => typeof value === "object" && value !== null,
     success: (value: unknown): unknown => value,
+    MAX_INLINE_RESULT_BYTES: 65_536,
+    withEvidence: (_request: unknown, value: unknown): unknown => {
+      calls.push("archive");
+      return value;
+    },
     assertNoUnresolvedCurrentPcbDiagnosticLaunches: (): Promise<void> => {
       if (options.diagnosticBlocked === true) { calls.push("diagnostic-block"); return Promise.reject(new Error("unresolved diagnostic launch")); }
       return Promise.resolve();
@@ -251,4 +256,11 @@ void test("registered status diagnostic failure cannot replace the original erro
   assert.match(JSON.stringify(result), /original startup failure/u);
   assert.doesNotMatch(JSON.stringify(result), /private-diagnostic-failure|private-untrusted-path|upstreamProcess/u);
   assert.deepEqual(fixture.calls, ["admission", "list-tools", "diagnostics"]);
+});
+
+void test("status archives only the final resampled observation", async () => {
+  const fixture = await registeredStatus({ disconnected: true, connectDuringProbe: true });
+  const result = await fixture.invoke({ returnMode: "summary", evidence: { resultPath: "/synthetic/result", receiptPath: "/synthetic/receipt" } });
+  assert.equal(result["incompleteOperationsObservedAt"], "observation-1");
+  assert.deepEqual(fixture.calls, ["admission", "list-tools", "status", "lease-start", "status", "lease-end", "archive"]);
 });

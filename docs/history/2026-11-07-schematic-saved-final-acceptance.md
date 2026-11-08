@@ -33,3 +33,14 @@ This is source and offline evidence. The complete fresh-reader orchestration,
 writer/Save completion, connected lifecycle validation, package regeneration,
 CI and release remain separate work. No application was opened or edited by
 these checks.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`6312146cd284c018cf047d47ed67407d07a077a7`; its committed tree is
+`34ddec8e7cab5f2624a7ac037075a7e48a2d04a6`. Its Git author timestamp is
+`2026-11-07T23:50:53+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

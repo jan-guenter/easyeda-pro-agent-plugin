@@ -24,3 +24,14 @@ The combined expected-fingerprint and inverse GET source checks passed48
 cases. Both TypeScript configurations and changed strict type-aware lint
 passed. These are synthetic local-I/O and source checks. No application,
 project, connection or native writer was started.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`256f415efa8f18c7d95026660f2ebfabb1df001d`; its committed tree is
+`ef00e9dc8a318b686a30bde7317d33e3d3ee67fc`. Its Git author timestamp is
+`2026-11-08T00:04:22+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

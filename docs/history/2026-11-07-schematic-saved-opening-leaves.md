@@ -30,3 +30,14 @@ refusals remain retained. No application, worker, Save, native artifact,
 compatibility pin or installed package was changed by these source tests.
 Original cold/parser/ready custody and connected saved-reader acceptance
 remain separate pending work.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`90c8dd590e27659ebf270c6b5bebade02fb64a7b`; its committed tree is
+`e2d65d9aed263ea60195cee59fc225cff48adf13`. Its Git author timestamp is
+`2026-11-07T22:37:15+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

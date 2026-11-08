@@ -94,6 +94,14 @@ codebooks. Run `inverse:native:check` with the other helper generation checks.
 Both layouts retain the existing source/compiler bounds; runtime callers cannot
 select a layout or supply a helper path.
 
+The inverse four-query result retains its actual final frame and reproof wrapper.
+Its active hold is consumed once before the first original continuation. The
+following empty-check and DEL-entry ledger transfers the same UI event reader,
+checks the original caller chain and keeps the DEL RPC body paused. A held entry
+packet cannot stand in for a native send, worker success, dropped-Promise
+completion, collateral restoration or saved absence. Those boundaries need
+separate original observations and private owner joins.
+
 The combined diagnostic helper stores its fixed C# compiler body as gzip/base64
 in the final PowerShell output. The stored helper and actual runtime compiler
 input each retain the 2 MiB ceiling. Storage introduces no native purpose,
@@ -110,6 +118,17 @@ compact body plus the spacing allowance. Runtime never restores or compiles
 that larger view. Unsupported preprocessing, newer lexical forms, non-ASCII
 source, escaped identifiers and line-sensitive caller attributes refuse.
 String, verbatim-string and character literal bytes remain exact.
+
+V3 is an explicit inverse-build option. It removes a trivia separator only when
+relexing the adjacent tokens preserves both exact token kinds and bytes; its
+separate versioned decoder retains the same compiler, helper and spacing limits.
+V1 and V2 compaction and restoration keep their historical contracts.
+
+The inverse layout also shares immutable smoke hash vectors in bounded fixed
+tables. Every call retains its original vector and order through the existing
+`Hashes` decoder. The build projection restores the exact original expressions
+before maintained marker readers run; other layouts do not use this projection.
+The shared table and token-fusion formats do not add a runtime selector or grant.
 
 Builds use pinned Node 24.18.0 with core dumps disabled.
 `expandCurrentPcbDiagnosticCSharpReviewSource` restores exact original bytes

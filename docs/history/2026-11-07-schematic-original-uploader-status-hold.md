@@ -55,3 +55,14 @@ BroadcastChannel dataBus. Their doc.isActive path also reads the genuine UI
 tab-bar through the document-memory singleton. Neither path is approved from
 a source-name match or from this status-entry receipt. No app/native owner,
 MCP connection, installed bytes or tracked native artifact was changed.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`dd5db47b6d6c9805ccf374b3d45f43c08608a68c`; its committed tree is
+`3bf919e2547e2646fef5c49c94df43950ce71316`. Its Git author timestamp is
+`2026-11-07T23:51:07+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

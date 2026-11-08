@@ -63,3 +63,14 @@ selected `isUnSaved = 1` delta, followed by render/menu effects and the remainin
 normal callbacks/publication/worker TEXT joins. They are not treated as noops.
 No app, MCP or native-owner calls, tracked helper generation, installed-byte
 changes, live dispatch or the excluded production design changes occurred.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`5f3bd07049ff4f9471e11b9530e880bc0c326cb0`; its committed tree is
+`5bec6c1d6f0ecd8d501680669e3b7491fa5067bb`. Its Git author timestamp is
+`2026-11-08T03:25:19+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

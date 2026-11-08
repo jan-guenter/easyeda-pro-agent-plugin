@@ -36,3 +36,14 @@ precedes its actual reader effect. Both TypeScript configurations, changed-file
 strict lint and whitespace checks pass. No Core/native command, helper, pin,
 bundle or application process changed. Complete outer writer/group orchestration
 and connected validation remain separate work.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`2077a8792eed02e2b8705a5d809992b339ee47be`; its committed tree is
+`54e5b499120447a768920504ae658f827505f48e`. Its Git author timestamp is
+`2026-11-08T00:47:49+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

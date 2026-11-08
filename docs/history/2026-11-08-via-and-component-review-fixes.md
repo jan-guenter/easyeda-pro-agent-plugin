@@ -47,3 +47,20 @@ identified concrete execution blockers. That frozen result remains retained;
 the updated source must be regenerated and checked before native selection.
 The SQLite dependency lease finding, reader journal publication recovery and
 prebirth coordinator cancellation are tracked in their separate fixes.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`1a32686ebd7997300c7475788bc1616a75b47ed5`; its committed tree is
+`4a2997e00fff03bd4b283fcb7b5d1db7765a5ad1`. Its Git author timestamp is
+`2026-11-08T00:33:29+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.
+
+The fifteen-case run, driver-cursor check and corrected large-summary run
+have no retained complete tested-payload identity in this record. The earlier
+`3a08fa0f` freeze remains evidence for its own non-suite checks only; it is not
+the tested source for these later review fixes. The original failure and
+subsequent focused observations remain unchanged.

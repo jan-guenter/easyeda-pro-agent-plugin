@@ -17,7 +17,8 @@ SQLite installation files with their continuous native leases remain unchanged.
 The saved-only smoke no longer reads a writer instance field that is absent from
 that compilation; it still checks its distinct birth and rejects writer actions.
 
-At source `05055979`, private generation produced these complete artifact sizes:
+Using source base `05055979` plus the then-uncommitted layout changes, private
+generation produced these artifact sizes:
 
 | Fixed artifact | Stored helper bytes | Actual C# 5 compiler bytes |
 | --- | ---: | ---: |
@@ -67,3 +68,14 @@ npm run inverse:native:update
 
 This is source/build separation. It grants no live ownership, mutation, Save,
 cache deletion, persistence or reopened-reader acceptance.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`0b2dd8e0270d1776f1edc8f64b1f20c32617e355`; its committed tree is
+`33f0b8b3800bd60a8622e48559201ede55890bf0`. Its Git author timestamp is
+`2026-11-08T01:17:56+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

@@ -108,3 +108,14 @@ Modify-failure journal case passed with the genuine issuer. The retained error
 code survives message mutation without reading a getter. The complete TypeScript
 checks and strict changed-file lint passed. This correction changes no native
 command, helper, cap, journal grammar or persistence result.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`887cca04d4fb987e19ef48b5c6c79ddff6cc84c1`; its committed tree is
+`c3b91828090e94a235b5adb4ef147cc123b7b234`. Its Git author timestamp is
+`2026-11-08T02:41:02+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

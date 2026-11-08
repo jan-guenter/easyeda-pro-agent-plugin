@@ -38,3 +38,14 @@ runs, with zero skips. Another 24 helper, actual cleanup and isolation checks
 passed. Complete TypeScript and strict changed-file lint passed. This is
 source-only evidence; no app/native owner, SDK invocation or persistence proof
 was issued, and no native helper, pin or bundle was regenerated.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`b6c5bbfc7d0ad7ff5be19129e5ce55d05958a781`; its committed tree is
+`52b2bb9b9626f37163f6444fac6debf252e42062`. Its Git author timestamp is
+`2026-11-08T03:44:51+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

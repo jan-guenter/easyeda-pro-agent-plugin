@@ -83,3 +83,14 @@ a second artificial lost ACK. Corrected test-only settlement behavior passed;
 production cleanup guards were not relaxed. No connected saved schematic reader
 was run, and this source result supplies no new connected validation or release
 claim.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`969561fec95135a47035735b1a287513a567eb42`; its committed tree is
+`f0991aabf4cd3af3400932affb4d11a1cdf90139`. Its Git author timestamp is
+`2026-11-08T00:14:51+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

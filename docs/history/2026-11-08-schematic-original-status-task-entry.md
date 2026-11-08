@@ -46,3 +46,14 @@ independently for future headroom; it is not claimed by this checkpoint.
 No app/native owner, live MCP connection, installed bytes or tracked artifact
 changed. The next task-body continuation still needs its own actual clone
 function/module/native graph and exact callback receiver before execution.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`b701fe4ad1b56938fe19703c63c0e8eaf7d0393a`; its committed tree is
+`b078b594c630dd22960c3b8520001b02a599ccd0`. Its Git author timestamp is
+`2026-11-08T01:08:03+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

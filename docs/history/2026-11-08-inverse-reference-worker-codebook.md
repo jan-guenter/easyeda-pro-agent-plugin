@@ -70,7 +70,8 @@ still own its message slot with an undefined value. No JSON shape issues a Job.
 
 ## Combined preparation observation
 
-On source checkpoint `e90c3a5e`, the complete preparation collector ran against
+With recorded source base `e90c3a5e` and a private inert fixture, the complete
+preparation collector ran against
 Node 24.18.0 Inspector with the pinned original worker methods and inert
 managers, service registration and bus. One complete footprint model with two
 descriptor-graph nodes produced exactly 130 normal requests and 32 helper-source
@@ -85,3 +86,19 @@ private logs. The corrections changed the probe only. The final result is
 retained as `reference-preparation-actual-probe-result-v7.json` outside the
 repository. Application execution, original message forwarding and connected
 completion remain unproved by this observation.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`2c816d29c5c4c92aaa742db29fb5009953635020`; its committed tree is
+`e752d6841d54def5080e24ae202e9314df084e39`. Its Git author timestamp is
+`2026-11-08T03:55:11+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.
+
+The retained registrar-scope JSON and preparation-result JSON support only
+their specific inert observations. Neither contains a complete test-worktree
+manifest, and the later preparation result is separate from the introducing
+codebook checkpoint.

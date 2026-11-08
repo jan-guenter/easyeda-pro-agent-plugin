@@ -75,3 +75,14 @@ and 1,969,744-byte compiler source on this source union, within the unchanged
 registration176, opening190, cold and scene codec smokes pass. This does not claim
 connected cold loading, a live cache deletion, persistence or a completed
 four-generation writer lifecycle.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`671de0c93448ced8828e631b340a359496e78992`; its committed tree is
+`03f84a732540d181085e601900f276eb26873d3e`. Its Git author timestamp is
+`2026-11-07T23:23:12+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

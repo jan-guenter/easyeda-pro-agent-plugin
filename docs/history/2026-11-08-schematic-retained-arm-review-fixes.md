@@ -24,3 +24,14 @@ No extra Core signal or new issuer is introduced.
 Three focused tests, both TypeScript projects and changed strict lint pass.
 No native program, reservation, design/journal/result schema, app owner, live
 MCP connection or installed artifact changes in this fix.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`eac5b4629b77eff93585259154815eb7fcc808e6`; its committed tree is
+`bdcafcd4deae97debf316a6d7f00e505727af8e8`. Its Git author timestamp is
+`2026-11-08T01:32:51+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

@@ -28,6 +28,14 @@ explicit-Relevance profile. Requalify its original closed data through
 original file/watch leases, proof helper and record publication. Query
 `closed-generated-fixture-data` for exact current arguments.
 
+Before writer preparation, call `easyeda_control_fixture_data` with
+`{request:{action:"release-owner",operationId:fixtureOperationId,confirmReleaseClosedDataOwner:true}}`.
+Require the original coordinator's released reservation and acknowledged
+resource closure. See the [closed-data workflow](closed-generated-fixture-data.md).
+Closing its files and helper alone does not release that reservation. Writer
+preparation consumes its retained data directly; do not stage it through a
+different opening route.
+
 Writer `prepare` takes that original `fixtureOperationId`, a new
 `sch209-relevance-display-*` operation ID and a strict display patch. The
 seven-record source is consumed synchronously before checkpoint work. Other

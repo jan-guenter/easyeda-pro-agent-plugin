@@ -26,3 +26,14 @@ Validation used pinned Node24.18.0 with isolated test control roots. Five focuse
 source/SQL/projection cases passed, including mixed-family and derived-footprint
 refusal. Both TypeScript projects and strict changed-file lint passed. No helper,
 pin, bundle, native owner, app call, deletion, clock, SQL write or Save was emitted.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`84168005ff7879d903ca9dbf09d4746d57684514`; its committed tree is
+`0cb263e562ea0bd7e8769cf450ec7f4b43114c59`. Its Git author timestamp is
+`2026-11-08T03:06:06+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

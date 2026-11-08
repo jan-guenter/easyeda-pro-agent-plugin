@@ -66,3 +66,14 @@ render/store/menu returns, the remaining status listeners, publisher timer and
 matching original worker TEXT. This checkpoint claims neither React DOM/visual
 completion nor whole Modify, Save or persisted completion. No app/MCP/native
 owner calls, tracked helper generation, installed-file changes or the excluded production design edits.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`8b0442e6f739b4758951627325933ca50049abe2`; its committed tree is
+`c4b2c6cfa0669b0cbaf2a1084ac188081232519f`. Its Git author timestamp is
+`2026-11-08T03:45:32+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

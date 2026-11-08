@@ -27,3 +27,14 @@ genuine dependencies cannot overwrite the first binding, and copied transports
 cannot inherit it. These are source-only regressions; no application or native
 helper was allocated. Both TypeScript configurations, changed-file strict lint
 and whitespace checks pass.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`3a08fa0f69f30086b68060d32c876dbbb52debd6`; its committed tree is
+`7cd5104ac374f88a2fad22fb1f9e5a07dc4ce6b4`. Its Git author timestamp is
+`2026-11-08T00:21:48+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

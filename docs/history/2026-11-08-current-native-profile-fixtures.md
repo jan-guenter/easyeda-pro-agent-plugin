@@ -41,3 +41,14 @@ Only that fixed expected count was corrected; no API result, schema or coverage
 inventory changed. The original failed package log is retained. The affected
 portable-startup case must pass against the unchanged regenerated runtime before
 that package is selected for connected validation.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`ad522f05917fd6819f61af28b01ec6a7a5bbea19`; its committed tree is
+`7f68ec1782e17ceeae048158db255155697238a1`. Its Git author timestamp is
+`2026-11-08T00:08:49+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

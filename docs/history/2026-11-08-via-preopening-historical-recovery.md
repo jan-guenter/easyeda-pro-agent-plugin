@@ -48,3 +48,40 @@ source and offline observations, not connected recovery, writer or saved-state
 validation. The historical resolver has not been dispatched against the live
 failed operation. Its original frozen owner and pending cleanup authority stay
 separate. No application action or installed package was changed by this work.
+
+## Later connected historical resolution
+
+The resolver completed on verified development payload
+`f8589d045e2c48a18624233bf03c8987d27400c3`, version
+`0.3.0+codex.20261108055300`. Its 4,339 files, 88,497,428 bytes and modes matched
+Git; all required local non-suite and dependency/security phases, three-bundle
+reproducibility, seven skill checks and 81 offline queries passed. The actual
+foreground manager and facade processes, Node executable and complete selected
+source were independently admitted before the historical call. This was not
+an official installation or release.
+
+The original twelve-record failed journal remained byte-equivalent under its
+canonical digest `99b8ec537816384af1e80c01e0c490d3c69f2172d4b4cfabe75cca24d8c0758c`.
+Two Windows absence samples and two Linux facade observations passed. Separate
+immutable historical metadata now clears only that operation's startup blocker.
+The result preserves false original Job-empty, helper-release, native-handle
+adoption, termination, persistence, completion, design execution and Save
+claims. No original create, opening or Save was replayed. Subsequent work uses
+a new closed-data qualification and operation ID.
+
+The call took about 14 minutes while repeatedly reading historical control
+evidence. It made no application launch or design change. Canonical source
+`89adc87b` addresses the repeated full scans for future invocations: a fresh
+full other-operation admission runs at entry and immediately before each
+metadata publication. Original journal, local owner, allocation/exclusion and
+other launch checks remain after every await. No admission success is cached
+or carried into another publication.
+
+Two focused checks pass with actual temporary journals and filesystem
+publication. An injected other-operation refusal blocks first the intent and
+then the terminal receipt, retaining the original pending candidate and
+observation. Resumption cannot repeat process observations or reconstruct an
+owner from JSON. Both TypeScript configurations and strict changed-file lint
+pass. An independent source review found no concrete custody regression.
+The performance change was not applied to the running frozen controller and
+has no measured connected speed claim yet.

@@ -17,3 +17,14 @@ with zero warnings.
 This is test-only work. Production registration, ownership, quarantine,
 fingerprint and output limits remain unchanged. Exact final package CI is still
 required. Private failure and final logs are retained outside the repository.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`1f80fe477988bf2b7dbbffcd7f0183a2f6be6bb8`; its committed tree is
+`9862ddb2bac08e001134c1aafb2a411ce8bf5039`. Its Git author timestamp is
+`2026-11-08T00:16:55+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.

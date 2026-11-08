@@ -41,3 +41,14 @@ No live app/native owner, MCP connection, installed bytes or tracked native
 artifact changed. The next required joins are the actual local subscriber tasks,
 their clone/native dependencies and UI callbacks, the remaining menu/toolbar
 status effects, then normal return and pending-data timer/worker TEXT publication.
+
+## 2026-11-08 source provenance correction
+
+The Git checkpoint introducing this record and its source/test changes is
+`3d47d487210b93f1a7b8e103e2af402de2fdb6a2`; its committed tree is
+`6b1a712176095f4ea6d46c7143413447d57a7438`. Its Git author timestamp is
+`2026-11-08T00:49:03+01:00`. These identify the committed increment only.
+The complete test-time worktree was not sealed in the retained evidence and
+cannot be reconstructed from it. The reported checks above keep their original
+scope and observations; they are not attributed to this commit or a later tree.
+See the [PR190 attribution correction](2026-11-08-pr190-history-attribution.md) for the evidence limits.
