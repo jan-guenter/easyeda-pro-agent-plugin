@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -11,6 +12,7 @@ async function originalIndexGate(hasCustody: () => boolean): Promise<(task: () =
   const end = source.indexOf("const facadeSession =", start);
   assert.ok(start > 0 && end > start);
   const context = createContext({ bridgeGate: new SerializedGate(), hasClosedGeneratedDataCustody: hasCustody });
+  installIndexFixtureDependencies(context,source);
   runInContext(stripTypeScriptTypes(source.slice(start, end)), context);
   const raw: unknown = context["runFacadeGate"]; assert.ok(typeof raw === "function");
   return async (task, allowOwn): Promise<void> => {

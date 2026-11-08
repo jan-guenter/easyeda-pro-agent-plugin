@@ -7,7 +7,7 @@ import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import type { CurrentSchematicDisplayClockBodyJoin, CurrentSchematicDisplayClockObserver } from "../src/current-schematic-display-clock-observer.ts";
-import { CURRENT_SCHEMATIC_DISPLAY_CLOCK_UI_CALLER as CALLER, CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES as SITES } from "../src/current-schematic-display-clock-protocol.ts";
+import { CURRENT_SCHEMATIC_DISPLAY_CLOCK_UI_CALLER as CALLER, CURRENT_SCHEMATIC_DISPLAY_CLOCK_OFFSET_SAMPLES, CURRENT_SCHEMATIC_DISPLAY_CLOCK_SITES as SITES } from "../src/current-schematic-display-clock-protocol.ts";
 import type { CurrentSchematicDisplayClockCommand, CurrentSchematicDisplayClockSite as Site } from "../src/current-schematic-display-clock-protocol.ts";
 import type { CurrentSchematicDisplaySaveBodyObservation } from "../src/current-schematic-display-save-observer.ts";
 import { CURRENT_SCHEMATIC_DISPLAY_SAVE_SOURCE as SAVE } from "../src/current-schematic-display-save-source.ts";
@@ -37,14 +37,14 @@ function paused(role: Site): unknown {
 }
 async function fixture(options: Readonly<{ first?: "reply" | "complete"; delayed?: boolean; loseResume?: boolean }> = {}): Promise<Readonly<{
   observer: CurrentSchematicDisplayClockObserver; body: CurrentSchematicDisplaySaveBodyObservation; requireJoin: (join: CurrentSchematicDisplayClockBodyJoin) => Promise<unknown>; requireData: (join: CurrentSchematicDisplayClockBodyJoin) => unknown;
-  state: { exited: boolean; failed: boolean; normal: number; cleanup: number; resumes: number }; waiting: Promise<unknown>; abort: () => void;
+  state: { exited: boolean; failed: boolean; normal: number; cleanup: number; resumes: number; offsetSamples: number }; waiting: Promise<unknown>; abort: () => void;
 }>> {
   const owner = Object.freeze({ explicitSyntheticOwner: true }); const origin = Object.freeze({ explicitSyntheticOrigin: true }); const workerSource = Object.freeze({ explicitSyntheticSource: true });
   const plan = Object.freeze({ target: { pageUuid: "a".repeat(32), projectUuid: "b".repeat(64), branchUuid: "c".repeat(32) } });
   const body: CurrentSchematicDisplaySaveBodyObservation = Object.freeze({ schema: "private.current-schematic-display-save-body-observation.v1", value: { schema:"private.generated-schematic-display-save-body-value.v2" as const, pending:{maximumTicket:4,primitiveId:"3333333333333333",ticket:3,client:"producer",dataType:"TEXT" as const,data:"{}",canvasUuid:plan.target.pageUuid,workerEditVersion:"3.2.185",priorVersion:"prior",priorUserUndefined:true,priorUserJson:null}, documentUuid:plan.target.pageUuid,projectUuid:plan.target.projectUuid, clock: value,
     uniqueId: "compiler", client: "client", headTicket: 5, body: "synthetic-body", userUndefined: true, userJson: null }, bodySha256: "d".repeat(64),
     originalAwaitedClockContinuationObserved: true, originalFullCompressReturnObserved: true, selectedClockResponderVerified: false, selectedSqlAuthorized: false, persistenceVerified: false });
-  const state = { exited: false, failed: false, normal: 0, cleanup: 0, resumes: 0 }; const queue: unknown[] = [paused("push")];
+  const state = { exited: false, failed: false, normal: 0, cleanup: 0, resumes: 0, offsetSamples: 0 }; const queue: unknown[] = [paused("push")];
   const waiting = Promise.withResolvers<null>(); const pending = Promise.withResolvers<never>();
   const bindings = { workerSessionId: "worker", uiSessionId: "ui", workerScriptId: "worker-script", workerUniqueContextId: "worker-context", uiSdkObjectId: "sdk-tuple", windowTabId: "window", workerSource,
     assertCurrent: (): Promise<void> => { assert.equal(state.exited, false); return Promise.resolve(); }, assertSaveAttempt: (): void => { assert.equal(state.exited, false); },
@@ -73,7 +73,7 @@ async function fixture(options: Readonly<{ first?: "reply" | "complete"; delayed
       if (command.phase === "schematic-clock-registration") { return Promise.resolve(remoteArray("first", 10)); }
       if (command.phase === "schematic-clock-bindings") { return Promise.resolve(remoteArray("bindings", 4)); }
       if (command.phase === "schematic-clock-callback") { return Promise.resolve({ result: { type: "function", className: "Function", description: "explicit-callback-source", objectId: "callback" } }); }
-      if (command.phase === "schematic-clock-offset") { return Promise.resolve({ result: { type: "number", value: offset } }); }
+      if (command.phase === "schematic-clock-offset") { state.offsetSamples += 1; assert.ok(state.offsetSamples <= CURRENT_SCHEMATIC_DISPLAY_CLOCK_OFFSET_SAMPLES); return Promise.resolve({ result: { type: "number", value: offset } }); }
       const role = command.phase.replace("schematic-clock-", ""); const count = { worker: 14, ui: 10, push: 9, dispatch: 4, result: 8, reply: 4, complete: 5 }[role]; assert.ok(count !== undefined);
       return Promise.resolve(remoteArray(`joined-${role}`, count));
     } };
@@ -103,7 +103,7 @@ async function fixture(options: Readonly<{ first?: "reply" | "complete"; delayed
 }
 void test("both cross-realm tail orders retain every original pause and join only the original Save body", async () => {
   for (const first of ["reply", "complete"] as const) { const f = await fixture({ first }); await f.observer.arm(); assert.equal(f.state.normal, 36); const packet = await f.observer.collect();
-    assert.equal(f.state.normal, 59); assert.equal(f.state.cleanup, 10); assert.equal(f.state.resumes, 5); assert.equal(packet.selectedSqlAuthorized, false);
+    assert.equal(f.state.normal, 59); assert.equal(f.state.offsetSamples, CURRENT_SCHEMATIC_DISPLAY_CLOCK_OFFSET_SAMPLES); assert.equal(f.state.cleanup, 10); assert.equal(f.state.resumes, 5); assert.equal(packet.selectedSqlAuthorized, false);
     await assert.rejects(f.observer.requireOriginal({ ...packet }), /ORIGINAL_PACKET/u); const join = await f.observer.joinBody(packet, f.body); await f.requireJoin(join);
     await assert.rejects(f.requireJoin({ ...join }), /ORIGINAL_BODY_JOIN/u); await assert.rejects(f.observer.joinBody(packet, f.body), /BODY_JOIN_CONSUMED/u);
     await f.observer.release(); assert.equal(f.state.cleanup, 12); await assert.rejects(f.requireJoin(join), /ORIGINAL/u); assert.equal(f.requireData(join), join); assert.throws(() => f.requireData(structuredClone(join)), /ORIGINAL_BODY_JOIN_DATA/u);

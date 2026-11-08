@@ -1,16 +1,17 @@
+import { indexFixtureRegistrationHelpersSource, installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 /** Actual registration and offline API composition with isolated supplied files. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
-import { runInNewContext } from "node:vm";
+import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
 import { isRecord } from "../src/core.ts";
 import { extensionApiCoverageSummary, inventoryExtensionApiCoverage } from "../src/extension-api-coverage.ts";
 import { facadeToolRegistered, publicUtilitiesOnlyCapabilities } from "../src/facade-mode.ts";
 import type { FacadeMode } from "../src/facade-mode.ts";
-import { executeManagedLibraryFiles } from "../src/managed-library-files-runtime.ts";
 // oxlint-disable-next-line import/max-dependencies -- This composition test checks the real registration, runtime, discovery and coverage together; splitting it would hide their contract.
+import { executeManagedLibraryFiles } from "../src/managed-library-files-runtime.ts";
 import { managedLibraryFilesRequestSchema } from "../src/managed-library-files.ts";
 import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { managedProjectFootprintArchive } from "./helpers/managed-project-footprint-archive.ts";
@@ -29,7 +30,7 @@ async function registration(mode: FacadeMode): Promise<{ calls: unknown[]; invok
   const registerEnd = source.indexOf("\nregisterFacadeTool(", registerStart);
   assert.ok(start > 0 && end > start && guardedStart > 0 && guardedEnd > guardedStart && registerStart > 0 && registerEnd > registerStart);
   const calls: unknown[] = []; let handler: Handler | undefined, inputSchema: z.ZodType | undefined;
-  runInNewContext(stripTypeScriptTypes(`${source.slice(guardedStart, guardedEnd)}\n${source.slice(registerStart, registerEnd)}\n${source.slice(start, end + "\n);".length)}`), {
+  const scope = createContext({
     z, managedLibraryFilesRequestSchema, facadeMode: mode, facadeToolRegistered,
     toolOutputSchemas: { easyeda_control_library_files: z.unknown() },
     success: (value: unknown): unknown => value,
@@ -42,6 +43,8 @@ async function registration(mode: FacadeMode): Promise<{ calls: unknown[]; invok
     executeManagedLibraryFiles: (input: unknown): Promise<unknown> => { calls.push(input); return executeManagedLibraryFiles(input); },
     // No engine, upstream, bridge gate or native runtime exists in this realm.
   });
+  installIndexFixtureDependencies(scope, source);
+  runInContext(`${indexFixtureRegistrationHelpersSource(source)}\n${stripTypeScriptTypes(source.slice(start, end + "\n);".length))}`, scope);
   assert.ok(handler); assert.ok(inputSchema);
   const invoke = handler, schema = inputSchema;
   return { calls, invoke: async input => {

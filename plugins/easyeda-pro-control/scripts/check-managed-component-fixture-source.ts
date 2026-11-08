@@ -10,10 +10,11 @@ import { MANAGED_COMPONENT_FIXTURE_ATTRIBUTE_FIELDS, MANAGED_COMPONENT_FIXTURE_B
   MANAGED_COMPONENT_FIXTURE_PROFILE, managedComponentFixtureHiddenAttribute } from "../server/src/managed-component-fixture-generator.ts";
 
 async function main(): Promise<void> {
-  const assets = process.argv[2] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets", methods: Record<string, string> = {};
+  const assets = process.argv[2] ?? process.env["EASYEDA_ASSETS_ROOT"], methods: Record<string, string> = {};
+  if (assets === undefined || assets === "") { throw new Error("EASYEDA_ASSETS_ROOT_REQUIRED"); }
   for (const profile of MANAGED_COMPONENT_FIXTURE_PROFILE.files) {
-    const bytes = await readFile(join(assets, profile.relativePath)); assert.equal(bytes.length, profile.bytes); assert.equal(createHash("sha256").update(bytes).digest("hex"), profile.sha256);
-    const source = bytes.toString("utf8"); for (const span of profile.methods) { const text = source.slice(span.start, span.end); assert.equal(createHash("sha256").update(text).digest("hex"), span.sha256); methods[span.name] = text; }
+    const bytes: Buffer = await readFile(join(assets, profile.relativePath)); assert.equal(bytes.length, profile.bytes); assert.equal(createHash("sha256").update(bytes).digest("hex"), profile.sha256);
+    const source: string = bytes.toString("utf8"); for (const span of profile.methods) { const text = source.slice(span.start, span.end); assert.equal(createHash("sha256").update(text).digest("hex"), span.sha256); methods[span.name] = text; }
   }
   const columns: unknown = runInNewContext(`const m={${methods["Jg.getCOMPONENT"]},${methods["Jg.getATTR"]}};({component:m.getCOMPONENT("2.0"),attr:m.getATTR("2.0")});`, {}, { timeout: 1000 });
   assert.equal(canonicalJson(columns), canonicalJson({ component: MANAGED_COMPONENT_FIXTURE_FIELDS, attr: MANAGED_COMPONENT_FIXTURE_ATTRIBUTE_FIELDS }));

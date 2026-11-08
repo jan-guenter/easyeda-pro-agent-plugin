@@ -50,6 +50,7 @@ async function fixture(failBefore = false): Promise<Readonly<{
     readonly #progress = Object.freeze({ initialCache: { completed: true }, initialSync: { completed: true }, periodicSync: null });
     public arm(): Promise<void> { this.#calls.push("observer-arm"); return Promise.resolve(); }
     public observeConstruction(): Promise<void> { this.#calls.push("construction"); return Promise.resolve(); }
+    public observePacket(): Promise<object> { this.#calls.push("structure-packet-pending"); return this.#read.promise; }
     public observeFirstTimer(): Promise<object> { this.#calls.push("original-first-timer"); return Promise.resolve(Object.freeze({ inertOriginalQuiescence: true })); }
     public requireOriginal(): Promise<void> { this.#calls.push("original-quiescence-joined"); return Promise.resolve(); }
     public startupProgress(): unknown { return this.#progress; }

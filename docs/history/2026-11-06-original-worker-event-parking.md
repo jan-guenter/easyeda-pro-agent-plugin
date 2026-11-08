@@ -22,3 +22,15 @@ No native application, Windows compiler, helper regeneration or live call ran.
 Continuous planned producer continuation and complete upload frontier remain
 unproved. The original ten pre-action guards still refuse their source entries;
 the parking change does not release any of them or enable Save.
+
+
+## Historical source attribution, 2026-11-08
+
+This record first entered canonical source history in commit `3841956723842c525ec4c923d84748f1fffcc949`,
+whose complete committed tree is `7fcadac6d44a7254f331b2ceb11ae3cd1732e447`. Those identities establish
+which committed increment introduced this record. The full working tree used
+for the earlier reported checks, including any concurrent uncommitted work,
+was not retained as an independently sealed snapshot. The introducing commit
+is therefore not asserted to be the exact tested payload. The earlier results
+remain historical observations and cannot replace final exact-commit release
+validation. See the [review assessment](2026-11-08-pr184-history-attribution.md).

@@ -4,8 +4,11 @@ import { join } from "node:path";
 import assert from "node:assert/strict";
 import { runInNewContext } from "node:vm";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_SOURCE, CURRENT_PROJECT_SAVE_STRUCTURE_METADATA_METHODS as METHODS, qualifyCurrentProjectSaveStructureSource } from "../server/src/current-project-save-structure-source.ts";
+
+const assetsRoot = process.argv[2] ?? process.env["EASYEDA_ASSETS_ROOT"];
+if (assetsRoot === undefined || assetsRoot === "") { throw new Error("EASYEDA_ASSETS_ROOT_REQUIRED"); }
 // oxlint-disable-next-line node/no-top-level-await -- This standalone source checker awaits its one bounded file read.
-const source = await readFile(join(process.argv[2] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets", CURRENT_PROJECT_SAVE_STRUCTURE_SOURCE.relativePath), "utf8");
+const source = await readFile(join(assetsRoot, CURRENT_PROJECT_SAVE_STRUCTURE_SOURCE.relativePath), "utf8");
 qualifyCurrentProjectSaveStructureSource(source);
 const method = (role: keyof typeof METHODS): string => source.slice(METHODS[role].start, METHODS[role].end).replace(/^static /u, "");
 const result: unknown = runInNewContext(`const methods={${method("pcb")},${method("schematic")},${method("sheet")},${method("setEditData")},${method("onHeadChange")}};

@@ -76,7 +76,7 @@ export class ClosedGeneratedFixtureFileOwner {
   private buffer = "";
   private outputBytes = 0;
   private pending: { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> } | undefined;
-  private closed: Promise<{ code: number | null; signal: NodeJS.Signals | null }> | undefined;
+  private closed: Promise<{ code: number | null; signal: NodeJS.Signals | null; protocolIntact: boolean }> | undefined;
   private failed: Error | undefined;
   private readonly options: ClosedGeneratedFixtureFileOptions;
   private readonly dependencies: ClosedGeneratedFixtureFileDependencies;
@@ -99,7 +99,7 @@ export class ClosedGeneratedFixtureFileOwner {
     });
   }
   private accept(raw: unknown, requestId?: number, state: "held" | "released" = "held"): ClosedGeneratedFixtureFileObservation {
-    try { const value = supportedObservation.parse(raw); const previous = this.current;
+    try { if (this.failed !== undefined) { throw this.failed; } const value = supportedObservation.parse(raw); const previous = this.current;
     const previousData = previous?.observation;
     const { watchState: _watch, ...data } = value.observation;
     const previousRest = previousData === undefined ? undefined : { ...previousData, watchState: undefined };
@@ -129,7 +129,7 @@ export class ClosedGeneratedFixtureFileOwner {
     } catch (error) { this.fail(error instanceof Error ? error : new Error("Closed generated file lease helper spawn failed.")); await first; throw error; }
     this.child = child;
     // oxlint-disable-next-line promise/avoid-new -- Observe the original spawned transport's close event; no PID reopening or signaling.
-    this.closed = new Promise((resolve) => { child.once("close", (code, signal) => { this.fail(new Error("Original closed generated file lease helper transport closed.")); resolve({ code, signal }); }); });
+    this.closed = new Promise((resolve) => { child.once("close", (code, signal) => { const closure = new Error("Original closed generated file lease helper transport closed."); this.fail(closure); resolve({ code, signal, protocolIntact: this.failed === closure }); }); });
     child.once("error", (error) => { this.fail(error); });
     child.stdin.on("error", (error) => { this.fail(error); });
     child.stdout.on("error", (error) => { this.fail(error); });
@@ -146,7 +146,9 @@ export class ClosedGeneratedFixtureFileOwner {
         const pending = this.pending;
         if (pending === undefined) { this.fail(new Error("Closed generated file lease helper emitted an unsolicited reply.")); return; }
         clearTimeout(pending.timer); this.pending = undefined;
-        try { const raw: unknown = JSON.parse(line); pending.resolve(raw); } catch { pending.reject(new Error("Closed generated file lease helper emitted malformed JSON.")); }
+        let raw: unknown;
+        try { raw = JSON.parse(line); } catch { const failure = new Error("Closed generated file lease helper emitted malformed JSON."); this.fail(failure); pending.reject(failure); return; }
+        pending.resolve(raw);
         end = this.buffer.indexOf("\n");
       }
     });
@@ -154,6 +156,7 @@ export class ClosedGeneratedFixtureFileOwner {
     return observed;
   }
   public async inspect(): Promise<ClosedGeneratedFixtureFileObservation> {
+    if (this.failed !== undefined) { throw this.failed; }
     if (this.current === undefined || this.child === undefined || this.releaseAttempted || this.sequence >= 16) { throw new Error("Original closed generated file lease is unavailable for inspection."); }
     this.sequence += 1; const response = this.next();
     this.child.stdin.write(`${JSON.stringify({ nonce: this.options.nonce, id: this.sequence, action: "inspect" })}\n`);
@@ -180,7 +183,7 @@ export class ClosedGeneratedFixtureFileOwner {
     this.child.stdin.end();
     const result = await this.closed;
     this.transportClosed = true;
-    return { originalTransportClosed: true, filesDeleted: false, fileLeaseHeldUntilRelease: finalObservation !== null && result.code === 0 && result.signal === null,
+    return { originalTransportClosed: true, filesDeleted: false, fileLeaseHeldUntilRelease: finalObservation !== null && result.protocolIntact && result.code === 0 && result.signal === null,
       finalObservation, exitCode: result.code, signal: result.signal };
   }
 }

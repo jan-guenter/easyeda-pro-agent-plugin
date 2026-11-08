@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { CURRENT_NATIVE_BASELINE, assertCurrentNativeBaseline } from "../../scripts/native-baseline-source.ts";
 import { currentFootprintForwardNativeOutputs as releasedOutputs } from "../src/current-footprint-forward-native-graph-source.ts";
 import { currentFootprintForwardColdNativeOutputs as coldOutputs } from "../src/current-footprint-forward-cold-native-graph-source.ts";
 import { CURRENT_FOOTPRINT_FORWARD_NATIVE_GRAPH as RELEASED } from "../src/current-footprint-forward-native-graph-pins.ts";
@@ -10,7 +11,8 @@ import { captureCurrentFootprintForwardNativeGraph as releasedCapture } from "..
 import { captureCurrentFootprintForwardColdNativeGraph as coldCapture } from "../src/current-footprint-forward-cold-native-graph.ts";
 
 void test("released outputs stay byte-exact and cold roles/pins use independent paths", async () => {
-  const helper = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const helper = await readFile(new URL(`../../${CURRENT_NATIVE_BASELINE.relativePath}`, import.meta.url), "utf8");
+  assertCurrentNativeBaseline(helper);
   const cold = coldOutputs(helper), old = releasedOutputs(helper);
   assert.deepEqual(old.map(row => row.sha256), ["3be2c39e827bc554b193c4d01df50a1289a357c8044b3ef2545523c341fac7ea",
     "7c940543bf2ede0ea1c026d7804f3ab97dad36d71320894fe026fbeb52984656", "f70a5207436f132f780ebbffddae05cf5c05019d4ef10d204c9eec517d595368"]);

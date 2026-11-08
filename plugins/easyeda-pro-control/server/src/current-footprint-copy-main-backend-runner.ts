@@ -19,6 +19,7 @@ import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { types } from "node:util";
 import { z } from "zod";
+import { createOriginalSourceError } from "./original-source-error.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_CALLS as SAVED_CONFIG_CALLS } from "./current-saved-project-registration-config-programs.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES, CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_REQUESTS as SAVED_CONFIG_REQUESTS } from "./current-saved-project-registration-config-protocol.ts";
 import { canonicalJson } from "./core.ts";
@@ -49,9 +50,10 @@ import type { CurrentFootprintCopyMainCompletionOrigin, CurrentFootprintCopyMain
 import { requireCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootprintForwardMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
 import type { CurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
 import type { CurrentSchematicRelevanceSavedRegistrationBindings, CurrentSchematicRelevanceSavedRegistrationIntent } from "./current-schematic-relevance-saved-registration-intent.ts";
+import type { CurrentSchematicRelevanceDisplayRegistrationBindings, CurrentSchematicRelevanceDisplayRegistrationIntent } from "./current-schematic-relevance-display-registration-intent.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner constructs this runner; its original private-factory guards are invoked only after that construction, never at module initialization. A callback registration seam would weaken this authority check.
 import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootprintCombinedMainCompletion, currentFootprintCombinedMainGenerationExited, failCurrentFootprintCombinedMainCompletion, requireCurrentFootprintCombinedMainCapability, requireCurrentFootprintCombinedMainCleanup, requireCurrentFootprintCombinedPairedSchedule, requireCurrentFootprintHeadAgeBootstrapCapability, retireCurrentFootprintCombinedMainCompletion, sendCurrentFootprintCombinedMainCommand, sendCurrentFootprintCombinedMainCompletion, sendOriginalCurrentSchematicRelevanceDisplayMainLiveHistory } from './current-pcb-diagnostic-owner.ts';
-import type { CurrentFootprintCombinedMainCapability, requireOriginalCurrentFootprintInverseRegistrationIntentForRunner as RequireInverseRegistration, requireOriginalCurrentSavedProjectRegistrationIntent as RequireSavedRegistration, requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent as RequireSchematicSavedRegistration } from './current-pcb-diagnostic-owner.ts';
+import type { CurrentFootprintCombinedMainCapability, requireOriginalCurrentFootprintInverseRegistrationIntentForRunner as RequireInverseRegistration, requireOriginalCurrentSavedProjectRegistrationIntent as RequireSavedRegistration, requireOriginalCurrentSchematicRelevanceDisplayRegistrationIntent as RequireSchematicDisplayRegistration, requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent as RequireSchematicSavedRegistration } from './current-pcb-diagnostic-owner.ts';
 import type { CurrentFootprintInverseRegistrationBindings, CurrentFootprintInverseRegistrationIntent } from "./current-footprint-inverse-registration-origin.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -98,7 +100,7 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as SQL_CALL, CURRENT_SE
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS as SQL_REQUESTS, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES as SQL_SITES,
   validateCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
-import { decodeCurrentSelectedFileMainSqlFenceNative, decodeCurrentSelectedFileMainSqlFenceNativeArray } from "./current-selected-file-main-sql-fence-replies.ts";
+import { currentSelectedFileMainSqlFenceImportsError, decodeCurrentSelectedFileMainSqlFenceNative, decodeCurrentSelectedFileMainSqlFenceNativeArray } from "./current-selected-file-main-sql-fence-replies.ts";
 import type { CurrentPcbViaMainBeginPause } from "./current-pcb-via-main-begin-custody.ts";
 import { currentGeneratedProjectHistorySqlBaselineSchema } from "./current-generated-project-history-sql-baseline.ts";
 import type { CurrentPcbViaMainHistoryHandoff } from "./current-pcb-via-main-history-custody.ts";
@@ -132,6 +134,7 @@ import { qualifyCurrentMainStartupConfigSource } from "./current-main-startup-co
 import { CurrentMainStartupConfigProgress, currentMainStartupConfigSelectionSchema } from "./current-main-startup-config-progress.ts";
 import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegistrationIntent } from "./current-saved-project-registration-origin.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITES as SAVED_CONFIG_SITES, qualifyCurrentSavedProjectRegistrationConfigSource } from "./current-saved-project-registration-config-source.ts";
+import { currentSelectedFileMainSqlCaptureError } from "./current-selected-file-main-sql-capture-error.ts";
 
 type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
@@ -327,7 +330,13 @@ interface SchematicSavedProjectRegistrationEnrollment {
   readonly ownerModule: Readonly<{ requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent: typeof RequireSchematicSavedRegistration }>;
   readonly requireOriginal: typeof RequireSchematicSavedRegistration;
 }
-type ProjectRegistrationEnrollment = SavedProjectRegistrationEnrollment | InverseProjectRegistrationEnrollment | SchematicSavedProjectRegistrationEnrollment;
+interface SchematicDisplayProjectRegistrationEnrollment {
+  readonly kind: "schematic-relevance-display";
+  readonly intent: CurrentSchematicRelevanceDisplayRegistrationIntent; readonly bindings: CurrentSchematicRelevanceDisplayRegistrationBindings;
+  readonly ownerModule: Readonly<{ requireOriginalCurrentSchematicRelevanceDisplayRegistrationIntent: typeof RequireSchematicDisplayRegistration }>;
+  readonly requireOriginal: typeof RequireSchematicDisplayRegistration;
+}
+type ProjectRegistrationEnrollment = SavedProjectRegistrationEnrollment | InverseProjectRegistrationEnrollment | SchematicSavedProjectRegistrationEnrollment | SchematicDisplayProjectRegistrationEnrollment;
 interface Resolved { readonly breakpointId: string; readonly location: z.infer<typeof location> }
 interface StructureAllocation { readonly id: number; readonly retain: (reply: unknown) => void; seen: boolean; stopped: boolean }
 interface ForwardPoll {
@@ -352,7 +361,7 @@ const schemaIssueCodes = new Set(["custom", "invalid_element", "invalid_format",
 const issuedFailures = new WeakMap<Error, string>();
 const methodNames = ["assertCurrent", "send", "poll"] as const;
 function need(value: boolean, detail: string): asserts value {
-  if (!value) { const error = new Error(`FOOTPRINT_MAIN_CONSTRUCTION_${detail}`); issuedFailures.set(error, detail); throw error; }
+  if (!value) { const error = createOriginalSourceError("FOOTPRINT_MAIN_CONSTRUCTION", detail); issuedFailures.set(error, detail); throw error; }
 }
 function schemaIssues(error: z.ZodError): readonly SchemaIssue[] {
   return Object.freeze(error.issues.slice(0, 6).map(issue => Object.freeze({ code: schemaIssueCodes.has(issue.code) ? issue.code : "other",
@@ -1011,8 +1020,14 @@ export class CurrentFootprintCopyMainBackendRunner {
     const after = this.#pause; need(after?.sqlSite === "afterImports", "SELECTED_SQL_AFTER_IMPORTS_REQUIRED");
     const selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site: "afterImports", method: "Debugger.evaluateOnCallFrame", params: {
       ...SQL_FRAME, callFrameId: after.frameId, expression: SQL_SOURCE.sites.afterImports.expression } })); need(selected.result.description === "Array(4)", "SELECTED_SQL_MODULE_FRAME");
-    const captured = objectReply.parse(await this.#request({ phase: "sql-fence-capture", method: "Runtime.callFunctionOn", params: {
-      ...SQL_CALL, objectId: selected.result.objectId, functionDeclaration: SQL_CAPTURE, arguments: [{ value: this.#selectedSqlPath }], returnByValue: false } }));
+    const importsError = currentSelectedFileMainSqlFenceImportsError(await this.#request({ phase: "sql-fence-properties", method: "Runtime.getProperties", params: {
+      objectId: selected.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }));
+    if (importsError !== null) { need(false, importsError); }
+    const captureReply = await this.#request({ phase: "sql-fence-capture", method: "Runtime.callFunctionOn", params: {
+      ...SQL_CALL, objectId: selected.result.objectId, functionDeclaration: SQL_CAPTURE, arguments: [{ value: this.#selectedSqlPath }], returnByValue: false } });
+    const captureError = currentSelectedFileMainSqlCaptureError(captureReply);
+    if (captureError !== null) { need(false, captureError); }
+    const captured = objectReply.parse(captureReply);
     need(captured.result.description === "Array(11)", "SELECTED_SQL_ORIGINAL_CAPTURE"); this.#sqlCapture = captured.result.objectId;
     const natives = objectReply.parse(await this.#request({ phase: "sql-fence-native-frame", method: "Debugger.evaluateOnCallFrame", params: {
       ...SQL_FRAME, callFrameId: after.frameId, expression: SQL_NATIVE_EXPRESSION } })); need(natives.result.description === "Array(5)", "SELECTED_SQL_NATIVE_FRAME");
@@ -1068,7 +1083,11 @@ export class CurrentFootprintCopyMainBackendRunner {
   public enrollSchematicRelevanceSavedRegistrationIntent(intent: CurrentSchematicRelevanceSavedRegistrationIntent): Promise<void> {
     return this.#enrollProjectRegistration("schematic-saved", intent);
   }
-  async #enrollProjectRegistration(...[kind, intent]: ["saved", CurrentSavedProjectRegistrationIntent] | ["inverse", CurrentFootprintInverseRegistrationIntent] | ["schematic-saved", CurrentSchematicRelevanceSavedRegistrationIntent]): Promise<void> {
+  /** Distinct original writer issuer; a saved-reader token cannot enter. */
+  public enrollSchematicRelevanceDisplayRegistrationIntent(intent: CurrentSchematicRelevanceDisplayRegistrationIntent): Promise<void> {
+    return this.#enrollProjectRegistration("schematic-relevance-display", intent);
+  }
+  async #enrollProjectRegistration(...[kind, intent]: ["saved", CurrentSavedProjectRegistrationIntent] | ["inverse", CurrentFootprintInverseRegistrationIntent] | ["schematic-saved", CurrentSchematicRelevanceSavedRegistrationIntent] | ["schematic-relevance-display", CurrentSchematicRelevanceDisplayRegistrationIntent]): Promise<void> {
     this.#same(false);
     need(!this.#busy && !this.#savedRegistrationEnrollmentAttempted && this.#savedRegistrationEnrollment === null &&
       this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#sqlCapture !== null && this.#selectedSqlPath !== null &&
@@ -1091,6 +1110,11 @@ export class CurrentFootprintCopyMainBackendRunner {
         need(bindings.target.rawWindowsPath === this.#selectedSqlPath && bindings.target.documentUuid === bindings.pageUuid &&
           bindings.schematicUuid !== bindings.pageUuid && /^[a-f0-9]{32}$/u.test(bindings.schematicUuid) && /^[a-f0-9]{32}$/u.test(bindings.pageUuid), "SCHEMATIC_SAVED_REGISTRATION_SELECTED_TARGET");
         enrollment = Object.freeze({ kind: "schematic-saved", intent, bindings, ownerModule, requireOriginal });
+      } else if (kind === "schematic-relevance-display") {
+        const requireOriginal = ownerModule.requireOriginalCurrentSchematicRelevanceDisplayRegistrationIntent; const bindings = requireOriginal(intent, this);
+        need(bindings.target.rawWindowsPath === this.#selectedSqlPath && bindings.target.documentUuid === bindings.pageUuid &&
+          bindings.schematicUuid !== bindings.pageUuid && /^[a-f0-9]{32}$/u.test(bindings.schematicUuid) && /^[a-f0-9]{32}$/u.test(bindings.pageUuid), "SCHEMATIC_DISPLAY_REGISTRATION_SELECTED_TARGET");
+        enrollment = Object.freeze({ kind: "schematic-relevance-display", intent, bindings, ownerModule, requireOriginal });
       } else {
         const requireOriginal = ownerModule.requireOriginalCurrentFootprintInverseRegistrationIntentForRunner; const bindings = requireOriginal(intent, this);
         need(bindings.target.rawWindowsPath === this.#selectedSqlPath, "INVERSE_REGISTRATION_SELECTED_TARGET");
@@ -1125,9 +1149,16 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(this.#savedRegistrationEnrollment?.kind === "schematic-saved", "SCHEMATIC_SAVED_REGISTRATION_ISSUER_REQUIRED");
     await this.#assertOriginalProjectRegistrationPending();
   }
+  public async assertOriginalSchematicRelevanceDisplayRegistrationPending(): Promise<void> {
+    need(this.#savedRegistrationEnrollment?.kind === "schematic-relevance-display", "SCHEMATIC_DISPLAY_REGISTRATION_ISSUER_REQUIRED");
+    await this.#assertOriginalProjectRegistrationPending();
+  }
   #reproveProjectRegistration(original: ProjectRegistrationEnrollment): void {
     let current: boolean;
-    if (original.kind === "schematic-saved") {
+    if (original.kind === "schematic-relevance-display") {
+      current = original.ownerModule.requireOriginalCurrentSchematicRelevanceDisplayRegistrationIntent === original.requireOriginal &&
+        original.requireOriginal(original.intent, this) === original.bindings && original.bindings.target.documentUuid === original.bindings.pageUuid;
+    } else if (original.kind === "schematic-saved") {
       current = original.ownerModule.requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent === original.requireOriginal &&
         original.requireOriginal(original.intent, this) === original.bindings && original.bindings.target.documentUuid === original.bindings.pageUuid;
     } else if (original.kind === "saved") {
@@ -1160,6 +1191,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     this.#same(false); const original = this.#savedRegistrationEnrollment;
     need(original?.kind === "schematic-saved", "SCHEMATIC_SAVED_REGISTRATION_ISSUER_REQUIRED"); this.#reproveProjectRegistration(original); return original.intent;
   }
+  public originalSchematicRelevanceDisplayRegistrationCommandIntent(): CurrentSchematicRelevanceDisplayRegistrationIntent {
+    this.#same(false); const original = this.#savedRegistrationEnrollment;
+    need(original?.kind === "schematic-relevance-display", "SCHEMATIC_DISPLAY_REGISTRATION_ISSUER_REQUIRED"); this.#reproveProjectRegistration(original); return original.intent;
+  }
   /** Called by that same original Core after its one dispatch settles. It
    * proves the source awaits, never the contents of a closed shared database. */
   public requireOriginalSavedProjectRegistrationAwaited(intent: CurrentSavedProjectRegistrationIntent): void {
@@ -1170,6 +1205,18 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   public requireOriginalSchematicRelevanceSavedRegistrationAwaited(intent: CurrentSchematicRelevanceSavedRegistrationIntent): void {
     need(this.originalSchematicRelevanceSavedRegistrationCommandIntent() === intent, "SCHEMATIC_SAVED_REGISTRATION_ISSUER_REQUIRED"); this.#requireProjectRegistrationAwaited();
+  }
+  public requireOriginalSchematicRelevanceDisplayRegistrationAwaited(intent: CurrentSchematicRelevanceDisplayRegistrationIntent): void {
+    need(this.originalSchematicRelevanceDisplayRegistrationCommandIntent() === intent, "SCHEMATIC_DISPLAY_REGISTRATION_ISSUER_REQUIRED"); this.#requireProjectRegistrationAwaited();
+  }
+  /** Only the actual writer's prior-path result settles this unused sequence. */
+  public requireOriginalSchematicRelevanceDisplayRegistrationSkipped(intent: CurrentSchematicRelevanceDisplayRegistrationIntent): void {
+    need(this.originalSchematicRelevanceDisplayRegistrationCommandIntent() === intent, "SCHEMATIC_DISPLAY_REGISTRATION_ISSUER_REQUIRED");
+    const original = this.#savedRegistrationEnrollment; need(original?.kind === "schematic-relevance-display", "SCHEMATIC_DISPLAY_REGISTRATION_ISSUER_REQUIRED");
+    original.bindings.assertOriginalNoDispatchResult();
+    need((this.#savedRegistrationStage === "unused" || this.#savedRegistrationStage === "registration-skipped") && this.#savedRegistrationTracker === null &&
+      this.#savedRegistrationOpenedPause === null && this.#savedRegistrationArming === null && this.#savedRegistrationBreakpoints.size === 3 && this.#sqlHeld === null,
+    "SCHEMATIC_DISPLAY_REGISTRATION_UNUSED_SEQUENCE_REQUIRED"); this.#savedRegistrationStage = "registration-skipped";
   }
   /** A genuine prior-path result settles only an entirely unused own sequence.
    * It creates no SQL tracker, native run or callback/await acknowledgment. */

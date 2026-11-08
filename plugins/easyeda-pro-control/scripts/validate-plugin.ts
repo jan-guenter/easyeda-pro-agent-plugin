@@ -64,6 +64,7 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_pcb209_opening: ["result"],
   easyeda_control_pcb209_worker_startup: ["result"],
   easyeda_control_current_pcb_via_write: ["result"],
+  easyeda_control_current_schematic_relevance_display_write: ["result", "diagnostic"],
   easyeda_control_extensions: ["result"],
   easyeda_control_launch: ["result"],
   easyeda_control_pcb_diagnostic_validation: ["result"],
@@ -243,6 +244,10 @@ const required = [
   "scripts/schematic-edit-native.cs",
   "scripts/generate-schematic-edit-native.ts",
   "server/src/current-schematic-edit-native-identity.ts",
+  "scripts/schematic-saved-readback-native.ps1",
+  "scripts/schematic-saved-readback-native.cs",
+  "scripts/generate-schematic-saved-readback-native.ts",
+  "server/src/current-schematic-relevance-saved-native-identity.ts",
   "scripts/footprint-inverse-native.ps1",
   "scripts/footprint-inverse-native.cs",
   "scripts/generate-footprint-inverse-native.ts",
@@ -524,9 +529,11 @@ check(
     packageScripts["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     packageScripts["build"] ===
-      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run schematic:native:check && npm run inverse:native:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
+      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run schematic:native:check && npm run schematic:saved:native:check && npm run inverse:native:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
     packageScripts["schematic:native:check"] === "node scripts/generate-schematic-edit-native.ts --check" &&
     packageScripts["schematic:native:update"] === "node scripts/generate-schematic-edit-native.ts --write" &&
+    packageScripts["schematic:saved:native:check"] === "node scripts/generate-schematic-saved-readback-native.ts --check" &&
+    packageScripts["schematic:saved:native:update"] === "node scripts/generate-schematic-saved-readback-native.ts --write" &&
     packageScripts["inverse:native:check"] === "node scripts/generate-footprint-inverse-native.ts --check" &&
     packageScripts["inverse:native:update"] === "node scripts/generate-footprint-inverse-native.ts --write" &&
     packageScripts["pcb209:spatial:check"] === "node scripts/generate-pcb209-spatial-protocol.ts --check" &&

@@ -1,0 +1,6 @@
+/** Fixed clone/native class; original state and messages remain purpose-owned. */
+import {currentSchematicRelevanceUiCodecNativeSource} from "./current-schematic-relevance-ui-codec-native-source.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_TAB_MUTATION_CALLS as CALLS} from "./current-schematic-relevance-status-tab-mutation-protocol.ts";
+import {currentSchematicRelevanceStatusTabMutationCases,currentSchematicRelevanceStatusTabMutationTemplate} from "./current-schematic-relevance-status-tab-mutation-wire.ts";
+
+export function currentSchematicRelevanceStatusTabMutationNativeSource():string{const cases=currentSchematicRelevanceStatusTabMutationCases();const rows=cases.map(command=>{const row=currentSchematicRelevanceStatusTabMutationTemplate(command);return[row.phase,row.method,row.names.join(","),row.template];});return currentSchematicRelevanceUiCodecNativeSource({className:"EasyedaSchematicRelevanceStatusTabMutationProtocol",errorCode:"schematic-status-tab-mutation-codec",tableError:"SCHEMATIC_STATUS_TAB_MUTATION_FIXED_TABLE_BOUND",marker:"statustabmutation",rows,programs:CALLS.map(row=>row[1]),messages:cases.map(command=>`${JSON.stringify({id:83,method:command.method,params:command.params,sessionId:"original_ui"})}\0`)});}

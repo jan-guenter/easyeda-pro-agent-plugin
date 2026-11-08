@@ -1,7 +1,8 @@
 /** Alternate cloned-Pad result; the original reference-linked result is unchanged. */
 import { z } from "zod";
 import { currentPcb209SpatialPadPointSchema } from "./current-pcb-209-spatial-pad-read.ts";
-import { CURRENT_PCB_209_SPATIAL_MAX_BYTES } from "./current-pcb-209-spatial-read.ts";
+import { decodeCurrentPcb209SpatialResultData } from "./current-pcb-209-spatial-track-read.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export { CURRENT_PCB_209_COMPONENT_CLONED_POINT_BINDINGS_FUNCTION } from "./current-pcb-209-component-cloned-point-capture.ts";
 export { CURRENT_PCB_209_COMPONENT_CLONED_POINT_READ_FUNCTION } from "./current-pcb-209-component-cloned-point-read-program.ts";
@@ -27,7 +28,6 @@ export const currentPcb209ComponentClonedPointResultSchema = currentPcb209Compon
 });
 export type CurrentPcb209ComponentClonedPointResult = z.infer<typeof currentPcb209ComponentClonedPointResultSchema>;
 export function decodeCurrentPcb209ComponentClonedPointReply(input: unknown): CurrentPcb209ComponentClonedPointResult {
-  const packet = z.strictObject({ result: z.strictObject({ type: z.literal("string"), value: z.string().max(CURRENT_PCB_209_SPATIAL_MAX_BYTES) }) }).parse(input);
-  if (!packet.result.value.isWellFormed() || Buffer.byteLength(packet.result.value) > CURRENT_PCB_209_SPATIAL_MAX_BYTES) { throw new Error("PCB209_COMPONENT_CLONED_POINT_REPLY_BOUND"); }
-  return currentPcb209ComponentClonedPointResultSchema.parse(JSON.parse(packet.result.value) as unknown);
+  try { return freezeDeep(currentPcb209ComponentClonedPointResultSchema.parse(decodeCurrentPcb209SpatialResultData(input))); }
+  catch { throw new Error("PCB209_COMPONENT_CLONED_POINT_REPLY"); }
 }

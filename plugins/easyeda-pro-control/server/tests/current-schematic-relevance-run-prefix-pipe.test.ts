@@ -1,8 +1,21 @@
+/* oxlint-disable import/max-dependencies -- The same original retained Modify is tested through each independently fixed callback grammar and its purpose decoder. */
+import {currentSchematicRelevanceNotificationCases} from "../src/current-schematic-relevance-notification-wire.ts";
+import {currentSchematicRelevanceSdkGateCases} from "../src/current-schematic-relevance-sdk-gate-wire.ts";
+import {currentSchematicRelevanceRenderDelegateCases} from "../src/current-schematic-relevance-render-delegate-wire.ts";
+import {currentSchematicRelevanceStatusTabMutationCases} from "../src/current-schematic-relevance-status-tab-mutation-wire.ts";
+import {currentSchematicRelevanceStatusTabLookupCases} from "../src/current-schematic-relevance-status-tab-lookup-wire.ts";
+import {currentSchematicRelevanceStatusSubscriberCases} from "../src/current-schematic-relevance-status-subscriber-wire.ts";
+import {currentSchematicRelevanceStatusCloneCases} from "../src/current-schematic-relevance-status-clone-wire.ts";
+import {currentSchematicRelevanceStatusBusCases} from "../src/current-schematic-relevance-status-bus-wire.ts";
+import {currentSchematicRelevanceStatusDeliveryCases} from "../src/current-schematic-relevance-status-delivery-wire.ts";
+import {currentSchematicRelevanceHistoryStatusCases} from "../src/current-schematic-relevance-history-status-wire.ts";
+import {currentSchematicRelevanceUploadReturnCases} from "../src/current-schematic-relevance-upload-return-wire.ts";
+import {currentSchematicRelevancePendingCacheCases} from "../src/current-schematic-relevance-pending-cache-wire.ts";
+import {currentSchematicRelevanceUploadCmCases} from "../src/current-schematic-relevance-upload-cm-wire.ts";
 import {currentSchematicRelevanceUploadSerializeCases} from "../src/current-schematic-relevance-upload-serialize-wire.ts";
 import {currentSchematicRelevanceUploadModelCases} from "../src/current-schematic-relevance-upload-model-wire.ts";
 import {currentSchematicRelevanceUploadEntryCases} from "../src/current-schematic-relevance-upload-entry-wire.ts";
 import {currentSchematicRelevanceNoEchoCases} from "../src/current-schematic-relevance-noecho-wire.ts";
-/* oxlint-disable import/max-dependencies -- The same original retained Modify is tested through each independently fixed callback grammar and its purpose decoder. */
 /** Real pipe and inert byte streams. No original owner, renderer, actor,
  * native helper, mutation, receiver or durability is established. */
 import {currentSchematicRelevanceNormalUpdateCases} from "../src/current-schematic-relevance-normal-update-wire.ts";
@@ -11,7 +24,7 @@ import {currentSchematicRelevanceNormalRecordCases} from "../src/current-schemat
 import assert from "node:assert/strict";
 import { PassThrough, Writable } from "node:stream";
 import { test } from "node:test";
-import { CurrentSchematicRelevanceDisplayWritePipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import { CurrentPcbDiagnosticPipe, CurrentSchematicRelevanceDisplayWritePipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import { currentSchematicRelevanceRunPrefixCases } from "../src/current-schematic-relevance-run-prefix-wire.ts";
 import { currentSchematicRelevanceRunGuardCases } from "../src/current-schematic-relevance-run-guard-wire.ts";
 import { currentSchematicRelevanceDisplayWriteNativeRequest } from "../src/current-schematic-relevance-display-write-protocol.ts";
@@ -44,11 +57,28 @@ void test("finite run and normal callback lanes remain duplex with the original 
   for(const command of currentSchematicRelevanceUploadEntryCases()){await pipe.observeSchematicRelevanceUploadEntry(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
   for(const command of currentSchematicRelevanceUploadModelCases()){await pipe.observeSchematicRelevanceUploadModel(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
   for(const command of currentSchematicRelevanceUploadSerializeCases()){await pipe.observeSchematicRelevanceUploadSerialize(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceUploadCmCases()){await pipe.observeSchematicRelevanceUploadCm(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevancePendingCacheCases()){await pipe.observeSchematicRelevancePendingCache(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceUploadReturnCases()){await pipe.observeSchematicRelevanceUploadReturn(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceHistoryStatusCases()){await pipe.observeSchematicRelevanceHistoryStatus(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceStatusBusCases()){await pipe.observeSchematicRelevanceStatusBus(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceStatusDeliveryCases()){await pipe.observeSchematicRelevanceStatusDelivery(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceRenderDelegateCases()){await pipe.observeSchematicRelevanceRenderDelegate(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceStatusTabMutationCases()){await pipe.observeSchematicRelevanceStatusTabMutation(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceStatusTabLookupCases()){await pipe.observeSchematicRelevanceStatusTabLookup(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceStatusSubscriberCases()){await pipe.observeSchematicRelevanceStatusSubscriber(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  for(const command of currentSchematicRelevanceStatusCloneCases()){await pipe.observeSchematicRelevanceStatusClone(command);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  const notification=currentSchematicRelevanceNotificationCases().find(command=>command.phase==="notification-call"&&command.role==="hooks");const sdk=currentSchematicRelevanceSdkGateCases().find(command=>command.phase==="sdk-call"&&command.role==="hooks");assert.ok(notification!==undefined&&sdk!==undefined);
+  for(const send of[():Promise<unknown>=>pipe.observeSchematicRelevanceNotification(notification),():Promise<unknown>=>pipe.observeSchematicRelevanceSdkGate(sdk)]){const count=sent.length;await send();assert.equal(sent.length,count+1);pipe.requireOriginalSchematicRelevanceDisplayModifyPending(original);}
+  const beforeInvalid=sent.length;
+  for(const[method,command,marker]of[[pipe.observeSchematicRelevanceNotification.bind(pipe),notification,"schematicRelevanceNotificationCommand"],[pipe.observeSchematicRelevanceSdkGate.bind(pipe),sdk,"schematicRelevanceSdkGateCommand"]]as const){assert.throws(()=>Reflect.apply(method,pipe,[{...command,[marker]:false}]));assert.throws(()=>Reflect.apply(method,pipe,[{phase:"resume",method:"Debugger.resume",params:{}}]));assert.equal(sent.length,beforeInvalid);}
+  const foreignInput=new PassThrough(),foreignOutput=new PassThrough();const foreign=new CurrentPcbDiagnosticPipe(foreignInput,foreignOutput);foreign.start();let foreignWrites=0;foreignOutput.on("data",()=>{foreignWrites+=1;});context.after(async()=>{const waits=[foreignInput,foreignOutput].map(stream=>{const done=Promise.withResolvers<true>();stream.once("close",()=>{done.resolve(true);});stream.destroy();return done.promise;});await Promise.all(waits);foreign.releaseClosedListeners();});
+  for(const[name,command]of[["observeSchematicRelevanceNotificationCommand",notification],["observeSchematicRelevanceSdkGateCommand",sdk]]as const){const method:unknown=Reflect.get(foreign,name);assert.ok(typeof method==="function");assert.throws(()=>Reflect.apply(method,foreign,[command]),/ORIGINAL_PENDING/u);assert.equal(foreignWrites,0);}
   assert.equal(pipe.status().pendingRequestId, 2); assert.equal(pipe.status().failure, null);
   for (const row of sent.slice(2)) {
     assert.equal(row["sessionId"], "original-ui");
     const native = currentSchematicRelevanceDisplayWriteNativeRequest(Buffer.from(`${JSON.stringify(row)}\0`));
-    assert.ok(native["action"] === "schematic-relevance-run-prefix" || native["action"] === "schematic-relevance-run-guard" || native["action"] === "schematic-relevance-normal-update" || native["action"] === "schematic-relevance-normal-disposal" || native["action"] === "schematic-relevance-normal-record" || native["action"] === "schematic-relevance-noecho" || native["action"] === "schematic-relevance-upload-entry" || native["action"] === "schematic-relevance-upload-model" || native["action"] === "schematic-relevance-upload-serialize");
+    assert.ok(native["action"] === "schematic-relevance-notification" || native["action"] === "schematic-relevance-sdk-gate" || native["action"] === "schematic-relevance-render-delegate" || native["action"] === "schematic-relevance-status-tab-mutation" || native["action"] === "schematic-relevance-status-tab-lookup" || native["action"] === "schematic-relevance-run-prefix" || native["action"] === "schematic-relevance-run-guard" || native["action"] === "schematic-relevance-normal-update" || native["action"] === "schematic-relevance-normal-disposal" || native["action"] === "schematic-relevance-normal-record" || native["action"] === "schematic-relevance-noecho" || native["action"] === "schematic-relevance-upload-entry" || native["action"] === "schematic-relevance-upload-model" || native["action"] === "schematic-relevance-upload-serialize" || native["action"] === "schematic-relevance-upload-cm" || native["action"] === "schematic-relevance-pending-cache" || native["action"] === "schematic-relevance-upload-return" || native["action"] === "schematic-relevance-history-status" || native["action"] === "schematic-relevance-status-bus" || native["action"] === "schematic-relevance-status-delivery" || native["action"] === "schematic-relevance-status-subscriber" || native["action"] === "schematic-relevance-status-clone");
   }
   input.emit("error", new Error("inert original request finished")); await failed;
 });

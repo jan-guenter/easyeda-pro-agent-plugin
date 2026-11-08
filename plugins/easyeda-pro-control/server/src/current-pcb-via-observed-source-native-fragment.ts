@@ -1,3 +1,4 @@
+import { applyNativeFixedProtocolProjection } from "./native-fixed-protocol-projection.ts";
 /** Separate after-bootstrap source correlation, bounded by the original finite lanes. Source-held helpers keep their existing budget. */
 import { createHash } from "node:crypto";
 import { CURRENT_PCB_VIA_OBSERVED_WORKER_SOURCE_REQUESTS as REQUESTS } from "./current-pcb-via-observed-worker-programs.ts";
@@ -23,3 +24,7 @@ const dispatch=String.raw`        'pcb-via-observed-source' {
         }
 `;
 export function applyCurrentPcbViaObservedSourceNativeFragment(input:string):string{let source=one(input,'case "pcb-via-sdk":','case "pcb-via-observed-source":case "pcb-via-sdk":');source=installOwnedNativeDispatch(source,dispatch,"        'pcb-via-save-drain-complete' {");source=installNativeCompileOnlyHook(source,"    [EasyedaPcbViaObservedSourceProtocol]::VerifySmoke()","    [EasyedaPcbViaSaveDrainProtocol]::VerifySmoke()");const value=`${begin}\n${native()}\n${end}`;const start=source.indexOf(begin);const stop=source.indexOf(end);if(start!==-1||stop!==-1){if(start===-1||stop<start||source.includes(begin,start+1)||source.includes(end,stop+1)){throw new Error("VIA_OBSERVED_SOURCE_MARKERS");}return source.slice(0,start)+value+source.slice(stop+end.length);}return one(source,"internal enum EasyedaPcbViaWriteBirth { Original }",`${value}\ninternal enum EasyedaPcbViaWriteBirth { Original }`);}
+
+/** Retain the exact shared immutable codecs, without this Via owner's state,
+ * sender, action admission or dispatch. The closed schematic build uses it. */
+export function applyCurrentPcbViaObservedSourceCodecNativeFragment(input:string):string{return applyNativeFixedProtocolProjection(input,{begin,end,protocols:["EasyedaPcbViaObservedSourceProtocol"],quoteMethod:"ObservedSourceQuote"},native());}

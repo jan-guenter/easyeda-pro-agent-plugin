@@ -1,7 +1,7 @@
 /** Actual uninvoked pinned functions in an inert VM. No model, original
  * renderer, actor, receiver, mutation or saved result is established. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAssets } from "./helpers/installed-easyeda-source.ts";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
@@ -11,7 +11,7 @@ import { decodeCurrentSchematicRelevanceModelCalleeFunction, requireCurrentSchem
 
 function inertFunction(source: string, variant: 0 | 1, role: CurrentSchematicRelevanceModelCalleeRole): unknown {
   const row = SOURCE[variant].roles[role]; const text = source.slice(row.start, row.end);
-  const padding = source.slice(0, row.start).replaceAll(/[^\n]/gu, " "); const context = createContext({});
+  const padding = source.slice(0, row.start).replaceAll(/[^\n]/gu, value => " ".repeat(value.length)); const context = createContext({});
   if (row.kind === "arrow") { return runInContext(`${padding.slice(0, -1)}(${text})`, context) as unknown; }
   const ctor: unknown = runInContext(`${padding.slice(0, -7)}(class{${text}})`, context);
   assert.ok(typeof ctor === "function"); const prototype: unknown = Reflect.get(ctor, "prototype"); assert.ok(prototype !== null && typeof prototype === "object");
@@ -19,13 +19,11 @@ function inertFunction(source: string, variant: 0 | 1, role: CurrentSchematicRel
   const getter: unknown = Object.getOwnPropertyDescriptor(prototype, row.name.slice(4))?.get; assert.ok(typeof getter === "function"); return getter;
 }
 void test("actual Node24 metadata binds every uninvoked Text getter and active monitor in both exact sources", async context => {
-  let sources: readonly string[];
-  try { sources = await Promise.all(SOURCE.map(row => readFile(`/mnt/c/Program Files/EasyEDA-Pro/resources/app/assets/${row.relativePath}`, "utf8"))); }
-  catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return; } throw error; }
+  const sources: readonly string[] | null = await readConfiguredEasyedaAssets(SOURCE.map(row => row.relativePath)); if (sources === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
   assert.equal(process.versions.node, "24.18.0"); const session = new Session(); session.connect(); const key = "__inertSchematicModelCallee";
   try {
     for (const variant of [0, 1] as const) {
-      const source = sources[variant]; assert.ok(typeof source === "string"); assert.equal(qualifyCurrentSchematicRelevanceModelCalleeSource(source), variant);
+      const source: string | undefined = sources[variant]; assert.ok(typeof source === "string"); assert.equal(qualifyCurrentSchematicRelevanceModelCalleeSource(source), variant);
       for (const role of ROLES) {
         Object.defineProperty(globalThis, key, { value: inertFunction(source, variant, role), configurable: true });
         const value = await session.post("Runtime.evaluate", { expression: `globalThis[${JSON.stringify(key)}]`, objectGroup: "inert-schematic-model-callee" });

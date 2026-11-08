@@ -11,12 +11,13 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { CURRENT_PROJECT_STRUCTURE_MAIN_ORDER as ORDER } from "../../src/current-project-structure-main-source.ts";
 import { validateCurrentProjectStructureMainCommand } from "../../src/current-project-structure-main-protocol.ts";
+import type { CurrentProjectStructureMainLease } from "../../src/current-project-structure-main-lease.ts";
 import type { CurrentProjectStructureMainObserver } from "../../src/current-project-structure-main-observer.ts";
 import type { CurrentFootprintCopyMainBackendTransport } from "../../src/current-footprint-copy-main-backend-runner.ts";
 import { mainBackendModule } from "./footprint-main-backend-runner-fixture.ts";
 import { combinedReadyFactoryFixture } from "./current-footprint-combined-ready-fixture.ts";
 
-type Mode = "core-post" | "observer-post" | "location" | "duplicate" | "malformed" | "late" | "channel";
+type Mode = "valid" | "core-post" | "observer-post" | "location" | "duplicate" | "malformed" | "late" | "channel";
 /** Preserve actual class exports and private maps while changing only named
  * external source/native dependencies for this isolated construction test. */
 async function observerModule(overrides: Readonly<Record<string, unknown>>): Promise<typeof CurrentProjectStructureMainObserver> {
@@ -33,7 +34,7 @@ async function observerModule(overrides: Readonly<Record<string, unknown>>): Pro
 /** An original factory supplies the native capability. The test never writes
  * a private registry, substitutes the capability guard or accepts copied JSON. */
 export async function mainStructureOriginalFixture(mode: Mode): Promise<Readonly<{
-  observer: CurrentProjectStructureMainObserver; core: InstanceType<Awaited<ReturnType<typeof mainBackendModule>>["Constructor"]>;
+  lease: CurrentProjectStructureMainLease; observer: CurrentProjectStructureMainObserver; core: InstanceType<Awaited<ReturnType<typeof mainBackendModule>>["Constructor"]>;
   owner: Awaited<ReturnType<Awaited<ReturnType<typeof combinedReadyFactoryFixture>>["api"]["startCurrentFootprintCombinedNativeOwner"]>>;
   state: { replied: boolean; refused: boolean; dispatched: boolean; postChecks: number };
   failure: Error; removed: string[]; dispose: () => Promise<void>;
@@ -115,6 +116,6 @@ else if(q.action==='release')result={released:true};else throw Error('Unexpected
     "./current-project-structure-main-source.ts": sourceSeam });
   const observer = new Observer(lease, { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), ticket: 101, structureText: "source-only comparison" });
   assert.throws(() => module.requireStructure({ ...lease })); assert.equal(ORDER.length, 11);
-  return { observer, core, owner, state, failure, removed, dispose };
+  return { lease, observer, core, owner, state, failure, removed, dispose };
   } catch (error) { await dispose(); throw error; }
 }

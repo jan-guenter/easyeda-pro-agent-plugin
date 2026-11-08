@@ -9,7 +9,12 @@ const oldCallback = 'async()=>{ownedAction=b.runner.currentAction;check();same(b
  * direct property read is checked while the preceding actual marker is held. */
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_CALLBACK = `async()=>{const originalContext=[tuple,b,state,before,changes,target,operation];debugger;try{ownedAction=b.runner._currentAction;if(ownedAction===null||typeof ownedAction!=="object")throw{reason:"SCH209_CALLBACK_ACTIVE_ACTION"};for(let originalIndex=0;originalIndex<changes.length;originalIndex++){debugger;const originalChange=changes[originalIndex],originalBinding=b.setters[originalChange[0]];if(originalBinding.object!==before.text)throw "SCH209_CALLBACK_TEXT_RECEIVER";apply(originalBinding.set,before.text,[originalChange[1]]);}debugger;}catch(originalError){debugger;throw originalError;}}`;
 export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_REPLACEMENTS = freezeDeep([['b={ui,host,sch,tabs,', 'b={root,ui,host,sch,tabs,']] as const);
-export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_REPLACEMENTS = freezeDeep([[oldCallback, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_CALLBACK],
+/** The original callback joins the retained capture-stage receipt. A fresh
+ * source capture reproves that same baseline before the run; it must not
+ * replace the receipt identity consumed by the original raw/entry collectors. */
+const oldModifyBaseline = 'const before=capture(operation.beforeBody);same(state.before,before);';
+const retainedModifyBaseline = 'const before=state.before;same(before,capture(operation.beforeBody));';
+export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_REPLACEMENTS = freezeDeep([[oldModifyBaseline, retainedModifyBaseline], [oldCallback, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_CALLBACK],
   ['{history:true,name:"Codex disposable Text display"}', '{history:true,name:"Codex disposable Text display",timeout:0,dependencies:[]}']] as const);
 export function replaceCurrentSchematicRelevanceDisplayPhase(source: string, replacements: readonly (readonly [string, string])[]): string {
   let result = source;
