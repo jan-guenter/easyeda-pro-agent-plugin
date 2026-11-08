@@ -14,10 +14,10 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
 
 import {
-  MAXIMUM_REQUEST_BYTES, SESSION_CALL_TIMEOUT_MS, parseSessionRequest, publishSessionResult,
+  MAXIMUM_REQUEST_BYTES, SESSION_CALL_TIMEOUT_MS, parseSessionInputRequest, publishSessionResult, resolveSessionCallArguments,
   selectSessionLaunch, sessionFailureDiagnostic, sessionTransportEnvironment,
 } from "./control-session.ts";
-import type { CallRequest } from "./control-session.ts";
+import type { CallInputRequest, CallRequest } from "./control-session.ts";
 import { captureOriginalSpatialManagerRequest, consumeOriginalSpatialManagerControl, createOriginalSpatialManagerRecovery, isOriginalSpatialManagerControl,
   learnOriginalSpatialManagerInspection, learnOriginalSpatialManagerWindow, originalSpatialManagerControl } from "./control-session-spatial-adapter.ts";
 import type { OriginalSpatialManagerRecovery, OriginalSpatialManagerRequest } from "./control-session-spatial-adapter.ts";
@@ -76,7 +76,7 @@ const commandSchema = z.discriminatedUnion("action", [
     responseFile: z.string().refine(isAbsolute).optional() }),
 ]);
 type ManagerCallRequest = CallRequest & { readonly cleanup?: true };
-type ManagerRequest = z.infer<typeof commandSchema> | ManagerCallRequest;
+type ManagerRequest = z.infer<typeof commandSchema> | (CallInputRequest & { readonly cleanup?: true });
 type OriginalCleanupRequest = Extract<z.infer<typeof commandSchema>, { action: "cleanup-original" }>;
 type InFlightControlRequest = Extract<z.infer<typeof commandSchema>, { action: "in-flight-original" }>;
 type Emitter = (value: unknown) => Promise<void>;
@@ -130,10 +130,11 @@ export async function* managerInputLines(chunks: AsyncIterable<Buffer>): AsyncGe
 
 /** Cleanup is a bounded bookkeeping reserve. It grants no tool admission and
  * cannot consume the distinct retirement/startup control budget. */
-export function sessionManagerCallBudgetAvailable(cleanup: boolean, records: number, bytes: number): boolean {
+export function sessionManagerCallBudgetAvailable(cleanup: boolean, records: number, bytes: number, inputBytes = 0): boolean {
   const budget = cleanup ? "cleanup" : "normal";
   return Number.isSafeInteger(records) && records >= 0 && Number.isSafeInteger(bytes) && bytes >= 0 &&
-    records + 2 <= RECORD_BUDGETS[budget] && bytes + MAXIMUM_RECORD_BYTES + 65_536 <= BYTE_BUDGETS[budget];
+    Number.isSafeInteger(inputBytes) && inputBytes >= 0 && inputBytes <= MAXIMUM_REQUEST_BYTES &&
+    records + 2 <= RECORD_BUDGETS[budget] && bytes + MAXIMUM_RECORD_BYTES + 65_536 + inputBytes <= BYTE_BUDGETS[budget];
 }
 
 /** Reserve final closure proof before dispatch. A verified active refusal is
@@ -178,8 +179,8 @@ export function parseSessionManagerRequest(line: string): ManagerRequest {
   let call;
   if (cleanup.success) {
     const { cleanup: marker, ...ordinary } = cleanup.data;
-    call = { ...parseSessionRequest(JSON.stringify(ordinary)), cleanup: marker };
-  } else { call = parseSessionRequest(line); }
+    call = { ...parseSessionInputRequest(JSON.stringify(ordinary)), cleanup: marker };
+  } else { call = parseSessionInputRequest(line); }
   if ("shutdown" in call) { throw new Error("manager-shutdown-command-required"); }
   // Retirement is manager-owned so a generic call cannot release the lease
   // Without settling the original connection and process observations.
@@ -915,7 +916,7 @@ export class ForegroundSessionManager {
     // Settlement includes the original call result and durable response/evidence
     // Publication. Retirement is unavailable throughout both boundaries.
     const budget = request.cleanup === true ? "cleanup" : "normal";
-    await this.retain("call-intent", { id: request.id, tool: request.tool }, budget);
+    await this.retain("call-intent", { id: request.id, tool: request.tool, arguments: request.arguments }, budget);
     this.callerToolDispatches.add(connection.transport);
     let result: unknown;
     const current = this.inFlight?.original === interrupted ? this.inFlight : undefined;
@@ -953,11 +954,17 @@ export class ForegroundSessionManager {
     } catch (error) { this.publicationFault = true; throw error; }
   }
 
+  private inputAdmission: Promise<null> = Promise.resolve(null);
+  /** Wait only for local parsing and call admission. File reads must not hide
+   * the original capture lane from the single stdin driver's scheduling check. */
+  public async waitForInputAdmission(): Promise<void> { await this.inputAdmission; }
+
   /** Serial admission covers invocation and publication. A concurrent request
    * cannot retire a call whose response file or output has not settled. */
   public async handle(line: string | InputRejection): Promise<void> {
     if (this.requestPending) { throw new Error("manager-request-pending"); }
     this.requestPending = true;
+    const admission = Promise.withResolvers<null>(); this.inputAdmission = admission.promise;
     let id: string | number | undefined;
     let reserved = false;
     let failureBudget: RecordBudget = "control";
@@ -967,13 +974,16 @@ export class ForegroundSessionManager {
         framingReason = inputRejectionSchema.parse(line).reason;
         throw new Error("manager-input-rejected");
       }
-      const request = parseSessionManagerRequest(line);
-      id = request.id;
-      if ("tool" in request) {
+      const input = parseSessionManagerRequest(line);
+      id = input.id;
+      if ("tool" in input) {
         const connection = this.requireActive();
-        if (!connection.tools.has(request.tool)) { throw new Error("manager-tool-not-admitted"); }
+        if (!connection.tools.has(input.tool)) { throw new Error("manager-tool-not-admitted"); }
+        const decoded = "argumentsFile" in input ? await resolveSessionCallArguments(input, Buffer.byteLength(line)) :
+          { request: input, inputBytes: Buffer.byteLength(line) };
+        const request: ManagerCallRequest = { ...decoded.request, ...(input.cleanup === true ? { cleanup: true } : {}) };
         const budget = request.cleanup === true ? "cleanup" : "normal";
-        if (!sessionManagerCallBudgetAvailable(request.cleanup === true, this.recordCounts[budget], this.byteCounts[budget])) {
+        if (!sessionManagerCallBudgetAvailable(request.cleanup === true, this.recordCounts[budget], this.byteCounts[budget], decoded.inputBytes)) {
           throw new Error("manager-cleanup-reserve-required");
         }
         reserved = true;
@@ -981,8 +991,10 @@ export class ForegroundSessionManager {
         if (request.cleanup !== true && (interrupted.forwardCapture && interrupted.forward !== null || interrupted.via?.action === "execute" || interrupted.schematicDisplay?.action === "execute" || interrupted.spatial !== null)) {
           this.inFlight = { original: interrupted, controls: new Set(), rpcPending: false, parentOutcome: "pending", sidePending: false, sideIdle: Promise.resolve(null) };
         }
+        admission.resolve(null);
         await this.call(request, interrupted); return;
       }
+      const request = input;
       if (request.action === "inspect") { await this.publish({ id, manager: this.inspect() }); return; }
       if (request.action === "in-flight-original") { throw new Error("manager-in-flight-original-not-authorized"); }
       if (request.action === "cleanup-original") {
@@ -1051,6 +1063,7 @@ export class ForegroundSessionManager {
       if (reserved) { await this.retainFailure("failure", failure, failureBudget); }
       await this.publish(failure);
     } finally {
+      admission.resolve(null);
       const current = this.inFlight;
       if (current !== undefined) { while (current.sidePending) { await current.sideIdle; } this.inFlight = undefined; }
       this.requestPending = false;
@@ -1076,7 +1089,9 @@ export async function runManagerInput(manager: ForegroundSessionManager, chunks:
     if (parent !== undefined && !manager.hasInFlightCapture()) { await parent; parent = undefined; }
     if (parent === undefined) {
       const pending = manager.handle(line);
-      if (manager.hasInFlightCapture()) { parent = pending; void observeParent(pending); }
+      void observeParent(pending);
+      await manager.waitForInputAdmission();
+      if (manager.hasInFlightCapture()) { parent = pending; }
       else { await pending; }
     } else { await manager.handleInFlight(line); }
     if (manager.inspect()["stage"] === "closed") { return "closed"; }

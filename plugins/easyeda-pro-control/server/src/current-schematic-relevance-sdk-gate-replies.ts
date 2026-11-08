@@ -2,6 +2,9 @@
 import {currentSchematicRelevancePrefixHandle as handle,currentSchematicRelevancePrefixProperties as properties} from "./current-schematic-relevance-run-prefix-replies.ts";
 
 function need(value:boolean):asserts value{if(!value){throw new Error("SCH_SDK_GATE_PROMISE_METADATA");}}
+/** Require exactly three native Promise slots and the requested pending or fulfilled state.
+ * Fulfillment must carry true, while a pending result must be undefined; the caller separately joins the original prototype.
+ */
 export function currentSchematicRelevanceSdkGatePromise(input:unknown,state:"pending"|"fulfilled"):Readonly<{prototypeObjectId:string}>{const reply=properties(input);need(reply.result.length===0);const slots=new Map(reply.internalProperties?.map(field=>[field.name,field.value]));need(reply.internalProperties?.length===3&&slots.size===3);const actual=slots.get("[[PromiseState]]"),parent=slots.get("[[Prototype]]"),result=slots.get("[[PromiseResult]]");need(parent?.type==="object"&&parent.subtype===undefined&&actual?.type==="string"&&actual.value===state&&actual.objectId===undefined&&actual.subtype===undefined);if(state==="fulfilled"){need(result?.type==="boolean"&&result.value===true&&result.objectId===undefined&&result.subtype===undefined);}else{need(result?.type==="undefined"&&result.objectId===undefined&&result.value===undefined&&result.subtype===undefined);}return Object.freeze({prototypeObjectId:handle(parent)});}
 /** Resolver custody comes from the same source-created Promise executor;
  * this metadata alone cannot select an arbitrary anonymous native function. */

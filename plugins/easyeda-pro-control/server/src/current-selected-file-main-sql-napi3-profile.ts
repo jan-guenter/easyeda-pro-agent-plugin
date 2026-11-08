@@ -16,6 +16,19 @@ export const CURRENT_SELECTED_FILE_MAIN_SQL_NAPI3_PROFILE = Object.freeze({
   coreProfiles: Object.freeze(["caller-own-five", "caller-absent-three"] as const),
   externalPayloadIdentityProven: false, windowsAbiObserved: false, executionAuthorized: false,
 } as const);
+/** Later headers retain the Database open accessor's callback data as well as
+ * its eight methods. This is a separate complete metadata shape, not ABI proof. */
+export const CURRENT_SELECTED_FILE_MAIN_SQL_NAPI3_ACCESSOR_PROFILE = Object.freeze({
+  profile: "private.selected-file-main-sql-napi3-accessor-metadata.v1",
+  sqlite3: "5.0.2", napiVersion: 3, headerVersion: "3.2.1",
+  databaseSourceSha256: CURRENT_SELECTED_FILE_MAIN_SQL_NAPI3_PROFILE.databaseSourceSha256,
+  statementSourceSha256: CURRENT_SELECTED_FILE_MAIN_SQL_NAPI3_PROFILE.statementSourceSha256,
+  napiHeaderSha256: "1084a55623f0357f42ff55918bdd960c226fd90ddd1815b55ce094e55486689e",
+  napiInlineHeaderSha256: "732f3d74b7c64c761a989455bca127d9c384651264ab27e5009d0bc78882bf81",
+  databaseSymbols: 9, statementSymbols: 7,
+  coreProfiles: CURRENT_SELECTED_FILE_MAIN_SQL_NAPI3_PROFILE.coreProfiles,
+  externalPayloadIdentityProven: false, windowsAbiObserved: false, executionAuthorized: false,
+} as const);
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const opaque = z.object({ type: z.literal("object"), className: z.literal("Object"), description: z.literal("Object"), objectId: handle }).strict();
 const symbol = z.object({ type: z.literal("symbol"), description: z.literal("Symbol()"), objectId: handle }).strict();
@@ -36,16 +49,18 @@ const parent = z.object({ name: z.literal("[[Prototype]]"), value: z.object({ ty
   description: z.literal("function () { [native code] }"), objectId: handle }).strict() }).strict();
 const scopes = z.object({ name: z.literal("[[Scopes]]"), value: z.object({ type: z.literal("object"), subtype: z.literal("internal#scopeList"),
   className: z.literal("Array"), description: z.literal("Scopes[0]"), objectId: handle }).strict() }).strict();
-const packet = z.object({ result: z.array(z.unknown()).max(13), internalProperties: z.tuple([parent, scopes]) }).strict();
+const packet = z.object({ result: z.array(z.unknown()).max(14), internalProperties: z.tuple([parent, scopes]) }).strict();
 
 export function matchesCurrentSelectedFileMainSqlFenceNapi3(input: unknown, role: "Database" | "Statement"): boolean {
   if (role !== "Database" && role !== "Statement") { return false; }
   let captured: unknown;
   try { captured = captureCurrentPcbStringClockReply(input).value; } catch { return false; }
   const parsed = packet.safeParse(captured); if (!parsed.success) { return false; }
-  const count = role === "Database" ? 8 : 7, fields = parsed.data.result;
-  let coreCount: 3 | 5;
-  if (fields.length === count + 5) { coreCount = 5; } else if (fields.length === count + 3) { coreCount = 3; } else { return false; }
+  const fields = parsed.data.result;
+  const profiles = role === "Database" ? [[3, 8], [5, 8], [3, 9], [5, 9]] as const : [[3, 7], [5, 7]] as const;
+  const selected = profiles.find(([coreCount, count]) => fields.length === coreCount + count);
+  if (selected === undefined) { return false; }
+  const [coreCount, count] = selected;
   if (!core(role, coreCount === 5).safeParse(fields.slice(0, coreCount)).success) { return false; }
   const symbols = new Set<string>(), values = new Set<string>();
   for (const field of fields.slice(coreCount)) {

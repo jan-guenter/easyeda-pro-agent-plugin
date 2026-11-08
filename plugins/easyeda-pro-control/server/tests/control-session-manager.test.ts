@@ -445,7 +445,7 @@ void test("manager framing drains one oversized frame, preserves split UTF-8 and
   assert.deepEqual(preservedBom, ["\uFEFF{}"]);
 });
 
-void test("actual manager input loop rejects oversized and invalid UTF-8 frames then retires its same original child", { timeout: 30_000 }, async () => {
+void test("actual manager input loop rejects malformed frames and argument files then retires its same original child", { timeout: 30_000 }, async () => {
   const outputs: unknown[] = [], selected = await fixture();
   await selectedProfile(selected.profilePath, async () => {
     const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
@@ -453,22 +453,30 @@ void test("actual manager input loop rejects oversized and invalid UTF-8 frames 
     const original = manager.inspect()["facadePid"], sentinel = "private-discarded-input";
     assert.ok(typeof original === "number");
     try {
+      const argumentsPath = join(selected.control, "loaded-arguments.json"); const argumentBytes = Buffer.from(JSON.stringify({ request: { action: "loaded-facade" } }) + " ".repeat(6000));
+      await writeFile(argumentsPath, argumentBytes, { mode: 0o600 });
+      const argumentsFile = { path: argumentsPath, expectedSha256: hash(argumentBytes) };
+      const fileCall = request({ id: "file-offline-child", tool: "easyeda_control_api", argumentsFile });
+      assert.ok(Buffer.byteLength(fileCall) < 4096);
+      const badFile = request({ id: "bad-file", tool: "easyeda_control_api", argumentsFile: { ...argumentsFile, expectedSha256: "0".repeat(64) } });
       const oversized = Buffer.from(sentinel.repeat(Math.ceil((MAXIMUM_REQUEST_BYTES + 1) / sentinel.length)));
       const followups = `${request({ id: "same-owner-after-input-rejection", action: "inspect" })}\n${loaded("same-offline-child")}\n${retire("retire-after-input-rejection", 1)}\n${request({ id: "close-after-input-rejection", action: "shutdown" })}\n`;
       const chunks = [
         oversized.subarray(0, MAXIMUM_REQUEST_BYTES), oversized.subarray(MAXIMUM_REQUEST_BYTES), Buffer.from("\n"),
-        Buffer.from([0xC3]), Buffer.from([0x28, 10]), Buffer.from("{malformed}\n"), Buffer.from(followups),
+        Buffer.from([0xC3]), Buffer.from([0x28, 10]), Buffer.from("{malformed}\n"), Buffer.from(`${badFile}\n`), Buffer.from(`${fileCall}\n`), Buffer.from(followups),
       ];
       const result = await runManagerInput(manager, inputChunks(chunks));
       assert.equal(result, "closed"); assert.equal(manager.inspect()["stage"], "closed");
       const rows = outputs.map(value => record(value));
       const rejected = rows.filter(row => row["error"] === "manager-request-rejected");
-      assert.deepEqual(rejected.map(row => record(row["diagnostic"])["reason"]), ["request-too-large", "invalid-utf8", "json-rejected"]);
+      assert.deepEqual(rejected.map(row => record(row["diagnostic"])["reason"]), ["request-too-large", "invalid-utf8", "json-rejected", "arguments-file-rejected"]);
       assert.ok(rejected.every(row => row["dispatched"] === false && row["originalOwnerRetained"] === true));
       const inspected = record(rows.find(row => row["id"] === "same-owner-after-input-rejection")?.["manager"]);
       assert.equal(inspected["facadePid"], original); assert.equal(inspected["generation"], 1); assert.equal(inspected["stage"], "active");
       const offline = record(record(rows.find(row => row["id"] === "same-offline-child")?.["result"])["structuredContent"]);
       assert.equal(record(offline["result"])["pid"], original);
+      const fileOffline = record(record(rows.find(row => row["id"] === "file-offline-child")?.["result"])["structuredContent"]);
+      assert.equal(record(fileOffline["result"])["pid"], original);
       const retired = rows.find(row => row["id"] === "retire-after-input-rejection"); assert.equal(retired?.["retired"], true);
       assert.deepEqual(record(retired?.["closure"]), { pid: original, exitObserved: true, closeObserved: true, exitCode: 0, signal: null, stdinEof: true });
       assert.equal(JSON.stringify(outputs).includes(sentinel), false); assert.equal(JSON.stringify(outputs).includes("{malformed}"), false);
@@ -1114,6 +1122,9 @@ void test("CLI pending capture admits only original inspect and once-confirmed a
       arguments: { request: { action: "footprint-forward-prewrite", request: { action: "capture-project", operationId, expectedBindingSha256,
         target: { rawWindowsPath: String.raw`C:\Disposable\fixture.eprj2`, projectUuid: hash(Buffer.from(String.raw`C:\Disposable\fixture.eprj2`)), documentUuid: "c".repeat(32), expectedSourceSha256: "d".repeat(64) },
         confirmDisposableProject: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true } } } };
+    const capturePath = join(selected.control, "capture-arguments.json"); const captureBytes = Buffer.from(JSON.stringify(capture.arguments) + " ".repeat(5000));
+    await writeFile(capturePath, captureBytes, { mode: 0o600 });
+    const captureFile = { id: capture.id, tool: capture.tool, timeoutMs: capture.timeoutMs, argumentsFile: { path: capturePath, expectedSha256: hash(captureBytes) } };
     const parentId = "pending-capture";
     const side = (id: string, action: string, extra: object = {}): string => request({ id, action: "in-flight-original", generation: 1,
       originalRequestId: parentId, request: { action, ...extra } });
@@ -1121,8 +1132,9 @@ void test("CLI pending capture admits only original inspect and once-confirmed a
       interruptedRequestId: parentId, request: { action, ...extra } });
     const seen = (id: string): boolean => outputs.some(value => record(value)["id"] === id);
     async function* input(): AsyncGenerator<Buffer> {
-      yield Buffer.from(`${request(capture)}\n`);
+      yield Buffer.from(`${request(captureFile)}\n`);
       await managerProgress(() => manager.inspect()["inFlightRequest"] !== null && record(manager.inspect()["inFlightRequest"])["rpcPending"] === true);
+      await writeFile(capturePath, JSON.stringify({ request: { action: "foreign-after-dispatch" } }));
       for (const line of [request({ id: "local-pending", action: "inspect" }), loaded("normal-denied"), request({ ...capture, id: "replay-denied" }),
         retire("retire-denied", 1), request({ id: "start-denied", action: "start", afterGeneration: 1, pluginRoot: selected.root }),
         request({ id: "shutdown-denied", action: "shutdown" }), side("termination-denied", "observe-termination"),
@@ -1166,6 +1178,8 @@ void test("CLI pending capture admits only original inspect and once-confirmed a
     }));
     assert.deepEqual(records.map(row => row["sequence"]), records.map((_row, index) => index + 1));
     assert.equal(records.filter(row => row["kind"] === "in-flight-control-result").length, 2);
+    const originalIntent = records.find(row => row["kind"] === "call-intent" && record(row["value"])["id"] === parentId);
+    assert.deepEqual(record(originalIntent?.["value"])["arguments"], capture.arguments);
   });
 });
 

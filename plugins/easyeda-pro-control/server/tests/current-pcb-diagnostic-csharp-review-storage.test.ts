@@ -6,7 +6,7 @@ import test from "node:test";
 import { gzipSync } from "node:zlib";
 import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
 import { currentPcbDiagnosticCSharpCompilerInput as legacyCompiler } from "../src/current-pcb-diagnostic-csharp-storage.ts";
-import { CURRENT_PCB_DIAGNOSTIC_CSHARP_REVIEW_MAX_BYTES as REVIEW_MAXIMUM, currentPcbDiagnosticCSharpRuntimeCompilerInput as compiler, expandCurrentPcbDiagnosticCSharpReviewSource as expand, packCurrentPcbDiagnosticCSharpReviewStorage as pack, currentPcbDiagnosticCSharpReviewSource as review } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
+import { CURRENT_PCB_DIAGNOSTIC_CSHARP_REVIEW_MAX_BYTES as REVIEW_MAXIMUM, currentPcbDiagnosticCSharpRuntimeCompilerInput as compiler, expandCurrentPcbDiagnosticCSharpReviewSource as expand, packCurrentPcbDiagnosticCSharpReviewStorage as pack, packCurrentPcbDiagnosticCSharpTokenFusionStorage as packV3, currentPcbDiagnosticCSharpReviewSource as review } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { CURRENT_PCB_DIAGNOSTIC_CSHARP_SPACING_MAX_BYTES as SPACING_MAXIMUM, compactCurrentPcbDiagnosticCSharp as compact, restoreCurrentPcbDiagnosticCSharp as restore } from "../src/current-pcb-diagnostic-csharp-spacing.ts";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES as MAXIMUM } from "../src/current-pcb-diagnostic-helper-source-profile.ts";
 import { currentFootprintForwardNativeOutputs } from "../src/current-footprint-forward-native-graph-source.ts";
@@ -26,6 +26,16 @@ quoted "" text";
 const sample = `# preamble\nAdd-Type @'\n${body}\n'@\n# suffix\n`;
 const sha = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
 const compilerFields = /^\$fixedCurrent209CompactCompiler=Expand-FixedCurrent209CSharp '([A-Za-z\d+/=]+)' (\d+) '([a-f\d]{64})' (\d+) '([a-f\d]{64})'$/mu;
+void test("public packers report measured spacing overflow before packing while retaining the same cap", () => {
+  const source = `Add-Type @'\nclass C {}${" ".repeat(SPACING_MAXIMUM)}\n'@\n`;
+  for (const store of [pack, packV3]) {
+    let failure: unknown;
+    try { store(source); } catch (error) { failure = error; }
+    assert.ok(failure instanceof Error);
+    const match = /^PCB_DIAGNOSTIC_CSHARP_SPACING(?:_V3)?: measured=(\d+), limit=(\d+)$/u.exec(failure.message);
+    assert.ok(match !== null); assert.equal(Number(match[2]), SPACING_MAXIMUM); assert.ok(Number(match[1]) > SPACING_MAXIMUM);
+  }
+});
 function payload(stored: string, raw: Buffer, zipped: Buffer): string {
   return stored.replace(compilerFields, `$fixedCurrent209CompactCompiler=Expand-FixedCurrent209CSharp '${zipped.toString("base64")}' ${String(raw.length)} '${sha(raw)}' ${String(zipped.length)} '${sha(zipped)}'`);
 }

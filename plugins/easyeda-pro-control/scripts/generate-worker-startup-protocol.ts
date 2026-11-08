@@ -1,5 +1,11 @@
+/* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
+import {expandCurrentSelectedMainNativePrograms} from "../server/src/current-selected-main-native-program-storage.ts";
+import {expandCurrentFootprintInverseNativePrograms,projectCurrentFootprintInverseNativePrograms} from "../server/src/current-footprint-inverse-native-program-storage.ts";
+import {expandCurrentSchematicNativePrograms,projectCurrentSchematicNativePrograms} from "../server/src/current-schematic-native-program-storage.ts";
 import {applyCurrentSchematicRelevanceNotificationNativeFragment} from "../server/src/current-schematic-relevance-notification-native-fragment.ts";
 import {applyCurrentSchematicRelevanceSdkGateNativeFragment} from "../server/src/current-schematic-relevance-sdk-gate-native-fragment.ts";
+import {applyCurrentSchematicRelevanceModifyWorkerNativeFragment} from "../server/src/current-schematic-relevance-modify-worker-native-fragment.ts";
+import {applyCurrentSchematicRelevancePublicationNativeFragment} from "../server/src/current-schematic-relevance-publication-native-fragment.ts";
 import {applyCurrentSchematicRelevanceNormalCommandUiNativeFragment} from "../server/src/current-schematic-relevance-normal-command-ui-native-fragment.ts";
 import {applyCurrentSchematicRelevanceFileSaveUiNativeFragment} from "../server/src/current-schematic-relevance-file-save-ui-native-fragment.ts";
 import {applyCurrentSchematicRelevanceRenderDelegateNativeFragment} from "../server/src/current-schematic-relevance-render-delegate-native-fragment.ts";
@@ -8,7 +14,6 @@ import {applyCurrentSchematicRelevanceStatusTabLookupNativeFragment} from "../se
 import {applyCurrentSchematicRelevanceStatusSubscriberNativeFragment} from "../server/src/current-schematic-relevance-status-subscriber-native-fragment.ts";
 import{expandCurrentFootprintInverseSmokeVectors,projectCurrentFootprintInverseSmokeVectors}from"../server/src/current-footprint-inverse-smoke-vector-storage.ts";
 import { projectCurrentFootprintInverseComponentRuntime } from "../server/src/current-footprint-inverse-component-projection.ts";
-/* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import {applyCurrentSchematicRelevanceStatusCloneNativeFragment} from "../server/src/current-schematic-relevance-status-clone-native-fragment.ts";
 import { projectCurrentFootprintInverseSchematicRuntime } from "../server/src/current-footprint-inverse-native-schematic-projection.ts";
 import {applyCurrentSchematicRelevanceUiFixedCodec} from "../server/src/current-schematic-relevance-ui-fixed-codec-native.ts";
@@ -180,7 +185,8 @@ async function main(): Promise<void> {
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
 export function generateWorkerStartupProtocol(source: string, layout: "diagnostic" | "inverse" | "schematic" | "schematic-saved" = "diagnostic"): string {
   if (layout !== "diagnostic" && layout !== "inverse" && layout !== "schematic" && layout !== "schematic-saved") { throw new Error("NATIVE_BUILD_LAYOUT"); }
-  const view = expandCurrentPcbDiagnosticCSharpReviewSource(source);
+  const storedPrograms = expandCurrentFootprintInverseNativePrograms(expandCurrentSchematicNativePrograms(expandCurrentPcbDiagnosticCSharpReviewSource(source)));
+  const view = expandCurrentSelectedMainNativePrograms(storedPrograms);
   const expanded = view.includes("// BEGIN FIXED INVERSE SMOKE VECTORS V1\n") ? inverseSmokeVectorView(view,expandCurrentFootprintInverseSmokeVectors) : view;
   const publicSmokesNormalized = normalizeSchematicPublicCompileSmokes(expanded);
   const original = normalizeCurrentSchematicWireEditNativeFamily(normalizeCurrentSchematicRelevanceSavedReadbackNative(publicSmokesNormalized, layout === "schematic-saved" ? "saved-only" : "default"));
@@ -273,6 +279,8 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
     next = applyCurrentSchematicRelevanceNormalCommandUiNativeFragment(next);
     next = applyCurrentSchematicRelevanceNotificationNativeFragment(next);
     next = applyCurrentSchematicRelevanceSdkGateNativeFragment(next);
+    next = applyCurrentSchematicRelevancePublicationNativeFragment(next);
+    next = applyCurrentSchematicRelevanceModifyWorkerNativeFragment(next);
     next = applyCurrentSchematicRelevanceUiFixedCodec(next);
     next = applyCurrentSchematicRelevanceRunGuardNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
@@ -299,8 +307,10 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
   if(layout==="schematic"){next=projectCurrentSchematicViaSdkRuntime(next);}
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
+  if(layout==="inverse"){next=projectCurrentFootprintInverseNativePrograms(next);}
+  if(layout==="schematic"){next=projectCurrentSchematicNativePrograms(next);}
   if(layout==="inverse"){next=inverseSmokeVectorView(next,projectCurrentFootprintInverseSmokeVectors);}
-  next = layout==="inverse" ? packCurrentPcbDiagnosticCSharpTokenFusionStorage(next) : packCurrentPcbDiagnosticCSharpReviewStorage(next);
+  next = layout==="inverse" || layout==="schematic" ? packCurrentPcbDiagnosticCSharpTokenFusionStorage(next) : packCurrentPcbDiagnosticCSharpReviewStorage(next);
   if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {
     throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >${String(CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES)}`);
   }

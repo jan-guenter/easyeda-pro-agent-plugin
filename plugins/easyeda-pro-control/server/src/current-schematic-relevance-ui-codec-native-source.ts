@@ -7,6 +7,9 @@ import {currentPcbDiagnosticNativeHashVector} from "./current-pcb-diagnostic-fix
 const hash=(value:Uint8Array):string=>createHash("sha256").update(value).digest("hex");
 const quote=(value:string):string=>`@"${value.replaceAll('"','""')}"`;
 interface Input{readonly className:string;readonly errorCode:string;readonly tableError:string;readonly marker:string;readonly rows:readonly(readonly string[])[];readonly programs:readonly string[];readonly messages:readonly string[];readonly sharedProgramClass?:string;readonly programIndexes?:readonly number[];readonly exportPrograms?:boolean}
+/** Emit bounded immutable row, program and message-hash tables for one fixed schematic protocol class.
+ * Validate class names and shared program indexes before generating the common encoder and complete golden smoke.
+ */
 export function currentSchematicRelevanceUiCodecNativeSource(input:Input):string{
  if(!/^EasyedaSchematicRelevance[A-Za-z]+Protocol$/u.test(input.className)||!/^schematic-[a-z-]+-codec$/u.test(input.errorCode)||!/^SCHEMATIC_[A-Z_]+_FIXED_TABLE_BOUND$/u.test(input.tableError)||!(/^[a-z]+$/u.test(input.marker))||input.rows.length!==input.messages.length){throw new Error("SCH_UI_CODEC_SOURCE_FIELDS");}
  if(input.sharedProgramClass!==undefined&&(!/^EasyedaSchematicRelevance[A-Za-z]+Protocol$/u.test(input.sharedProgramClass)||input.sharedProgramClass===input.className)||input.programIndexes!==undefined&&(input.programIndexes.length!==input.programs.length||new Set(input.programIndexes).size!==input.programIndexes.length||input.programIndexes.some(index=>!Number.isSafeInteger(index)||index<0||index>=384))){throw new Error("SCH_UI_CODEC_SHARED_PROGRAMS");}
@@ -18,8 +21,10 @@ export function currentSchematicRelevanceUiCodecNativeSource(input:Input):string
  const rows=input.rows;const programs=input.programs.map((program,index)=>[String(input.programIndexes?.[index]??index),JSON.stringify(program)]);const hashes=input.messages.map(message=>hash(Buffer.from(message)));
  let programTable:string;
  if(input.sharedProgramClass===undefined){programTable=table("Programs",programs,2);if(input.exportPrograms===true){programTable=programTable.replace("static readonly","internal static readonly");}}
+ else if(programs.length===0){programTable=`static readonly string[][] Programs=${input.sharedProgramClass}.Programs;`;}
  else{programTable=`${table("OwnPrograms",programs,2)}\nstatic readonly string[][] Programs=JoinPrograms(${input.sharedProgramClass}.Programs,OwnPrograms);
 static string[][] JoinPrograms(string[][] shared,string[][] local){if(shared==null||local==null||shared.Length+local.Length>384)throw new System.InvalidOperationException("schematic-shared-program-bound");var result=new string[shared.Length+local.Length][];System.Array.Copy(shared,0,result,0,shared.Length);System.Array.Copy(local,0,result,shared.Length,local.Length);return result;}`;}
+ if(input.exportPrograms===true&&!programTable.includes("internal static readonly string[][] Programs=")){programTable=programTable.replace("static readonly string[][] Programs=","internal static readonly string[][] Programs=");}
   return `public static class ${input.className}{
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("${input.errorCode}");}
 ${table("Rows", rows, 4)}

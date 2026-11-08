@@ -10,7 +10,7 @@ if(points.length!==6){throw new Error("SCH_SDK_GATE_FIXED_MARKERS");}
 function location(offset:number):Readonly<{lineNumber:number;columnNumber:number}>{const before=script.slice(0,offset);return Object.freeze({lineNumber:before.split("\n").length-1,columnNumber:before.length-before.lastIndexOf("\n")-1});}
 const originalFunction="async function(target,stage,operation)";
 if(script.split(originalFunction).length!==2){throw new Error("SCH_SDK_GATE_FIXED_FUNCTION");}
-export const CURRENT_SCHEMATIC_RELEVANCE_SDK_GATE_SOURCE=freezeDeep({functionLocation:location(script.indexOf(originalFunction)+"async function".length),markers:{runFulfilled:location(points[4]??-1),gatePrepared:location(points[5]??-1)},expressions:{run:"[this,tuple,b,state,before,ownedAction,original,result,originalPromiseSettled,Promise]",gate:"[originalCompletionContext]"}}as const);
+export const CURRENT_SCHEMATIC_RELEVANCE_SDK_GATE_SOURCE=freezeDeep({functionLocation:location(script.indexOf(originalFunction)+"async function".length),markers:{runFulfilled:location(points[4]??-1),gatePrepared:location(points[5]??-1)},expressions:{run:"[this,tuple,b,state,before,ownedAction,original,result,originalPromiseSettled,Promise]",gate:"[originalCompletionContext]",timer:"[this,a,Promise]",publish:"[this]"}}as const);
 
 /** Inputs must have already passed their own correlated nonProxy metadata.
  * This proves the actual original action result, without releasing the wait. */
