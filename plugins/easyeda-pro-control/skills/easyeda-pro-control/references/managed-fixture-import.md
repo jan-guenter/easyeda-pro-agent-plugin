@@ -14,6 +14,13 @@ The schema query goes to `easyeda_control_api` in this exact wrapper:
 ```
 
 Start with this facade's retained ordinary209 launch and exact empty Start Page.
+The resolved Windows TEMP directory must use ASCII letters, digits, spaces,
+underscores, hyphens and path separators after its drive colon. Dots and
+non-ASCII characters are unsupported, including a path under
+`C:\Users\first.last`. Configure a compatible TEMP directory before starting
+fixture import. Destination preparation refuses incompatible paths before
+import dispatch; any already-created environment owner still needs cleanup.
+
 Obtain its current authenticated fingerprint. Keep the original manager and
 runtime through cleanup. Pass this as `request`, with a unique operation ID up
 to64characters, and supply the complete observed `expectedFingerprint` object:

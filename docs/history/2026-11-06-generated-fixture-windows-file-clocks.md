@@ -3,11 +3,11 @@
 The [fifth original importer](2026-11-06-generated-import-original-sdk-settlement.md)
 completed normal cleanup through original root/empty-Job exit and exact old
 session/dispatch closure. Complete raw and SQL capture succeeded. The raw file
-was372,736bytes, SHA256
+was 372,736 bytes, SHA256
 `59b1db78e24ce635b6313a5d4772cfece8ddc76ca86daad1dde72d04622da6e7`.
-The complete SQL inventory was62,672bytes, SHA256
+The complete SQL inventory was 62,672 bytes, SHA256
 `518e19a6287ebc151967c4a76b4aa484793d73a0dd516e7714a74b01795ffaf3`.
-Its original reader exited0. No source target was issued: initial qualification
+Its original reader exited 0. No source target was issued: initial qualification
 refused `bounded fresh native file clock interval` before accepting SQL rows.
 
 Read-only inspection of that original Windows file through WSL found
@@ -45,7 +45,7 @@ a separate original-helper change.
 ## Terminal cleanup and source review
 
 The ordinary helper release later completed, followed by acknowledged facade
-retirement, original EOF and process/stdio closure with exit0. The linked
+retirement, original EOF and process/stdio closure with exit 0. The linked
 import record retains the exact terminal observations. No resource from that
 generation remains available for adoption. Independent source review of the
 clock-refused data path found no blocking issue and confirmed that both full
@@ -55,29 +55,29 @@ initial models and the original fresh file/no-app boundaries remain required.
 
 The retained manager selected the separately frozen development payload
 `ce0427f2dc613fdd43426b8c059177fa40524c2e`, version
-`0.3.0+codex.20261106064341`. All2898 tracked plugin files and59,452,821bytes
+`0.3.0+codex.20261106064341`. All 2898 tracked plugin files and 59,452,821 bytes
 matched committed bytes and exact modes. Its inventory SHA256 was
 `d132533cfa13e94d0ba4951298971c265e885f568f60ef3553a25309c7867282`.
-Original serving-process and pinned Node24 admission completed before data
+Original serving-process and pinned Node 24 admission completed before data
 acquisition. No official installation or Codex restart was used.
 
 One new read-only qualification of the original unchanged generated file
-passed. The genuine Windows file handle supplied creation time1793944870969
-and modification time1793944871155milliseconds since epoch. Both complete
-initial SQL/source models passed, including the unique60minute local offset.
+passed. The genuine Windows file handle supplied creation time 1793944870969
+and modification time 1793944871155 milliseconds since epoch. Both complete
+initial SQL/source models passed, including the unique 60 minute local offset.
 The logical inventory SHA256 was
 `2b9d3dc964036d02a10b7943e7ea2cad07670e7132724217d967ef068326c7b6`;
 the complete native source SHA256 was
 `aa7d337d26239e6cae4a87117abc3e4ec63808de86df613095e1c291e3fffda0`.
-The original raw source hash remained the59b1db78 value above. The failed
-generation5 capture and null target were preserved, with no import replay.
+The original raw source hash remained the 59b1db78 value above. The failed
+generation 5 capture and null target were preserved, with no import replay.
 
-The new file/watch transport exited0 with acknowledged handle closure and a
+The new file/watch transport exited 0 with acknowledged handle closure and a
 drained unchanged watch. All Linux descriptors and the never-launched proof
 helper were released. Six no-application boundaries were observed; no
 continuous global absence guarantee is claimed. The qualification dispatched
 no app, bridge, edit or Save and attached no SQLite reader to the native file.
-Its complete result artifact was8264bytes, SHA256
+Its complete result artifact was 8264 bytes, SHA256
 `dae318816b1e641772af2f7cdb206dd0dcfdfc0fa14e74e1e2a6fb293e6d16f9`.
 
 The original data reservation was then released and its newly issued opaque

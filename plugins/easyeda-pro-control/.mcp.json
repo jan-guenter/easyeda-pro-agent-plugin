@@ -24,6 +24,7 @@
         "easyeda_control_pcb209_opening": { "approval_mode": "prompt" },
         "easyeda_control_pcb209_worker_startup": { "approval_mode": "prompt" },
         "easyeda_control_current_pcb_via_write": { "approval_mode": "prompt" },
+        "easyeda_control_current_schematic_relevance_display_write": { "approval_mode": "prompt" },
         "easyeda_control_fixture_import": { "approval_mode": "prompt" },
         "easyeda_control_extensions": { "approval_mode": "prompt" },
         "easyeda_control_launch": { "approval_mode": "prompt" },

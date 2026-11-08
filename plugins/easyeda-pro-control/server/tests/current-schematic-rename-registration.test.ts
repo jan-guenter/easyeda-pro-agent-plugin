@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -53,6 +54,7 @@ async function registration(retainedOpener: boolean): Promise<{
       inputSchema = config.inputSchema; handler = registered;
     } },
   });
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(stripTypeScriptTypes(source.slice(start, end)), scope);
   assert.ok(handler !== undefined && inputSchema !== undefined);
   const selectedHandler = handler, selectedSchema = inputSchema;

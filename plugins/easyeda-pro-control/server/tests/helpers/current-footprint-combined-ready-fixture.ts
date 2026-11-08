@@ -170,10 +170,10 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
     if (supplied.modules !== undefined && Object.hasOwn(supplied.modules, name)) { return supplied.modules[name]; }
-    if (purpose === "forward-execution" && name === "./current-footprint-forward-native-graph.ts") { return {
+    if (purpose === "forward-execution" && name === "./current-footprint-forward-cold-native-graph.ts") { return {
       // This inert-child fixture exercises real factory/counter custody. The
       // Separate graph tests exercise actual descriptor/hash/role selection.
-      captureCurrentFootprintForwardNativeGraph: (distribution: unknown, challenge: unknown): Promise<object> => {
+      captureCurrentFootprintForwardColdNativeGraph: (distribution: unknown, challenge: unknown): Promise<object> => {
         assert.equal(distribution, "Synthetic"); assert.equal(typeof challenge, "string"); assert.match(String(challenge), /^[a-f\d]{32}$/u);
         return Promise.resolve(Object.freeze({ verify: (): Promise<void> => Promise.resolve(),
           bootstrap: `$ErrorActionPreference='Stop';# synthetic fixed graph, never executed\n& {} -WorkerStartupFootprintForwardExecution209 -CombinedReadyChallenge '${String(challenge)}'` }));

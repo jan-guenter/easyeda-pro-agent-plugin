@@ -20,6 +20,8 @@ export async function ordinaryTrackedCleanupFixture(context: TestContext, id: st
   calls: string[]; behavior: { terminated: boolean; sessionClosed: boolean; leaseReleased: boolean; launchCurrent: boolean };
   work: Promise<unknown>; nativeEntered: Promise<boolean>; settle: () => void;
 }> {
+  const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
+  assert.ok(root !== undefined && root.includes("easyeda-test-control-"));
   const behavior = { terminated: false, sessionClosed: false, leaseReleased: false, launchCurrent: true }, calls: string[] = [];
   const session: AuthenticatedBridgeSessionIdentity = { gatewayInstanceId: "G".repeat(43), sessionId: "S".repeat(43), sequence: 1,
     authenticatedAtEpochMs: 100, authenticationReceiptSha256: "a".repeat(64) };
@@ -82,7 +84,13 @@ export async function ordinaryTrackedCleanupFixture(context: TestContext, id: st
   const journal: TrackedDispatchOperationJournal = { schema: OPERATION_SCHEMA, operationId: id, journalPath: operationPath(id), plan,
     planHash: buildPlanHash(plan), state: "prepared", mutationState: "navigation-intent", saved: false, reopened: false, hardStop: true,
     mutationMayHaveOccurred: true, orphanedCallPossible: false, nextSafeAction: "Synthetic retained call only", sequence: 0, artifacts: [], updatedAt: new Date().toISOString() };
-  await createOperation(journal);
+  let created = false;
+  context.after(async () => {
+    if (!created) { return; }
+    const journalPath = operationPath(id), operationDirectory = dirname(journalPath);
+    await rm(journalPath, { force: true }); await rm(join(operationDirectory, id), { recursive: true, force: true });
+  });
+  await createOperation(journal); created = true;
   const assertCurrent = (): void => { assert.equal(behavior.launchCurrent, true, "Original ordinary allocation changed"); };
   const cleanup = new OrdinaryTrackedOpenCleanup(engine, runtime, assertCurrent, options.cleanupDependencies); cleanup.retain(journal);
   const work = engine.dispatchWithOrphanTracking(journal, options.phase ?? "schematic-page-open209", "easyeda_execute", { code: "synthetic fixed program", confirmWrite: true }, 1000);
@@ -94,12 +102,6 @@ export async function ordinaryTrackedCleanupFixture(context: TestContext, id: st
       // The original work Promise remains available to the test assertion.
     }
   })();
-  const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
-  assert.ok(root !== undefined && root.includes("easyeda-test-control-"));
-  context.after(async () => {
-    const journalPath = operationPath(id), operationDirectory = dirname(journalPath);
-    await rm(journalPath, { force: true }); await rm(join(operationDirectory, id), { recursive: true, force: true });
-  });
   assert.equal(canonicalJson(journal.plan), canonicalJson(plan));
   return { engine, runtime, journal, cleanup, calls, behavior, work, nativeEntered, settle };
 }
