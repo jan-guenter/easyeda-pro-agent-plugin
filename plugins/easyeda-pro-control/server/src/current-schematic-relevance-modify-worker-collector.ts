@@ -22,7 +22,11 @@ export interface CurrentSchematicRelevanceModifyWorkerPrepared {
   readonly nativeDeliveryVerified: false; readonly trustedEventQualified: false; readonly senderAuthorized: false; readonly modifyCompleted: false; readonly modifyAuthorized: false; readonly saveAuthorized: false;
 }
 interface ReadTuple { readonly id: string; readonly fields: ReturnType<typeof tuple> }
+/** Refuse lost context, missing correlated handles or exhausted preparation
+ * bounds without promoting a partial worker graph into a receiver proof. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCH_MODIFY_WORKER_COLLECTOR"); } }
+/** Select the immutable helper's exact arity and result mode. Callers may
+ * supply original object references, never a replacement worker program. */
 function callCommand(role: string, objectId: string, args: readonly string[]): Command { const row = CALLS.find(value => value[0] === role); need(row !== undefined && row[2] === args.length); return validate({ phase: "modify-worker-call", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId, functionDeclaration: row[1], arguments: args.map(id => ({ objectId: id })), returnByValue: row[3], awaitPromise: false, userGesture: false } }); }
 function commands(host: CurrentSchematicRelevanceModifyWorkerHost): { readonly send: (command: Command) => Promise<unknown>; readonly props: (id: string) => Promise<unknown>; readonly call: (role: string, id: string, args: readonly string[]) => Promise<unknown>; readonly read: (command: Command, size?: number) => Promise<ReadTuple>; readonly readCall: (role: string, id: string, args: readonly string[], size?: number) => Promise<ReadTuple>; readonly count: () => number } {
   let count = 0; const originalContext = host.uniqueContextId;
@@ -33,12 +37,18 @@ function commands(host: CurrentSchematicRelevanceModifyWorkerHost): { readonly s
   const readCall = (role: string, id: string, args: readonly string[], size?: number): Promise<ReadTuple> => read(callCommand(role, id, args), size);
   return { send, props, call, read, readCall, count: (): number => count };
 }
+/** Match the selected native callable's descriptive envelope before retaining
+ * its handle; the subsequent property decoder must still verify its metadata. */
 function nativeDescription(actual: Remote | undefined, name: string): string { need(actual?.type === "function" && actual.className === "Function" && actual.description === `function ${name}() { [native code] }` && actual.subtype === undefined); return handle(actual); }
+/** Correlate the Object/Array bootstrap constructors with their real native
+ * own fields, function prototype and empty scope list, without invoking them. */
 function bootstrapConstructor(input: unknown, actual: Remote, name: "Object" | "Array"): void {
   nativeDescription(actual, name); const packet = properties(input); need(packet.result.length >= 3 && packet.internalProperties?.length === 2);
   const length = field(input, "length"), named = field(input, "name"), prototype = field(input, "prototype"); need(named.type === "string" && named.value === name && length.type === "number" && length.value === 1 && prototype.type === "object" && prototype.objectId !== undefined);
   const parentValue = parent(input); need(parentValue.type === "function" && parentValue.description === "function () { [native code] }" && packet.internalProperties.some(value => value.name === "[[Scopes]]" && value.value.description === "Scopes[0]"));
 }
+/** Derive fresh reflection primitives from literals in the original worker
+ * context, qualify every native identity, then retain and reprove its I11 tuple. */
 async function bootstrap(host: CurrentSchematicRelevanceModifyWorkerHost, c: ReturnType<typeof commands>): Promise<string> {
   const literal = await c.read(validate({ phase: "modify-worker-literal", method: "Runtime.evaluate", params: { ...FLAGS, expression: `(${P.literal})()`, uniqueContextId: host.uniqueContextId, returnByValue: false, includeCommandLineAPI: false, awaitPromise: false, userGesture: false } }), 4);
   const root = handle(literal.fields[0]); const objectLiteral = await c.props(handle(literal.fields[1])); const arrayLiteral = await c.props(handle(literal.fields[2])); const functionLiteral = await c.props(handle(literal.fields[3])); properties(await c.props(root));

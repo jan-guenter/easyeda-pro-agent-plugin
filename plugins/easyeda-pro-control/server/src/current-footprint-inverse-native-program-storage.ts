@@ -24,18 +24,26 @@ const TOKENS = Object.freeze(PREFIXES.map((_value, index) => `__footprint_invers
 const originalPattern = (): RegExp => /EasyedaDiagnosticFixedTable\.Load\(@"([A-Za-z\d+/=]+)",([1-9]\d*),@"([a-f\d]{64})",@"([a-f\d]{64})",([1-9]\d*),([1-9]\d*)\)/gu;
 const storedPattern = (): RegExp => /EasyedaFootprintInverseProgramData\.Load\(@"([A-Za-z\d+/=]+)",([1-9]\d*),@"([a-f\d]{64})",@"([a-f\d]{64})",([1-9]\d*),([1-9]\d*),([1-9]\d*),@"([a-f\d]{64})"\)/gu;
 interface Table { readonly encoded: string; readonly length: number; readonly hash: string; readonly packedHash: string; readonly rows: number; readonly columns: number }
+/** Stop a noncanonical, out-of-bound or inconsistent storage rewrite. The
+ * closed failure permits neither an alternate dictionary nor a cap fallback. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("FOOTPRINT_INVERSE_PROGRAM_STORAGE"); } }
+/** Compress bounded UTF-8 data deterministically and retain both byte hashes
+ * plus dimensions for the independent expanded-program integrity check. */
 function encode(text: string, rows: number, columns: number): Table {
   const bytes = Buffer.from(text); need(bytes.length > 0 && bytes.length <= 65_536 && rows > 0 && rows <= 256 && columns > 0 && columns <= 8);
   // oxlint-disable-next-line node/no-sync -- Deterministic bounded in-memory storage of immutable build data.
   const packed = gzipSync(bytes, { level: 9 });
   return { encoded: packed.toString("base64"), length: bytes.length, hash: hash(bytes), packedHash: hash(packed), rows, columns };
 }
+/** Project the six captured original Load arguments into a table descriptor;
+ * decode must validate its actual bounds, bytes, hashes and shape before use. */
 function table(match: readonly string[]): Table {
   const [encoded, length, digest, packedHash, rows, columns] = match.slice(1, 7);
   need(encoded !== undefined && length !== undefined && digest !== undefined && packedHash !== undefined && rows !== undefined && columns !== undefined);
   return { encoded, length: Number(length), hash: digest, packedHash, rows: Number(rows), columns: Number(columns) };
 }
+/** Verify canonical base64/gzip, both hashes, UTF-8 and row/column shape under
+ * the unchanged 64KiB ceiling before exposing an original table for rewriting. */
 function decode(value: Table): string {
   need(value.length > 0 && value.length <= 65_536 && value.rows > 0 && value.rows <= 256 && value.columns > 0 && value.columns <= 8);
   const packed = Buffer.from(value.encoded, "base64"); need(packed.toString("base64") === value.encoded && hash(packed) === value.packedHash);
@@ -46,6 +54,8 @@ function decode(value: Table): string {
   const canonical = encode(text, value.rows, value.columns); need(canonical.encoded === value.encoded); return text;
 }
 const argumentsText = (value: Table): string => `@"${value.encoded}",${String(value.length)},@"${value.hash}",@"${value.packedHash}",${String(value.rows)},${String(value.columns)}`;
+/** Expand only the pinned inverse-purpose tokens in catalogue order and
+ * reject leftover markers instead of accepting a partially restored program. */
 function expandText(input: string): string {
   let text = input; for (const [index, prefix] of PREFIXES.entries()) { const token = TOKENS[index]; need(token !== undefined); text = text.replaceAll(token, prefix); }
   need(!text.includes("__footprint_inverse_fixed_")); return text;
