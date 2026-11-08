@@ -1,3 +1,4 @@
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 /* oxlint-disable import/max-dependencies -- Exercise the actual public callback with its real controller, strict schemas, gate and cross-family journal guard; refuse before any checkpoint or native allocation. */
 /** Mounted routing tests use actual index source and only synthetic facade
  * admission. They dispatch no native helper, application or cache request. */
@@ -59,6 +60,7 @@ async function fixture(blocked = true): Promise<Readonly<{ invoke: Invoke; schem
     } },
   });
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  installIndexFixtureDependencies(scope, source);
   const helper = source.indexOf("function disposableOwnData("), helperEnd = source.indexOf("function disposableIndexMethods(", helper);
   const owner = source.indexOf("  let headAgeOriginal:"), ownerEnd = source.indexOf("  const runMain =", owner);
   const callback = source.indexOf('  if (facadeToolRegistered(facadeMode, "easyeda_control_pcb209_worker_startup"))'),

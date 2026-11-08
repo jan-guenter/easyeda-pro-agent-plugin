@@ -9,6 +9,27 @@ const remote = z.object({ type: z.string(), subtype: z.string().optional(), clas
 const property = z.object({ name: z.string(), value: remote, writable: z.boolean(), enumerable: z.boolean(), configurable: z.boolean(), isOwn: z.literal(true) }).strict();
 const internal = z.object({ name: z.string(), value: remote }).strict();
 function need(value: boolean): asserts value { if (!value) { throw new Error("SELECTED_FILE_MAIN_SQL_FENCE_NATIVE_METADATA"); } }
+/** Inspect the original after-import Array(4) without calling its operands.
+ * This diagnostic check adds no binding or native-execution authority. The
+ * unchanged capture still proves the actual prototype and retained identities. */
+export function currentSelectedFileMainSqlFenceImportsError(input: unknown): string | null {
+  const parsed = z.object({ result: z.array(property).length(5), internalProperties: z.array(internal).length(1) }).strict().safeParse(captureCurrentPcbStringClockReply(input).value);
+  if (!parsed.success) { return "SELECTED_SQL_IMPORT_ARRAY_METADATA"; }
+  const reply = parsed.data;
+  const fields = new Map(reply.result.map(item => [item.name, item])), length = fields.get("length"), parent = reply.internalProperties[0];
+  if (!(fields.size === 5 && length?.value.type === "number" && length.value.value === 4 && length.value.objectId === undefined && length.writable && !length.enumerable && !length.configurable &&
+    parent?.name === "[[Prototype]]" && parent.value.type === "object" && parent.value.subtype === "array" && parent.value.className === "Array" && parent.value.objectId !== undefined)) {
+    return "SELECTED_SQL_IMPORT_ARRAY_METADATA";
+  }
+  for (const [index, code] of ["SELECTED_SQL_IMPORT_KEEPER", "SELECTED_SQL_IMPORT_CONTEXT", "SELECTED_SQL_IMPORT_SQLITE", "SELECTED_SQL_IMPORT_UTIL"].entries()) {
+    const callable = index < 2, field = fields.get(String(index));
+    if (!(field !== undefined && field.writable && field.enumerable && field.configurable && field.value.type === (callable ? "function" : "object") &&
+      field.value.className === (callable ? "Function" : "Object") && field.value.subtype === undefined && field.value.objectId !== undefined && field.value.value === undefined)) {
+      return code;
+    }
+  }
+  return null;
+}
 export function decodeCurrentSelectedFileMainSqlFenceNativeArray(input: unknown): readonly string[] {
   const reply = z.object({ result: z.array(property).length(6), internalProperties: z.array(internal).length(1) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
   const fields = new Map(reply.result.map(item => [item.name, item])), length = fields.get("length");

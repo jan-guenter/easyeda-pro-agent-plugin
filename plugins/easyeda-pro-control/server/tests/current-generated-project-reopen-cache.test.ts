@@ -1,7 +1,7 @@
+import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAsset} from "./helpers/installed-easyeda-source.ts";
 /** Inert VM fixtures exercise fixed programs. They do not qualify native
  * CacheStorage metadata, issue worker custody or exercise a browser cache. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import vm from "node:vm";
 import { CURRENT_GENERATED_PROJECT_REOPEN_CACHE_CALLS as CALLS, decodeCurrentGeneratedProjectReopenCacheAbsence } from "../src/current-generated-project-reopen-cache-programs.ts";
@@ -48,9 +48,7 @@ void test("candidate enumeration accessors and oversized replies refuse without 
   const large = fixture(); large.run("pending=Promise.resolve(Array(4097).fill('unrelated'))"); await assert.rejects(large.query(), /GENERATED_REOPEN_CACHE/u);
 });
 void test("actual pinned ordinary worker qualifies both cached and native loading branches", async t => {
-  let source: string;
-  try { source = await readFile("/mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.185.bf63a159/js/project-worker.js", "utf8"); }
-  catch (error) { if (error instanceof Error && "code" in error && error.code === "ENOENT") { t.skip("pinned installed source unavailable"); return; } throw error; }
+  const source=await readConfiguredEasyedaAsset("pro-mgr/3.2.185.bf63a159/js/project-worker.js");if(source===null){t.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
   qualifyCurrentGeneratedProjectReopenCacheSource(source);
   assert.throws(() => { qualifyCurrentGeneratedProjectReopenCacheSource(source.replace("function ud(e)", "function uD(e)")); }, /GENERATED_REOPEN_CACHE_SOURCE/u);
 });

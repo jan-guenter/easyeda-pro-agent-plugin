@@ -9,3 +9,15 @@ Publication prepares one bounded sidecar at the fixed operation path and uses ex
 Both global bridge/native admission and the direct Via startup scan qualify the sidecar against fresh full journal and plan hashes, the complete journal snapshot and every phase artifact. Changed artifacts or sidecar contents restore quarantine. Historically terminal no-allocation/refusal/completed journals already have their existing qualification and need no sidecar. Other operation families remain omitted explicitly.
 
 The focused tests use real isolated managed publication and admission with an explicit inert original-authorizer seam. They cover all four distinctions, immutable original journals, one-write lost-acknowledgment settlement, changed phase bytes, false success claims, and copied/changed original tokens. No app, native owner, design file, process signal, cleanup command or live writer was used. Actual closure issuance and outer publication remain owned by the maintained original workflow; source tests do not establish a successful writer lifecycle.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `ddd15a4367073294e68222f33570713d13937327`; its
+committed tree is `d4d4d6bcc7a91c91d049fc53e9ba0cac6e9763f0`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

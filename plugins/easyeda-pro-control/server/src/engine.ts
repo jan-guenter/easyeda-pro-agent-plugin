@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- This transaction coordinator imports the separately audited native profile and upload barrier; a dependency-count cap is not a safety boundary. */
+import type { CurrentPcbViaPreopeningHistoricalSnapshot } from "./current-pcb-via-preopening-relinquishment-journal.ts";
 import { asOperationJournal, operationSummary } from "./engine-operation-summary.ts";
 import { observeQualifiedAdmissionOperations, scanQualifiedAdmissionOperations } from "./closed-symbol-terminal-admission.ts";
 import type { AdmissionScanDiagnostics } from "./closed-symbol-terminal-admission.ts";
@@ -3083,6 +3084,20 @@ export class EasyedaControlEngine {
     const observed = await scanQualifiedAdmissionOperations();
     const operations = observed.filter(entry => entry.summary.operationId !== original.operationId);
     await assertCurrentFootprintForwardSourceHistoricalSnapshot(snapshot);
+    assertNoBridgeBlockingOperations(operations.filter(entry => entry.bridgeBlocking).map(entry => entry.summary));
+    return assertNoNativeUiEditingOperations(operations.map(entry => entry.summary));
+  }
+
+  /** Historical failed-main resolution exempts one reader-issued snapshot,
+   * never a caller-selected ID or an ordinary writer admission. */
+  public async assertViaPreopeningRelinquishmentOtherOperationsSettled(
+    snapshot: CurrentPcbViaPreopeningHistoricalSnapshot,
+  ): Promise<true> {
+    const { requireCurrentPcbViaPreopeningHistoricalSnapshot, assertCurrentPcbViaPreopeningHistoricalSnapshot } = await import("./current-pcb-via-preopening-relinquishment-journal.ts");
+    const original = requireCurrentPcbViaPreopeningHistoricalSnapshot(snapshot); await assertCurrentPcbViaPreopeningHistoricalSnapshot(snapshot);
+    const observed = await scanQualifiedAdmissionOperations();
+    const operations = observed.filter(entry => entry.summary.operationId !== original.operationId);
+    await assertCurrentPcbViaPreopeningHistoricalSnapshot(snapshot);
     assertNoBridgeBlockingOperations(operations.filter(entry => entry.bridgeBlocking).map(entry => entry.summary));
     return assertNoNativeUiEditingOperations(operations.map(entry => entry.summary));
   }

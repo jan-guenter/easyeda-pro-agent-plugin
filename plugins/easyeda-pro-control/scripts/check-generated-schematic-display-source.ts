@@ -12,10 +12,11 @@ import { qualifyGeneratedSchematicDisplayAccessorSource } from "../server/src/ge
 import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_CALLEES, GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE } from "../server/src/generated-schematic-display-accessor-source.ts";
 
 async function main(): Promise<void> {
-  const assetsRoot = process.argv[2] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets";
+  const assetsRoot = process.argv[2] ?? process.env["EASYEDA_ASSETS_ROOT"];
+  if (assetsRoot === undefined || assetsRoot === "") { throw new Error("EASYEDA_ASSETS_ROOT_REQUIRED"); }
   for (const profile of GENERATED_SCHEMATIC_DISPLAY_TEXT_SOURCE.files) {
-    const bytes = await readFile(join(assetsRoot, profile.relativePath)); assert.equal(bytes.length, profile.bytes);
-    assert.equal(createHash("sha256").update(bytes).digest("hex"), profile.sha256); const source = bytes.toString("utf8");
+    const bytes: Buffer = await readFile(join(assetsRoot, profile.relativePath)); assert.equal(bytes.length, profile.bytes);
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), profile.sha256); const source: string = bytes.toString("utf8");
     const text = source.slice(profile.text.start, profile.text.end); const common = source.slice(profile.common.start, profile.common.end);
     assert.equal(createHash("sha256").update(text).digest("hex"), GENERATED_SCHEMATIC_DISPLAY_TEXT_SOURCE.textSha256);
     assert.equal(createHash("sha256").update(common).digest("hex"), GENERATED_SCHEMATIC_DISPLAY_TEXT_SOURCE.commonSha256);
@@ -31,7 +32,7 @@ JSON.parse(JSON.stringify(methods.getConsistencyData.call(receiver)));`, {}, { t
     assert.equal(canonicalJson(projected), canonicalJson(projectGeneratedSchematicInitialNativeTextBody(fixture)));
   }
   for (const [index, profile] of GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE.entries()) {
-    const source = await readFile(join(assetsRoot, profile.relativePath), "utf8");
+    const source: string = await readFile(join(assetsRoot, profile.relativePath), "utf8");
     assert.equal(qualifyGeneratedSchematicDisplayAccessorSource({ scriptSource: source }), index);
     for (const role of [...GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_CALLEES, "decoratedSetter", "decoratorSetter", "decoratorAccessor", "monitorAst"] as const) {
       const method = profile.methods[role];

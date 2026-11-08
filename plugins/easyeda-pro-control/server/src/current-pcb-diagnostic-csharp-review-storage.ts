@@ -1,5 +1,6 @@
 /** V2 alone separates original review bytes from compact runtime compiler
  * bytes. Historical v1 parsing/decoding and its original bounds stay intact. */
+import { currentPcbDiagnosticCSharpRuntimeCompilerInputV3, expandCurrentPcbDiagnosticCSharpReviewSourceV3, hasCurrentPcbDiagnosticCSharpReviewStorageV3, packCurrentPcbDiagnosticCSharpReviewStorageV3 as packV3 } from "./current-pcb-diagnostic-csharp-review-storage-v3.ts";
 import { createHash } from "node:crypto";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES as MAXIMUM } from "./current-pcb-diagnostic-helper-source-profile.ts";
@@ -63,6 +64,7 @@ function read(source: string): Readonly<{ start: number; stop: number; original:
 }
 /** Original bytes/markers only. This is NOT the actual runtime compiler input. */
 export function expandCurrentPcbDiagnosticCSharpReviewSource(source: string): string {
+  if (hasCurrentPcbDiagnosticCSharpReviewStorageV3(source)) { return expandCurrentPcbDiagnosticCSharpReviewSourceV3(source); }
   if (!source.includes(BEGIN.slice(0, -1)) && !source.includes(END.slice(0, -1))) { return expandCurrentPcbDiagnosticCSharpStorage(source); }
   const value = read(source); return source.slice(0, value.start) + LITERAL_BEGIN + value.original + LITERAL_END + source.slice(value.stop);
 }
@@ -72,6 +74,7 @@ export function currentPcbDiagnosticCSharpReviewSource(input: string): string {
 }
 /** Only these bytes may be written to Native.cs or passed to a compiler. */
 export function currentPcbDiagnosticCSharpRuntimeCompilerInput(input: string): string {
+  if (hasCurrentPcbDiagnosticCSharpReviewStorageV3(input)) { return currentPcbDiagnosticCSharpRuntimeCompilerInputV3(input); }
   return input.includes(BEGIN.slice(0, -1)) || input.includes(END.slice(0, -1)) ? read(input).compact : currentPcbDiagnosticCSharpCompilerInput(input);
 }
 export function packCurrentPcbDiagnosticCSharpReviewStorage(input: string): string {
@@ -84,5 +87,11 @@ export function packCurrentPcbDiagnosticCSharpReviewStorage(input: string): stri
 /** V1 marker operations retain their old format/limits. Only explicit final
  * combined composition introduces the separately versioned review format. */
 export function retainCurrentPcbDiagnosticCSharpReviewStorage(source: string, original: string): string {
+  if (hasCurrentPcbDiagnosticCSharpReviewStorageV3(original)) { return packV3(expandCurrentPcbDiagnosticCSharpReviewSource(source)); }
   return original.includes(BEGIN) ? packCurrentPcbDiagnosticCSharpReviewStorage(source) : retainCurrentPcbDiagnosticCSharpStorage(source, original);
+}
+
+/** Explicit opt-in for the inverse composition only. Historical pack remains V2. */
+export function packCurrentPcbDiagnosticCSharpTokenFusionStorage(input: string): string {
+  return packV3(expandCurrentPcbDiagnosticCSharpReviewSource(input));
 }

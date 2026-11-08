@@ -31,3 +31,15 @@ no EasyEDA application and establish no connected cold-load acceptance.
 Both TypeScript projects and strict type-aware lint pass. No shared schema,
 lint configuration, native helper, compatibility pin or installed package was
 changed by this source checkpoint.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `38629acadeba5c81a0e04d512808423415a237b4`; its
+committed tree is `515edd6f7e06d8f0274a10a1ddaea08338d5e5d8`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

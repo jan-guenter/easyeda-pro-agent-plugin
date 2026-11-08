@@ -1,6 +1,6 @@
 /* oxlint-disable max-classes-per-file, import/max-dependencies -- Fixed facades retain one private cleanup core and distinct generation admission. */
-import {currentPcbComponentClonedSpatialObservation,requireCurrentPcbComponentClonedSpatialObservation} from "./current-pcb-component-cloned-spatial-validation.ts";
-import { currentPcbComponentSpatialObservation, currentPcbComponentSpatialRequestSchema, requireCurrentPcbComponentSpatialObservation } from "./current-pcb-component-spatial-validation.ts";
+import {currentPcbComponentClonedSpatialObservation,currentPcbComponentClonedSpatialObservationSchema,currentPcbComponentClonedSpatialObservationV1Schema,requireCurrentPcbComponentClonedSpatialObservation} from "./current-pcb-component-cloned-spatial-validation.ts";
+import { currentPcbComponentSpatialObservation, currentPcbComponentSpatialObservationSchema, currentPcbComponentSpatialRequestSchema, requireCurrentPcbComponentSpatialObservation } from "./current-pcb-component-spatial-validation.ts";
 import type { CurrentPcbComponentSpatialRequest } from "./current-pcb-component-spatial-validation.ts";
 import { consumeManagedComponentFixtureOpeningSource } from "./managed-component-fixture-opening-source.ts";
 import type { ManagedComponentFixtureOpeningSource } from "./managed-component-fixture-opening-source.ts";
@@ -9,8 +9,8 @@ import type { GeneratedComponentFixtureOpenCheckpoint } from "./managed-componen
 import { currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyForwardNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentGeneratedFixture209DiagnosticOwner, startCurrentGeneratedFixtureSpatial209Owner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209VisualOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbComponentSpatialOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbSpatialOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 /** Original-owner validation lifecycle with one checkpoint-bound disposable
  * opening. No generic debugger command, CAD writer or historical owner recreation. */
-import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, currentPcbSpatialArcObservation, currentPcbSpatialObservation, currentPcbSpatialObservationSchema, currentPcbSpatialPadObservation, currentPcbSpatialRequestSchema,
-  currentPcbSpatialTrackObservation, requireCurrentPcbSpatialArcObservation, requireCurrentPcbSpatialObservation, requireCurrentPcbSpatialPadObservation, requireCurrentPcbSpatialTrackObservation } from "./current-pcb-spatial-validation.ts";
+import { CURRENT_PCB_SPATIAL_OPERATION_PREFIX, currentPcbSpatialArcObservation, currentPcbSpatialArcObservationSchema, currentPcbSpatialObservation, currentPcbSpatialObservationSchema, currentPcbSpatialPadObservation, currentPcbSpatialPadObservationSchema, currentPcbSpatialRequestSchema,
+  currentPcbSpatialTrackObservation, currentPcbSpatialTrackObservationSchema, requireCurrentPcbSpatialArcObservation, requireCurrentPcbSpatialObservation, requireCurrentPcbSpatialPadObservation, requireCurrentPcbSpatialTrackObservation } from "./current-pcb-spatial-validation.ts";
 import { CURRENT_WINDOW_RESTORE_LIMITS, currentWindowRestoreResult, requireCurrentWindowRestoreResult } from "./current-pcb-diagnostic-window-restore.ts";
 import { CURRENT_WINDOW_RESIZE_LIMITS, currentWindowResizeResult, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { currentRendererCaptureResult, decodeCurrentRendererCapture, publishCurrentRendererCapture, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
@@ -20,7 +20,7 @@ import type { CurrentPcbSpatialRequest } from "./current-pcb-spatial-validation.
 import type { CurrentPcb209VisualRequest } from "./current-pcb-209-visual-validation.ts";
 import { CURRENT_PCB_209_VISUAL_RESULT_BYTES, requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";
 import { publicCurrentFootprintRouteSummary } from "./current-footprint-route-summary.ts";
-import type { z } from "zod";
+import { z } from "zod";
 import { join } from "node:path";
 import { controlDataDirectory } from "./artifacts.ts";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
@@ -386,7 +386,9 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
 function publicObservationResult(operationId: string, stage: ObservationStage,
   result: Readonly<Record<string, unknown>> | undefined, published: boolean): Readonly<Record<string, unknown>> | undefined {
   if (stage === "spatial209" && result !== undefined && Buffer.byteLength(canonicalJson(result)) > DIAGNOSTIC_OBSERVATION_MAX_BYTES) {
-    const value = currentPcbSpatialObservationSchema.parse(result);
+    const value = z.union([currentPcbSpatialObservationSchema, currentPcbSpatialTrackObservationSchema,
+      currentPcbSpatialArcObservationSchema, currentPcbSpatialPadObservationSchema, currentPcbComponentSpatialObservationSchema,
+      currentPcbComponentClonedSpatialObservationV1Schema, currentPcbComponentClonedSpatialObservationSchema]).parse(result);
     return { schema: "easyeda-pro-control.pcb209-spatial-summary.v1", observationSchema: value.schema, summaryOnly: true,
       queries: value.results.map(row => ({ documentUuid: row.documentUuid, query: row.query, identityCount: row.identities.length })),
       record: { path: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "spatial209-result.json"),

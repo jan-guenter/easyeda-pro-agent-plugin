@@ -24,8 +24,8 @@ async function fixture(context: TestContext, mode: "normal" | "live-termination"
   let next: (() => Promise<void>) | null = null;
   const source = await combinedReadyFactoryFixture("ready", "forward-execution", false, {
     launchTarget: { windowsPath: launch.executable, sha256: launch.executableSha256 },
-    modules: { "./current-footprint-forward-native-graph.ts": {
-      captureCurrentFootprintForwardNativeGraph: (_distribution: unknown, challenge: unknown): Promise<object> => Promise.resolve(Object.freeze({
+    modules: { "./current-footprint-forward-cold-native-graph.ts": {
+      captureCurrentFootprintForwardColdNativeGraph: (_distribution: unknown, challenge: unknown): Promise<object> => Promise.resolve(Object.freeze({
         verify: (): Promise<void> => { const run = next; next = null; return run?.() ?? Promise.resolve(); },
         bootstrap: `$ErrorActionPreference='Stop';# synthetic graph\n& {} -WorkerStartupFootprintForwardExecution209 -CombinedReadyChallenge '${String(challenge)}'`,
       })),

@@ -132,13 +132,18 @@ void test("a diagnostic main cursor cannot enroll or activate a copied saved-pro
   const packet = await runner.observe(); const count = value.commands.length;
   await assert.rejects(runner.assertOriginalSavedProjectRegistrationPending());
   await assert.rejects(runner.assertOriginalSchematicRelevanceSavedRegistrationPending());
+  await assert.rejects(runner.assertOriginalSchematicRelevanceDisplayRegistrationPending());
   await assert.rejects(runner.enrollSavedProjectRegistrationIntent({ profile: "private.current-saved-project-registration-intent.v1" }));
   await assert.rejects(runner.enrollFootprintInverseRegistrationIntent({ profile: "private.current-footprint-inverse-registration-intent.v1" }));
   await assert.rejects(runner.enrollSchematicRelevanceSavedRegistrationIntent({ profile: "private.current-schematic-relevance-saved-registration-intent.v1" }));
+  await assert.rejects(runner.enrollSchematicRelevanceDisplayRegistrationIntent({ profile: "private.current-schematic-relevance-display-registration-intent.v1" }));
   assert.throws(() => runner.originalFootprintInverseRegistrationCommandIntent());
   assert.throws(() => { runner.requireOriginalFootprintInverseRegistrationSkipped({ profile: "private.current-footprint-inverse-registration-intent.v1" }); });
   assert.throws(() => runner.originalSchematicRelevanceSavedRegistrationCommandIntent());
   assert.throws(() => { runner.requireOriginalSchematicRelevanceSavedRegistrationAwaited({ profile: "private.current-schematic-relevance-saved-registration-intent.v1" }); });
   assert.throws(() => { runner.requireOriginalSchematicRelevanceSavedRegistrationSkipped({ profile: "private.current-schematic-relevance-saved-registration-intent.v1" }); });
+  assert.throws(() => runner.originalSchematicRelevanceDisplayRegistrationCommandIntent());
+  assert.throws(() => { runner.requireOriginalSchematicRelevanceDisplayRegistrationAwaited({ profile: "private.current-schematic-relevance-display-registration-intent.v1" }); });
+  assert.throws(() => { runner.requireOriginalSchematicRelevanceDisplayRegistrationSkipped({ profile: "private.current-schematic-relevance-display-registration-intent.v1" }); });
   assert.equal(value.commands.length, count); await runner.reprove(packet); await runner.release();
 });

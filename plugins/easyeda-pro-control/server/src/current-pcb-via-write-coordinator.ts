@@ -3,6 +3,10 @@
  * serialized checkpoint. Public registration remains a separate index task. */
 /* oxlint-disable import/max-dependencies -- One fixed original coordinator owns preparation, retained execution, historical journal qualification and the separate immutable sidecar without injecting caller authority. */
 import { canonicalJson } from "./core.ts";
+import { createOriginalSourceError } from "./original-source-error.ts";
+import { currentPcbViaWriteDiagnostic, currentPcbViaWriteErrorCode } from "./current-pcb-via-write-diagnostic.ts";
+import type { CurrentPcbViaWriteDiagnostic } from "./current-pcb-via-write-diagnostic.ts";
+import type {CurrentPcbViaWriteMainFailure} from "./current-pcb-via-write-main-failure.ts";
 import { loadOperation } from "./artifacts.ts";
 import { CurrentPcbViaWriteAbandonmentPublication } from "./current-pcb-via-write-abandonment.ts";
 import type { CurrentPcbViaWriteAbandonmentInspection } from "./current-pcb-via-write-abandonment.ts";
@@ -19,7 +23,9 @@ import type { CurrentPcbViaWriteAction, CurrentPcbViaWriteResult } from "./curre
 import { CurrentPcbViaWriteWorkflow, requireOriginalCurrentPcbViaWriteFailureClosure } from "./current-pcb-via-write-workflow.ts";
 import type { CurrentPcbViaWriteWorkflowResult } from "./current-pcb-via-write-workflow.ts";
 
-function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_COORDINATOR_${code}`); } }
+/* oxlint-disable-next-line typescript/unbound-method -- Retain the original private-field workflow getter; a substituted instance/prototype method never supplies diagnostics. */
+const originalMainFailure=CurrentPcbViaWriteWorkflow.prototype.mainFailure;
+function need(value: boolean, code: string): asserts value { if (!value) { throw createOriginalSourceError("PCB_VIA_COORDINATOR", code); } }
 type Preparation = Extract<CurrentPcbViaWriteAction, { action: "prepare" }>;
 export class CurrentPcbViaWriteCoordinator {
   readonly #request: Preparation; readonly #requestText: string;
@@ -35,6 +41,7 @@ export class CurrentPcbViaWriteCoordinator {
   #failurePublicationPending = false; #failureWithoutJournal = false;
   #abandonment: CurrentPcbViaWriteAbandonmentPublication | null = null; #abandonmentResult: CurrentPcbViaWriteAbandonmentInspection | null = null;
   #shutdown: Promise<void> | null = null;
+  #prebirthDiagnostic: CurrentPcbViaWriteDiagnostic | null = null;
   public constructor(options: CurrentPcbDiagnosticInstallationOptions, source: ManagedFixtureOpeningSource, input: unknown) {
     captureCurrentPcbStringClockReply(options); need(Object.isFrozen(options), "FROZEN_OPTIONS");
     const request = currentPcbViaWriteActionSchema.parse(input); need(request.action === "prepare", "PREPARE_REQUIRED");
@@ -50,7 +57,7 @@ export class CurrentPcbViaWriteCoordinator {
       this.#workflow = new CurrentPcbViaWriteWorkflow(options, plan); return this.#workflow.operationResult("prepare");
     })(); this.#preparation = preparation;
     void (async (): Promise<void> => {
-      try { await preparation; } catch { this.#preparationFailed = true; } finally { this.#preparationSettled = true; }
+      try { await preparation; } catch (error) { this.#preparationFailed = true; this.#prebirthDiagnostic ??= currentPcbViaWriteDiagnostic("preparation", currentPcbViaWriteErrorCode(error)); } finally { this.#preparationSettled = true; }
     })(); Object.freeze(this);
   }
   public inspect(action: CurrentPcbViaWriteResult["action"] = "inspect"): CurrentPcbViaWriteResult {
@@ -78,8 +85,11 @@ export class CurrentPcbViaWriteCoordinator {
     if (request.action === "execute") { need(!this.#executeRequested && !this.#abortedBeforeExecution, "EXECUTE_CONSUMED"); this.#executeRequested = true; }
     await this.#preparation; const workflow = this.#workflow; need(workflow !== null, "ORIGINAL_WORKFLOW");
     if (request.action === "execute") {
+      // A preparation continuation can create the workflow just before an
+      // Original abort wins this await. No execution or failure source exists.
+      if (this.#abortedBeforeExecution) { this.#executionSettled = true; }
+      need(!this.#abortedBeforeExecution, "EXECUTION_ABORTED_BEFORE_BIRTH");
       try {
-        need(!this.#abortedBeforeExecution, "EXECUTION_ABORTED_BEFORE_BIRTH");
         need(this.#execution === null, "ORIGINAL_EXECUTION"); const original = workflow.execute(); this.#execution = original;
         this.#executionObservation = (async (): Promise<void> => {
           try { const result = await original; workflow.requireOriginalResult(result); }
@@ -92,7 +102,7 @@ export class CurrentPcbViaWriteCoordinator {
             }
           }
         })();
-      } catch (caughtError) { this.#executionFailed = true; this.#executionSettled = true; throw caughtError; }
+      } catch (caughtError) { this.#executionFailed = true; this.#executionSettled = true; this.#prebirthDiagnostic ??= currentPcbViaWriteDiagnostic("execution-start", currentPcbViaWriteErrorCode(caughtError)); throw caughtError; }
     } else if (request.action === "settle-publication") {
       // The original publisher rechecks this same journal around its awaits.
       // Join that attempt before the journal can enter settlement itself.
@@ -154,6 +164,12 @@ export class CurrentPcbViaWriteCoordinator {
     return this.#workflow?.operationResult("inspect").state === "needs-cleanup";
   }
   public failureObserved(): boolean { return this.#preparationFailed || this.#executionFailed; }
+  public mainFailure():CurrentPcbViaWriteMainFailure|null{
+    const workflow=this.#workflow;if(workflow===null){return null;}
+    need(Object.getPrototypeOf(workflow)===CurrentPcbViaWriteWorkflow.prototype&&Object.isFrozen(workflow)&&Reflect.ownKeys(workflow).length===0&&Object.getOwnPropertyDescriptor(CurrentPcbViaWriteWorkflow.prototype,"mainFailure")?.value===originalMainFailure,"MAIN_FAILURE_ORIGINAL_WORKFLOW");
+    return originalMainFailure.call(workflow);
+  }
+  public diagnostic(): CurrentPcbViaWriteDiagnostic { return this.#prebirthDiagnostic ?? this.#workflow?.diagnostic() ?? currentPcbViaWriteDiagnostic("preparation", null); }
   /** Host shutdown joins this same operation's cleanup. It neither sends a
    * host/helper signal nor recreates an owner from the public status object. */
   public shutdownOriginal(): Promise<void> {

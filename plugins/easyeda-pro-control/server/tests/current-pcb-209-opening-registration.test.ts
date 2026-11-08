@@ -4,6 +4,7 @@
 /* oxlint-disable import/max-dependencies -- Keep actual mode selection, strict schemas and every retained lifecycle together at the real registration/callback boundary. */
 // oxlint-disable-next-line eslint/max-classes-per-file -- Keep both actual lifecycle allocations in the same isolated registration scope.
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -96,6 +97,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
       assert.equal(configuration.annotations.idempotentHint, false); assert.equal(configuration.annotations.openWorldHint, true);
     } },
   });
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   const openingRegistration = registrations.get("easyeda_control_pcb209_opening");
   const startupRegistration = registrations.get("easyeda_control_pcb209_worker_startup");
@@ -272,6 +274,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
   // Exists. It cannot upgrade that choice to ordinary diagnostics afterward.
   registrations.clear();
   const visualScope = vm.createContext({ stagedComponentOpeningSource: undefined, ...scope, currentPcbDiagnosticLifecycle: undefined });
+  installIndexFixtureDependencies(visualScope,source);
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), visualScope);
   const visualRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(visualRegistration);
   const visualId = "pcb209-visual-registration";
@@ -296,6 +299,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
   // Changing to a disposable/visual purpose even before native allocation.
   registrations.clear();
   const ordinaryScope = vm.createContext({ stagedComponentOpeningSource: undefined, ...scope, currentPcbDiagnosticLifecycle: undefined });
+  installIndexFixtureDependencies(ordinaryScope,source);
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), ordinaryScope);
   const ordinaryRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(ordinaryRegistration);
   const ordinaryId = "pcb209-ordinary-registration";
@@ -361,6 +365,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
       await authenticated.upstream.callTool("easyeda_execute", {}); return { authenticatedScopeObserved: true };
     },
   });
+  installIndexFixtureDependencies(authenticatedScope,source);
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), authenticatedScope);
   const authenticatedRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(authenticatedRegistration);
   const scopedRead = await authenticatedRegistration.invoke(pageRead);

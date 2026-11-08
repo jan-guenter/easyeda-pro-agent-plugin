@@ -9,7 +9,9 @@ import { CURRENT_PCB_209_COMPONENT_POINT_FUNCTION_PROFILES as PROFILES, deriveCu
 import { CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE } from "../server/src/current-pcb-209-spatial-source-profile.ts";
 
 async function main(): Promise<void> {
-  const source = await readFile(join(process.argv[2] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets", CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE.relativePath), "utf8");
+  const assetsRoot = process.argv[2] ?? process.env["EASYEDA_ASSETS_ROOT"];
+  if (assetsRoot === undefined || assetsRoot === "") { throw new Error("EASYEDA_ASSETS_ROOT_REQUIRED"); }
+  const source = await readFile(join(assetsRoot, CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE.relativePath), "utf8");
   assert.equal(inspectCurrentPcb209ComponentPointSource(source).sourceProfileMatches, true);
   const text = (key:string):string => { const profile = PROFILES.find(row => row.key === key); assert.ok(profile !== undefined); return source.slice(profile.sourceStart,profile.sourceEnd); };
   const code = `let JJ=0,lM=0;${text("BLe")};

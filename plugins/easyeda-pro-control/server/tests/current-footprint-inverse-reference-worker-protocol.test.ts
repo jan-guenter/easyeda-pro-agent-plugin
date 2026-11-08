@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import {Script} from "node:vm";
+import {test} from "node:test";
+import {CURRENT_FOOTPRINT_INVERSE_REFERENCE_WORKER_PROGRAMS as PROGRAMS,currentFootprintInverseReferenceWorkerCases as cases,currentFootprintInverseReferenceWorkerFrame as frame,currentFootprintInverseReferenceWorkerTemplate as template,validateCurrentFootprintInverseReferenceWorkerCommand as validate,currentFootprintInverseReferenceWorkerWire as wire} from "../src/current-footprint-inverse-reference-worker-protocol.ts";
+import {requireOriginalCurrentFootprintInverseReferenceReadiness,requireOriginalCurrentFootprintInverseReferenceWorkerCompletion} from "../src/current-footprint-inverse-reference-worker.ts";
+
+void test("the reference codebook is fixed, parseable and exactly framed, with no old-family borrowing",()=>{
+ for(const program of Object.values(PROGRAMS)){assert.doesNotThrow(()=>{const compiled=new Script(`(${program})`);assert.ok(compiled instanceof Script);});}
+ const rows=cases();assert.ok(rows.length>100);const keys=new Set<string>();
+ for(const row of rows){assert.deepEqual(validate(row),row);const named=template(row);assert.ok(!keys.has(named.key));keys.add(named.key);const bytes=Buffer.from(`${JSON.stringify(wire(row,79,"original_worker"))}\0`);const fields=frame(bytes,row,"original_worker");assert.equal(fields["action"],"footprint-inverse-reference-worker");assert.throws(()=>frame(Buffer.concat([bytes,Buffer.from([0])]),row,"original_worker"));assert.throws(()=>validate({...row,phase:"inverse-get-completion-call"}));if(row.method==="Runtime.callFunctionOn"){assert.throws(()=>validate({...row,params:{...row.params,functionDeclaration:"function(){return true}"}}));}}
+});
+void test("reference model/kind arities refuse coercion and unissued JSON tokens cannot claim worker custody",()=>{
+ const rows=cases();const model=rows.find(row=>row.method==="Runtime.callFunctionOn"&&row.role==="input-model");assert.ok(model?.method==="Runtime.callFunctionOn");assert.throws(()=>validate({...model,params:{...model.params,arguments:[{value:"a".repeat(16)}]}}));const namespace=rows.find(row=>row.method==="Runtime.callFunctionOn"&&row.role==="input-namespace");assert.ok(namespace?.method==="Runtime.callFunctionOn");assert.throws(()=>validate({...namespace,params:{...namespace.params,arguments:[{value:"WHOHAS"}]}}));const collected=rows.find(row=>row.method==="Runtime.callFunctionOn"&&row.role==="input-collectModels");assert.ok(collected?.method==="Runtime.callFunctionOn");assert.throws(()=>validate({...collected,params:{...collected.params,arguments:Array.from({length:6},()=>({objectId:"original_ref"}))}}));
+ assert.throws(()=>Reflect.apply(requireOriginalCurrentFootprintInverseReferenceReadiness,undefined,[{profile:"private.current-footprint-inverse-reference-readiness.v1"},{},{}]),/FOOTPRINT_INVERSE_REFERENCE_READINESS_ORIGINAL/u);assert.throws(()=>Reflect.apply(requireOriginalCurrentFootprintInverseReferenceWorkerCompletion,undefined,[{profile:"private.current-footprint-inverse-reference-worker-completion.v1"},{},{}]),/FOOTPRINT_INVERSE_REFERENCE_WORKER_COMPLETION_ORIGINAL/u);
+});

@@ -35,8 +35,8 @@ export const CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITES = freezeDeep({
  * A qualified source string remains data; actual pause/receiver/connection and
  * original pending registration custody belong to the retained runner. */
 export function qualifyCurrentSavedProjectRegistrationConfigSource(input: unknown): void {
-  qualifyCurrentFootprintCopyMainBackendSource(input);
   if (typeof input !== "string") { throw new TypeError("SAVED_PROJECT_REGISTRATION_CONFIG_SOURCE"); }
+  qualifyCurrentFootprintCopyMainBackendSource(input);
   for (const row of CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SOURCE) {
     const prefix = input.slice(0, row.start), source = input.slice(row.start, row.end);
     if (Buffer.byteLength(source) !== row.bytes || sha256Text(source) !== row.sha256 || prefix.split("\n").length - 1 !== row.lineNumber ||

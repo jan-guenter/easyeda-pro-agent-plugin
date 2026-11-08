@@ -17,3 +17,15 @@ synthetic child pipe. The production callback now exercises premature marker
 retention and a fixed frame request without an original delivered pause; both
 refuse before another native request. Both TypeScript projects and strict
 targeted lint pass. No native allocation, Windows process, helper or pin changed.
+
+
+## Historical source attribution, 2026-11-08
+
+This record first entered canonical source history in commit `eaa77d876a2d85e0060c2714509bcc54a9783542`,
+whose complete committed tree is `fff1891df03f5e8f105918e63931bf857542f907`. Those identities establish
+which committed increment introduced this record. The full working tree used
+for the earlier reported checks, including any concurrent uncommitted work,
+was not retained as an independently sealed snapshot. The introducing commit
+is therefore not asserted to be the exact tested payload. The earlier results
+remain historical observations and cannot replace final exact-commit release
+validation. See the [review assessment](2026-11-08-pr184-history-attribution.md).

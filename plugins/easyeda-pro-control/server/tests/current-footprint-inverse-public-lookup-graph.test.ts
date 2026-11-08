@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- Source metadata, inert observer/graph execution and the configured installed-source gate are independent test obligations. */
+import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON} from "./helpers/installed-easyeda-source.ts";
 import assert from "node:assert/strict";
 import type { Runtime } from "node:inspector";
 import { Session } from "node:inspector/promises";
@@ -11,9 +13,9 @@ import { currentFootprintInverseLookupScopes } from "../src/current-footprint-in
 import { currentInverseLookupGraphRealm, currentInverseLookupGraphSources } from "./fixtures/current-footprint-inverse-public-lookup-graph.ts";
 
 function readOnlyCall(session: Session, params: Runtime.CallFunctionOnParameterType): Promise<Runtime.CallFunctionOnReturnType> { const checked = { ...params, throwOnSideEffect: true }; return session.post("Runtime.callFunctionOn", checked); }
-async function available(context: TestContext): Promise<boolean> { try { await currentInverseLookupGraphSources(); return true; } catch (error) { if (error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT") { context.skip("installed source unavailable"); return false; } throw error; } }
+async function available(context:TestContext):Promise<boolean>{if(await currentInverseLookupGraphSources()===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return false;}return true;}
 void test("all fifteen uninvoked lookup graph declarations preserve original source coordinates and actual Node metadata", async context => {
-  if (!await available(context)) { return; } assert.equal(process.versions.node, "24.18.0"); const full = await currentInverseLookupGraphSources(); for (const file of ["ui", "preload", "manager"] as const) { qualifyCurrentFootprintInversePublicLookupGraphSource(full[file], file); }
+  if (!await available(context)) { return; } assert.equal(process.versions.node, "24.18.0"); const full = await currentInverseLookupGraphSources(); assert.ok(full!==null);for (const file of ["ui", "preload", "manager"] as const) { qualifyCurrentFootprintInversePublicLookupGraphSource(full[file], file); }
   const session = new Session(); session.connect(); const key = "__inverseLookupGraphFunction";
   try {
     for (const role of ROLES) { const row = S[role]; const original = full[row.file]; const fragment = original.slice(row.start, row.end); let prefix = "", suffix = "";
@@ -35,7 +37,7 @@ void test("staged lookup reads original initialized registry and GET task withou
   const fresh = await currentInverseLookupGraphRealm(); runInContext('Object.defineProperty(scope.object.Lo,"bus",{get(){effects++;throw "hook"},configurable:true})', fresh); assert.throws(() => runInContext(`(${P.same}).call(selected)`, fresh)); assert.equal(runInContext("effects", fresh), 0);
 });
 void test("actual complete named registry class exposes only its private class and Po closure joins", async context => {
-  if (!await available(context)) { return; } const { ui } = await currentInverseLookupGraphSources(); const classStart = 6_122_497; const classEnd = 6_123_453; assert.ok(ui.slice(classStart, classEnd).startsWith("class kgt{"));
+  if (!await available(context)) { return; } const full=await currentInverseLookupGraphSources();assert.ok(full!==null);const{ui}=full; const classStart = 6_122_497; const classEnd = 6_123_453; assert.ok(ui.slice(classStart, classEnd).startsWith("class kgt{"));
   const blank = ui.replaceAll(/[^\r\n]/gu, " "); const prefix = "(()=>{"; let inert = prefix + blank.slice(prefix.length); const po = S.contextProducer; inert = inert.slice(0, po.start) + ui.slice(po.start, po.end) + inert.slice(po.end); const declaration = "const __registry="; inert = inert.slice(0, classStart - declaration.length) + declaration + ui.slice(classStart, classEnd) + inert.slice(classEnd); inert += ';globalThis.__registryGetter=Object.getOwnPropertyDescriptor(__registry,"context").get;globalThis.__registryClass=__registry;globalThis.__registryPo=Po;})()';
   const realm = createContext({}); runInContext(inert, realm); const getter: unknown = Reflect.get(realm, "__registryGetter"); const registry: unknown = Reflect.get(realm, "__registryClass"); const poFunction: unknown = Reflect.get(realm, "__registryPo"); const session = new Session(); session.connect(); const key = "__inverseNamedRegistry", rootsKey = "__inverseNamedRegistryRoots"; Object.defineProperty(globalThis, key, { value: getter, configurable: true }); Object.defineProperty(globalThis, rootsKey, { value: [null, registry, null, null, null, null, poFunction, null, (): boolean => true], configurable: true });
   try {

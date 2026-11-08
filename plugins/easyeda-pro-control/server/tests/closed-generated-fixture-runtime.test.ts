@@ -114,11 +114,13 @@ void test("new Pad/Relevance qualifications stage only after original fresh reso
     assert.throws(() => owner.stageViaSourceForFreshOpening(id), /VIA_PCB_DATA_REQUIRED/u);
     assert.equal(owner.inspect(id)["sourceStaged"], false); assert.equal(owner.inspect(id)["requalifiedDataAvailable"], true);
     if (kind === "pad") {
+      assert.throws(() => owner.stageSchematicRelevanceDisplaySourceForFreshOpening(id), /RELEVANCE_SCHEMATIC_DATA_REQUIRED/u);
+      assert.equal(owner.inspect(id)["sourceStaged"], false);
       assert.throws(() => owner.stageSchematicSourceForFreshOpening(id)); const source = owner.stageSourceForFreshOpening(id);
       const data = consumeManagedPcbReadOpeningSource(source); assert.equal(data.qualification.schema, "easyeda-pro-control.qualified-generated-pad-fixture-target.v1");
       assert.equal(data.qualification.registrationVerified, false); assert.throws(() => consumeManagedPcbReadOpeningSource(source));
     } else {
-      assert.throws(() => owner.stageSourceForFreshOpening(id)); const source = owner.stageSchematicSourceForFreshOpening(id);
+      assert.throws(() => owner.stageSourceForFreshOpening(id)); const source = owner.stageSchematicRelevanceDisplaySourceForFreshOpening(id);
       assert.equal(source.schema, "private.generated-schematic-relevance-fixture-opening-source.v1");
       if (source.schema !== "private.generated-schematic-relevance-fixture-opening-source.v1") { throw new Error("Distinct Relevance source required"); }
       const data = consumeManagedSchematicRelevanceFixtureSourceForFreshNativePreparation(source);

@@ -1,4 +1,4 @@
-import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
+import { currentPcbDiagnosticCSharpReviewSource, expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -48,8 +48,11 @@ void test("independent Windows launch smoke binds exact helper length, digest an
     assert.ok(start !== -1 && stop > start + begin.length);
     assert.equal(source.indexOf(begin, start + begin.length), -1); assert.equal(source.indexOf(end, stop + end.length), -1);
     const fragment = source.slice(start + begin.length, stop);
-    assert.ok(fragment.startsWith("using System;\n")); assert.ok(fragment.endsWith("\n}"));
-    assert.ok(fragment.includes("public sealed class EasyedaDiagnosticOwner"));
+    assert.ok(fragment.startsWith("using System;\n"));
+    // Generated partial classes end with marker comments. Compare the complete
+    // Original review body rather than assuming a final closing-brace position.
+    assert.equal(fragment, currentPcbDiagnosticCSharpReviewSource(source));
+    assert.ok(fragment.includes("public sealed partial class EasyedaDiagnosticOwner"));
     assert.ok(program.includes("$native = $source.Substring($start+$begin.Length,$stop-$start-$begin.Length)"));
   };
   verify(consumer);

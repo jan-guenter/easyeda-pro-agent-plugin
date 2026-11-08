@@ -67,6 +67,8 @@ export function validateCurrentSchematicDisplayClockCommand(input: unknown): Cur
 /**18 registration +5 pre-offset +8 bus/metadata joins +5 arms +18 paused
  * frame/caller/scope joins +5 post-offset; five original resumes, five removals
  * and two original realm group releases have separate cleanup capacity. */
+/** Initial sample, arm recheck and post-collection recheck. */
+export const CURRENT_SCHEMATIC_DISPLAY_CLOCK_OFFSET_SAMPLES = 3;
 export const CURRENT_SCHEMATIC_DISPLAY_CLOCK_REQUESTS = Object.freeze({ normal: 18 + 5 + 8 + 5 + 18 + 5, cleanup: 5 + 5 + 2, total: 71 });
 const marker = (name: string): string => `schematic_clock_${name}`;
 const objectArgument = (name: string): Readonly<{ objectId: string }> => ({ objectId: marker(name) });

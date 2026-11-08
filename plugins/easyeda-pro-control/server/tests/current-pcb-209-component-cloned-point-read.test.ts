@@ -51,3 +51,11 @@ void test("cloned Pad state diagnostics retain each bounded observation without 
   assert.equal(runInContext("metrics.hits", realm), 0);
  }
 });
+
+void test("component evidence rejects duplicate keys and accessor envelopes before getter effects", () => {
+  const text = read(fixture()); assert.equal(typeof text, "string"); assert.ok(typeof text === "string");
+  assert.throws(() => decode({ result: { type: "string", value: `{"schema":"contradiction",${text.slice(1)}` } }));
+  let getters = 0; const envelope = Object.defineProperty({}, "result", { enumerable: true, get: (): never => { getters += 1; throw new Error("foreign getter"); } });
+  assert.throws(() => decode(envelope)); assert.equal(getters, 0);
+  assert.equal(Object.isFrozen(decode({ result: { type: "string", value: text } })), true);
+});

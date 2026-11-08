@@ -59,7 +59,7 @@ async function loadFixture(lifecycle: Row, bindingsMode: boolean): Promise<Fixtu
   const offset = complete.indexOf("\nvoid test("); assert.ok(offset > 10_000 && offset < 40_000);
   let source = complete.slice(0, offset);
   const substitutions = [
-    ["diagnostic-test|pcb209-test|string-precreate-test|worker-startup-test", "diagnostic-test|pcb209-test|pcb209-startup-test|footprint-preparation-test|string-precreate-test|worker-startup-test"],
+    ["diagnostic-test|pcb209-test|pcb209-ordinary-test|string-precreate-test|worker-startup-test", "diagnostic-test|pcb209-test|pcb209-startup-test|footprint-preparation-test|string-precreate-test|worker-startup-test"],
     ['const startupPurpose = id.startsWith("worker-startup-");', 'const startupPurpose = id.startsWith("worker-startup-") || id.startsWith("pcb209-startup-") || id.startsWith("footprint-preparation-");'],
     ['profile: ownerPurpose, stringPrecreateConsumed:', 'profile: id.startsWith("footprint-preparation-") ? "worker-startup-footprint209" : startupPurpose ? "worker-startup209" : ownerPurpose, stringPrecreateConsumed:'],
     ['if (opening209) { coordinator =', 'if (opening209 && !startupPurpose) { coordinator ='],

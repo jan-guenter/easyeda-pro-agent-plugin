@@ -1339,11 +1339,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(result));
     if (request["action"] === "fixture-import") {
       assert.ok(isRecord(result["requestSchema"])); assert.equal(result["designExecutionAuthorized"], false);
-    } else if (["generated-schematic-opening", "project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) {
+    } else if (["generated-schematic-opening", "project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "schematic209-relevance-display-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["generated-schematic-opening", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["generated-schematic-opening", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "schematic209-relevance-display-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];

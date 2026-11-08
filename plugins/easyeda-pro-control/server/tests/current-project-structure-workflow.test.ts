@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { setImmediate as nextTurn } from "node:timers/promises";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
+import { mainStructureOriginalFixture } from "./helpers/project-structure-main-original-fixture.ts";
 import type { CurrentProjectStructureObservationWorkflow } from "../src/current-project-structure-observation-workflow.ts";
 
 /** Keep the real coordinator's private fields and result registry. Only this
@@ -85,4 +86,34 @@ void test("joined observation retains live custody through cleanup and becomes h
   assert.throws(() => f.requireJoined(result), /MAIN_LEASE_RELEASED/u);
   assert.equal(Object.isFrozen(result), true); assert.equal(result.structureText, "complete frozen tree");
   assert.throws(() => f.requireJoined({ ...result }), /ORIGINAL_RESULT/u);
+});
+
+void test("cancellation while receiving an original main lease revokes the real issuer before any arm dispatch", async context => {
+  const actual = await mainStructureOriginalFixture("valid"); context.after(actual.dispose);
+  const issued = Promise.withResolvers<object>(), requested = Promise.withResolvers<true>();
+  const owner = Object.freeze({ explicitSyntheticWorkflowOwner: true }), workerLease = Object.freeze({ explicitSyntheticWorkerLease: true });
+  const capability = Object.freeze({ explicitSyntheticWorkflowCapability: true }), construction = Object.freeze({ explicitSyntheticWorkflowConstruction: true });
+  const plan = Object.freeze({ projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), ticket: 101, structureText: "source-only comparison" });
+  const input = Object.freeze({ capability, construction, target: Object.freeze({ ...plan, rawWindowsPath: "C:\\Synthetic\\fixture.eprj2" }), main: Object.freeze({
+    issueStructureLease: (cap: unknown, built: unknown): Promise<object> => { assert.equal(cap, capability); assert.equal(built, construction); requested.resolve(true); return issued.promise; },
+  }) });
+  let workerCancelled = false;
+  function Worker(): Readonly<{ cancel: () => void }> { return Object.freeze({ cancel: (): void => { workerCancelled = true; } }); }
+  function Main(lease: unknown): typeof actual.observer { assert.equal(lease, actual.lease); return actual.observer; }
+  const path = new URL("../src/current-project-structure-observation-workflow.ts", import.meta.url), sourceRequire = createRequire(path);
+  const compiled = await transform(await readFile(path, "utf8"), { loader: "ts", format: "cjs", target: "node24" }); const loaded: { exports: Record<string, unknown> } = { exports: {} };
+  const run: unknown = runInThisContext(`(function(require,module,exports){${compiled.code}\n})`); assert.ok(typeof run === "function");
+  Reflect.apply(run, undefined, [(name: string): unknown => {
+    if (name === "./current-pcb-diagnostic-owner.ts") { return { requireOriginalProjectStructureObservationInput: (value: unknown, lease: unknown): object => { assert.equal(value, owner); assert.equal(lease, workerLease); return input; } }; }
+    if (name === "./current-project-structure-worker-observer.ts") { return { CurrentProjectStructureWorkerObserver: Worker }; }
+    if (name === "./current-project-structure-main-observer.ts") { return { CurrentProjectStructureMainObserver: Main }; }
+    return sourceRequire(name);
+  }, loaded, loaded.exports]);
+  const Constructor = loaded.exports["CurrentProjectStructureObservationWorkflow"]; assert.ok(typeof Constructor === "function");
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Maintained workflow with explicit outer boundaries and the actual main observer/lease issued by the original factory/runner fixture.
+  const workflow = Reflect.construct(Constructor, [owner, workerLease, plan]) as CurrentProjectStructureObservationWorkflow;
+  const arming = workflow.arm(); await requested.promise; workflow.cancel(); assert.equal(workerCancelled, true); issued.resolve(actual.lease);
+  await assert.rejects(arming, /PROJECT_STRUCTURE_WORKFLOW_CANCELLED/u);
+  await assert.rejects(actual.observer.arm(), /PROJECT_STRUCTURE_MAIN_CANCELLED/u);
+  assert.equal(actual.state.dispatched, false, "The original native main lease is revoked before any breakpoint send.");
 });

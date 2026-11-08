@@ -37,15 +37,15 @@ void test("restricted registration admits scoped metadata and disposable opening
   }
 });
 
-void test("exact209 selectors expose twenty-one scoped tools without inheriting unreviewed old routes", () => {
+void test("exact209 selectors expose twenty-two scoped tools without inheriting unreviewed old routes", () => {
   assert.equal(configuredFacadeMode({ EASYEDA_PCB_BUNDLE_VERSION: "3.2.195.6b67774e",
     EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.3.59.1ca9efb5" }), "public-utilities-only");
-  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 21);
+  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 22);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_catalog_footprint"), false);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_catalog_footprint"), false);
-  for (const tool of ["easyeda_control_netlist_files", "easyeda_control_catalog_components", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup", "easyeda_control_current_pcb_via_write"]) {
+  for (const tool of ["easyeda_control_netlist_files", "easyeda_control_catalog_components", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup", "easyeda_control_current_pcb_via_write", "easyeda_control_current_schematic_relevance_display_write"]) {
     assert.equal(facadeToolRegistered("legacy-reviewed", tool), false);
     assert.equal(facadeToolRegistered("calculation-only", tool), false);
   }
@@ -78,6 +78,7 @@ void test("exact209 selectors expose twenty-one scoped tools without inheriting 
     runtimeAdmissionRequired: true, sourceAdmissionRequired: true, originalClosedDataQualificationRequired: true,
     scope: "one-normal-unlocked-empty-net-via;original-generated-via-only-or-line-and-via-PCB", maximumCreateAttempts: 1, maximumSaveAttempts: 1,
     completeClosedSqlRequired: true, freshSavedReaderRequired: true, ordinaryProjectsSupported: false, inverseAvailable: false });
+  assert.ok(typeof capabilities["disposableSchematicDisplayWrite"] === "object");
   assert.deepEqual(capabilities["save"], { enabled: false }); assert.deepEqual(capabilities["recovery"], { enabled: false });
   assert.deepEqual(capabilities["nativeAdapters"], { enabled: true,
     scope: "identity-and-ordinary-or-disposable209-PCB-layer-primitive-selection-relations;ordinary-type1-page-open-and-Text-Wire-Bus-read;project-worker-constructor-footprint-copy-preparation-and-route-preparation-empty-baseline-held-ratline-import-and-ratline-continuation-observations-only" });
