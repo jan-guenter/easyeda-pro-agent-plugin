@@ -11,6 +11,7 @@ import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { sha256Json } from "../src/core.ts";
+import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clock-reply.ts";
 import {mainBackendModule,mainBackendTransportFixture} from "./helpers/footprint-main-backend-runner-fixture.ts";
 import { createOriginalSourceError } from "../src/original-source-error.ts";
 import { assertCurrentPcbViaWriteJournalChain } from "../src/current-pcb-via-write-journal.ts";
@@ -24,7 +25,7 @@ function ack(stage: "preflight" | "create" | "save"): Readonly<Record<string, un
     createAttempted: stage !== "preflight", createAcknowledged: stage !== "preflight", saveAttempted: stage === "save", saveAcknowledged: stage === "save",
     inverseAvailable: false, persistenceVerified: false });
 }
-async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWriteWorkflow; calls: string[]; saveAck: unknown; permitOriginalExit: () => void; rejectNextOriginalExit: (error: Error) => void; replaceMainStatus:()=>void }>> {
+async function fixture(mode: Mode, startupDiagnostic: unknown = null, predicateDiagnostic: unknown = null): Promise<Readonly<{ workflow: CurrentPcbViaWriteWorkflow; calls: string[]; saveAck: unknown; permitOriginalExit: () => void; rejectNextOriginalExit: (error: Error) => void; replaceMainStatus:()=>void; replaceStartupDiagnostic:()=>void; replacePredicateDiagnostic:()=>void; failureEvidence:()=>Readonly<Record<string,unknown>>|undefined }>> {
   const calls: string[] = [], operationId = `pcb209-via-write-workflow-${randomUUID()}`;
   const prepared = Object.freeze({ qualification: {}, history: {}, inertOriginalPreparation: true });
   const plan = Object.freeze({ operationId, target: { expectedSourceSha256: "a".repeat(64) }, initialLogicalSha256: "b".repeat(64) });
@@ -38,6 +39,8 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
   class InertOwner{
     public status():object{assert.equal(this,mainStatusOwner);return Object.freeze({failure:null,mainNativeFailure:mode==="main-attach-failed"?Object.freeze({action:"main-attach",code:"pcb-diagnostic-main-endpoint-deadline"}):null});}
     public retainedFootprintMainConstruction():unknown{assert.equal(this,mainStatusOwner);calls.push("main-failure-snapshot");return mainRunner?.retained()??null;}
+    public retainedFootprintMainStartupDiagnostic():unknown{assert.equal(this,mainStatusOwner);calls.push("main-startup-snapshot");return startupDiagnostic;}
+    public retainedFootprintMainPredicateDiagnostic():unknown{assert.equal(this,mainStatusOwner);calls.push("main-predicate-snapshot");return predicateDiagnostic;}
   }
   const noResource = Object.freeze({ inertOriginalNoResource: true });
   const owner = Object.freeze({
@@ -165,7 +168,7 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
   const replacements: Readonly<Record<string, unknown>> = {
     "node:timers/promises": { setTimeout: (): Promise<void> => Promise.resolve() },
     "./current-pcb-via-write-plan.ts": { requireOriginalCurrentPcbViaWritePlan: (actual: unknown): object => { assert.equal(actual, plan); return { prepared }; } },
-    "./current-pcb-string-clock-reply.ts": { captureCurrentPcbStringClockReply: (): void => { calls.push("captured-options"); } },
+    "./current-pcb-string-clock-reply.ts": { captureCurrentPcbStringClockReply: (value:unknown):ReturnType<typeof captureCurrentPcbStringClockReply> => { calls.push("captured-options");return captureCurrentPcbStringClockReply(value); } },
     "./current-pcb-via-write-owner.ts": native,
     "./current-pcb-via-write-journal.ts": { CurrentPcbViaWriteJournal: InertJournal, assertNoUnresolvedCurrentPcbViaWrites: (): Promise<void> => Promise.resolve() },
     "./current-pcb-via-write-observers.ts": { CurrentPcbViaWriteObservers: InertGroup },
@@ -184,7 +187,10 @@ async function fixture(mode: Mode): Promise<Readonly<{ workflow: CurrentPcbViaWr
   const workflow = Reflect.construct(Constructor, [options, plan]) as CurrentPcbViaWriteWorkflow;
   return { workflow, calls, saveAck, permitOriginalExit: (): void => { exitPermitted = true; },
     rejectNextOriginalExit: (error: Error): void => { nextExitError = error; },
-    replaceMainStatus:():void=>{Object.defineProperty(InertOwner.prototype,"retainedFootprintMainConstruction",{get:():never=>{calls.push("replacement-main-getter");throw new Error("must not execute");},configurable:true});} };
+    replaceMainStatus:():void=>{Object.defineProperty(InertOwner.prototype,"retainedFootprintMainConstruction",{get:():never=>{calls.push("replacement-main-getter");throw new Error("must not execute");},configurable:true});},
+    replaceStartupDiagnostic:():void=>{Object.defineProperty(InertOwner.prototype,"retainedFootprintMainStartupDiagnostic",{get:():never=>{calls.push("replacement-startup-getter");throw new Error("must not execute");},configurable:true});},
+    replacePredicateDiagnostic:():void=>{Object.defineProperty(InertOwner.prototype,"retainedFootprintMainPredicateDiagnostic",{get:():never=>{calls.push("replacement-predicate-getter");throw new Error("must not execute");},configurable:true});},
+    failureEvidence:()=>records.find(entry=>entry.kind==="failure")?.evidence };
 }
 
 void test("actual original plan custody refuses an equal-looking outer workflow before factory birth", () => {
@@ -325,6 +331,71 @@ void test("original native Main refusal remains visible when no runner was const
  assert.ok(f.calls.includes("original-abort")&&f.calls.includes("original-release"));assert.equal(f.calls.includes("project-open"),false);assert.equal(f.workflow.mainFailure(),snapshot);
 });
 
+/** Inert data from the separate original-getter seam, never a native issuer. */
+function startupDiagnosticPacket(): Record<string, unknown> {
+  return { profile: "private.selected-file-main-sql-startup-diagnostic.v1", site: "queryOne", refusal: "site-outside-startup-profile",
+    originalPhase: "sql-fence-resume", frameState: "captured", diagnosticRequests: 2,
+    summary: { slotKinds: ["object", "string", "array", "object", "object"], pathKind: "not-applicable", sqlKind: "select" },
+    sourceQualified: true, originalFailureRetained: true, predicateBranchVerified: false, resumeAuthorized: false, executionAuthorized: false, saveAuthorized: false };
+}
+
+void test("Main startup data persists once in the original private failure artifact without changing public v1 or cleanup", async () => {
+  const packet = startupDiagnosticPacket(); const f = await fixture("main-construction-failed", packet);
+  await assert.rejects(f.workflow.execute()); const snapshot = f.workflow.mainFailure(); assert.ok(snapshot !== null);
+  assert.equal(snapshot.capture, "original-status-retained"); assert.equal(snapshot.status?.failure, "REPLY_SCHEMA");
+  const evidence = f.failureEvidence(); assert.ok(evidence !== undefined);
+  assert.deepEqual(evidence["mainStartupDiagnostic"], packet); assert.notEqual(evidence["mainStartupDiagnostic"], packet);
+  assert.equal(evidence["stage"], "main"); assert.equal(evidence["originalExecutionStopped"], true); assert.equal(evidence["retryAuthorized"], false);
+  assert.ok(Object.isFrozen(evidence["mainStartupDiagnostic"])); assert.equal(Object.hasOwn(snapshot, "mainStartupDiagnostic"), false);
+  assert.ok(f.calls.indexOf("main-startup-snapshot") < f.calls.indexOf("original-abort"));
+  assert.ok(f.calls.includes("original-exit") && f.calls.includes("original-release")); assert.equal(f.calls.includes("project-open"), false);
+  assert.equal(f.calls.includes("sdk-save"), false); packet["site"] = "driver";
+  f.replaceStartupDiagnostic(); await f.workflow.settleCleanup();
+  assert.equal(f.calls.filter(value => value === "main-startup-snapshot").length, 1);
+  assert.equal(f.calls.includes("replacement-startup-getter"), false); assert.equal(f.workflow.mainFailure(), snapshot);
+  assert.equal(f.failureEvidence(), evidence);
+});
+
+void test("substituted or malformed optional startup data cannot leak values, replace Main failure or block original cleanup", async () => {
+  let hooks = 0; const poison = {};
+  Object.defineProperty(poison, "profile", { enumerable: true, get: (): never => { hooks += 1; throw new Error("private value"); } });
+  for (const packet of [{ ...startupDiagnosticPacket(), sql: "private SQL" }, poison, startupDiagnosticPacket()]) {
+    const f = await fixture("main-construction-failed", packet); if (packet !== poison && !Object.hasOwn(packet, "sql")) { f.replaceStartupDiagnostic(); }
+    await assert.rejects(f.workflow.execute()); assert.equal(f.workflow.mainFailure()?.capture, "original-status-retained");
+    assert.deepEqual(f.failureEvidence(), { stage: "main", originalExecutionStopped: true, retryAuthorized: false });
+    assert.equal(f.calls.includes("replacement-startup-getter"), false); assert.ok(f.calls.includes("original-abort") && f.calls.includes("original-release"));
+    assert.equal(f.calls.includes("sdk-save"), false); assert.equal(JSON.stringify(f.failureEvidence()).includes("private"), false);
+  }
+  assert.equal(hooks, 0);
+});
+
+/** Separate closed failure probe data, with no original native authority. */
+function predicateDiagnosticPacket(): Record<string, unknown> {
+  return { profile: "private.selected-file-main-sql-predicate-diagnostic.v1", site: "initializerBirth", probeState: "captured", stage: "path",
+    diagnosticRequests: 1, sourceQualified: true, originalFailureRetained: true, originalPredicateBranchVerified: false,
+    resumeAuthorized: false, executionAuthorized: false, saveAuthorized: false };
+}
+void test("separate predicate packet persists through original failure publication and cannot alter cleanup or public v1", async () => {
+  const packet = predicateDiagnosticPacket(); const f = await fixture("main-construction-failed", startupDiagnosticPacket(), packet);
+  await assert.rejects(f.workflow.execute()); const evidence = f.failureEvidence(); assert.ok(evidence !== undefined);
+  assert.deepEqual(evidence["mainStartupPredicateDiagnostic"], packet); assert.notEqual(evidence["mainStartupPredicateDiagnostic"], packet);
+  assert.ok(Object.isFrozen(evidence["mainStartupPredicateDiagnostic"])); assert.ok(Object.hasOwn(evidence, "mainStartupDiagnostic"));
+  assert.equal(Object.hasOwn(f.workflow.mainFailure() ?? {}, "mainStartupPredicateDiagnostic"), false);
+  assert.ok(f.calls.indexOf("main-predicate-snapshot") < f.calls.indexOf("original-abort"));
+  assert.ok(f.calls.includes("original-exit") && f.calls.includes("original-release")); assert.equal(f.calls.includes("sdk-save"), false);
+  packet["stage"] = "condition-false"; f.replacePredicateDiagnostic(); await f.workflow.settleCleanup();
+  assert.equal(f.calls.filter(value => value === "main-predicate-snapshot").length, 1); assert.equal(f.calls.includes("replacement-predicate-getter"), false);
+});
+void test("optional predicate data rejects substituted accessors and malformed values without invoking getters or blocking release", async () => {
+  let getters = 0; const poison = Object.defineProperty({}, "profile", { enumerable: true, get: (): never => { getters += 1; throw new Error("private"); } });
+  for (const packet of [{ ...predicateDiagnosticPacket(), path: "private" }, poison, predicateDiagnosticPacket()]) {
+    const f = await fixture("main-construction-failed", null, packet);
+    if (packet !== poison && !Object.hasOwn(packet, "path")) { f.replacePredicateDiagnostic(); }
+    await assert.rejects(f.workflow.execute()); assert.deepEqual(f.failureEvidence(), { stage: "main", originalExecutionStopped: true, retryAuthorized: false });
+    assert.ok(f.calls.includes("original-abort") && f.calls.includes("original-release")); assert.equal(f.calls.includes("replacement-predicate-getter"), false);
+  }
+  assert.equal(getters, 0);
+});
 void test("a new protocol failure cannot reuse the prior exhausted-round eligibility", async () => {
   const f = await fixture("exit-late"); await assert.rejects(f.workflow.execute(), /Save acknowledgement unknown/u);
   const initialReads = f.calls.filter(value => value === "original-exit").length;

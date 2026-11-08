@@ -92,15 +92,22 @@ import type { CurrentProjectStructureMainCapability } from "./current-project-st
 import { originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentSchematicRelevanceDisplayMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SQL_SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "./current-selected-file-main-sql-fence-source.ts";
+import { currentSelectedMainRawFrameFailure } from "./current-selected-main-raw-frame-failure.ts";
+import { CURRENT_SAVED_PROJECT_REGISTRATION_CAPTURED_FRAMES as SAVED_CAPTURED_FRAMES, CURRENT_MAIN_CAPTURED_SCOPE_JOINS as SCOPE_JOINS } from "./current-main-captured-scope-joins.ts";
 import type { CurrentSelectedFileMainSqlFenceSite } from "./current-selected-file-main-sql-fence-source.ts";
-import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as SQL_CAPTURE, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONDITIONS as SQL_CONDITIONS, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONFIGURATION_PROGRAM as SQL_CONFIGURATION,
-  CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as SQL_REQUIRE } from "./current-selected-file-main-sql-fence-programs.ts";
+import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as SQL_CAPTURE,
+  CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_EXPRESSIONS as SQL_CAPTURED_EXPRESSIONS,CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_PROGRAM as SQL_CAPTURED_FRAME,CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONFIGURATION_PROGRAM as SQL_CONFIGURATION,
+  CURRENT_SELECTED_FILE_MAIN_SQL_PREDICATE_DIAGNOSTIC_PROGRAM as SQL_PREDICATE_DIAGNOSTIC,CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as SQL_REQUIRE } from "./current-selected-file-main-sql-fence-programs.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as SQL_CALL, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_EARLY_ID as SQL_EARLY_ID,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_FRAME_FLAGS as SQL_FRAME, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_NATIVE_EXPRESSION as SQL_NATIVE_EXPRESSION,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS as SQL_REQUESTS, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES as SQL_SITES,
   validateCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import { currentSelectedFileMainSqlFenceImportsError, currentSelectedFileMainSqlFenceNativeFailure, decodeCurrentSelectedFileMainSqlFenceNative, decodeCurrentSelectedFileMainSqlFenceNativeArray } from "./current-selected-file-main-sql-fence-replies.ts";
+import { currentSelectedFileMainSqlStartupRefusal, decodeCurrentSelectedFileMainSqlStartupFrame } from "./current-selected-file-main-sql-startup-diagnostic.ts";
+import type { CurrentSelectedFileMainSqlStartupDiagnostic } from "./current-selected-file-main-sql-startup-diagnostic.ts";
+import { decodeCurrentSelectedFileMainSqlPredicateDiagnostic } from "./current-selected-file-main-sql-predicate-diagnostic.ts";
+import type { CurrentSelectedFileMainSqlPredicateDiagnostic } from "./current-selected-file-main-sql-predicate-diagnostic.ts";
 import type { CurrentPcbViaMainBeginPause } from "./current-pcb-via-main-begin-custody.ts";
 import { currentGeneratedProjectHistorySqlBaselineSchema } from "./current-generated-project-history-sql-baseline.ts";
 import type { CurrentPcbViaMainHistoryHandoff } from "./current-pcb-via-main-history-custody.ts";
@@ -304,6 +311,10 @@ const sqlConfigurationRemote = z.object({ type: z.literal("object"), value: sqlC
 const sqlConfigurationReply = z.object({ result: sqlConfigurationRemote }).strict();
 const objectReply = z.object({ result: z.object({ type: z.literal("object"), subtype: z.literal("array"), className: z.literal("Array"),
   description: z.string().max(32), objectId: handle }).strict() }).strict();
+const capturedSqlGuardValue = z.strictObject({ type: z.literal("string"), value: z.literal("guard-refused") });
+const capturedSqlGuardReply = z.strictObject({ result: capturedSqlGuardValue });
+const capturedSqlFrameReply = z.union([sqlTrueReply, objectReply, capturedSqlGuardReply]);
+type CapturedSqlSite = Exclude<CurrentSelectedFileMainSqlFenceSite, "import" | "afterImports">;
 const savedRegistrationEpoch = z.number().int().min(-8_640_000_000_000_000).max(8_640_000_000_000_000);
 const savedRegistrationRunValue = z.strictObject({ schema: z.literal("private.current-saved-project-registration-run.v1"), path: z.string().max(4096),
   insertEpochMilliseconds: savedRegistrationEpoch, updateEpochMilliseconds: savedRegistrationEpoch,
@@ -402,6 +413,11 @@ export class CurrentFootprintCopyMainBackendRunner {
   #sqlCapture: string | null = null;
   #sqlReady = false;
   #startupConfigTracker: string | null = null;
+  #sqlStartupDiagnostic: CurrentSelectedFileMainSqlStartupDiagnostic | null = null;
+  #sqlPredicateDiagnostic: CurrentSelectedFileMainSqlPredicateDiagnostic | null = null;
+  readonly #sqlClassificationAttempts = new WeakSet<Pause>();
+  readonly #sqlGuardApprovals = new WeakSet<Pause>();
+  readonly #sqlCapturedFrames = new WeakMap<Pause, z.infer<typeof objectReply>>();
   #startupSqlContinuations = 0;
   #startupMetadataContinuations = 0;
   readonly #startupConfigProgress = new CurrentMainStartupConfigProgress();
@@ -925,10 +941,12 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(this.#breakpoint !== null && !this.#removeAttempted, "REMOVE_CONSUMED"); this.#removeAttempted = true;
     empty.parse(await this.#request({ phase: "remove", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#breakpoint } }, cleanup)); this.#removed = true;
   }
+  /** Preserve the first cause and its bounded schema issues. Only privately
+   * issued labels refine a schema failure; cleanup cannot replace that cause. */
   #fail(error: unknown): void {
     this.#failed = true; this.failFootprintInverseInitialHistory();
     if (this.#lastFailure !== null) { return; }
-    if (error instanceof z.ZodError) { this.#lastFailure = "REPLY_SCHEMA"; this.#schemaIssues = schemaIssues(error); }
+    if (error instanceof z.ZodError) { this.#lastFailure = issuedFailures.get(error) ?? "REPLY_SCHEMA"; this.#schemaIssues = schemaIssues(error); }
     else {
       const nativeFailure = currentSelectedFileMainSqlFenceNativeFailure(error);
       this.#lastFailure = nativeFailure ?? (error instanceof Error ? issuedFailures.get(error) ?? "ORIGINAL_TRANSPORT_OR_CAPTURE" : "ORIGINAL_TRANSPORT_OR_CAPTURE");
@@ -1004,16 +1022,51 @@ export class CurrentFootprintCopyMainBackendRunner {
     const point = SQL_SOURCE.sites[site];
     const actualLocation = { scriptId: this.#appScriptId, lineNumber: point.lineNumber, columnNumber: point.breakpointColumnNumber };
     const command: CurrentSelectedFileMainSqlFenceCommand = site === "afterImports" ? { phase: "sql-fence-after-imports-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#appScriptId, lineNumber: SQL_SOURCE.sites.afterImports.lineNumber, columnNumber: SQL_SOURCE.sites.afterImports.breakpointColumnNumber } } } :
-      { phase: "sql-fence-arm", site, method: "Debugger.setBreakpoint", params: { location: actualLocation, condition: SQL_CONDITIONS[site] } };
+      { phase: "sql-fence-held-arm", site, method: "Debugger.setBreakpoint", params: { location: actualLocation, condition: "true" } };
     const reply = z.object({ breakpointId: handle, actualLocation: location }).strict().parse(await this.#request(command));
     need(!this.#sqlBreakpoints.has(reply.breakpointId), "SELECTED_SQL_BREAKPOINT_REUSED"); this.#sqlLocation(site, reply.actualLocation);
     for (const record of this.#sqlResolutions.filter(item => item.breakpointId === reply.breakpointId)) { this.#sqlLocation(site, record.location); }
     this.#sqlBreakpoints.set(reply.breakpointId, site); this.#sqlArming = null;
   }
   async #sqlResume(pause: Pause): Promise<void> {
-    need(this.#selectedSqlBootstrap !== null && this.#pause === pause && (pause.sqlSite === "import" || pause.sqlSite === "afterImports" || this.#sqlApprovedConfigurations.has(pause) || this.#sqlApprovedReadRequests.has(pause)) &&
+    need(this.#selectedSqlBootstrap !== null && this.#pause === pause && (pause.sqlSite === "import" || pause.sqlSite === "afterImports" || this.#sqlApprovedConfigurations.has(pause) || this.#sqlApprovedReadRequests.has(pause) || this.#sqlGuardApprovals.has(pause)) &&
       !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_NO_MUTATION_GRANT"); pause.resumeAttempted = true;
     empty.parse(await this.#request({ phase: "sql-fence-resume", method: "Debugger.resume", params: {} })); await this.#wait(() => pause.resumed);
+  }
+  /** Classify one original held SQL pause with its retained module bindings.
+   * Only the unchanged predicate's false result permits its guarded continuation.
+   * This includes constructor and close sites; it is not SQL-write completion.
+   * A true condition supplies its tuple to the existing strict source lane;
+   * a guard failure stays stopped. Every request spends the existing ceiling. */
+  async #classifyCapturedSqlPause(pause: Pause): Promise<"guard-passed" | "held"> {
+    const site = pause.sqlSite;
+    need(this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#sqlCapture !== null && this.#pause === pause &&
+      site !== undefined && site !== "import" && site !== "afterImports" && !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_CAPTURED_FRAME_ORIGINAL_PAUSE");
+    if (this.#sqlCapturedFrames.has(pause)) { return "held"; }
+    if (this.#sqlGuardApprovals.has(pause)) { return "guard-passed"; }
+    need(!this.#sqlClassificationAttempts.has(pause), "SELECTED_SQL_CAPTURED_FRAME_CONSUMED"); this.#sqlClassificationAttempts.add(pause);
+    const rawReply = await this.#request({ phase: "sql-fence-raw-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
+      ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_CAPTURED_EXPRESSIONS[site] } });
+    const parsed = objectReply.safeParse(rawReply);
+    if (!parsed.success) { issuedFailures.set(parsed.error, currentSelectedMainRawFrameFailure(site, rawReply)); throw parsed.error; }
+    const raw = parsed.data;
+    need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && raw.result.description ===
+      `Array(${String(SQL_CAPTURED_EXPRESSIONS[site].slice(1, -1).split(",").length)})`, "SELECTED_SQL_CAPTURED_FRAME_RAW_TUPLE");
+    const reply = capturedSqlFrameReply.parse(captureCurrentPcbStringClockReply(await this.#request({ phase: "sql-fence-captured-frame", site,
+      method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false, objectId: raw.result.objectId,
+        functionDeclaration: SQL_CAPTURED_FRAME, arguments: [{ objectId: this.#sqlCapture }, { value: site }], returnByValue: false } })).value);
+    need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && reply.result.type !== "string", "SELECTED_SQL_CAPTURED_FRAME_GUARD");
+    if (reply.result.type === "boolean") {
+      this.#sqlGuardApprovals.add(pause); return "guard-passed";
+    }
+    need(reply.result.description === `Array(${String(SQL_SOURCE.sites[site].expression.slice(1, -1).split(",").length)})`, "SELECTED_SQL_CAPTURED_FRAME_LEGACY_TUPLE");
+    this.#sqlCapturedFrames.set(pause, Object.freeze({ result: Object.freeze({ ...reply.result }) })); return "held";
+  }
+  /** Use only this held pause's privately reconstructed tuple. This never
+   * re-evaluates a spent frame or grants another operation its capture. */
+  #capturedSqlFrame(pause: Pause, site: CapturedSqlSite): z.infer<typeof objectReply> {
+    need(this.#pause === pause && pause.sqlSite === site && !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_CAPTURED_FRAME_ORIGINAL_PAUSE");
+    const selected = this.#sqlCapturedFrames.get(pause); need(selected !== undefined, "SELECTED_SQL_CAPTURED_FRAME_REQUIRED"); return selected;
   }
   async #startSelectedSqlFence(): Promise<void> {
     const initial = this.#pause; need(initial?.sqlSite === "import" && this.#selectedSqlPath !== null, "SELECTED_SQL_BEFORE_IMPORT_REQUIRED");
@@ -1047,13 +1100,84 @@ export class CurrentFootprintCopyMainBackendRunner {
     await this.#requireSelectedSqlCapture(); this.#sqlReady = true; await this.#sqlResume(after);
     await this.#wait(() => this.#pause !== after);
     while (this.#pause !== null && !this.#pause.registration) {
-      const configuration = this.#pause; need(await this.#configureStartupSql(configuration), "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION");
+      const configuration = this.#pause;
+      if (!await this.#configureStartupSql(configuration)) {
+        await this.#captureStartupRefusal(configuration);
+        if (configuration.sqlSite === "initializerBirth") { await this.#captureStartupPredicate(configuration); }
+        need(false, "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION");
+      }
       await this.#wait(() => this.#pause !== configuration);
     }
     this.#startupConfigProgress.complete();
     // Every mutation stays paused until a distinct original request/SQL issuer
     // Proves that exact current call. This bootstrap publishes no such grant.
     need(this.#pause?.registration === true, "SELECTED_SQL_MUTATION_BEFORE_REGISTRATION");
+  }
+  /** Retain one source-qualified refusal before any diagnostic await. Two
+   * existing readonly frame/property requests can explain its operand kinds;
+   * failure of either read cannot replace the first semantic error or resume
+   * the original held call. No predicate, application method or clock runs. */
+  async #captureStartupRefusal(pause: Pause): Promise<void> {
+    const site = pause.sqlSite;
+    need(this.#sqlStartupDiagnostic === null && this.#pause === pause && !pause.resumeAttempted && !pause.resumed &&
+      site !== undefined && site !== "import" && site !== "afterImports" && this.#selectedSqlPath !== null, "SELECTED_SQL_STARTUP_DIAGNOSTIC_ORIGINAL_PAUSE");
+    const originalPhase = this.#phase, requests = this.#requests;
+    const base = Object.freeze({ profile: "private.selected-file-main-sql-startup-diagnostic.v1" as const, site,
+      refusal: currentSelectedFileMainSqlStartupRefusal(site, this.#startupConfigTracker !== null), originalPhase,
+      sourceQualified: true as const, originalFailureRetained: true as const, predicateBranchVerified: false as const,
+      resumeAuthorized: false as const, executionAuthorized: false as const, saveAuthorized: false as const });
+    this.#sqlStartupDiagnostic = Object.freeze({ ...base, frameState: "not-read", summary: null, diagnosticRequests: 0 });
+    // The scheduler has already refused this call. Retain that first failure
+    // Before passive transport/parser errors can be observed during capture.
+    this.#lastFailure ??= "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION";
+    let frameState: CurrentSelectedFileMainSqlStartupDiagnostic["frameState"] = "frame-refused";
+    let summary: CurrentSelectedFileMainSqlStartupDiagnostic["summary"] = null;
+    try {
+      const selectedFrame = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
+        ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites[site].expression } }));
+      need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && selectedFrame.result.description ===
+        `Array(${String(SQL_SOURCE.sites[site].expression.slice(1, -1).split(",").length)})`, "SELECTED_SQL_STARTUP_DIAGNOSTIC_FRAME");
+      frameState = "properties-refused";
+      const properties = await this.#request({ phase: "sql-fence-properties", method: "Runtime.getProperties", params: {
+        objectId: selectedFrame.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
+      need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_STARTUP_DIAGNOSTIC_FRAME");
+      summary = decodeCurrentSelectedFileMainSqlStartupFrame(properties, site, this.#selectedSqlPath); frameState = "captured";
+    } catch {
+      // Diagnostic refusal is data, never a fallback continuation or a new
+      // Error inspection path. Original pending requests retain their custody.
+    } finally {
+      this.#phase = originalPhase;
+      this.#sqlStartupDiagnostic = Object.freeze({ ...base, frameState, summary, diagnosticRequests: this.#requests - requests });
+    }
+  }
+  /** Repeat only the original initializer's fixed prechecks after its first
+   * refusal is retained. Reserve the packet before the single request; never
+   * expose the probe to normal continuation or replace the original error. */
+  async #captureStartupPredicate(pause: Pause): Promise<void> {
+    need(this.#sqlPredicateDiagnostic === null && this.#sqlStartupDiagnostic !== null && this.#pause === pause &&
+      pause.sqlSite === "initializerBirth" && !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_PREDICATE_DIAGNOSTIC_ORIGINAL_PAUSE");
+    const originalPhase = this.#phase, requests = this.#requests;
+    const base = Object.freeze({ profile: "private.selected-file-main-sql-predicate-diagnostic.v1" as const, site: "initializerBirth" as const,
+      sourceQualified: true as const, originalFailureRetained: true as const, originalPredicateBranchVerified: false as const,
+      resumeAuthorized: false as const, executionAuthorized: false as const, saveAuthorized: false as const });
+    this.#sqlPredicateDiagnostic = Object.freeze({ ...base, probeState: "not-read", stage: null, diagnosticRequests: 0 });
+    let stage: CurrentSelectedFileMainSqlPredicateDiagnostic["stage"] = null;
+    try {
+      const result = await this.#request({ phase: "sql-fence-predicate-diagnostic", method: "Debugger.evaluateOnCallFrame", params: {
+        ...SQL_FRAME, throwOnSideEffect: false, returnByValue: true, callFrameId: pause.frameId, expression: SQL_PREDICATE_DIAGNOSTIC } });
+      need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_PREDICATE_DIAGNOSTIC_ORIGINAL_PAUSE");
+      stage = decodeCurrentSelectedFileMainSqlPredicateDiagnostic(result);
+    } catch {
+      // Failure remains a closed data state. Do not inspect the error object,
+      // Retry the probe or change original native cleanup obligations.
+    } finally {
+      this.#phase = originalPhase;
+      const diagnosticRequests = this.#requests - requests;
+      let probeState: CurrentSelectedFileMainSqlPredicateDiagnostic["probeState"] = "captured";
+      if (diagnosticRequests === 0) { probeState = "not-read"; }
+      else if (stage === null) { probeState = "evaluation-refused"; }
+      this.#sqlPredicateDiagnostic = Object.freeze({ ...base, probeState, stage, diagnosticRequests });
+    }
   }
   async #requireSelectedSqlCapture(): Promise<void> {
     need(this.#sqlCapture !== null, "SELECTED_SQL_CAPTURE_REQUIRED");
@@ -1063,8 +1187,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #configureSelectedSqlInitializer(pause: Pause): Promise<void> {
     const site = pause.sqlSite; need((site === "initializerSerialize" || site === "initializerPragma") && this.#sqlCapture !== null && this.#sqlReady &&
       this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#sqlConfigurationRecords.length < 64, "SELECTED_SQL_INITIALIZER_REQUIRED");
-    const selectedFrame = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
-      ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites[site].expression } })); need(selectedFrame.result.description === "Array(5)", "SELECTED_SQL_INITIALIZER_FRAME");
+    const selectedFrame = this.#capturedSqlFrame(pause, site); need(selectedFrame.result.description === "Array(5)", "SELECTED_SQL_INITIALIZER_FRAME");
     const stage = site === "initializerSerialize" ? "serialize" : "pragma";
     const reply = sqlConfigurationReply.parse(
       await this.#request({ phase: "sql-fence-configure", site, method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
@@ -1258,21 +1381,20 @@ export class CurrentFootprintCopyMainBackendRunner {
     const site = pause.savedRegistrationSite; let selected: z.infer<typeof objectReply>;
     if (site === undefined) {
       need(pause.sqlSite === "run" && this.#savedRegistrationStage === "bound", "SAVED_REGISTRATION_SINGLE_RUN_REQUIRED");
-      selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site: "run", method: "Debugger.evaluateOnCallFrame", params: {
-        ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites.run.expression } }));
+      selected = this.#capturedSqlFrame(pause, "run");
       need(selected.result.description === "Array(5)", "SAVED_REGISTRATION_NATIVE_RUN_FRAME");
     } else {
-      selected = objectReply.parse(await this.#request({ phase: "sql-fence-registration-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
-        ...SQL_FRAME, callFrameId: pause.frameId, expression: SAVED_CONFIG_SITES[site].expression } }));
-      let size = 7; if (site === "bind") { size = 17; } else if (site === "afterExec") { size = 8; }
+      selected = objectReply.parse(await this.#request({ phase: "sql-fence-registration-raw-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
+        ...SQL_FRAME, callFrameId: pause.frameId, expression: SAVED_CAPTURED_FRAMES[site].rawExpression } }));
+      let size = 6; if (site === "bind") { size = 16; } else if (site === "afterExec") { size = 7; }
       need(selected.result.description === `Array(${String(size)})`, "SAVED_REGISTRATION_FRAME");
     }
     const frameId = selected.result.objectId;
     if (site === "bind") {
       need(this.#savedRegistrationStage === "unused" && this.#savedRegistrationTracker === null, "SAVED_REGISTRATION_BIND_CONSUMED");
-      const reply = objectReply.parse(await this.#request({ phase: "sql-fence-registration-bind", method: "Runtime.callFunctionOn", params: { ...SQL_CALL,
-        throwOnSideEffect: false, objectId: frameId, functionDeclaration: SAVED_CONFIG_CALLS.bind,
-        arguments: [{ objectId: this.#startupConfigTracker }, { value: this.#selectedSqlPath }], returnByValue: false } }));
+      const reply = objectReply.parse(await this.#request({ phase: "sql-fence-registration-rebase-bind", method: "Runtime.callFunctionOn", params: { ...SQL_CALL,
+        throwOnSideEffect: false, objectId: frameId, functionDeclaration: SCOPE_JOINS.registrationBind,
+        arguments: [{ objectId: this.#sqlCapture }, { objectId: this.#startupConfigTracker }, { value: this.#selectedSqlPath }], returnByValue: false } }));
       need(reply.result.description === "Array(8)", "SAVED_REGISTRATION_TRACKER"); this.#savedRegistrationTracker = reply.result.objectId; this.#savedRegistrationStage = "bound";
     } else {
       need(this.#savedRegistrationTracker !== null, "SAVED_REGISTRATION_BIND_REQUIRED");
@@ -1285,10 +1407,12 @@ export class CurrentFootprintCopyMainBackendRunner {
         need(value.result.value.path === this.#selectedSqlPath, "SAVED_REGISTRATION_RUN_TARGET"); this.#savedRegistrationStage = "run-consumed";
       } else if (site === "afterExec") {
         need(this.#savedRegistrationStage === "run-consumed", "SAVED_REGISTRATION_UPSERT_AWAIT_REQUIRED");
-        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-after-exec", method: "Runtime.callFunctionOn", params: { ...params, functionDeclaration: SAVED_CONFIG_CALLS.afterExec } })); this.#savedRegistrationStage = "upsert-awaited";
+        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-rebase-after-exec", method: "Runtime.callFunctionOn", params: { ...params,
+          arguments: [{ objectId: this.#sqlCapture }, { objectId: this.#savedRegistrationTracker }], functionDeclaration: SCOPE_JOINS.registrationAfterExec } })); this.#savedRegistrationStage = "upsert-awaited";
       } else {
         need(this.#savedRegistrationStage === "upsert-awaited", "SAVED_REGISTRATION_QUERY_AWAIT_REQUIRED");
-        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-opened", method: "Runtime.callFunctionOn", params: { ...params, functionDeclaration: SAVED_CONFIG_CALLS.opened } })); this.#savedRegistrationStage = "registration-awaited";
+        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-rebase-opened", method: "Runtime.callFunctionOn", params: { ...params,
+          arguments: [{ objectId: this.#sqlCapture }, { objectId: this.#savedRegistrationTracker }], functionDeclaration: SCOPE_JOINS.registrationOpened } })); this.#savedRegistrationStage = "registration-awaited";
       }
     }
     await this.#assertOriginalProjectRegistrationPending(); await this.#requireSelectedSqlCapture();
@@ -1298,10 +1422,10 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #configureStartupSql(pause: Pause): Promise<boolean> {
     const site = pause.sqlSite;
     need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#sqlCapture !== null && this.#sqlReady, "STARTUP_CONFIG_ORIGINAL_PAUSE");
+    if (await this.#classifyCapturedSqlPause(pause) === "guard-passed") { await this.#sqlResume(pause); return true; }
     if (site === "initializerSerialize" || site === "initializerPragma") { await this.#configureSelectedSqlInitializer(pause); return true; }
     if (site === "startupVersion" || site === "startupJB" || site === "startupDC") {
-      const selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
-        ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites[site].expression } }));
+      const selected = this.#capturedSqlFrame(pause, site);
       let size = 11; if (site === "startupVersion") { size = 13; } else if (site === "startupJB") { size = 12; }
       need(selected.result.description === `Array(${String(size)})`, "STARTUP_CONFIG_SOURCE_FRAME");
       if (site === "startupVersion") {
@@ -1323,8 +1447,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       }
     } else if (site === "run" || site === "prepare" || site === "prepared" || site === "statementRun" || site === "finalize") {
       if (this.#startupConfigTracker === null || site === "statementRun" || site === "finalize") { return false; }
-      const selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
-        ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites[site].expression } }));
+      const selected = this.#capturedSqlFrame(pause, site);
       let size = 5; if (site === "prepare") { size = 6; } else if (site === "prepared") { size = 7; }
       need(selected.result.description === `Array(${String(size)})`, "STARTUP_CONFIG_NATIVE_FRAME");
       const reply = z.object({ result: z.object({ type: z.literal("object"), value: currentMainStartupConfigSelectionSchema }).strict() }).strict().parse(
@@ -1439,7 +1562,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (this.#viaMainOrigin !== null) {
       if (!this.#busy) { await this.#pump();
         if (!this.#busy) { const service = (async (): Promise<void> => { this.#busy = true;
-          try { await this.#serveUndeliveredViaReadonly(); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; this.#viaMainReadonlyService = null; }
+          try { await this.#serveUndeliveredViaPauses(); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; this.#viaMainReadonlyService = null; }
         })(); this.#viaMainReadonlyService = service; await service; }
       } return;
     }
@@ -1454,15 +1577,22 @@ export class CurrentFootprintCopyMainBackendRunner {
       }
       else if (pause !== null && !pause.resumed && pause.savedRegistrationSite !== undefined) { await this.#continueSavedRegistration(pause); }
       else if (pause !== null && !pause.resumed && pause.sqlSite !== undefined) {
-        if (pause.sqlSite === "run" && this.#savedRegistrationTracker !== null) { await this.#continueSavedRegistration(pause); }
+        if (await this.#classifyCapturedSqlPause(pause) === "guard-passed") { await this.#sqlResume(pause); }
+        else if (pause.sqlSite === "run" && this.#savedRegistrationTracker !== null) { await this.#continueSavedRegistration(pause); }
         else if (pause.sqlSite === "driver") { const request = await this.#observeSelectedMainRequest(pause); if (this.#selectedReadonlyRequest(request)) { await this.#continueSelectedReadonlyRequest(request); } else { this.#sqlHeld = pause; } }
         else if (!await this.#configureStartupSql(pause)) { this.#sqlMutationPauses += 1; need(this.#sqlMutationPauses <= 64, "SELECTED_SQL_MUTATION_BOUND"); this.#sqlHeld = pause; await this.#requireSelectedSqlCapture(); }
       }
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
-  async #serveUndeliveredViaReadonly(): Promise<void> {
+  async #serveUndeliveredViaPauses(): Promise<void> {
     const pause = this.#pause;
-    if (pause === null || pause.sqlSite !== "driver" || pause.resumeAttempted || pause.resumed || this.#viaMainDeliveredPause !== null || this.#viaMainDriverStep !== null) { return; }
+    if (pause === null || pause.sqlSite === undefined || pause.resumeAttempted || pause.resumed || this.#viaMainDeliveredPause !== null || this.#viaMainDriverStep !== null) { return; }
+    if (await this.#classifyCapturedSqlPause(pause) === "guard-passed") {
+      const event = this.#viaMainEvents.shift(); need(event?.method === "Debugger.paused" && pauseSchema.parse(event.params).callFrames[0]?.callFrameId === pause.frameId, "VIA_MAIN_READONLY_ORIGINAL_PAUSE");
+      await this.#sqlResume(pause); const resumed = this.#viaMainEvents.shift();
+      need(pause.resumed && resumed?.method === "Debugger.resumed", "VIA_MAIN_READONLY_ORIGINAL_RESUMED"); empty.parse(resumed.params); return;
+    }
+    if (pause.sqlSite !== "driver") { return; }
     const context = CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES.context;
     need(![...this.#viaMainPoints.values()].some(point => point.lineNumber === context.lineNumber && point.columnNumber === context.columnNumber), "VIA_MAIN_READONLY_CONTEXT_POINT_PRESENT");
     const packet = await this.#observeSelectedMainRequest(pause);
@@ -1479,6 +1609,11 @@ export class CurrentFootprintCopyMainBackendRunner {
       profileSqlContinuationsAcknowledged: this.#startupSqlContinuations, profileMetadataContinuationsAcknowledged: this.#startupMetadataContinuations,
       startupProfileBookkeeping: this.#startupConfigProgress.snapshot(), initializerConfigurations: Object.freeze([...this.#sqlConfigurationRecords]), initializerConfigurationAutomaticallyAdmitted: true, completeSqlEffectProven: false, executionAuthorized: false, saveAuthorized: false });
   }
+  /** Historical private data for the original workflow's separate diagnostic
+   * artifact. This getter performs no reads and leaves retained()/v1 unchanged. */
+  public retainedSelectedSqlStartupDiagnostic(): CurrentSelectedFileMainSqlStartupDiagnostic | null { return this.#sqlStartupDiagnostic; }
+  /** Private optional data from this runner's one failure-only guard probe. */
+  public retainedSelectedSqlPredicateDiagnostic(): CurrentSelectedFileMainSqlPredicateDiagnostic | null { return this.#sqlPredicateDiagnostic; }
 
   /** Transfer this original selected-file cursor into a Via-only observer.
    * The persistent SQL fence remains installed, and this vocabulary has no

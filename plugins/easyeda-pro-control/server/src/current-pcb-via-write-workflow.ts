@@ -10,6 +10,11 @@ import { currentPcbViaWriteDiagnostic, currentPcbViaWriteErrorCode } from "./cur
 import type { CurrentPcbViaWriteDiagnostic } from "./current-pcb-via-write-diagnostic.ts";
 import {currentPcbViaWriteMainFailure,refusedCurrentPcbViaWriteMainFailure} from "./current-pcb-via-write-main-failure.ts";
 import type {CurrentPcbViaWriteMainFailure} from "./current-pcb-via-write-main-failure.ts";
+import { currentSelectedFileMainSqlStartupDiagnosticSchema } from "./current-selected-file-main-sql-startup-diagnostic.ts";
+import type { CurrentSelectedFileMainSqlStartupDiagnostic } from "./current-selected-file-main-sql-startup-diagnostic.ts";
+import { currentSelectedFileMainSqlPredicateDiagnosticSchema } from "./current-selected-file-main-sql-predicate-diagnostic.ts";
+import type { CurrentSelectedFileMainSqlPredicateDiagnostic } from "./current-selected-file-main-sql-predicate-diagnostic.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "./current-pcb-209-opening-profile.ts";
 import { selectCurrentPcb209StartPage, selectCurrentPcb209StartPageFrame } from "./current-pcb-209-start-page-selection.ts";
 import { verifyGeneratedFixtureOpenCheckpoint } from "./managed-fixture-generated-open-checkpoint.ts";
@@ -34,6 +39,10 @@ import type { CurrentPcbDiagnosticLaunchLease } from "./current-pcb-diagnostic-l
 
 /* oxlint-disable-next-line typescript/unbound-method -- Invoke only after original factory/target and method identity checks on the same private-field owner. */
 const originalMainStatus=CurrentPcbViaWriteOwner.prototype.retainedFootprintMainConstruction;
+/* oxlint-disable-next-line typescript/unbound-method -- Only the same admitted original owner's exact prototype method may provide this data-only packet. */
+const originalMainStartupDiagnostic = CurrentPcbViaWriteOwner.prototype.retainedFootprintMainStartupDiagnostic;
+/* oxlint-disable-next-line typescript/unbound-method -- Only the same admitted original owner supplies this separate failure-only reevaluation packet. */
+const originalMainPredicateDiagnostic = CurrentPcbViaWriteOwner.prototype.retainedFootprintMainPredicateDiagnostic;
 /* oxlint-disable-next-line typescript/unbound-method -- This separate captured private-field getter supplies only its fixed safe native failure fields on the same admitted owner. */
 const originalOwnerStatus=CurrentPcbViaWriteOwner.prototype.status;
 const attempts = new WeakSet<CurrentPcbViaWritePlan>();
@@ -65,6 +74,8 @@ export class CurrentPcbViaWriteWorkflow {
   #stage = "prepared"; #aborted = false; #failed = false; #closed = false; #normalClose = false;
   #failureDiagnostic: CurrentPcbViaWriteDiagnostic | null = null;
   #mainFailure:CurrentPcbViaWriteMainFailure|null=null;
+  #mainStartupDiagnostic: CurrentSelectedFileMainSqlStartupDiagnostic | null = null;
+  #mainPredicateDiagnostic: CurrentSelectedFileMainSqlPredicateDiagnostic | null = null;
   #saveEntered = false; #saveAcknowledgement: CurrentPcbViaWriteStageResult | null = null;
   #cleanup: Promise<void> | null = null; #cleanupSettled = false; #cleanupExitExhausted = false;
   #cleanupPublicationBlocked = false; #abortAcknowledged = false;
@@ -130,6 +141,50 @@ export class CurrentPcbViaWriteWorkflow {
     }
   }
   public mainFailure():CurrentPcbViaWriteMainFailure|null{return this.#mainFailure;}
+  /** Retain only the original owner's closed startup packet for its private
+   * failure artifact. Optional capture cannot replace the execution failure. */
+  #captureFirstMainStartupDiagnostic(): void {
+    if (this.#stage !== "main" || this.#mainStartupDiagnostic !== null) { return; }
+    try {
+      this.#current(true); const owner = this.#ownerRequired(true);
+      need(typeof originalMainStartupDiagnostic === "function", "MAIN_STARTUP_DIAGNOSTIC_ORIGINAL_METHOD");
+      let prototype: object | null = CurrentPcbViaWriteOwner.prototype, same = false;
+      for (let depth = 0; prototype !== null && depth < 4; depth += 1) {
+        const descriptor = Object.getOwnPropertyDescriptor(prototype, "retainedFootprintMainStartupDiagnostic");
+        if (descriptor !== undefined) { same = Object.hasOwn(descriptor, "value") && descriptor.value === originalMainStartupDiagnostic; break; }
+        const parent: unknown = Object.getPrototypeOf(prototype);
+        need(parent === null || typeof parent === "object" || typeof parent === "function", "MAIN_STARTUP_DIAGNOSTIC_ORIGINAL_PROTOTYPE"); prototype = parent;
+      }
+      need(same, "MAIN_STARTUP_DIAGNOSTIC_ORIGINAL_METHOD");
+      const value = originalMainStartupDiagnostic.call(owner); this.#current(true);
+      if (value !== null) { this.#mainStartupDiagnostic = freezeDeep(currentSelectedFileMainSqlStartupDiagnosticSchema.parse(captureCurrentPcbStringClockReply(value).value)); }
+    } catch {
+      // This optional data never changes the first failure, public v1 snapshot,
+      // Original native cleanup or journal publication/retry rules.
+    }
+  }
+  /** Retain only the original owner's closed predicate packet for its private
+   * failure artifact. Optional capture cannot replace the execution failure. */
+  #captureFirstMainPredicateDiagnostic(): void {
+    if (this.#stage !== "main" || this.#mainPredicateDiagnostic !== null) { return; }
+    try {
+      this.#current(true); const owner = this.#ownerRequired(true);
+      need(typeof originalMainPredicateDiagnostic === "function", "MAIN_PREDICATE_DIAGNOSTIC_ORIGINAL_METHOD");
+      let prototype: object | null = CurrentPcbViaWriteOwner.prototype, same = false;
+      for (let depth = 0; prototype !== null && depth < 4; depth += 1) {
+        const descriptor = Object.getOwnPropertyDescriptor(prototype, "retainedFootprintMainPredicateDiagnostic");
+        if (descriptor !== undefined) { same = Object.hasOwn(descriptor, "value") && descriptor.value === originalMainPredicateDiagnostic; break; }
+        const parent: unknown = Object.getPrototypeOf(prototype);
+        need(parent === null || typeof parent === "object" || typeof parent === "function", "MAIN_PREDICATE_DIAGNOSTIC_ORIGINAL_PROTOTYPE"); prototype = parent;
+      }
+      need(same, "MAIN_PREDICATE_DIAGNOSTIC_ORIGINAL_METHOD");
+      const value = originalMainPredicateDiagnostic.call(owner); this.#current(true);
+      if (value !== null) { this.#mainPredicateDiagnostic = freezeDeep(currentSelectedFileMainSqlPredicateDiagnosticSchema.parse(captureCurrentPcbStringClockReply(value).value)); }
+    } catch {
+      // This optional data never changes the first failure, public v1 snapshot,
+      // Original native cleanup or journal publication/retry rules.
+    }
+  }
   public diagnostic(): CurrentPcbViaWriteDiagnostic { return this.#failureDiagnostic ?? currentPcbViaWriteDiagnostic(this.#stage, null); }
   public inspect(): Readonly<Record<string, unknown>> {
     const original = currentPcbViaWriteAllocationOutcome(this.#prepared);
@@ -315,6 +370,8 @@ export class CurrentPcbViaWriteWorkflow {
       } catch (caughtError) {
         this.#failed = true; this.#failureDiagnostic ??= currentPcbViaWriteDiagnostic(this.#stage, currentPcbViaWriteErrorCode(caughtError));
         this.#captureFirstMainFailure();
+        this.#captureFirstMainStartupDiagnostic();
+        this.#captureFirstMainPredicateDiagnostic();
         try { await this.#cleanupOriginal(); } catch {
           // Preserve the first execution failure, original pending calls and
           // Separately inspectable unresolved cleanup. Nothing is repeated.
@@ -363,7 +420,9 @@ export class CurrentPcbViaWriteWorkflow {
       this.#current(true);
       if (!this.#journalReserveEntered && !this.#journal.retained().reserved && !this.#journal.retained().publicationPending) { need(this.#factory === null, "UNPUBLISHED_FACTORY"); return; }
       await this.#journalReady(); this.#cleanupPublicationBlocked = false;
-      await this.#cleanupRecord("failure", { stage: this.#stage, originalExecutionStopped: true, retryAuthorized: false }); this.#current(true);
+      await this.#cleanupRecord("failure", { stage: this.#stage, originalExecutionStopped: true, retryAuthorized: false,
+        ...(this.#mainStartupDiagnostic === null ? {} : { mainStartupDiagnostic: this.#mainStartupDiagnostic }),
+        ...(this.#mainPredicateDiagnostic === null ? {} : { mainStartupPredicateDiagnostic: this.#mainPredicateDiagnostic }) }); this.#current(true);
       if (this.#capture !== null) { await this.#capture.settleRelease(); need(this.#capture.isReleaseAcknowledged(), "ORIGINAL_CAPTURE_RELEASE_UNRESOLVED"); }
       if (this.#reader !== null) { await this.#reader.abort(true); this.#current(true); return; }
       const owner = this.#owner;

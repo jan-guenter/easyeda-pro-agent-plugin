@@ -34,6 +34,7 @@ export interface CurrentPcbViaMainCallbackLoan { readonly identity: object; read
 export class CurrentPcbViaMainBeginCustody {
   readonly #host: CurrentPcbViaMainBeginHost;
   readonly #points = new Map<Role, string>(); readonly #frames = new Map<Call, string>(); readonly #packets = new Map<Call, string>();
+  readonly #rawFrames = new Set<Call>(); readonly #frameAttempts = new Set<Call>(); readonly #joinAttempts = new Set<Call>();
   #transferred = false; #callbackLoan: CurrentPcbViaMainCallbackLoan | null = null; #callbackLoanConsumed = false;
   #normal = 0; #cleanup = 0; #step = 0; #failed = false;
   #actor: ReturnType<CurrentPcbViaMainBeginHost["actorSql"]> | null = null;
@@ -50,6 +51,9 @@ export class CurrentPcbViaMainBeginCustody {
     else { const site = SITES[role]; need(held.sqlSite === null && raw.hitBreakpoints[0] === this.#points.get(role) && first.functionName === site.name && first.location.lineNumber === site.lineNumber && first.location.columnNumber === site.columnNumber && first.functionLocation.scriptId === this.#host.scriptId && first.functionLocation.lineNumber === site.functionLine && first.functionLocation.columnNumber === site.functionColumn, "ORIGINAL_SOURCE_PAUSE"); }
     return held;
   }
+  /** Consume each frame attempt before awaiting transport, retain its exact
+   * version, and bind the matching join to original capture/packet handles.
+   * Existing source, step, callback, clock and native-grant checks still apply. */
   public async request(input: Command, cleanup: boolean): Promise<unknown> {
     this.#same(); need(!this.#transferred, "HISTORY_TRANSFERRED"); need(this.#callbackLoan === null, "STRUCTURE_CALLBACK_BORROWED"); const command = validateCurrentPcbViaMainBeginCommand(input);
     try {
@@ -57,21 +61,21 @@ export class CurrentPcbViaMainBeginCustody {
       else { this.#normal += 1; need(command.phase !== "via-main-begin-remove" && this.#normal <= LIMITS.normal, "NORMAL_BOUND"); }
       if (command.phase === "via-main-begin-step") { return await this.#advance(command); }
       if (command.phase === "via-main-begin-arm") { need(this.#step === 0 && this.#actor === null && !this.#points.has(command.role) && command.params.location.scriptId === this.#host.scriptId, "ARM_CONSUMED"); }
-      else if (command.phase === "via-main-begin-frame") { const held = this.#held(command.role); need(this.#step === ({ save: 1, transaction: 2, run: 3, callback: 4, returned: 5 }[command.role]) && !this.#frames.has(command.role) && command.params.callFrameId === held.frameId, "ORIGINAL_FRAME"); }
-      else if (command.phase === "via-main-begin-join") {
-        this.#held(command.role); need(this.#frames.get(command.role) === command.params.objectId && !this.#packets.has(command.role) && (command.role !== "returned" || this.#result === null), "ORIGINAL_FRAME_PACKET");
+      else if (command.phase === "via-main-begin-frame" || command.phase === "via-main-begin-raw-frame") { const held = this.#held(command.role); need(this.#step === ({ save: 1, transaction: 2, run: 3, callback: 4, returned: 5 }[command.role]) && !this.#frameAttempts.has(command.role) && command.params.callFrameId === held.frameId, "ORIGINAL_FRAME"); this.#frameAttempts.add(command.role); if (command.phase === "via-main-begin-raw-frame") { this.#rawFrames.add(command.role); } }
+      else if (command.phase === "via-main-begin-join" || command.phase === "via-main-begin-rebase" || command.phase === "via-main-begin-bookkeeping") {
+        this.#held(command.role); need(this.#frames.get(command.role) === command.params.objectId && !this.#joinAttempts.has(command.role) && (command.phase === "via-main-begin-rebase") === this.#rawFrames.has(command.role) && (command.role !== "returned" || this.#result === null), "ORIGINAL_FRAME_PACKET");
         let expected: readonly string[];
         if (command.role === "save") { need(this.#actor !== null, "ACTOR_REQUIRED"); expected = [this.#actor.actorObjectId, this.#actor.sqlObjectId]; }
         else if (command.role === "transaction") { expected = [this.#packet("save")]; }
         else if (command.role === "run") { expected = [this.#host.captureObjectId, this.#packet("transaction")]; }
-        else if (command.role === "callback") { expected = [this.#packet("run")]; }
+        else if (command.role === "callback") { expected = command.phase === "via-main-begin-rebase" ? [this.#host.captureObjectId, this.#packet("run")] : [this.#packet("run")]; }
         else { expected = [this.#packet("callback")]; }
-        need(canonicalJson(command.params.arguments.map(item => item.objectId)) === canonicalJson(expected), "ORIGINAL_ARGUMENTS");
+        need(canonicalJson(command.params.arguments.map(item => item.objectId)) === canonicalJson(expected), "ORIGINAL_ARGUMENTS"); this.#joinAttempts.add(command.role);
       } else { need(this.#points.get(command.role) === command.params.breakpointId, "ORIGINAL_POINT"); }
       const reply = await this.#host.send(command, cleanup); this.#same();
       if (command.phase === "via-main-begin-arm") { const result = z.strictObject({ breakpointId: handle, actualLocation: point }).parse(reply); need(![...this.#points.values()].includes(result.breakpointId) && canonicalJson(result.actualLocation) === canonicalJson(command.params.location), "ARM_REPLY"); this.#host.registerPoint(result.breakpointId, result.actualLocation); this.#points.set(command.role, result.breakpointId); }
-      else if (command.phase === "via-main-begin-frame") { const length = { save: 4, transaction: 2, run: 7, callback: 8, returned: 2 }[command.role]; this.#frames.set(command.role, decodeArray(reply, length)); }
-      else if (command.phase === "via-main-begin-join") { if (command.role === "returned") { this.#result = Object.freeze(resultReply.parse(reply).result.value); } else { this.#packets.set(command.role, decodeArray(reply, CALLS[command.role].length)); } }
+      else if (command.phase === "via-main-begin-frame" || command.phase === "via-main-begin-raw-frame") { const length = { save: 4, transaction: 2, run: 7, callback: 8, returned: 2 }[command.role] - (command.phase === "via-main-begin-raw-frame" ? 1 : 0); this.#frames.set(command.role, decodeArray(reply, length)); }
+      else if (command.phase === "via-main-begin-join" || command.phase === "via-main-begin-rebase" || command.phase === "via-main-begin-bookkeeping") { if (command.role === "returned") { this.#result = Object.freeze(resultReply.parse(reply).result.value); } else { this.#packets.set(command.role, decodeArray(reply, CALLS[command.role].length)); } }
       else if (command.phase === "via-main-begin-remove") { z.strictObject({}).parse(reply); this.#host.removePoint(command.params.breakpointId); }
       return reply;
     } catch (error) { this.#failed = true; throw error; }

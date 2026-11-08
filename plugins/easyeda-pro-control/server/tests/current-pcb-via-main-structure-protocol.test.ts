@@ -9,7 +9,7 @@ import { CURRENT_PCB_VIA_MAIN_STRUCTURE_EXPECTED_MARKER as MARKER, currentPcbVia
 import { decodeCurrentPcbViaMainStructureNativeAck } from "../src/current-pcb-via-main-structure-ack.ts";
 
 void test("finite Via structure wire omits controller body and cannot arm or remove the original borrowed SQL callback", () => {
-  const cases = currentPcbViaMainStructureNativeCases(); assert.equal(cases.length, 89); assert.equal(LIMITS.normal, 74); assert.equal(LIMITS.total, 88);
+  const cases = currentPcbViaMainStructureNativeCases(); assert.equal(cases.length, 109); assert.equal(LIMITS.normal, 74); assert.equal(LIMITS.total, 88);
   for (const command of cases) { const wire = currentPcbViaMainStructureWire(command, 79); for (const field of ["structureText", "ticket", "projectUuid", "branchUuid", "functionDeclaration", "condition", "bodyGranted", "published"]) { assert.equal(Object.hasOwn(wire.request, field), false); } assert.throws(() => validateCurrentPcbViaMainStructureCommand({ ...command, authorized: true })); }
   const controller = cases.find(command => command.phase === "via-main-structure-join" && command.role === "controller"); assert.ok(controller !== undefined);
   assert.ok(currentPcbViaMainStructureTemplate(controller).template.includes(MARKER));
