@@ -8,6 +8,7 @@ const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), location = z.strict
 const remote = z.strictObject({ type: z.enum(["object", "function", "undefined", "string", "number", "boolean"]), subtype: z.string().optional(), className: z.string().optional(), description: z.string().optional(), objectId: handle.optional(), value: z.unknown().optional(), unserializableValue: z.string().optional() });
 const frame = z.strictObject({ callFrameId: handle, functionName: z.string(), functionLocation: location, location, url: z.string(), scopeChain: z.array(z.unknown()).max(16), this: remote, returnValue: remote.optional(), canBeRestarted: z.boolean().optional() });
 const packet = z.strictObject({ method: z.literal("Debugger.paused"), sessionId: handle, params: z.strictObject({ callFrames: z.array(frame).length(5), reason: z.enum(["other", "debugCommand"]), hitBreakpoints: z.tuple([handle]), asyncStackTrace: z.unknown().optional(), asyncStackTraceId: z.unknown().optional() }) });
+/** Reject a failed inverse native delete sender pause predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_NATIVE_DELETE_SENDER_PAUSE"); } }
 /** Inspector coordinates use the exact parenthesized generated program which
  * the owner's correlated helper-source read must independently retain. */

@@ -26,6 +26,7 @@ export interface CurrentFootprintInverseNativeGetLookupOriginal {
   readonly getterBodyAuthorized: false; readonly runtimeJobIssued: false; readonly referenceResultsVerified: false; readonly dispatchAuthorized: false;
 }
 interface Helper { readonly command: Command; scriptId: string | null }
+/** Reject a failed inverse native get lookup custody predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_NATIVE_GET_LOOKUP_CUSTODY"); } }
 const originalControllers = new WeakSet<object>();
 

@@ -16,7 +16,9 @@ interface Tuple { readonly id: string; readonly values: readonly Remote[] }
 export interface CurrentFootprintInverseDeleteUiRunBindings extends Bindings { readonly collateral: Collateral; readonly rowGuard: string; readonly preferenceRoots: string; readonly scriptId: string }
 export interface CurrentFootprintInverseDeleteUiRunPrepared { readonly module: string; readonly proof: string; readonly ja: string; readonly p4: string; readonly yy: string; readonly removal: string; readonly liveLexicalsProved: false; readonly collateralComplete: false; readonly preferenceRemovalAuthorized: false; readonly runtimeAuthorityIssued: false }
 export interface CurrentFootprintInverseDeleteUiRunEntryBindings extends Bindings { readonly prepared: CurrentFootprintInverseDeleteUiRunPrepared; readonly role: Role; readonly event: unknown; readonly sessionId: string; readonly scriptId: string; readonly breakpointId: string; readonly ja: string | null }
+/** Reject a failed inverse delete ui run proof predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_DELETE_UI_RUN_PROOF"); } }
+/** Account every fixed UI-run request and qualify its exact helper before continuing. */
 function lane(b: Bindings, maximum: number): Readonly<{ send: (command: Command) => Promise<unknown>; props: (id: string) => Promise<unknown>; call: (role: keyof typeof CALLS, refs: readonly string[]) => Promise<unknown>; tuple: (role: keyof typeof CALLS, refs: readonly string[], size: number) => Promise<Tuple>; inspect: (id: string, size: number, skipRoot?: boolean) => Promise<Tuple> }> {
   let count = 0;
   const send = async (input: Command): Promise<unknown> => { b.current(); count += 1; need(count <= maximum); const command = validate(input); const raw = await b.request(command); b.current(); return raw; };

@@ -12,6 +12,7 @@ import type { CurrentFootprintInverseDeleteForwardPrepared as Prepared } from ".
 import { requireCurrentFootprintInversePublicServiceTrue as truth } from "./current-footprint-inverse-public-service-replies.ts";
 
 interface Bindings { readonly io: Io; readonly prepared: Prepared; readonly sessionId: string; readonly scripts: Readonly<{ ui: string; manager: string }>; readonly nativeMembers: string; readonly managerModule: string }
+/** Reject a failed inverse delete concurrent source predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_DELETE_CONCURRENT_SOURCE"); } }
 /** A single attempt retains every consumed event object and original Promise.
  * Source order is partial: the force body can run before dropped Ja returns. */

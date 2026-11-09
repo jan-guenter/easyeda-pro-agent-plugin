@@ -17,6 +17,7 @@ import { requireCurrentFootprintInversePublicServiceTrue as truth } from "./curr
 
 export interface CurrentFootprintInverseDeleteForwardBindings extends Omit<IoBindings, "maximum"> { readonly native: string; readonly nativeMembers: string; readonly profile: "ui" | "manager"; readonly scriptId: string; readonly uiScriptId: string; readonly methodFrame: string; readonly method: string; readonly topics: string; readonly manager: Manager; readonly forwarding: Forwarding; readonly outer: string; readonly methods: string; readonly initial: string; readonly ui: Omit<UiBindings, "receipt" | "current" | "request" | "scriptId"> }
 export interface CurrentFootprintInverseDeleteForwardPrepared { readonly channel: Channel; readonly origin: Origin; readonly methodFrame: string; readonly routes: string; readonly prepared: string; readonly replyTopic: string; readonly force: Force; readonly ui: Ui; readonly nativePostReturned: false; readonly originalWorkerHandlerObserved: false; readonly runtimeJobIssued: false; readonly dispatchAuthorized: false }
+/** Reject a failed inverse delete forward preparation predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_DELETE_FORWARD_PREPARATION"); } }
 /** Fresh channel checks reuse only GET comparison handles, never their spent
  * guards. The DEL method receiver and inner bus are joined independently. */

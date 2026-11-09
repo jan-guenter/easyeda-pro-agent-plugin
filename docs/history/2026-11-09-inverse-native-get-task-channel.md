@@ -55,3 +55,15 @@ accessor (zero getter calls) and unqualified native metadata refuse. Native
 posts remain zero while held. These are Linux Node source tests, not target
 runtime or accepted worker/Job validation. Parent owns final composed C#5 and
 pure codec parity; this source work launches no compiler, Windows or EasyEDA.
+
+## 2026-11-09 payload attribution correction
+
+The retained leaf verification names base `121e6f64` and records its focused and
+validator outcomes, but has no recoverable complete tested source/test manifest.
+The base alone does not identify the tested changes. Those leaf results remain
+unbound to an exact tree. Later composed non-suite verification retained the
+complete tracked-file inventory for frozen commit
+`1620d84e6fbc985e57155b8a72986bfd5ceffe2c`, tree
+`16c41988fd9d0694384259ff5633514b842ff4af`. Its types, lint, build and mandatory
+validator checks are separate evidence for that payload, not retroactive proof
+of the leaf's original Inspector test tree or connected behavior.

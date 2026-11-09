@@ -9,6 +9,7 @@ import { currentFootprintInverseGetRpcEntryScope as moduleScope } from "./curren
 import { qualifyCurrentFootprintInverseDeleteForceFunction, requireCurrentFootprintInverseDeleteForceDescription } from "./current-footprint-inverse-delete-force-source.ts";
 
 export interface CurrentFootprintInverseDeleteForcePrepared { readonly roots: string; readonly handler: string; readonly body: string; readonly callback: string; readonly wrapper: string; readonly emptyBody: string; readonly bodyModuleScope: string; readonly forceCompleted: false; readonly historyCompleted: false; readonly workerDrainProved: false }
+/** Reject a failed inverse delete force preparation predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_DELETE_FORCE_PREPARATION"); } }
 /** The initial closed branch has the actual UI MessageBus. The owner still
  * supplies full original source/receiver custody before mounting a sender. */

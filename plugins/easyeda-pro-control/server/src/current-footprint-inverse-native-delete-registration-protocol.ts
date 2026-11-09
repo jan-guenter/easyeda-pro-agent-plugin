@@ -23,6 +23,7 @@ export type CurrentFootprintInverseNativeDeleteRegistrationCommand = Readonly<z.
 /** Hard ceiling includes every original metadata packet and helper source;
  * the completed collector reports exact observed counts for native enrollment. */
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_REGISTRATION_REQUESTS = Object.freeze({ calls: 26, properties: 120, helpers: 26, cdpRequests: 172, controls: 174 } as const);
+/** Reject a failed inverse native delete registration command predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_NATIVE_DELETE_REGISTRATION_COMMAND"); } }
 /** Refuse extra fields, caller code, wrong flags and wrong reference arity. */
 export function validateCurrentFootprintInverseNativeDeleteRegistrationCommand(input: unknown): CurrentFootprintInverseNativeDeleteRegistrationCommand { const command = schema.parse(capture(input)); if (command.method === "Runtime.callFunctionOn") { const row = CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_REGISTRATION_CALLS[command.role]; need(command.params.functionDeclaration === row.program && command.params.arguments.length === row.refs + Number(row.value) && command.params.returnByValue === row.byValue); for (const [index, value] of command.params.arguments.entries()) { need(index < row.refs ? "objectId" in value : "value" in value); } } return freezeDeep(command); }

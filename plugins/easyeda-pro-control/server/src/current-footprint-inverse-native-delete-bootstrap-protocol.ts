@@ -11,6 +11,7 @@ type Rephase<C extends Prior> = C extends Prior ? Omit<C, "phase"> & Readonly<{ 
 export type CurrentFootprintInverseNativeDeleteBootstrapCommand = Readonly<Rephase<Prior>>;
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_BOOTSTRAP_REQUESTS = Object.freeze({ normal: 19, helpers: 4, cdpRequests: 23, controls: 25, events: 4, cleanupAfterOriginalExit: 0 } as const);
 const prefix = "inverse-native-delete-bootstrap-"; const before = "inverse-ui-own-data-";
+/** Reject a failed inverse native delete bootstrap command predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_NATIVE_DELETE_BOOTSTRAP_COMMAND"); } }
 /** Convert only a closed phase prefix before invoking the unchanged historical
  * validator. No arbitrary field, program, flag or method is admitted. */

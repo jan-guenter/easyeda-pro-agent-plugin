@@ -1,4 +1,11 @@
+/* oxlint-disable import/max-dependencies -- One original event reader retains construction, startup, native GET and original accepted-event custody without duplicating streams. */
 import { CurrentFootprintInverseReferenceWorkerCursor } from "./current-footprint-inverse-reference-worker-cursor.ts";
+import type { CurrentFootprintInverseNativeGetTaskCompletionController} from "./current-footprint-inverse-native-get-task-completion-controller.ts";
+import { assertOriginalCurrentFootprintInverseNativeGetTaskCompletionController } from "./current-footprint-inverse-native-get-task-completion-controller.ts";
+import { CurrentFootprintInverseNativeGetTaskAcceptCursor, assertOriginalCurrentFootprintInverseNativeGetTaskAcceptCursor } from "./current-footprint-inverse-native-get-task-accept-cursor.ts";
+import type { CurrentFootprintInverseNativeGetTaskAcceptCommand } from "./current-footprint-inverse-native-get-task-accept-protocol.ts";
+import { CurrentFootprintInverseNativeGetWorkerCursor } from "./current-footprint-inverse-native-get-worker-cursor.ts";
+import type { CurrentFootprintInverseNativeGetWorkerCommand } from "./current-footprint-inverse-native-get-worker-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_REFERENCE_WORKER_MAXIMUM as REFERENCE_WORKER_MAXIMUM } from "./current-footprint-inverse-reference-worker-protocol.ts";
 import type { CurrentFootprintInverseReferenceWorkerCommand } from "./current-footprint-inverse-reference-worker-protocol.ts";
 import { qualifyCurrentFootprintInverseNativeDeliveryHelper } from "./current-footprint-inverse-native-delivery-protocol.ts";
@@ -17,7 +24,6 @@ import { qualifyCurrentFootprintInverseClockWorkerHelper } from "./current-footp
 import type { CurrentFootprintInverseClockWorkerCommand } from "./current-footprint-inverse-clock-worker-protocol.ts";
 import { qualifyCurrentFootprintInverseDeleteBindingHelper } from "./current-footprint-inverse-delete-binding-protocol.ts";
 import type { CurrentFootprintInverseDeleteBindingCommand } from "./current-footprint-inverse-delete-binding-protocol.ts";
-// oxlint-disable-next-line import/max-dependencies -- One original event reader owns construction, cold, callback, condition and timer packets; splitting readers would duplicate event custody.
 import { drainCurrentFootprintInverseStartup } from "./current-footprint-inverse-startup-drain.ts";
 import { CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_ROLES as CACHE_ROLES, CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_SITES as COLD_SITES, CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_ROLES as STARTUP_ROLES, CURRENT_FOOTPRINT_INVERSE_INITIAL_SYNC_ROLES as SYNC_ROLES, classifyCurrentFootprintInverseColdPause, currentFootprintInverseConditionBudget, currentFootprintInverseConditionText, currentFootprintInverseInitialCacheBudget, currentFootprintInverseStartupCallbackBudget, qualifyCurrentFootprintInverseConditionSource } from "./current-footprint-inverse-cold-load-protocol.ts";
 import type { CurrentFootprintInverseColdLoadCommand, CurrentFootprintInverseColdStepCommand, CurrentFootprintInverseConditionRole, CurrentFootprintInverseInitialCacheCommand, CurrentFootprintInverseInitialCacheRole, CurrentFootprintInverseInitialSyncNativeCommand, CurrentFootprintInverseModelStepCommand, CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInverseStartupCallbackRole, CurrentFootprintInverseStartupQueueCommand, CurrentFootprintInverseColdLoadRole as CurrentPcbViaSavedLoadRole } from "./current-footprint-inverse-cold-load-protocol.ts";
@@ -75,6 +81,8 @@ export interface CurrentFootprintInverseWorkerControllerBindings {
   readonly getCompletionRequest:(command:CurrentFootprintInverseGetCompletionCommand)=>Promise<unknown>;
   readonly referenceWorkerRequest?: (command: CurrentFootprintInverseReferenceWorkerCommand) => Promise<unknown>;
   readonly getNativeRequest:(command:CurrentFootprintInverseGetNativeCommand)=>Promise<unknown>;
+  readonly nativeGetTaskAcceptRequest?: (command: CurrentFootprintInverseNativeGetTaskAcceptCommand) => Promise<unknown>;
+  readonly nativeGetWorkerRequest?: (command: CurrentFootprintInverseNativeGetWorkerCommand) => Promise<unknown>;
   readonly getWorkerRequest:(command:CurrentFootprintInverseGetWorkerCommand)=>Promise<unknown>;
   readonly nativeDeliveryRequest:(command:CurrentFootprintInverseNativeDeliveryCommand)=>Promise<unknown>;
   readonly nativeChannelRequest:(command:CurrentFootprintInverseNativeChannelCommand)=>Promise<unknown>;
@@ -153,8 +161,20 @@ export class CurrentFootprintInverseWorkerController {
   readonly #deleteJobHelpers:{program:string;scriptId:string|null}[]=[];#deleteJobHelperAttempts=0;#deleteJobObservationAttempted=false;
   readonly #deleteRpcHelpers:{program:string;scriptId:string|null}[]=[];#deleteRpcHelperAttempts=0;
   readonly #deleteEntryHelpers:{program:string;scriptId:string|null}[]=[];#deleteEntryArming=false;#deleteEntryPoint:string|null=null;#deleteEntryResolution:string|null=null;#deleteEntryConsumed=false;#deleteEntryHeld:WorkerEvent|null=null;#deleteEntryHelperAttempts=0;
+  #nativeGetCursor: CurrentFootprintInverseNativeGetWorkerCursor | null = null;
+  #nativeGetPreparationAttempted = false;
+  #nativeGetTaskCompletionAttempted = false;
+  #nativeGetTaskAcceptedConsumed = false;
+  #nativeGetTaskCompletion: CurrentFootprintInverseNativeGetTaskCompletionController | null = null;
+  #nativeGetTaskAcceptAttempted = false;
+  #nativeGetTaskAcceptReadiness: CurrentFootprintInverseNativeGetWorkerCursor | null = null;
+  #nativeGetTaskAcceptCursor: CurrentFootprintInverseNativeGetTaskAcceptCursor | null = null;
+  #nativeGetTaskAccepted: WorkerEvent | null = null;
+  #nativeGetTaskAcceptedOriginal: DiagnosticEvent | null = null;
+  readonly #nativeGetTaskAcceptOriginals = new WeakMap<WorkerEvent, DiagnosticEvent>();
+  readonly #nativeGetTaskAcceptEvents = new WeakSet<DiagnosticEvent>();
   #referenceCursor: CurrentFootprintInverseReferenceWorkerCursor | null = null;
-  #deletePreparationAttempted=false;#deleteObservationAttempted=false;#deleteWork:Readonly<{kind:"prepare"|"observe"|"job"|"delivery"|"get-prepare"|"get-native"|"get-completion"|"reference-prepare"|"reference-query";run:()=>Promise<void>;result:ReturnType<typeof Promise.withResolvers<boolean>>}>|null=null;
+  #deletePreparationAttempted=false;#deleteObservationAttempted=false;#deleteWork:Readonly<{kind:"native-get-task-completion"|"native-get-task-accept"|"native-get-prepare"|"prepare"|"observe"|"job"|"delivery"|"get-prepare"|"get-native"|"get-completion"|"reference-prepare"|"reference-query";run:()=>Promise<void>;result:ReturnType<typeof Promise.withResolvers<boolean>>}>|null=null;
   readonly #clockWorkerHelpers:{program:string;scriptId:string|null}[]=[];#clockWorkerBound=false;#clockWorkerCompleted=false;#clockWorkerHelperAttempts=0;
   readonly #deleteEncoderHelpers:{program:string;scriptId:string|null}[]=[];#deleteEncoderBound=false;#deleteEncoderCompleted=false;#deleteEncoderHelperAttempts=0;
   readonly #deleteBindingHelpers:{program:string;scriptId:string|null}[]=[];#deleteBindingBound=false;#deleteBindingCompleted=false;#deleteBindingHelperAttempts=0;
@@ -165,15 +185,19 @@ export class CurrentFootprintInverseWorkerController {
   #constructionWorkAttempted = false; #constructionStartAttempted = false; #constructionStarted = false;
   #constructionHeld: CurrentProjectSaveStructureSite | null = null; #constructionResume: CurrentProjectSaveStructureSite | null = null;
   #source: CurrentPcbViaSavedLoadProjectSourceHeld | null = null; #failed = false; #reading = false; #eventCount = 0; #networkEvents = 0; #pumping = false;
+  /** Capture frozen own-data callbacks for this one original worker reader;
+   * optional readonly lanes remain bound to the same private Core transport. */
   public constructor(bindings: CurrentFootprintInverseWorkerControllerBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
     const fields = ["parentSessionId", "projectUuid", "windowTabId", "bindWorker", "request", "poll", "assertCurrent", "projectSourceHeld", "constructionRequest", "initialSyncRequest", "initialSyncHeld", "initialCacheRequest", "initialCacheHeld", "startupQueueRequest", "startupCallbackRequest", "startupCallbackHeld", "conditionSourceRequest", "timerRequest", "timerHeld", "libraryRequest", "libraryHeld", "deleteBindingRequest", "deleteEncoderRequest", "clockWorkerRequest", "getCompletionRequest", "getNativeRequest", "getWorkerRequest", "nativeDeliveryRequest", "nativeChannelRequest", "ownDataRequest", "deleteWorkerPeerRequest", "deleteJobRequest", "deleteRpcRequest", "deleteEntryRequest", "modelStepRequest", "startupIdleReady", "settleStartupPromises", "coldStepRequest", "coldRequest", "producerArmRequest", "constructionHeld", "fail"];
+    if (Object.hasOwn(bindings, "nativeGetTaskAcceptRequest")) { fields.push("nativeGetTaskAcceptRequest"); }
+    if (Object.hasOwn(bindings, "nativeGetWorkerRequest")) { fields.push("nativeGetWorkerRequest"); }
     if (Object.hasOwn(bindings, "referenceWorkerRequest")) { fields.push("referenceWorkerRequest"); }
     need(Reflect.ownKeys(bindings).length === fields.length);
     for (const [index, name] of fields.entries()) { const d = Object.getOwnPropertyDescriptor(bindings, name); need(d !== undefined && Object.hasOwn(d, "value") && typeof d.value === (index < 3 ? "string" : "function") && !types.isProxy(d.value)); }
     need(token(bindings.parentSessionId) && token(bindings.windowTabId) && /^[a-f\d]{64}$/u.test(bindings.projectUuid)); this.#bindings = bindings; Object.freeze(this);
   }
-  public fail(): void { if (!this.#failed) { this.#failed = true; this.#completion.resolve(null); const queued = this.#constructionWork; this.#constructionWork = null; queued?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); const startup=this.#coldStartupWork;this.#coldStartupWork=null;startup?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR"));const setup = this.#bootstrapSetupWork; this.#bootstrapSetupWork = null; setup?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR"));const deletion=this.#deleteWork;this.#deleteWork=null;deletion?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); this.#bindings.fail(); } }
+  public fail(): void { if (!this.#failed) { this.#failed = true; this.#nativeGetTaskAcceptCursor?.fail(); this.#completion.resolve(null); const queued = this.#constructionWork; this.#constructionWork = null; queued?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); const startup=this.#coldStartupWork;this.#coldStartupWork=null;startup?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR"));const setup = this.#bootstrapSetupWork; this.#bootstrapSetupWork = null; setup?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR"));const deletion=this.#deleteWork;this.#deleteWork=null;deletion?.result.reject(new Error("FOOTPRINT_INVERSE_WORKER_CURSOR")); this.#bindings.fail(); } }
   #attach(event: DiagnosticEvent): void {
     const params = event.params, sessionId = params["sessionId"], target = params["targetInfo"];
     need((event.sessionId === undefined || event.sessionId === this.#bindings.parentSessionId) && Reflect.ownKeys(params).length === 3 && record(target) &&
@@ -188,7 +212,7 @@ export class CurrentFootprintInverseWorkerController {
    * fixed policy acknowledgments and later original source/body joins matter. */
   public observeEvent(event: DiagnosticEvent): void {
     try {
-      this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 1024+13*this.#startupCallbackBound+18*this.#initialCacheBound+53+(this.#libraryBound?25:0)+(this.#deleteBindingBound?32:0)+(this.#deleteEncoderBound?3:0)+(this.#clockWorkerBound?5:0)+(this.#deletePreparationAttempted?12:0)+(this.#deleteJobObservationAttempted?3:0)+(this.#nativeDeliveryAttempted?4:0)+(this.#getPreparationAttempted?7:0)+(this.#getWorkerConsumed?8:0)+(this.#getCompletionAttempted?GET_COMPLETION_MAXIMUM.events:0)+(this.#referenceCursor===null?0:REFERENCE_WORKER_MAXIMUM.events)+(this.#conditionBound>0?currentFootprintInverseConditionBudget(this.#conditionBound):0));
+      this.#eventCount += 1; need(!this.#failed && this.#eventCount <= 1024+13*this.#startupCallbackBound+18*this.#initialCacheBound+53+(this.#libraryBound?25:0)+(this.#deleteBindingBound?32:0)+(this.#deleteEncoderBound?3:0)+(this.#clockWorkerBound?5:0)+(this.#deletePreparationAttempted?12:0)+(this.#deleteJobObservationAttempted?3:0)+(this.#nativeDeliveryAttempted?4:0)+(this.#getPreparationAttempted||this.#nativeGetPreparationAttempted?7:0)+(this.#getWorkerConsumed||this.#nativeGetTaskAcceptAttempted?8:0)+(this.#getCompletionAttempted||this.#nativeGetTaskCompletionAttempted?GET_COMPLETION_MAXIMUM.events:0)+(this.#referenceCursor===null?0:REFERENCE_WORKER_MAXIMUM.events)+(this.#conditionBound>0?currentFootprintInverseConditionBudget(this.#conditionBound):0));
       if (event.method === "Target.attachedToTarget") { this.#attach(event); return; }
       need(this.#page !== null && event.sessionId === this.#page.sessionId);
       if (["Network.requestWillBeSent", "Network.requestWillBeSentExtraInfo", "Network.responseReceived", "Network.responseReceivedExtraInfo", "Network.loadingFinished", "Network.loadingFailed", "Network.dataReceived", "Network.requestServedFromCache", "Network.resourceChangedPriority"].includes(event.method)) {
@@ -198,6 +222,10 @@ export class CurrentFootprintInverseWorkerController {
       // They supply no stage/callback/return authority. Exception and unknown
       // Packets remain on the strict original stage path.
       if(event.method==="Runtime.consoleAPICalled"){return;}
+      if (this.#nativeGetTaskAcceptAttempted) { this.#nativeGetTaskAcceptEvents.add(event); }
+      if (this.#nativeGetTaskCompletion?.observe(event) === true) { return; }
+      if (this.#nativeGetTaskCompletion === null && this.#nativeGetTaskAcceptCursor?.observe(event) === true) { return; }
+      if ((!this.#nativeGetTaskAcceptAttempted || event.method !== "Debugger.scriptParsed") && this.#nativeGetCursor?.observe(event) === true) { return; }
       if (this.#referenceCursor?.observe(event) === true) { return; }
       if (this.#source !== null && event.method === "Debugger.scriptParsed" && event.params["url"] === "") {
         const expected = [...this.#constructionHelpers,...this.#producerHelpers,...this.#coldHelpers,...this.#startupCallbackHelpers,...this.#timerHelpers,...this.#libraryHelpers,...this.#deleteBindingHelpers,...this.#deleteEncoderHelpers,...this.#clockWorkerHelpers,...this.#deleteEntryHelpers,...this.#deleteRpcHelpers,...this.#deleteJobHelpers,...this.#deleteWorkerPeerHelpers,...this.#ownDataHelpers,...this.#nativeChannelHelpers,...this.#nativeDeliveryHelpers,...this.#getWorkerHelpers,...this.#getNativeHelpers,...this.#getCompletionHelpers,...this.#startupQueueHelpers,...this.#initialCacheHelpers,...this.#initialSyncHelpers].find(value => value.scriptId === null);
@@ -226,7 +254,7 @@ export class CurrentFootprintInverseWorkerController {
         need(role !== null && role !== undefined && token(breakpointId) && record(location) && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === SITES[role].lineNumber && location["columnNumber"] === SITES[role].columnNumber);
         const prior = this.#constructionResolutions.get(breakpointId); need(prior === undefined || prior === role); this.#constructionResolutions.set(breakpointId, role); return;
       }
-      need(this.#events.length < 128); this.#events.push(freezeDeep(structuredClone({ method: event.method, sessionId: this.#page.sessionId, params: event.params })));
+      need(this.#events.length < 128); const selected = freezeDeep(structuredClone({ method: event.method, sessionId: this.#page.sessionId, params: event.params })); if (this.#nativeGetTaskAcceptAttempted) { this.#nativeGetTaskAcceptOriginals.set(selected, event); } this.#events.push(selected);
     } catch (caughtError) { this.fail(); throw caughtError; }
   }
   async #current(): Promise<void> { need(!this.#failed); await this.#bindings.assertCurrent(); need(!this.#failed); }
@@ -388,6 +416,59 @@ export class CurrentFootprintInverseWorkerController {
   public requestGetNative(command:CurrentFootprintInverseGetNativeCommand):Promise<unknown>{need(this.#pumping&&!this.#failed&&this.#getEntryHeld!==null&&this.#getNativeAttempted);return this.#bindings.getNativeRequest(command);}
   public expectGetNativeHelper(program:string):void{const source=program.startsWith("[")?program:`(${program})`;qualifyCurrentFootprintInverseGetNativeHelper(source,program);need(this.#pumping&&!this.#failed&&this.#getEntryHeld!==null&&this.#getNativeHelpers.length===0&&this.#getNativeHelpersAttempted<6);this.#getNativeHelpersAttempted+=1;this.#getNativeHelpers.push({program:source,scriptId:null});}
   public async qualifyGetNativeHelper(program:string):Promise<void>{const original=this.#getNativeHelpers[0],source=program.startsWith("[")?program:`(${program})`;need(this.#pumping&&!this.#failed&&original!==undefined&&original.program===source&&original.scriptId!==null);const raw=await this.#bindings.getNativeRequest({phase:"inverse-get-native-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(raw)&&Reflect.ownKeys(raw).length===1&&this.#getNativeHelpers[0]===original);qualifyCurrentFootprintInverseGetNativeHelper(raw["scriptSource"],program);this.#getNativeHelpers.shift();}
+  /** Queue one native completion while the same original accepted Job entry
+   * is held. No public worker-consumed/readiness flag is reused or changed. */
+  public queueNativeGetTaskCompletion(event: DiagnosticEvent, run: () => Promise<void>): Promise<boolean> { this.requireOriginalNativeGetTaskAcceptedEvent(event); this.#nativeGetTaskAcceptCursor?.requireCompleted(); need(this.#nativeGetTaskAcceptCursor !== null && !this.#pumping && !this.#nativeGetTaskCompletionAttempted && this.#deleteWork === null && typeof run === "function" && !types.isProxy(run)); this.#nativeGetTaskCompletionAttempted = true; const result = Promise.withResolvers<boolean>(); this.#deleteWork = Object.freeze({ kind: "native-get-task-completion", run, result }); return result.promise; }
+  /** Bind only the original Core's new controller to this actual worker
+   * stream. Its original helpers are routed before the closed accept cursor. */
+  public bindNativeGetTaskCompletion(event: DiagnosticEvent, lane: CurrentFootprintInverseNativeGetTaskCompletionController): void { this.requireOriginalNativeGetTaskAcceptedEvent(event); assertOriginalCurrentFootprintInverseNativeGetTaskCompletionController(lane); need(this.#pumping && this.#nativeGetTaskCompletionAttempted && this.#nativeGetTaskCompletion === null); this.#nativeGetTaskCompletion = lane; }
+  /** Spend the original accepted hold only at the actual first transport
+   * callback, after all owner/artifact verification and directly before send. */
+  public consumeNativeGetTaskAcceptedEvent(event: DiagnosticEvent, lane: CurrentFootprintInverseNativeGetTaskCompletionController): void { this.requireOriginalNativeGetTaskAcceptedEvent(event); assertOriginalCurrentFootprintInverseNativeGetTaskCompletionController(lane); need(this.#pumping && this.#nativeGetTaskCompletionAttempted && this.#nativeGetTaskCompletion === lane); this.#nativeGetTaskAcceptedConsumed = true; }
+  /** Reprove historical native lineage without claiming a spent entry is
+   * still held. The distinct completion controller owns subsequent pauses. */
+  public requireNativeGetTaskCompletion(lane: CurrentFootprintInverseNativeGetTaskCompletionController, event: DiagnosticEvent): void { this.requireNativeGetTaskAcceptance(); assertOriginalCurrentFootprintInverseNativeGetTaskCompletionController(lane); need(this.#nativeGetTaskCompletionAttempted && this.#nativeGetTaskCompletion === lane && this.#nativeGetTaskAcceptedOriginal === event && this.#nativeGetTaskAccepted !== null && this.#nativeGetTaskAcceptOriginals.get(this.#nativeGetTaskAccepted) === event && this.#nativeGetTaskAcceptEvents.has(event)); }
+  /** Only actual pipe deliveries retained by this original worker reader can
+   * supply a helper, point, resumed notification or new body frame. */
+  public assertNativeGetTaskCompletionEvent(lane: CurrentFootprintInverseNativeGetTaskCompletionController, event: DiagnosticEvent): void { need(this.#nativeGetTaskCompletion === lane && this.#nativeGetTaskAcceptEvents.has(event)); }
+  /** Reserve the fresh native task's original GET event before UI forwarding.
+   * Do not pump this work until its verified native post has normally returned;
+   * the original readonly cursor stays complete and receives no new budget. */
+  public queueNativeGetTaskAcceptance(readiness: CurrentFootprintInverseNativeGetWorkerCursor, run: () => Promise<void>): Promise<boolean> { this.requireNativeGetCursor(readiness); readiness.requireCompleted(); this.requireOriginalStartupDrained(); this.requireDeleteEntryAdmission(); need(!this.#pumping && !this.#nativeGetTaskAcceptAttempted && this.#deleteWork === null && !this.#getWorkerConsumed && typeof this.#bindings.nativeGetTaskAcceptRequest === "function" && typeof run === "function" && !types.isProxy(run)); this.#nativeGetTaskAcceptAttempted = true; this.#nativeGetTaskAcceptReadiness = readiness; const result = Promise.withResolvers<boolean>(); this.#deleteWork = Object.freeze({ kind: "native-get-task-accept", run, result }); return result.promise; }
+  /** Keep the same original native readiness/point and public exclusion after
+   * an actual worker event is queued. Idle state is no longer claimed here. */
+  public requireNativeGetTaskAcceptance(): void { this.requireDeleteEntryCustody(); const readiness = this.#nativeGetTaskAcceptReadiness; need(this.#nativeGetTaskAcceptAttempted && readiness !== null && !this.#getPreparationAttempted && !this.#deleteEntryConsumed && !this.#getWorkerConsumed); this.requireNativeGetCursor(readiness); readiness.requireCompleted(); }
+  /** Dequeue the actual original GET pause. Retain both its immutable queue
+   * packet and original pipe event; matching copied JSON cannot replace either. */
+  public async nextNativeGetTaskAcceptedEvent(): Promise<DiagnosticEvent> { this.requireNativeGetTaskAcceptance(); need(this.#pumping && this.#nativeGetTaskAccepted === null && this.#nativeGetTaskAcceptedOriginal === null && this.#pair !== null); const readiness = this.#nativeGetTaskAcceptReadiness; need(readiness !== null); const point = readiness.requireCompleted(); const selected = await this.#next(); this.requireNativeGetTaskAcceptance(); const original = this.#nativeGetTaskAcceptOriginals.get(selected); const hits = selected.params["hitBreakpoints"]; need(original !== undefined && this.#nativeGetTaskAcceptEvents.has(original) && selected.method === "Debugger.paused" && original.method === "Debugger.paused" && selected.sessionId === this.#pair.pageSessionId && original.sessionId === this.#pair.pageSessionId && Array.isArray(hits) && hits.length === 1 && hits[0] === point); this.#nativeGetTaskAccepted = selected; this.#nativeGetTaskAcceptedOriginal = original; return original; }
+  /** Require this same unconsumed original event, never its normalized copy. */
+  public requireOriginalNativeGetTaskAcceptedEvent(event: DiagnosticEvent): void { this.requireNativeGetTaskAcceptance(); need(!this.#nativeGetTaskAcceptedConsumed && this.#nativeGetTaskAccepted !== null && this.#nativeGetTaskAcceptedOriginal === event && this.#nativeGetTaskAcceptOriginals.get(this.#nativeGetTaskAccepted) === event && this.#nativeGetTaskAcceptEvents.has(event)); }
+  /** Bind the separate accepted-event cursor only while this same source and
+   * event are held. It cannot invoke or reopen the old readonly cursor. */
+  public bindNativeGetTaskAcceptCursor(event: DiagnosticEvent): CurrentFootprintInverseNativeGetTaskAcceptCursor { this.requireOriginalNativeGetTaskAcceptedEvent(event); need(this.#pumping && this.#nativeGetTaskAcceptCursor === null && this.#source !== null && this.#pair !== null); const request = this.#bindings.nativeGetTaskAcceptRequest; need(typeof request === "function"); const source = this.#source; const cursor = new CurrentFootprintInverseNativeGetTaskAcceptCursor({ sessionId: this.#pair.pageSessionId, contextId: source.executionContextId, current: async (): Promise<void> => { await this.#current(); this.requireOriginalNativeGetTaskAcceptedEvent(event); need(this.#pumping && this.#nativeGetTaskAcceptCursor === cursor); }, assertOriginalEvent: (actual): void => { this.requireOriginalNativeGetTaskAcceptedEvent(event); need(this.#nativeGetTaskAcceptEvents.has(actual) && this.#nativeGetTaskAcceptCursor === cursor); }, request }); this.#nativeGetTaskAcceptCursor = cursor; return cursor; }
+  /** Reprove exact cursor/event identity around every accepted-event await. */
+  public requireNativeGetTaskAcceptCursor(cursor: CurrentFootprintInverseNativeGetTaskAcceptCursor, event: DiagnosticEvent): void { this.requireOriginalNativeGetTaskAcceptedEvent(event); assertOriginalCurrentFootprintInverseNativeGetTaskAcceptCursor(cursor); need(this.#nativeGetTaskAcceptCursor === cursor); }
+  /** Reserve one distinct native GET preparation while the original startup
+   * and DELETE admission stay unconsumed. The public GET path is excluded. */
+  public queueNativeGetPreparation(run: () => Promise<void>): Promise<boolean> {
+    this.requireOriginalStartupDrained(); this.requireDeleteEntryAdmission();
+    need(!this.#pumping && !this.#nativeGetPreparationAttempted && !this.#getPreparationAttempted && !this.#deleteEntryConsumed && this.#deleteWork === null && typeof this.#bindings.nativeGetWorkerRequest === "function" && typeof run === "function" && !types.isProxy(run));
+    this.#nativeGetPreparationAttempted = true; const result = Promise.withResolvers<boolean>(); this.#deleteWork = Object.freeze({ kind: "native-get-prepare", run, result }); return result.promise;
+  }
+  /** Bind only this pumping original worker/source to its native readonly
+   * cursor. The callback remains the original Core's fixed private transport. */
+  public bindNativeGetCursor(): CurrentFootprintInverseNativeGetWorkerCursor {
+    this.requireOriginalStartupDrained(); this.requireDeleteEntryAdmission();
+    need(this.#pumping && this.#nativeGetPreparationAttempted && this.#nativeGetCursor === null && !this.#deleteEntryConsumed && !this.#getPreparationAttempted && this.#source !== null && this.#pair !== null);
+    const request = this.#bindings.nativeGetWorkerRequest; need(typeof request === "function"); const source = this.#source;
+    const cursor = new CurrentFootprintInverseNativeGetWorkerCursor(Object.freeze({ scriptId: source.scriptId, sessionId: this.#pair.pageSessionId, contextId: source.executionContextId, current: async (): Promise<void> => { await this.#current(); need(this.#pumping && this.#nativeGetCursor === cursor && !this.#getPreparationAttempted && !this.#deleteEntryConsumed); }, request }));
+    this.#nativeGetCursor = cursor; return cursor;
+  }
+  /** Reprove original retained native readiness without consuming a public
+   * GET readiness, releasing its point or granting any body execution. */
+  public requireNativeGetCursor(cursor: CurrentFootprintInverseNativeGetWorkerCursor): void {
+    this.requireDeleteEntryCustody(); need(this.#nativeGetPreparationAttempted && !this.#getPreparationAttempted && !this.#deleteEntryConsumed && this.#nativeGetCursor === cursor);
+  }
   public queueGetPreparation(run:()=>Promise<void>):Promise<boolean>{this.requireDeleteEntryCustody();need(!this.#pumping&&this.#deleteEntryConsumed&&this.#deleteEntryHeld===null&&!this.#getPreparationAttempted&&this.#deleteWork===null&&typeof run==="function"&&!types.isProxy(run));this.#getPreparationAttempted=true;const result=Promise.withResolvers<boolean>();this.#deleteWork=Object.freeze({kind:"get-prepare",run,result});return result.promise;}
   public requestGetWorker(command:CurrentFootprintInverseGetWorkerCommand):Promise<unknown>{need(this.#pumping&&!this.#failed&&this.#getPreparationAttempted&&!this.#getWorkerConsumed&&this.#deleteEntryHeld===null);return this.#bindings.getWorkerRequest(command);}
   public expectGetWorkerHelper(program:string):void{qualifyCurrentFootprintInverseGetWorkerHelper(`(${program})`,program);need(this.#pumping&&!this.#failed&&this.#getPreparationAttempted&&!this.#getWorkerConsumed&&this.#getWorkerHelpers.length===0&&this.#getWorkerHelpersAttempted<6);this.#getWorkerHelpersAttempted+=1;this.#getWorkerHelpers.push({program:`(${program})`,scriptId:null});}
@@ -411,7 +492,9 @@ export class CurrentFootprintInverseWorkerController {
   public registerDeleteEntryArm(reply:unknown):void{need(this.#source!==null&&this.#pumping&&!this.#failed&&this.#deleteEntryArming&&this.#deleteEntryPoint===null);const id=currentFootprintInverseDeleteEntryPoint(reply,this.#source.scriptId);need(this.#deleteEntryResolution===null||this.#deleteEntryResolution===id);this.#deleteEntryPoint=id;this.#deleteEntryArming=false;}
   public requireDeleteEntryCustody():void{need(!this.#failed&&this.#startupDrained&&this.#deletePreparationAttempted&&this.#deleteEntryPoint!==null&&!this.#deleteEntryArming);}
   public requireDeleteEntryAdmission():void{need(!this.#failed&&this.#startupDrained&&this.#deletePreparationAttempted&&this.#deleteEntryPoint!==null&&!this.#deleteEntryArming&&this.#deleteEntryHeld===null&&this.#deleteEntryHelpers.length===0&&this.#deleteRpcHelpers.length===0&&this.#deleteRpcHelperAttempts===5&&this.#deleteWorkerPeerHelpers.length===0&&this.#deleteWorkerPeerHelperAttempts===2&&this.#ownDataHelpers.length===0&&this.#ownDataHelperAttempts===4&&this.#nativeChannelHelpers.length===0&&this.#nativeChannelHelperAttempts===4);}
-  public consumeDeleteEntryAdmission():void{this.requireOriginalStartupDrained();this.requireDeleteEntryAdmission();need(!this.#deleteEntryConsumed);this.#deleteEntryConsumed=true;}
+  /** Spend original public admission only when no native readonly route has
+   * been selected; failed native preparation cannot switch to that public Call. */
+  public consumeDeleteEntryAdmission():void{need(!this.#nativeGetPreparationAttempted);this.requireOriginalStartupDrained();this.requireDeleteEntryAdmission();need(!this.#deleteEntryConsumed);this.#deleteEntryConsumed=true;}
   public requestNativeChannel(command:CurrentFootprintInverseNativeChannelCommand):Promise<unknown>{need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted&&!this.#deleteEntryConsumed);return this.#bindings.nativeChannelRequest(command);}
   public expectNativeChannelHelper(program:string):void{const source=`(${program})`;qualifyCurrentFootprintInverseNativeChannelHelper(source,program);need(this.#pumping&&!this.#failed&&this.#deletePreparationAttempted&&!this.#deleteEntryConsumed&&this.#nativeChannelHelpers.length===0&&this.#nativeChannelHelperAttempts<4);this.#nativeChannelHelperAttempts+=1;this.#nativeChannelHelpers.push({program:source,scriptId:null});}
   public async qualifyNativeChannelHelper(program:string):Promise<void>{const original=this.#nativeChannelHelpers[0];need(this.#pumping&&!this.#failed&&original!==undefined&&original.program===`(${program})`&&original.scriptId!==null);const raw=await this.#bindings.nativeChannelRequest({phase:"inverse-native-channel-helper",method:"Debugger.getScriptSource",params:{scriptId:original.scriptId}});await this.#current();need(record(raw)&&Reflect.ownKeys(raw).length===1&&this.#nativeChannelHelpers[0]===original);qualifyCurrentFootprintInverseNativeChannelHelper(raw["scriptSource"],program);this.#nativeChannelHelpers.shift();}
@@ -534,12 +617,15 @@ export class CurrentFootprintInverseWorkerController {
     need(selected !== undefined && record(location) && this.#source !== null && location["scriptId"] === this.#source.scriptId && location["lineNumber"] === SITES[selected[0]].lineNumber && location["columnNumber"] === SITES[selected[0]].columnNumber);
     this.#constructionHeld = selected[0]; await this.#bindings.constructionHeld(selected[0], event); await this.#current(); return { ...event, method: "Debugger.paused", sessionId: event.sessionId };
   }
+  /** Run one queued original source task after checking its exact custody
+   * stage. Native readonly preparation has its own unconsumed-admission branch
+   * and never inherits the public GET or reference cursor's state. */
   public async pump(): Promise<void> {
     need(!this.#failed); if (this.#browser === null || this.#page === null || this.#pumping || this.#result !== null && this.#constructionWork === null && this.#bootstrapSetupWork === null&&this.#coldStartupWork===null&&this.#deleteWork===null) { return; }
     this.#pumping = true;
     try {
       if (this.#result === null) { await this.observeProjectSourceHeld(); }
-      else { const work = this.#constructionWork ?? this.#bootstrapSetupWork??this.#coldStartupWork??this.#deleteWork; need(work !== null); if (this.#constructionWork === work) { this.#constructionWork = null; } else if(this.#bootstrapSetupWork===work) { this.#bootstrapSetupWork = null; this.requireConstructionBootstrap(); }else if(this.#deleteWork===work){const deletion=this.#deleteWork;need(deletion!==null);this.#deleteWork=null;if(deletion.kind==="reference-prepare"){this.requireGetWorkerRearmed();need(this.#referenceCursor===null);}else if(deletion.kind==="reference-query"){need(this.#referenceCursor!==null);this.#referenceCursor.requireCustody();}else if(deletion.kind==="prepare"){this.requireOriginalStartupDrained();}else if(deletion.kind==="get-completion"){need(this.#getCompletionAttempted&&this.#getEntryHeld!==null&&!this.#getCompletionStarted);}else if(deletion.kind==="get-native"){need(this.#getNativeAttempted&&this.#getWorkerConsumed&&this.#getEntryPoint!==null);}else if(deletion.kind==="get-prepare"){this.requireDeleteEntryCustody();need(this.#getPreparationAttempted&&this.#deleteEntryConsumed&&this.#deleteEntryHeld===null);}else if(deletion.kind==="job"||deletion.kind==="delivery"){need(this.#deleteEntryHeld!==null);this.requireOriginalDeleteEntryHeld(this.#deleteEntryHeld);}else{this.requireDeleteEntryAdmission();need(this.#deleteEntryConsumed);}}else{need(this.#coldStartupWork===work);this.#coldStartupWork=null;if(this.#coldStartupStarted){this.requireColdStartupCustody();}else{this.requireConstructionBootstrap();}}
+      else { const work = this.#constructionWork ?? this.#bootstrapSetupWork??this.#coldStartupWork??this.#deleteWork; need(work !== null); if (this.#constructionWork === work) { this.#constructionWork = null; } else if(this.#bootstrapSetupWork===work) { this.#bootstrapSetupWork = null; this.requireConstructionBootstrap(); }else if(this.#deleteWork===work){const deletion=this.#deleteWork;need(deletion!==null);this.#deleteWork=null;if(deletion.kind==="native-get-task-completion"){need(this.#nativeGetTaskCompletionAttempted&&this.#nativeGetTaskAcceptedOriginal!==null&&!this.#nativeGetTaskAcceptedConsumed&&this.#nativeGetTaskCompletion===null);this.requireOriginalNativeGetTaskAcceptedEvent(this.#nativeGetTaskAcceptedOriginal);}else if(deletion.kind==="native-get-task-accept"){this.requireNativeGetTaskAcceptance();need(this.#nativeGetTaskAcceptCursor===null&&this.#nativeGetTaskAccepted===null);}else if(deletion.kind==="native-get-prepare"){this.requireOriginalStartupDrained();this.requireDeleteEntryAdmission();need(this.#nativeGetPreparationAttempted&&!this.#deleteEntryConsumed&&!this.#getPreparationAttempted&&this.#nativeGetCursor===null);}else if(deletion.kind==="reference-prepare"){this.requireGetWorkerRearmed();need(this.#referenceCursor===null);}else if(deletion.kind==="reference-query"){need(this.#referenceCursor!==null);this.#referenceCursor.requireCustody();}else if(deletion.kind==="prepare"){this.requireOriginalStartupDrained();}else if(deletion.kind==="get-completion"){need(this.#getCompletionAttempted&&this.#getEntryHeld!==null&&!this.#getCompletionStarted);}else if(deletion.kind==="get-native"){need(this.#getNativeAttempted&&this.#getWorkerConsumed&&this.#getEntryPoint!==null);}else if(deletion.kind==="get-prepare"){this.requireDeleteEntryCustody();need(this.#getPreparationAttempted&&this.#deleteEntryConsumed&&this.#deleteEntryHeld===null);}else if(deletion.kind==="job"||deletion.kind==="delivery"){need(this.#deleteEntryHeld!==null);this.requireOriginalDeleteEntryHeld(this.#deleteEntryHeld);}else{this.requireDeleteEntryAdmission();need(this.#deleteEntryConsumed);}}else{need(this.#coldStartupWork===work);this.#coldStartupWork=null;if(this.#coldStartupStarted){this.requireColdStartupCustody();}else{this.requireConstructionBootstrap();}}
         try { await work.run(); work.result.resolve(true); } catch (error) { work.result.reject(error); throw error; } }
     } catch (error) { this.fail(); throw error; } finally { this.#pumping = false; }
   }
