@@ -101,7 +101,7 @@ async function fixture(execution: boolean, loseAfterSource = false, refuseSource
   const loaded: { exports: Record<string, unknown> } = { exports: {} };
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${compiled.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
-    if (name === "./current-pcb-worker-startup-channel.ts") { return {
+    if (name === "./current-pcb-worker-startup-channel.ts") { const actual: unknown=actualRequire(name);assert.ok(actual!==null&&typeof actual==="object");return { ...actual,
       isOriginalFootprintExecutionDependency: (value: unknown): boolean => value === dependency && execution,
       isOriginalFootprintPreparationDependency: (value: unknown): boolean => value === dependency && execution,
       isOriginalFootprintSavedDependency: (): boolean => false,

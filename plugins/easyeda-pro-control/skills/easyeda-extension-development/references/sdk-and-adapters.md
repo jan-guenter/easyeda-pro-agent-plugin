@@ -20,7 +20,31 @@ has no such mount. New `sys_ExternalApi` registrations are another trust boundar
 not permission to run another extension's code. [Help reference](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_help.help.html),
 [external API reference](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_externalapi.html).
 
+The offline `sdk` and `coverage` queries also accept `reference:"packaged-4197"`.
+That separate candidate records862 signatures from the statically inspected
+4.1.97.04b092ac/API0.3.69.f840f579 package. It preserves all earlier snapshots;
+it is neither the installed3.2.209 profile nor a runtime upgrade. Query exact
+namespaces and signatures before planning a future adapter. The exhaustive
+inventory includes its20 new method paths and their runtime-admission omissions.
+Do not dispatch those methods through an older bridge or interpret the official
+CLI's session acknowledgment as a saved result. The hidden `--userData` flag
+does not establish independent config/cache/profile roots, and CLI session
+destruction does not prove normal editor closure. See the
+[dated source investigation](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-06-official-cli-applicability.md)
+before evaluating that backend in a genuinely isolated environment.
+
 ## Package and runtime
+
+CBB `get` reads a project and branch structure, then assembles schematic/PCB
+boards. It does not share the component metadata contract used for symbols or
+footprints. The inspected desktop search also refreshes local project paths.
+The anonymous system-only replacement remains a concrete omission: retained
+requests returned HTTP403, the shipped library supplied no project/board rows,
+and inspected examples supplied no positive anonymous project/branch witness.
+Do not rerun those absence probes to finish a task or substitute private account
+data. A future adapter needs a positive witness, exact ownership and reciprocal
+board membership. Query each method's `coverage` entry for the evidence and
+reopening requirements. No claim is made that the online catalog is empty.
 
 `extension.json` binds UUID, entrypoint, activation events, editor compatibility,
 menus and dependencies. An SDK-built `.eext` is an import artifact; neither its
@@ -77,10 +101,12 @@ must not be reported as measured connected latency improvements.
 
 Match inspector descriptors to the embedded engine as well as the application
 source. V8 builds can move legacy function properties between the function and
-its prototype without changing the function's JavaScript. The209 debounce
-profile has three own properties; the older profile has five. Keep each exact
-contract and retain source/location checks. A test running on the facade's
-pinned Node version does not establish the embedded browser's property roster.
+its prototype without changing the function's JavaScript. Strict methods and
+sloppy wrappers also have different rosters in the same engine. The separate
+seven-record decoder recognizes the pinned plain wrapper's immutable null
+`caller`/`arguments` fields; class-method decoders retain their own contracts.
+Keep exact role/source/location checks. A test running on the facade's pinned
+Node version does not establish the embedded browser's property roster.
 
 CDP `internal#scope` handles also need their real receiver shape. On the pinned
 engine, `getProperties(scope)` lists lexical variables, while a fixed
@@ -88,6 +114,19 @@ engine, `getProperties(scope)` lists lexical variables, while a fixed
 Qualify that exact envelope and closure label before reading its lexical object;
 direct `this.alias` lookups refuse on the wrapper. Local inspector regressions
 can catch this distinction, but do not admit an embedded application generation.
+
+Closure scope contains context-retained bindings. A name declared in the source
+may be optimized out when no original closure needs it. Capture the original
+reachable values and prove their exact prototype/class relationships. Do not
+search alternate scopes or accept a same-named function as the missing binding.
+
+Exercise fixed readonly capture programs with the actual
+`throwOnSideEffect: true` option in local Inspector checks. Freezing a fresh
+array or spreading an input object can still trigger V8's side-effect refusal.
+Private ordinary tuples with exact original descriptor/value reproof can avoid
+those operations. Preserve the flag and application-object guards. A test that
+omits the flag misses this failure. Label substitute browser globals and local
+Inspector results explicitly; they do not prove connected execution.
 
 For data-only input capture, reject proxies before reflection and check scalar
 types before passing them to schema validation. Even error formatting can
@@ -668,3 +707,35 @@ callback and fresh lexical Jd values. Its runtime transport is fixed and parent
 owned. A task or offset sample does not prove the callback handled the native
 document request or that another responder could not answer. Those event and
 backend proofs remain required before writer admission.
+
+
+## Paused Main frames
+
+A module import need not be available in an inner function's debugger scope.
+Inventory the exact source references and inspect the actual paused frame.
+Capture required module exports at their qualified original import site and
+retain that original private capture. A later raw tuple can omit an unavailable
+import and reconstruct only that operand from the retained capture. Keep every
+other operand, predicate and original-pause check intact. A reference error is
+not evidence of an unsupported SQL method or permission to change its guard.
+
+Inspector scope properties have two views. Runtime.getProperties can present
+virtual bindings, while callFunctionOn receives a wrapper with its own
+description and object fields. Qualify the complete source and scope metadata,
+then accept only the exact wrapper's own data descriptors before using its
+binding object. Do not treat the wrapper as the lexical binding object or invoke
+an accessor to recover a missing field.
+
+V8's side-effect checker can refuse scratch bookkeeping and native brand
+checks. Preserve historical commands and flags. If a new fixed adapter needs a
+different flag, audit its entire call graph, qualify the original getter,
+prototype and brand, and bind the separate command to its original owner and
+pause. A local Inspector analogue proves neither target runtime compatibility
+nor a design-write or Save lifecycle. Never turn off the checker for an entire
+family to work around a single refusal.
+
+Combine tuple reconstruction with its original fixed consumer when adding a
+separate RPC would exceed the lane's existing budget. Unknown shapes, lost
+acknowledgments and changed pauses consume the attempt and remain stopped.
+See the [source integration record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-08-main-captured-frame-integration.md)
+for its bounded evidence and pending connected validation.

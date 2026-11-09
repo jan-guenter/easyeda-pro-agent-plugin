@@ -41,6 +41,8 @@ for UI receiver qualification, complete parser recognition and timeout limits.
 6. Test malformed arguments, owner changes, disconnects, delayed callbacks,
    partial native effects, oversized output, failed Save and restart/rebind.
    Prove that ambiguous writes, Save and navigation are never blindly retried.
+   For Node-builtin Inspector probes, control
+   [cold initialization and native lazy getters](references/validation-and-release.md#cold-start-inspector-captures).
 7. Report separately: source implementation, offline tests, build provenance,
    installed package, connected admission, live effect, saved/reopened result.
    Use a disposable fixture for new live writer validation; never a user board.

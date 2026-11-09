@@ -118,6 +118,10 @@ Open questions are not requirements.
   evidence remains077. Git executable bits alone do not prove exact755/644 modes.
 - Synchronize source/bundles; never hand-edit `server/dist/server.mjs`. Keep sanitizer
   assembly/linker/binary and `server/src/descriptor-sanitizer-identity.ts` synchronized.
+- Keep shared native helper pins in `current-pcb-diagnostic-helper-identity.ts`
+  synchronized with the independent Windows synthetic-launch pins. The
+  schematic helper has a separate generated identity. Static identity checks
+  read these small modules without importing or scanning the process owner.
 
 ## Required verification
 
@@ -187,6 +191,10 @@ are build/check dependencies only.
   recommendation remains disputed, ask the user to decide before merging.
   The minimal inherited CodeRabbit configuration disables commit-threshold
   auto-pausing. A skipped or paused check is not a review of the current head.
+- Before pushing a feature branch, run `npm run repository:history:check -- --base
+  <reviewed-published-commit>` from the plugin directory. Current files alone do
+  not cover deleted files or older commit messages. Scan the complete outgoing
+  history with the same secret/privacy rules, and never push private backup refs.
 - Keep marketplace/manifests/README/skills/agent metadata/tool descriptions and exhaustive
   coverage/omission reasons consistent. Publish only with green exact-payload CI and
   reproducible bundles. Scan staged secrets/design artifacts; preserve bridge identity/key epoch.
@@ -226,6 +234,27 @@ are build/check dependencies only.
   cannot be retried. Starting or resuming another subagent is not a way to close
   a lost connection. Preserve its evidence and use only an already-authorized
   cleanup path. Conservative Linux recovery probes count these stubs too.
+- Source-only subagents must also inspect their own session before assuming
+  that no facade was allocated. The host can start the normal MCP connection
+  eagerly even when the agent has made no explicit tool call. Retire that
+  original idle metadata-only connection and use its supported `close-retired`
+  action, retaining its original pidfd through observed exit, before returning
+  or waiting through another controller's native work. This grants no native
+  allocation, signal, owner adoption or retry of a closed transport.
+- Retain the complete MCP reply, including `structuredContent`, before formatting
+  its display. A successful metadata-only session inspection can be lost by
+  printing only `content`. If its original conflict-only connection remains
+  open, one correctly retained read-only inspection may recover that metadata.
+  Preserve the lost projection, use only the newly returned own PID and retain
+  its pidfd before supported closure. This grants no native replay, signal,
+  owner reconstruction or retry of a closed transport.
+- Keep new and resumed agent turns outside the controller's retirement-to-
+  replacement window. The host can eagerly create a new MCP connection on a
+  follow-up turn after that agent's previous transport closed. Attribute a new
+  process to its original connection before inspecting or closing it. Previous
+  closure neither proves the new turn has no connection nor permits retrying
+  the old closed transport. Prefer starting source agents while the admitted
+  controller holds its lease, then close their own startup-conflict stubs.
 
 ## Maintaining documentation and history
 

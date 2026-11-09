@@ -1,0 +1,50 @@
+/** Closed native-task dependency grammar. It qualifies live RPC operands and
+ * original registered callbacks, with no resume, invoke or accepted Job. */
+import { z } from "zod";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { captureCurrentFootprintInversePreferenceReply as capture } from "./current-footprint-inverse-public-preferences-replies.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_PROGRAMS as P } from "./current-footprint-inverse-native-get-task-dependencies-programs.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_SENDER_ENTRY as ENTRY } from "./current-footprint-inverse-native-get-task-sender-programs.ts";
+
+export const CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_CALLS = freezeDeep({ module: { refs: 5, size: 14 }, handler: { refs: 3, size: 2 }, body: { refs: 2, size: 2 }, manager: { refs: 3, size: 4 }, join: { refs: 7, size: 0 }, before: { refs: 4, size: 0 } } as const);
+export const CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_FLAGS = Object.freeze({ objectGroup: "easyeda-footprint-inverse-native-get-task-dependencies-v1", silent: true, generatePreview: false, awaitPromise: false, userGesture: false, throwOnSideEffect: true } as const);
+export const CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_REQUESTS = Object.freeze({ calls: 6, properties: 28, frames: 1, helpers: 7, cdpRequests: 42, controls: 44, events: 7 } as const);
+const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), ref = z.strictObject({ objectId: handle }), roles = ["module", "handler", "body", "manager", "join", "before"] as const;
+const callParams = z.strictObject({ objectGroup: z.literal(CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_FLAGS.objectGroup), silent: z.literal(true), generatePreview: z.literal(false), awaitPromise: z.literal(false), userGesture: z.literal(false), throwOnSideEffect: z.literal(true), objectId: handle, functionDeclaration: z.string().max(16_384), arguments: z.array(ref).max(7), returnByValue: z.boolean() });
+const propertyParams = z.strictObject({ objectId: handle, ownProperties: z.literal(true), accessorPropertiesOnly: z.literal(false), generatePreview: z.literal(false) });
+const helperParams = z.strictObject({ scriptId: handle });
+const frameParams = z.strictObject({ callFrameId: handle, expression: z.literal(ENTRY), objectGroup: z.literal(CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_FLAGS.objectGroup), silent: z.literal(true), generatePreview: z.literal(false), throwOnSideEffect: z.literal(true), returnByValue: z.literal(false), includeCommandLineAPI: z.literal(false) });
+const schema = z.discriminatedUnion("phase", [
+  z.strictObject({ phase: z.literal("inverse-native-get-task-dependencies-call"), role: z.enum(roles), method: z.literal("Runtime.callFunctionOn"), params: callParams }),
+  z.strictObject({ phase: z.literal("inverse-native-get-task-dependencies-properties"), method: z.literal("Runtime.getProperties"), params: propertyParams }),
+  z.strictObject({ phase: z.literal("inverse-native-get-task-dependencies-helper"), method: z.literal("Debugger.getScriptSource"), params: helperParams }),
+  z.strictObject({ phase: z.literal("inverse-native-get-task-dependencies-frame"), method: z.literal("Debugger.evaluateOnCallFrame"), params: frameParams }),
+]);
+export type CurrentFootprintInverseNativeGetTaskDependenciesCommand = Readonly<z.infer<typeof schema>>;
+/** Require the declared source, full argument arity and exact readonly flags. */
+export function validateCurrentFootprintInverseNativeGetTaskDependenciesCommand(input: unknown): CurrentFootprintInverseNativeGetTaskDependenciesCommand {
+  const c = schema.parse(capture(input)); if (c.method === "Runtime.callFunctionOn") { const row = CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_CALLS[c.role]; if (c.params.functionDeclaration !== P[c.role] || c.params.arguments.length !== row.refs || c.params.returnByValue !== (row.size === 0)) { throw new Error("INVERSE_NATIVE_GET_TASK_DEPENDENCIES_COMMAND"); } } return freezeDeep(c);
+}
+/** Correlate only a literal program already admitted by the closed grammar. */
+export function qualifyCurrentFootprintInverseNativeGetTaskDependenciesHelper(input: unknown, command: CurrentFootprintInverseNativeGetTaskDependenciesCommand): void {
+  const source = z.strictObject({ scriptSource: z.string().max(16_386) }).parse(capture(input)); const c = validateCurrentFootprintInverseNativeGetTaskDependenciesCommand(command); let expected: string | null = null; if (c.method === "Runtime.callFunctionOn") { expected = `(${c.params.functionDeclaration})`; } else if (c.method === "Debugger.evaluateOnCallFrame") { expected = ENTRY; } if (expected === null || source.scriptSource !== expected) { throw new Error("INVERSE_NATIVE_GET_TASK_DEPENDENCIES_HELPER"); }
+}
+/** Bind the fixed command to the actual private pipe ID and UI session. */
+export function currentFootprintInverseNativeGetTaskDependenciesWire(input: CurrentFootprintInverseNativeGetTaskDependenciesCommand, id: number, sessionId: string): CurrentFootprintInverseNativeGetTaskDependenciesCommand & Readonly<{ id: number; sessionId: string; inverseNativeGetTaskDependencies: true }> { if (!Number.isSafeInteger(id) || id < 1) { throw new Error("INVERSE_NATIVE_GET_TASK_DEPENDENCIES_ID"); } handle.parse(sessionId); return freezeDeep({ ...validateCurrentFootprintInverseNativeGetTaskDependenciesCommand(input), id, sessionId, inverseNativeGetTaskDependencies: true }); }
+/** Decode exact original wire bytes; no endpoint, source or native code is
+ * taken from fields outside the validated command and its owned identities. */
+export function currentFootprintInverseNativeGetTaskDependenciesNativeFrame(bytes: Buffer, input: CurrentFootprintInverseNativeGetTaskDependenciesCommand, sessionId: string): Readonly<Record<string, string | number>> {
+  if (bytes.length > 65_536 || bytes.at(-1) !== 0) { throw new Error("INVERSE_NATIVE_GET_TASK_DEPENDENCIES_FRAME"); } const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, -1))); const id = z.looseObject({ id: z.number().int().positive() }).parse(capture(raw)).id; const c = validateCurrentFootprintInverseNativeGetTaskDependenciesCommand(input); if (bytes.toString("utf8") !== `${JSON.stringify(currentFootprintInverseNativeGetTaskDependenciesWire(c, id, sessionId))}\0`) { throw new Error("INVERSE_NATIVE_GET_TASK_DEPENDENCIES_BYTES"); }
+  const fields: Record<string, string | number> = { action: "footprint-inverse-native-get-task-dependencies", requestId: id, phase: c.phase, method: c.method }; if (c.method === "Runtime.callFunctionOn") { fields["role"] = c.role; fields["objectId"] = c.params.objectId; for (const [index, arg] of c.params.arguments.entries()) { fields[`reference${String(index)}`] = arg.objectId; } } else if (c.method === "Debugger.evaluateOnCallFrame") { fields["callFrameId"] = c.params.callFrameId; } else if (c.method === "Debugger.getScriptSource") { fields["scriptId"] = c.params.scriptId; } else { fields["objectId"] = c.params.objectId; } return Object.freeze(fields);
+}
+/** Enumerate all nine fixed cases for complete emitted native/CDP parity. */
+export function currentFootprintInverseNativeGetTaskDependenciesCases(): readonly CurrentFootprintInverseNativeGetTaskDependenciesCommand[] { return freezeDeep([
+  ...roles.map(role => { const row = CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_CALLS[role]; return { phase: "inverse-native-get-task-dependencies-call", role, method: "Runtime.callFunctionOn", params: { ...CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_FLAGS, objectId: "original_ref", functionDeclaration: P[role], arguments: Array.from({ length: row.refs }, () => ({ objectId: "original_ref" })), returnByValue: row.size === 0 } }; }),
+  { phase: "inverse-native-get-task-dependencies-properties", method: "Runtime.getProperties", params: { objectId: "original_ref", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }, { phase: "inverse-native-get-task-dependencies-helper", method: "Debugger.getScriptSource", params: { scriptId: "original_ref" } }, { phase: "inverse-native-get-task-dependencies-frame", method: "Debugger.evaluateOnCallFrame", params: { callFrameId: "original_ref", expression: ENTRY, objectGroup: CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_FLAGS.objectGroup, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } },
+].map(c => validateCurrentFootprintInverseNativeGetTaskDependenciesCommand(c))); }
+/** Emit a complete method/params row for the unchanged fixed-message decoder. */
+export function currentFootprintInverseNativeGetTaskDependenciesTemplate(input: CurrentFootprintInverseNativeGetTaskDependenciesCommand): Readonly<{ key: string; method: string; names: readonly string[]; template: string }> {
+  const c = validateCurrentFootprintInverseNativeGetTaskDependenciesCommand(input); const names: string[] = []; const field = (name: string): string => { if (names.includes(name)) { throw new Error("INVERSE_NATIVE_GET_TASK_DEPENDENCIES_FIELD"); } names.push(name); return `__native_get_task_dependencies_${name}__`; }; const params: Record<string, unknown> = { ...c.params };
+  if (c.method === "Runtime.callFunctionOn") { params["objectId"] = field("objectId"); params["functionDeclaration"] = `__native_get_task_dependencies_program_${c.role}__`; params["arguments"] = c.params.arguments.map((_, index) => ({ objectId: field(`reference${String(index)}`) })); } else if (c.method === "Debugger.evaluateOnCallFrame") { params["callFrameId"] = field("callFrameId"); } else if (c.method === "Debugger.getScriptSource") { params["scriptId"] = field("scriptId"); } else { params["objectId"] = field("objectId"); }
+  return freezeDeep({ key: c.phase.slice("inverse-native-get-task-dependencies-".length) + ("role" in c ? `:${c.role}` : ""), method: c.method, names, template: JSON.stringify({ method: c.method, params }) });
+}

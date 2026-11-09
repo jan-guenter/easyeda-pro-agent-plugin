@@ -1,0 +1,94 @@
+/* oxlint-disable import/max-dependencies -- Exact own-purpose budgets are derived from each separately qualified finite lane; accepting caller totals would weaken native bounds. */
+import { CURRENT_SCHEMATIC_RELEVANCE_SDK_COMPLETION_REQUESTS as SDK_COMPLETION } from "./current-schematic-relevance-sdk-completion-wire.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_ECHO_LIFECYCLE_REQUESTS as ECHO } from "./current-schematic-relevance-modify-echo-lifecycle-profile.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_RETURN_REQUESTS as PUBLICATION_RETURN } from "./current-schematic-relevance-publication-return-wire.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_RETURN_REQUESTS as MODIFY_RETURN } from "./current-schematic-relevance-modify-return-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CANVAS_REQUESTS as MODIFY_CANVAS } from "./current-schematic-relevance-modify-canvas-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CANVAS_CONTROL_REQUESTS as MODIFY_CANVAS_CONTROL } from "./current-schematic-relevance-modify-canvas-control-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CM_REQUESTS as MODIFY_CM } from "./current-schematic-relevance-modify-cm-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CM_CONTROL_REQUESTS as MODIFY_CM_CONTROL } from "./current-schematic-relevance-modify-cm-control-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CM_DELTA_REQUESTS as MODIFY_CM_DELTA } from "./current-schematic-relevance-modify-cm-delta-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_REQUESTS as MODIFY_STRUCTURE } from "./current-schematic-relevance-modify-structure-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CONTROL_REQUESTS as MODIFY_CONTROL } from "./current-schematic-relevance-modify-control-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_EVENT_REQUESTS as MODIFY_EVENT } from "./current-schematic-relevance-modify-event-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_BODY_REQUESTS as MODIFY_BODY } from "./current-schematic-relevance-modify-body-programs.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_REQUESTS as MODIFY_WORKER} from "./current-schematic-relevance-modify-worker-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_NATIVE_REQUESTS as PUB_NATIVE} from "./current-schematic-relevance-publication-native-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_CONTROL_REQUESTS as PUB_CONTROL} from "./current-schematic-relevance-publication-control-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_NOTIFICATION_REQUESTS as NOTIFICATION} from "./current-schematic-relevance-notification-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_NOTIFICATION_CONTROL_REQUESTS as NOTIFICATION_CONTROL} from "./current-schematic-relevance-notification-control-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_SDK_GATE_REQUESTS as SDK_GATE} from "./current-schematic-relevance-sdk-gate-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_NORMAL_COMMAND_UI_REQUESTS as NORMAL_COMMAND_UI} from "./current-schematic-relevance-normal-command-ui-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_FILE_SAVE_UI_REQUESTS as FILE_SAVE_UI} from "./current-schematic-relevance-file-save-ui-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_RENDER_DELEGATE_REQUESTS as RENDER_DELEGATE} from "./current-schematic-relevance-render-delegate-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_TAB_MUTATION_REQUESTS as STATUS_TAB_MUTATION} from "./current-schematic-relevance-status-tab-mutation-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_TAB_LOOKUP_REQUESTS as STATUS_TAB_LOOKUP} from "./current-schematic-relevance-status-tab-lookup-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_REQUESTS as STATUS_SUBSCRIBER} from "./current-schematic-relevance-status-subscriber-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_CLONE_REQUESTS as STATUS_CLONE} from "./current-schematic-relevance-status-clone-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_REGISTRATION_REQUESTS as REGISTRATION } from "./current-schematic-relevance-display-registration.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_DELIVERY_REQUESTS as STATUS_DELIVERY} from "./current-schematic-relevance-status-delivery-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_BUS_REQUESTS as STATUS_BUS} from "./current-schematic-relevance-status-bus-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_HISTORY_STATUS_REQUESTS as HISTORY_STATUS} from "./current-schematic-relevance-history-status-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_UPLOAD_RETURN_REQUESTS as UPLOAD_RETURN} from "./current-schematic-relevance-upload-return-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_PENDING_CACHE_REQUESTS as PENDING_CACHE} from "./current-schematic-relevance-pending-cache-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_UPLOAD_CM_REQUESTS as CM} from "./current-schematic-relevance-upload-cm-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_UPLOAD_SERIALIZE_REQUESTS as SERIALIZE} from "./current-schematic-relevance-upload-serialize-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_UPLOAD_MODEL_REQUESTS as UPLOAD_MODEL} from "./current-schematic-relevance-upload-model-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_UPLOAD_ENTRY_REQUESTS as UPLOAD_ENTRY} from "./current-schematic-relevance-upload-entry-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_NOECHO_REQUESTS as NOECHO} from "./current-schematic-relevance-noecho-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_NORMAL_RECORD_REQUESTS as NORMAL_RECORD} from "./current-schematic-relevance-normal-record-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_NORMAL_DISPOSAL_READ_BOUND as DISPOSAL_READS} from "./current-schematic-relevance-normal-disposal-programs.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_NORMAL_UPDATE_REQUESTS as NORMAL_UPDATE} from "./current-schematic-relevance-normal-update-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_HISTORY_COMMAND_REQUESTS as HISTORY_COMMAND} from "./current-schematic-relevance-history-command-protocol.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_MONITOR_BATCH_REQUESTS as MONITORS} from "./current-schematic-relevance-monitor-batch-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_RECORD_AST_REQUESTS as RECORD_AST } from "./current-schematic-relevance-record-ast-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_PRIMITIVE_REQUESTS as PRIMITIVE } from "./current-schematic-relevance-primitive-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_UI_PUBLICATION_REQUESTS as PUBLICATION } from "./current-schematic-relevance-ui-publication-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_RUN_GUARD_REQUESTS as RUN_GUARD } from "./current-schematic-relevance-run-guard-controller.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND as PREFIX_READS } from "./current-schematic-relevance-run-prefix-protocol.ts";
+import { CURRENT_PCB_VIA_SAVE_TAIL_OBSERVATION_REQUESTS as TAIL } from "./current-pcb-via-save-tail-observation-protocol.ts";
+import { CURRENT_PCB_VIA_SAVE_TAIL_DELETE_CONTROL_REQUESTS as DELETE } from "./current-pcb-via-save-tail-delete-control-protocol.ts";
+import { CURRENT_PCB_VIA_SAVE_DRAIN_REQUESTS as DRAIN } from "./current-pcb-via-save-drain-protocol.ts";
+import { CURRENT_PCB_VIA_POST_HISTORY_SYNC_REQUESTS as POST } from "./current-pcb-via-post-history-sync-protocol.ts";
+import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_REQUESTS as LIVE } from "./current-pcb-via-main-live-history-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_OBSERVED_WORKER_SOURCE_REQUESTS as SOURCES } from "./current-schematic-relevance-display-helper-source-catalogue.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_SAVE_UPLOAD_REQUESTS as UPLOAD } from "./current-schematic-relevance-display-save-upload-wire.ts";
+import { CURRENT_PROJECT_LIBRARY_REFRESH_REQUESTS as LIBRARY } from "./current-project-library-refresh-protocol.ts";
+import { CURRENT_PROJECT_SYNC_QUIESCE_REQUESTS as POLLING } from "./current-project-sync-quiesce-protocol.ts";
+import { CURRENT_PCB_VIA_MAIN_STRUCTURE_REQUESTS as STRUCTURE_MAIN } from "./current-pcb-via-main-structure-protocol.ts";
+import { CURRENT_PCB_VIA_MAIN_REQUESTS as MAIN } from "./current-pcb-via-main-protocol.ts";
+import { CURRENT_PCB_VIA_MAIN_STEP_REQUESTS as STEP } from "./current-pcb-via-main-step-protocol.ts";
+import { CURRENT_PCB_VIA_MAIN_BEGIN_REQUESTS as BEGIN } from "./current-pcb-via-main-begin-protocol.ts";
+import { CURRENT_PCB_VIA_MAIN_HISTORY_REQUESTS as HISTORY } from "./current-pcb-via-main-history-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_ACTION_CALLBACK_REQUESTS as CALLBACK, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_ENTRY_REQUESTS as MODIFY_ENTRY } from "./current-schematic-relevance-display-modify-entry-protocol.ts";
+/** New original seven-record birth, with its own immutable accounting. Equal
+ * finite source algorithms do not transfer the six-record owner's resources. */
+import { CURRENT_SCHEMATIC_DISPLAY_WRITE_NATIVE_PROFILE as SHARED } from "./current-schematic-display-write-native-profile.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACCESSOR_REQUESTS as ACCESSOR } from "./current-schematic-relevance-display-accessor-profile.ts";
+import { CURRENT_SCHEMATIC_DISPLAY_ACTION_REQUESTS as ACTION } from "./current-schematic-display-action-protocol.ts";
+import { CURRENT_SCHEMATIC_DISPLAY_ACTION_GUARD_REQUESTS as ACTION_GUARD } from "./current-schematic-display-action-guard-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as STRUCTURE } from "./current-project-save-structure-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS as STARTUP_STRUCTURE } from "./current-schematic-relevance-startup-structure-origin.ts";
+
+const MODIFY_CANVAS_OBSERVATION = MODIFY_CANVAS.total + MODIFY_CANVAS_CONTROL.total + 10;
+const MODIFY_CM_OBSERVATION = MODIFY_CM.total + MODIFY_CM_CONTROL.total + MODIFY_CM_DELTA.total + 5;
+const MODIFY_CONTINUATION = MODIFY_CONTROL.total + MODIFY_EVENT.total + MODIFY_BODY.total + 2 * (MODIFY_EVENT.reproofReads + MODIFY_EVENT.reproofHelpers + MODIFY_BODY.reproofReads + MODIFY_BODY.reproofHelpers) + 8;
+
+export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE = "schematic-relevance-display-write209";
+export const CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PROFILE = Object.freeze({
+  purpose: CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_NATIVE_PURPOSE, nativeSwitch: "-SchematicRelevanceDisplayWrite209",
+  main: Object.freeze({ normal: REGISTRATION.main + SHARED.main.normal + MAIN.normal + STEP.normal + BEGIN.normal + HISTORY.normal + STRUCTURE_MAIN.normal + LIVE.normal, cleanup: SHARED.main.cleanup + MAIN.cleanup + BEGIN.cleanup + HISTORY.cleanup + STRUCTURE_MAIN.cleanup + LIVE.cleanup, total: REGISTRATION.main + SHARED.main.total + MAIN.total + STEP.total + BEGIN.total + HISTORY.total + STRUCTURE_MAIN.total + LIVE.total }), renderer: Object.freeze({ ...SHARED.renderer,
+    registrationMain: REGISTRATION.main, registrationHelperSource: REGISTRATION.rendererHelperSource, registrationControls: REGISTRATION.nativeControls,
+    structureObservation: STRUCTURE.cdpRequests, accessorObservation: ACCESSOR.total,
+    startupStructureDrainObservation: STARTUP_STRUCTURE.total,
+    startupPollingObservation: POLLING.cdpRequests, startupPollingHelperSources: 1, startupLibraryObservation: LIBRARY.controls, startupLibrarySetupHelperSources: 1,
+    actionPreflightObservation: ACTION.total, actionGuardObservation: ACTION_GUARD.cdpRequests, actionGuardBindingControls: ACTION_GUARD.bindingControls,
+    submittedHelperSources:SOURCES,
+    saveTailObservation: TAIL.cdpRequests, saveTailCacheMetadata:TAIL.additionalSharedRequests, saveTailDelete: DELETE.cdpRequests, saveDrainObservation:DRAIN.cdpRequests, savePostSyncObservation:POST.total, saveDrainCompletion:2,
+    localUploadObservation: UPLOAD.local, uploadRequestObservation: UPLOAD.upload, localCacheExtraObservation: UPLOAD.localCacheMetadata,
+    runPrefixObservation: PREFIX_READS, runPrefixControls: 2, runGuardObservation: RUN_GUARD.total, runGuardControls: 2,
+    callbackObservation: CALLBACK.total, uiPublicationObservation: PUBLICATION.total, primitiveBridgeObservation: PRIMITIVE.total, recordAstObservation: RECORD_AST.total, monitorBatchObservation:MONITORS.total, historyCommandObservation:HISTORY_COMMAND.total, normalHistoryUpdateObservation:NORMAL_UPDATE.total, normalDisposalPreparationObservation:DISPOSAL_READS+2, normalRecordObservation:NORMAL_RECORD.total,noEchoPreparationObservation:NOECHO.total + SDK_COMPLETION.total,uploadEntryObservation:UPLOAD_ENTRY.total,uploadModelObservation:UPLOAD_MODEL.total,uploadSerializeObservation:SERIALIZE.total,uploadCmObservation:CM.total,pendingCacheObservation:PENDING_CACHE.total,uploadReturnObservation:UPLOAD_RETURN.total,historyStatusObservation:HISTORY_STATUS.total,statusBusObservation:STATUS_BUS.total,statusDeliveryObservation:STATUS_DELIVERY.total,statusCloneObservation:STATUS_CLONE.total,statusSubscriberObservation:STATUS_SUBSCRIBER.total,statusTabLookupObservation:STATUS_TAB_LOOKUP.total,statusTabMutationObservation:STATUS_TAB_MUTATION.total,renderDelegateObservation:RENDER_DELEGATE.total,notificationObservation:NOTIFICATION.total+NOTIFICATION_CONTROL.total,notificationPromiseObservation:NOTIFICATION.promiseReads+NOTIFICATION.promiseHelpers,sdkGateObservation:SDK_GATE.total,modifyWorkerPreparation:MODIFY_WORKER.total+2,modifyWorkerContinuation:MODIFY_CONTINUATION,modifyCmObservation:MODIFY_CM_OBSERVATION,modifyCanvasObservation:MODIFY_CANVAS_OBSERVATION,modifyReturnObservation:MODIFY_RETURN.total+10,publicationReturnObservation:PUBLICATION_RETURN.total,originalEchoObservation:ECHO.total + SDK_COMPLETION.total,modifyTextStructure:MODIFY_STRUCTURE.total+MODIFY_STRUCTURE.events+2,publicationNativeObservation:PUB_NATIVE.total+8*(PUB_NATIVE.reproofReads+PUB_NATIVE.reproofHelpers),publicationControlObservation:PUB_CONTROL.total,normalCommandUiObservation:NORMAL_COMMAND_UI.total,fileSaveUiObservation:FILE_SAVE_UI.total,
+    modifyEntryObservation: MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility,
+    total: REGISTRATION.rendererHelperSource + SHARED.renderer.total - SHARED.renderer.accessorObservation + ACCESSOR.total - SHARED.renderer.structureObservation - SHARED.renderer.actionPreflightObservation - SHARED.renderer.actionGuardObservation - SHARED.renderer.actionGuardBindingControls +
+      NOTIFICATION.total + NOTIFICATION_CONTROL.total + NOTIFICATION.promiseReads + NOTIFICATION.promiseHelpers + SDK_GATE.total + MODIFY_WORKER.total + 2 + MODIFY_CM_OBSERVATION + MODIFY_CANVAS_OBSERVATION + MODIFY_RETURN.total + 10 + PUBLICATION_RETURN.total + ECHO.total + SDK_COMPLETION.total + MODIFY_CONTINUATION + MODIFY_STRUCTURE.total + MODIFY_STRUCTURE.events + 2 + PUB_NATIVE.total + 8*(PUB_NATIVE.reproofReads+PUB_NATIVE.reproofHelpers) + PUB_CONTROL.total + NORMAL_COMMAND_UI.total + FILE_SAVE_UI.total + RENDER_DELEGATE.total + STATUS_TAB_MUTATION.total + STATUS_TAB_LOOKUP.total + STATUS_SUBSCRIBER.total + STATUS_CLONE.total + STATUS_DELIVERY.total + STATUS_BUS.total + HISTORY_STATUS.total + UPLOAD_RETURN.total + PENDING_CACHE.total + CM.total + SERIALIZE.total + UPLOAD_MODEL.total + UPLOAD_ENTRY.total + NOECHO.total + SDK_COMPLETION.total + NORMAL_RECORD.total + DISPOSAL_READS+2 + NORMAL_UPDATE.total + HISTORY_COMMAND.total + MONITORS.total + RECORD_AST.total + PRIMITIVE.total + PUBLICATION.total + RUN_GUARD.total + 2 + PREFIX_READS + 2 + STARTUP_STRUCTURE.total + TAIL.cdpRequests + TAIL.additionalSharedRequests + DELETE.cdpRequests + DRAIN.cdpRequests + POST.total + 2 + SOURCES + UPLOAD.local + UPLOAD.upload + UPLOAD.localCacheMetadata + STRUCTURE.cdpRequests + ACTION.total + ACTION_GUARD.cdpRequests + ACTION_GUARD.bindingControls + CALLBACK.total + MODIFY_ENTRY.observation + MODIFY_ENTRY.rawObservation + MODIFY_ENTRY.underlineEligibility + POLLING.cdpRequests + 1 + LIBRARY.controls + 1 }),
+});

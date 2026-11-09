@@ -342,7 +342,7 @@ Choose the observation that actually contains the requested data:
 |---|---|
 | `primitives209` | Family queries for Line, Arc, Via and String |
 | `extended-primitives209` | Family queries for Component, Pad, Attribute, Dimension and Image |
-| `selection-relations209` | All nine families, `{"kind":"selection"}`, and `{"kind":"component-pads","componentId":"observed-id"}` |
+| `selection-relations209` | All nine families, `{"kind":"selection"}`, `{"kind":"primitive-lookup","primitiveIds":["observed-id"]}`, and `{"kind":"component-pads","componentId":"observed-id"}` |
 | `pad-shapes209` | Pad family queries with matching native style groups |
 | `image-shapes209` | Image family queries with matching path or asset-reference descriptors |
 | `arc-shapes209` | Arc family queries with matching center/radius/directed-angle descriptors |

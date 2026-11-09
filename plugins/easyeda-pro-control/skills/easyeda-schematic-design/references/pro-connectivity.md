@@ -47,6 +47,17 @@ Use complementary evidence:
 4. A rendered view establishes whether people can follow the intended association without ambiguous labels or crossings.
 5. Saved/reopened and complete-project persistence proof establish that the intended result is durable and collateral records did not change unexpectedly.
 
+The current209 raw electrical observer returns native contact Sets and backing
+fields. Matching member counts alone does not prove that a cached point equals
+its member line endpoints or pin origins. Compare those coordinates and complete
+family/group memberships before using a contact table for a wire plan. Keep Wire
+and Bus memberships separate. A geometry match still does not prove cache
+freshness, effective pin names/no-connect values, hierarchical nets or saved
+source. The private bounded integer-grid comparison documents these limits in
+the [endpoint investigation](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-06-schematic-endpoint-membership.md).
+It supplies no replacement for an admitted writer's complete electrical and
+persistence checks.
+
 For an offline PDF/image, describe visible associations and uncertainty. For a supplied netlist, state its format, generation revision and scope. Do not infer missing pages or claim a complete board topology from a cropped view.
 
 ## Scope traps

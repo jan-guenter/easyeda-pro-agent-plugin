@@ -54,6 +54,13 @@ cd ../..
 npm --prefix plugins/easyeda-pro-control run repository:validate
 ```
 
+Offline installed-source tests use `EASYEDA_ASSETS_ROOT` for the installed
+`resources/app/assets` directory. The embedded-builtin PE check uses
+`EASYEDA_PRO_EXECUTABLE` for the installed executable. Unset configuration skips
+only those optional installed-source checks with an explicit reason. Empty,
+missing or invalid configured files fail; no workstation path is assumed.
+These checks read source bytes and never launch the application.
+
 The plugin's `.npmrc` disables dependency install hooks. Explicit `npm run`
 commands still run the reviewed project scripts. Keep the matching esbuild
 optional platform package installed; do not enable a download fallback.
@@ -80,3 +87,22 @@ and binary diff together. A build failure is not a reason to bypass
 `sanitizer:check` or substitute a path-selected launcher.
 
 Do not commit `node_modules`, live `.eprj2` files, operation journals, evidence, screenshots containing user designs, or credentials.
+
+## Before pushing
+
+From `plugins/easyeda-pro-control`, scan every outgoing Git object against the
+reviewed public base commit:
+
+```bash
+npm run repository:history:check -- --base <published-commit-id>
+```
+
+The check covers older file versions, commit messages and tree entries, including
+content deleted from the final tree. It uses the same secret and privacy rules
+as repository validation. Findings contain object IDs and rule labels; matched
+content is omitted. The check refuses shallow history or grafts, and disables
+replacement refs. The pull-request history workflow repeats it with full history.
+
+Resolve findings before the first push. The checker reads Git objects and changes
+no refs, files or configuration. Keep any private remediation backup outside the
+published refs, and push the intended feature branch explicitly.

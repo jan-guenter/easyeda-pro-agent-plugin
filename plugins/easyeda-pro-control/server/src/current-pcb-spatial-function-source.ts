@@ -8,8 +8,18 @@ import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
 import { CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES } from "./current-pcb-209-spatial-source-profile.ts";
+import { CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PROFILES } from "./current-pcb-209-spatial-track-source-profile.ts";
+import { CURRENT_PCB_209_SPATIAL_ARC_EXTRA_PROFILES } from "./current-pcb-209-spatial-arc-source-profile.ts";
+import { CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES } from "./current-pcb-209-spatial-pad-source-profile.ts";
 
-type FixedProfile = (typeof CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES)[number];
+import { CURRENT_PCB_209_COMPONENT_COMPLETE_POINT_FUNCTION_PROFILES } from "./current-pcb-209-component-point-complete-source-profile.ts";
+
+import { CURRENT_PCB_209_COMPONENT_CLONED_POINT_FUNCTION_PROFILES } from "./current-pcb-209-component-cloned-point-source-profile.ts";
+
+const trackProfiles = Object.freeze([...CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES, ...CURRENT_PCB_209_SPATIAL_TRACK_EXTRA_PROFILES]);
+const arcProfiles = Object.freeze([...trackProfiles, ...CURRENT_PCB_209_SPATIAL_ARC_EXTRA_PROFILES]);
+export type CurrentPcbSpatialVariant = "via" | "line-via" | "arc-line-via" | "pad-point" | "component-point" | "component-cloned-point";
+type FixedProfile = (typeof arcProfiles)[number] | (typeof CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES)[number] | (typeof CURRENT_PCB_209_COMPONENT_COMPLETE_POINT_FUNCTION_PROFILES)[number];
 export type CurrentPcbSpatialFunctionSourceKey = FixedProfile["key"];
 type Profile = Readonly<{ key: CurrentPcbSpatialFunctionSourceKey;
   kind: "class" | "method" | "getter" | "function" | "arrow";
@@ -29,6 +39,7 @@ export const CURRENT_PCB_SPATIAL_FUNCTION_SOURCE_COUNT = CURRENT_PCB_209_SPATIAL
 const MAX_FUNCTIONS = 512;
 const MAX_DESCRIPTION_BYTES = 262_144;
 const MAX_REPLY_BYTES = 4 * 1024 * 1024;
+export const CURRENT_PCB_SPATIAL_FAILURE_REPLY_BYTES = MAX_REPLY_BYTES;
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const text = z.string().max(MAX_DESCRIPTION_BYTES).refine(value => value.isWellFormed() && !value.includes("\0"));
 const extent = z.number().int().nonnegative().refine(value => !Object.is(value, -0));
@@ -54,6 +65,13 @@ function refuse(): never { throw new Error("PCB_SPATIAL_FUNCTION_SOURCE"); }
  * independently bounds and rejects duplicate keys in the raw protocol JSON.
  */
 function data(input: unknown): unknown { return copy(input, 0, { nodes: 0, bytes: 0 }); }
+/** Diagnostic data only. Preserve unknown JSON fields without invoking getters
+ * or accepting this failed packet as source, owner or execution evidence. */
+export function captureCurrentPcbSpatialFailureReply(input: unknown): string {
+  const encoded = JSON.stringify(data(input));
+  if (Buffer.byteLength(encoded) > MAX_REPLY_BYTES) { return refuse(); }
+  return encoded;
+}
 /** Rebuild dense arrays and plain own data within one shared depth/node/byte
  * Budget. Accessors, proxies and malformed strings refuse before schema reads. */
 function copy(input: unknown, depth: number, budget: { nodes: number; bytes: number }): unknown {
@@ -89,14 +107,14 @@ function copy(input: unknown, depth: number, budget: { nodes: number; bytes: num
 
 /** Require the fixed catalog to remain nonempty, bounded and uniquely keyed.
  * A caller cannot replace this module-owned source qualification roster. */
-function profiles(): readonly Profile[] {
-  const selected: readonly Profile[] = CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES;
+function profiles(variant: CurrentPcbSpatialVariant): readonly Profile[] {
+  const selected: readonly Profile[] = { "arc-line-via": arcProfiles, "line-via": trackProfiles, via: CURRENT_PCB_209_SPATIAL_FUNCTION_PROFILES, "pad-point": CURRENT_PCB_209_SPATIAL_PAD_FUNCTION_PROFILES, "component-point": CURRENT_PCB_209_COMPONENT_COMPLETE_POINT_FUNCTION_PROFILES, "component-cloned-point": CURRENT_PCB_209_COMPONENT_CLONED_POINT_FUNCTION_PROFILES }[variant];
   if (selected.length === 0 || selected.length > MAX_FUNCTIONS || new Set(selected.map(item => item.key)).size !== selected.length) { return refuse(); }
   return selected;
 }
 /** Resolve one key only within the fixed catalog; unknown callees refuse. */
-function profile(key: CurrentPcbSpatialFunctionSourceKey): Profile {
-  return profiles().find(item => item.key === key) ?? refuse();
+function profile(key: CurrentPcbSpatialFunctionSourceKey, variant: CurrentPcbSpatialVariant): Profile {
+  return profiles(variant).find(item => item.key === key) ?? refuse();
 }
 /** Check the complete V8 description's kind, UTF-16 extent, UTF-8 bytes and
  * Digest. The returned handle still needs its independent script/location check. */
@@ -128,11 +146,11 @@ function scalar(item: DataProperty, type: "string" | "number", value: string | n
 }
 
 /** Decode only the fixed frozen callee-array handle from the capture program. */
-export function decodeCurrentPcbSpatialFunctionSourceArray(input: unknown): string {
+export function decodeCurrentPcbSpatialFunctionSourceArray(input: unknown, variant: CurrentPcbSpatialVariant = "via"): string {
   try {
     const value = z.strictObject({ result: remote }).parse(data(input)).result;
     referenced(value, "object", "Array");
-    if (value.subtype !== "array" || value.description !== `Array(${profiles().length})`) { return refuse(); }
+    if (value.subtype !== "array" || value.description !== `Array(${profiles(variant).length})`) { return refuse(); }
     return value.objectId ?? refuse();
   } catch { return refuse(); }
 }
@@ -140,9 +158,9 @@ export function decodeCurrentPcbSpatialFunctionSourceArray(input: unknown): stri
 /** Decode fixed slots, full descriptions and frozen descriptors in one pass.
  * No caller-provided profile or source text can extend this private catalog.
  */
-export function decodeCurrentPcbSpatialFunctionSourceTuple(input: unknown): readonly CurrentPcbSpatialFunctionSourceReference[] {
+export function decodeCurrentPcbSpatialFunctionSourceTuple(input: unknown, variant: CurrentPcbSpatialVariant = "via"): readonly CurrentPcbSpatialFunctionSourceReference[] {
   try {
-    const expected = profiles();
+    const expected = profiles(variant);
     const reply = z.strictObject({ result: z.array(dataProperty).length(expected.length + 1),
       internalProperties: z.array(internal).length(1) }).parse(data(input));
     const fields = new Map(reply.result.map(item => [item.name, item]));
@@ -170,9 +188,9 @@ export function decodeCurrentPcbSpatialFunctionSourceTuple(input: unknown): read
  * no matching application location and are never admitted by their text alone.
  */
 export function decodeCurrentPcbSpatialFunctionSourceMetadata(input: unknown, scriptId: string,
-  key: CurrentPcbSpatialFunctionSourceKey): true {
+  key: CurrentPcbSpatialFunctionSourceKey, variant: CurrentPcbSpatialVariant = "via"): true {
   try {
-    handle.parse(scriptId); const expected = profile(key);
+    handle.parse(scriptId); const expected = profile(key, variant);
     const generator = expected.className === "GeneratorFunction" || expected.className === "AsyncGeneratorFunction";
     const reply = z.strictObject({ result: z.array(property).min(2).max(MAX_FUNCTIONS),
       internalProperties: z.array(internal).length(generator ? 4 : 3) }).parse(data(input));

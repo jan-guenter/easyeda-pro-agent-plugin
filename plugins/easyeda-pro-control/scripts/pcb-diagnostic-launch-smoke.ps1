@@ -32,14 +32,47 @@ $helper = Join-Path $PSScriptRoot 'pcb-diagnostic-owner.ps1'
 # worker-startup profiles. Exact length/hash below still admit only one helper;
 # this allocation bound changes no request or transport limits.
 $bytes = Read-BoundedFile $helper 2097152
-if ($bytes.Length -ne 1099796) {throw 'synthetic-launch-helper-size'}
+if ($bytes.Length -ne 1589068) {throw 'synthetic-launch-helper-size'}
 $hash = [Security.Cryptography.SHA256]::Create()
 try {$helperHash = [BitConverter]::ToString($hash.ComputeHash($bytes)).Replace('-','').ToLowerInvariant()}
 finally {$hash.Dispose()}
-if ($helperHash -cne 'e809283e6ec24998ddc67de6180b58edb784371cbfc0be88377633dbb0181c95') {
+if ($helperHash -cne '92c167b077538b238451b13c41ca0a2fb57231efaaa4d101f591a4f4d3b80350') {
   throw 'synthetic-launch-helper-hash'
 }
 $source = [Text.UTF8Encoding]::new($false,$true).GetString($bytes)
+function Expand-FixedCurrent209CSharp([string]$fixedEncoded,[int]$fixedLength,[string]$fixedHash,[int]$fixedPackedLength,[string]$fixedPackedHash) {
+  if($fixedLength -lt 1 -or $fixedLength -gt 2097152 -or $fixedPackedLength -lt 18 -or $fixedPackedLength -gt 2097152 -or $fixedEncoded.Length -gt 2796204 -or $fixedHash -cnotmatch '\A[a-f0-9]{64}\z' -or $fixedPackedHash -cnotmatch '\A[a-f0-9]{64}\z'){throw 'fixed-csharp-storage-bounds'}
+  $fixedPacked=[Convert]::FromBase64String($fixedEncoded)
+  if($fixedPacked.Length -ne $fixedPackedLength -or [Convert]::ToBase64String($fixedPacked) -cne $fixedEncoded){throw 'fixed-csharp-storage-base64'}
+  $fixedHasher=[Security.Cryptography.SHA256]::Create()
+  try {
+    if(([BitConverter]::ToString($fixedHasher.ComputeHash($fixedPacked))).Replace('-','').ToLowerInvariant() -cne $fixedPackedHash){throw 'fixed-csharp-storage-packed-hash'}
+    if($fixedPacked[0] -ne 31 -or $fixedPacked[1] -ne 139 -or $fixedPacked[2] -ne 8 -or $fixedPacked[3] -ne 0 -or [BitConverter]::ToUInt32($fixedPacked,$fixedPacked.Length-4) -ne $fixedLength){throw 'fixed-csharp-storage-envelope'}
+    $fixedInput=[IO.MemoryStream]::new($fixedPacked,$false)
+    $fixedZip=$null
+    try {
+      $fixedZip=[IO.Compression.GZipStream]::new($fixedInput,[IO.Compression.CompressionMode]::Decompress,$true)
+      $fixedBytes=New-Object byte[] $fixedLength
+      $fixedOffset=0
+      while($fixedOffset -lt $fixedLength){$fixedRead=$fixedZip.Read($fixedBytes,$fixedOffset,$fixedLength-$fixedOffset);if($fixedRead -le 0){throw 'fixed-csharp-storage-short'};$fixedOffset+=$fixedRead}
+      if($fixedZip.ReadByte() -ne -1 -or $fixedInput.Position -ne $fixedPackedLength){throw 'fixed-csharp-storage-tail'}
+      if(([BitConverter]::ToString($fixedHasher.ComputeHash($fixedBytes))).Replace('-','').ToLowerInvariant() -cne $fixedHash){throw 'fixed-csharp-storage-raw-hash'}
+      foreach($fixedByte in $fixedBytes){if($fixedByte -gt 127){throw 'fixed-csharp-storage-ascii'}}
+      return [Text.UTF8Encoding]::new($false,$true).GetString($fixedBytes)
+    } finally {if($null -ne $fixedZip){$fixedZip.Dispose()};$fixedInput.Dispose()}
+  } finally {$fixedHasher.Dispose()}
+}
+if($source.Contains("# BEGIN FIXED CURRENT209 CSHARP REVIEW STORAGE V2`n")) {
+  $fixedMatches=[regex]::Matches($source,'(?m)^\$fixedCurrent209CompactCompiler=Expand-FixedCurrent209CSharp ''([A-Za-z0-9+/=]+)'' ([0-9]+) ''([a-f0-9]{64})'' ([0-9]+) ''([a-f0-9]{64})''$')
+  if($fixedMatches.Count -ne 1 -or $source.Contains("Add-Type @'`n")){throw 'synthetic-launch-compact-boundaries'}
+  $fixedMatch=$fixedMatches[0]
+  $native=Expand-FixedCurrent209CSharp $fixedMatch.Groups[1].Value ([int]$fixedMatch.Groups[2].Value) $fixedMatch.Groups[3].Value ([int]$fixedMatch.Groups[4].Value) $fixedMatch.Groups[5].Value
+} elseif($source.Contains("# BEGIN FIXED CURRENT209 CSHARP STORAGE`n")) {
+  $fixedMatches=[regex]::Matches($source,'(?m)^\$fixedCurrent209CSharp=Expand-FixedCurrent209CSharp ''([A-Za-z0-9+/=]+)'' ([0-9]+) ''([a-f0-9]{64})'' ([0-9]+) ''([a-f0-9]{64})''$')
+  if($fixedMatches.Count -ne 1 -or $source.Contains("Add-Type @'`n")){throw 'synthetic-launch-packed-boundaries'}
+  $fixedMatch=$fixedMatches[0]
+  $native=Expand-FixedCurrent209CSharp $fixedMatch.Groups[1].Value ([int]$fixedMatch.Groups[2].Value) $fixedMatch.Groups[3].Value ([int]$fixedMatch.Groups[4].Value) $fixedMatch.Groups[5].Value
+} else {
 $begin = "Add-Type @'`n"
 $end = "`n'@`n"
 $start = $source.IndexOf($begin,[StringComparison]::Ordinal)
@@ -50,10 +83,11 @@ if ($start -lt 0 -or $stop -le $start -or
   throw 'synthetic-launch-helper-boundaries'
 }
 $native = $source.Substring($start+$begin.Length,$stop-$start-$begin.Length)
+}
 # These test-only methods are inserted in memory into the hash-pinned C# source.
 # Its actual structures, P/Invoke declarations, leases, Job and pipe methods are
 # unchanged. Neither addition exists in the production helper or its protocol.
-$installationMarker = '  public void Admit(string[] paths,long[] sizes,string[] hashes) {'
+$installationMarker = 'public void Admit(string[] paths,long[] sizes,string[] hashes) {'
 $installationTest = @'
   public static string SyntheticDirectory() {
     string directory=Path.Combine(Path.GetTempPath(),"easyeda-native-launch-"+Guid.NewGuid().ToString("N"));
@@ -88,7 +122,7 @@ $installationTest = @'
     throw Error("synthetic-image-lease");
   }
 '@
-$ownerMarker = '  // Exact worker diagnostic program. Its complete UTF-8 bytes must match the'
+$ownerMarker = 'static readonly string[] DiagnosticCoreProgramTable0='
 $ownerTest = @'
   [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetExitCodeProcess(IntPtr process,out uint code);
   public sealed class SyntheticResult {

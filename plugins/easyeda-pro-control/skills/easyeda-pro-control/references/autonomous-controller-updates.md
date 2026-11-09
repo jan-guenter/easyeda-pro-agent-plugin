@@ -85,11 +85,44 @@ resources must send status and remain active instead of returning a final answer
 with those resources retained. A missing tool session or process listing supplies
 no original exit or closure evidence and cannot transfer an unfinished owner.
 
+Use the manager's `inspect`, `retire`, `start` and `shutdown` selectors for
+session lifecycle. Its ordinary tool-call path rejects every
+`easyeda_control_session` call before dispatch, including inspection. The
+generic `session-stopped` diagnostic on that refusal does not establish process
+exit. Check the dispatch flag, manager stage and original closure evidence;
+use the corresponding manager selector for the next action.
+
 Ordinary tool requests retain the existing foreground-client grammar:
 
 ```json
 {"id":"status-1","tool":"easyeda_control_api","arguments":{"request":{"action":"loaded-facade"}}}
 ```
+
+For a large tool argument object, write that object alone as a UTF-8 JSON file
+and send a short selector instead of the inline `arguments` field:
+
+```json
+{"id":"status-file","tool":"easyeda_control_api","argumentsFile":{"path":"/absolute/private/session-args.json","expectedSha256":"<actual 64 lowercase hexadecimal SHA-256 digits>"}}
+```
+
+The file contains the ordinary tool arguments, for example
+`{"request":{"action":"loaded-facade"}}`. Use an absolute canonical path,
+a regular single-link file owned by the manager user with mode `0600`, and a
+canonical owner-only parent directory with mode `0700`. Symlinks, alias paths,
+BOMs, invalid UTF-8, non-object JSON and a mismatched complete-file hash refuse
+before dispatch. The selector line plus the original file bytes must fit the
+same 65,536-byte request limit. Keep the selector below the PTY line limit, or
+use a pipe or the terminal mode described above. The manager never changes the
+terminal or reconstructs bytes that it discarded.
+
+`argumentsFile` and inline `arguments` are mutually exclusive. Only an ordinary
+tool-call envelope accepts the selector; manager inspect, retirement, startup,
+shutdown and original-cleanup/control selectors do not. The manager opens and
+verifies one bounded descriptor snapshot, then keeps the decoded arguments for
+its intent and original cleanup. Changing the file later cannot change that
+request. Refusal or an uncertain dispatch never triggers a reload or retry.
+This requires a frontend build containing file-input support; updating files
+on disk cannot change an already-running frontend.
 
 Use a fresh `responseFile` in a canonical owner-only directory for large results.
 Normal calls remain serial through publication. The bounded pending-capture
@@ -382,10 +415,19 @@ native owner remains. The manager's bounded evidence budgets reserve cleanup
 and control capacity; budget refusal grants no replay or takeover.
 
 Keep new MCP connection creation outside the retirement-to-replacement window.
+This includes resumed and follow-up agent turns: the host can eagerly create a
+new connection even after that agent's previous transport closed. Start those
+turns while the admitted controller still holds its lease. Attribute any new
+process to its original connection before inspection or supported closure;
+never retry the old closed transport or adopt a process through another client.
 Source/review subagents can initialize their plugin connection while the live
-controller still owns the lease. A competing connection from the same agent
-team must retire through its own supported tool; another chat's owner cannot
-be displaced. If startup fails, inspect first. A selection or runtime failure
+controller still owns the lease. An owning connection from the same agent
+team must finish its original workflows and retire through its own supported
+path. A conflict-only connection instead uses its own `inspect`, then one
+`close-conflict` with `confirmCloseConflict:true`; retain the original pidfd and
+observe that process exiting separately. It cannot retire or displace the
+owning connection. Another chat's owner cannot be displaced. If startup fails,
+inspect first. A selection or runtime failure
 before child allocation leaves no original starting child, so `cleanup-startup`
 refuses. Shut down only after inspection confirms no owned child remains.
 If startup retained an unused child, with no caller tool dispatched, use
@@ -418,3 +460,62 @@ settlement-only request reconstructed from the private original call. No caller
 payload, new observation or native cleanup is admitted. Busy or missing pending
 evidence refuses; the original outcome remains unknown. Only the original
 facade's retirement preflight can authorize closure and a later generation.
+
+## Original spatial cleanup
+
+The exact frozen4500 terminated Pad report-chain failure has a separate
+[historical closed-reader relinquishment](closed-generated-reader-relinquishment.md)
+after independently completed original process cleanup. It appends metadata
+without claiming the missing helper-release acknowledgment or adopting an owner.
+Other interrupted spatial histories keep the original cleanup requirements below.
+
+The maintained frontend also classifies strict `spatial` and
+`component-spatial` requests under `easyeda_control_pcb209_opening`. The latter
+uses only its separate `pcb209-spatial-component-*` purpose. These are data
+classifications; the facade retains the actual native owner.
+
+While one original spatial call is pending, `in-flight-original` admits only
+`inspect` on that same operation/client. It offers no navigation, point replay,
+normal close or force-abort side action. After a timeout/rejection, use the
+returned original request ID and generation with `cleanup-original`:
+
+```json
+{"id":"spatial-inspect","action":"cleanup-original","generation":1,"interruptedRequestId":"original-spatial-call","request":{"action":"inspect"}}
+{"id":"spatial-window","action":"cleanup-original","generation":1,"interruptedRequestId":"original-spatial-call","request":{"action":"observe-window"}}
+{"id":"spatial-close","action":"cleanup-original","generation":1,"interruptedRequestId":"original-spatial-call","request":{"action":"normal-close","confirmNormalClose":true}}
+{"id":"spatial-terminated","action":"cleanup-original","generation":1,"interruptedRequestId":"original-spatial-call","request":{"action":"observe-termination"}}
+{"id":"spatial-release","action":"cleanup-original","generation":1,"interruptedRequestId":"original-spatial-call","request":{"action":"release-closed"}}
+```
+
+A fresh same-client private-attempt inspection must supply the exact intent and
+original binding, and report that the original call is no longer busy. The
+manager obtains the HWND only from its own `observe-window` result and injects
+the operation, binding, wrapper and HWND. Caller substitutions refuse. Close and
+release consume their attempts before the original SDK call; a lost reply does
+not permit replay. The facade independently rechecks its real window/root/Job
+and cleanup state. `settle-records` publishes only that facade's retained local
+records. Prelaunch `cleanup-before-launch` maps to `cleanup-unlaunched`, and
+`cleanup-no-process` requires the corresponding fresh original inspection data.
+
+This path creates no owner from historical JSON, signals no PID, answers no
+Save/Discard prompt and grants no persistence or replacement proof. Complete
+actual original termination and helper release before normal manager retirement.
+Source/synthetic recovery checks do not establish a connected Component case.
+
+## Original Component abort selector
+
+For an interrupted original Component request, the same foreground manager also
+accepts the strict selector below through `cleanup-original`. Its existing
+`in-flight-original` lane accepts the same selector after a fresh original
+private-owner inspection, even while that reader is still pending.
+
+```json
+{"action":"abort-component","confirmAbortOriginalComponentJob":true}
+```
+
+The manager supplies the original wrapper, operation and binding. Caller paths,
+PIDs, HWNDs and binding overrides refuse. This consumes one original Job-only
+abort before dispatch. Inspect the same operation, separately observe termination,
+release its helper, then retire and observe the original facade. Abort grants no
+Save/discard claim or replacement owner. This selector does not apply to the
+older spatial purpose. The repository source record is `docs/history/2026-11-06-component-original-job-abort.md`.

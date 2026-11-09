@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Closed protocol parity compares every independently implemented fixed reader and constructor selector. */
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -236,7 +237,7 @@ void test("fixed root inventory stays within the existing command bound at maxim
 });
 
 void test("native adapter embeds and private fields match TS programs without native execution", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   for (const [name, program] of Object.entries({
     OpeningFunction: diagnosticOpeningParams("context", target(), "preflight").functionDeclaration,
     PcbOpeningFunction: diagnosticPcbOpeningParams("context", target(), "preflight").functionDeclaration,
@@ -255,19 +256,19 @@ void test("native adapter embeds and private fields match TS programs without na
   }
   assert.ok(source.includes(String.raw`string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+`));
   assert.ok(source.includes(String.raw`",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";`));
-  assert.ok(source.includes("$requestLimit=if ($Spatial209) {383} elseif ($StringPrecreate) {3309} else {103}"));
+  assert.ok(source.includes("$requestLimit=if ($PcbViaWrite209) {5946} elseif ($Spatial209) {383} elseif ($ComponentSpatial209) {418} elseif ($StringPrecreate) {3309} else {103}"));
   assert.ok(source.includes("$request.requestId -gt $requestLimit"));
   assert.ok(source.includes("id!=nextRequest || id>EffectiveRequestLimit"));
-  assert.ok(source.includes("int RequestLimit { get { return spatial209?384:workerStartup?256:stringPrecreate?3309:103; } }"));
+  assert.ok(source.includes("return pcbViaWrite209?5946:spatial209?384:componentSpatial209?419:workerStartup?256:stringPrecreate?3309:103;"));
   // New held purposes choose their fixed physical-ID ceilings before the
   // Unchanged legacy route chain. Normal/cleanup classes are counted separately.
-  const heldLimitPrefix = "footprintHeldCache209?HeldCacheRequests:workerStartupFootprintHeldSaved209?HeldSavedRequests:";
+  const heldLimitPrefix = "projectStructure209?EasyedaProjectStructureLimits.WorkerRequests:footprintHeldCache209?HeldCacheRequests:workerStartupFootprintHeldSaved209?HeldSavedRequests:";
   const legacyLimit = "workerStartupFootprintForward209?EasyedaFootprintForwardLimits.Requests:workerStartupFootprintCombined209?EasyedaFootprintCombinedLimits.Requests:workerStartupFootprintSaved209?EasyedaFootprintSavedLimits.Requests:workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.Requests:EasyedaFootprintPreparationLimits.Requests";
   const footprintLimits = [...source.matchAll(/long FootprintRequestLimit \{ get \{ return ([^;\r\n]+); \} \}/gu)];
   assert.equal(footprintLimits.length, 1); assert.equal(footprintLimits[0]?.[1], heldLimitPrefix + legacyLimit);
   const legacyNormalLimit = legacyLimit.replaceAll(".Requests", ".NormalRequests");
   const footprintNormalLimits = [...source.matchAll(/long FootprintNormalRequestLimit \{ get \{ return ([^;\r\n]+); \} \}/gu)];
-  assert.equal(footprintNormalLimits.length, 1); assert.equal(footprintNormalLimits[0]?.[1], heldLimitPrefix + legacyNormalLimit);
+  assert.equal(footprintNormalLimits.length, 1); assert.equal(footprintNormalLimits[0]?.[1], heldLimitPrefix.replace(".WorkerRequests", ".WorkerNormal") + legacyNormalLimit);
   assert.ok(source.includes("public const int HeldSavedRequests=363,HeldSavedNormal=328,HeldSavedCleanup=35;"));
   assert.ok(source.includes("public const int HeldCacheRequests=46,HeldCacheNormal=45,HeldCacheCleanup=1;"));
   assert.ok(source.includes("public static class EasyedaFootprintSavedLimits { public const int Requests=353; public const int NormalRequests=319;"));
@@ -280,7 +281,7 @@ void test("native adapter embeds and private fields match TS programs without na
   const legacyStartupLimit = "if ($WorkerStartupFootprintForward209) {[EasyedaFootprintForwardLimits]::Requests} elseif ($WorkerStartupFootprintCombined209) {[EasyedaFootprintCombinedLimits]::Requests} elseif ($WorkerStartupFootprintSaved209) {[EasyedaFootprintSavedLimits]::Requests} elseif ($WorkerStartupFootprintCopy209) {[EasyedaFootprintExecutionLimits]::Requests} elseif ($WorkerStartupFootprint209) {[EasyedaFootprintPreparationLimits]::Requests} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}";
   const startupLimits = [...source.matchAll(/^\$startupRequestLimit=(.+)$/gmu)];
   assert.equal(startupLimits.length, 1);
-  assert.equal(startupLimits[0]?.[1], `if ($FootprintHeldCache209) {[EasyedaDiagnosticOwner]::HeldCacheRequests} elseif ($WorkerStartupFootprintHeldSaved209) {[EasyedaDiagnosticOwner]::HeldSavedRequests} else${legacyStartupLimit}`);
+  assert.equal(startupLimits[0]?.[1], `if ($ProjectStructure209) {[EasyedaProjectStructureLimits]::WorkerRequests} elseif ($FootprintHeldCache209) {[EasyedaDiagnosticOwner]::HeldCacheRequests} elseif ($WorkerStartupFootprintHeldSaved209) {[EasyedaDiagnosticOwner]::HeldSavedRequests} else${legacyStartupLimit}`);
   assert.ok(source.includes("$request.requestId -gt $startupRequestLimit) {throw 'pcb-diagnostic-startup-fields'}"));
   assert.ok(source.includes('if((long)received+count>(workerStartupRatline209?RatlineTotalByteLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.TotalByteLimit:64L*1024*1024)) throw Error("receive-budget")'));
   assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));

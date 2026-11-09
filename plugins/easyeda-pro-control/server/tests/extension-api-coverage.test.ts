@@ -9,6 +9,16 @@ import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { isRecord } from "../src/core.ts";
 import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "../src/design-execution-lifecycle.ts";
 
+void test("the generated importer exposes only its managed disposable public subset", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.sys_FileManager.importProjectByProjectFile"); assert.ok(row);
+  assert.equal(row.status, "implemented-public-subset"); assert.equal(row.routes.length, 1); assert.equal(row.omission, null);
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  const route = row.routes[0]; assert.ok(route);
+  assert.equal(route.tool, "easyeda_control_fixture_import"); assert.equal(route.selector, "import-generated-fixture");
+  assert.match(route.scope, /no caller file\/path\/geometry\/code\/SQL/u);
+  assert.match(route.scope, /invoked once with autoOpenfalse/u); assert.match(route.scope, /complete closed SQL\/source membership and persistent registration remain false/u);
+});
+
 void test("supplied footprint archive coverage distinguishes exact offline source reads from current-document SDK export", () => {
   const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.sys_FileManager.getDocumentFootprintSources"); assert.ok(row);
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
@@ -290,16 +300,16 @@ void test("ordinary symbol coverage exposes its bounded forward-only history pro
   assert.equal(result["historicalCanvasConnectedValidation"], "installed080000-ordinary-unused-canvas-segments-forward-only");
 });
 
-void test("coverage enumerates every distinct mounted method and retains every overload in all three pinned snapshots", () => {
+void test("coverage enumerates every distinct mounted method and retains every overload in all four pinned snapshots", () => {
   const rows = inventoryExtensionApiCoverage();
   const expected = new Set(extensionApiSnapshots.flatMap((snapshot) => snapshot.namespaces.flatMap((namespace) => namespace.methods.map((method) => `eda.${namespace.name}.${method.name}`))));
-  assert.equal(expected.size, 835);
+  assert.equal(expected.size, 855);
   assert.equal(rows.length, expected.size);
   assert.deepEqual(new Set(rows.map((row) => row.path)), expected);
   assert.equal(rows.filter((row) => row.reviewedRuntimeDeclaration).length, 697);
   assert.equal(rows.filter((row) => row.declarations.some((declaration) => declaration.reference === "official-latest")).length, 773);
   assert.equal(rows.filter((row) => row.installed209Declaration).length, 811);
-  assert.equal(rows.reduce((count, row) => count + row.declarations.length, 0), 749 + 806 + 844);
+  assert.equal(rows.reduce((count, row) => count + row.declarations.length, 0), 749 + 806 + 844 + 862);
   for (const row of rows) {
     assert.equal(row.currentGenerationLiveValidation, "not-recorded");
     assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
@@ -362,7 +372,15 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.dmt_Project.createProject")?.status, "omitted");
   assert.equal(rows.get("eda.sch_PrimitiveBus.create")?.status, "omitted");
-  assert.equal(rows.get("eda.pcb_Document.save")?.status, "implemented-but-blocked");
+  assert.equal(rows.get("eda.pcb_Document.save")?.status, "implemented-public-subset");
+  for (const path of ["eda.pcb_Document.save", "eda.pcb_PrimitiveVia.create"]) {
+    const row = rows.get(path); assert.ok(row !== undefined); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    const validation = row.routes.find(route => route.tool === "easyeda_control_current_pcb_via_write"); assert.ok(validation !== undefined);
+    assert.equal(validation.executionState, "available-with-runtime-guards"); assert.deepEqual(validation.documentTypes, [3]);
+    assert.match(validation.scope, /original generated Via-only or Line\/Via PCB/u); assert.match(validation.scope, /no caller path, owner or JavaScript/u);
+    assert.match(validation.scope, /does not implement named nets, other Via types, ordinary-project writing or an unrestricted Save/u);
+    for (const ordinary of row.routes.filter(route => route.tool === "easyeda_control_design")) { assert.equal(ordinary.executionState, "blocked"); }
+  }
   assert.equal(rows.get("eda.pcb_Layer.getCurrentLayer")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.routes[0]?.implementation, "native-task-equivalent");
@@ -542,8 +560,9 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
       const path = `eda.sch_Primitive${family}.${method}`, row = rows.get(path); assert.ok(row);
       assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
       assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
-      assert.equal(row.runtimeAdmission, "not-granted-by-inventory"); assert.equal(row.routes.length, 1);
-      const route = row.routes[0]; assert.ok(route);
+      assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+      assert.deepEqual(row.routes.map(route => `${route.tool}/${route.selector}`).toSorted(), ["easyeda_control_pcb209_opening/schematic-page-read", `easyeda_control_sdk_read/${path}`, ...(method === "getAll" ? ["easyeda_control_pcb209_opening/generated-schematic/observe-text-wire-bus"] : [])].toSorted());
+      const route = row.routes.find(candidate => candidate.tool === "easyeda_control_sdk_read"); assert.ok(route);
       assert.equal(route.tool, "easyeda_control_sdk_read"); assert.equal(route.selector, path);
       assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [1]);
       assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
@@ -562,7 +581,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 216, "implemented-native-equivalent": 46, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 481,
+    "implemented-public-subset": 219, "implemented-native-equivalent": 47, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 77, omitted: 499,
   });
 });
 
@@ -572,7 +591,8 @@ void test("explicit-ID PCB object coverage advertises complete narrowed source D
     const row = rows.get(`eda.pcb_Primitive.${name}`); assert.ok(row);
     assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
     assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
-    assert.equal(row.routes.length, 1); const route = row.routes[0]; assert.ok(route);
+    assert.deepEqual(row.routes.map(route => route.tool).toSorted(), ["easyeda_control_pcb_geometry", "easyeda_control_sdk_read"]);
+    const route = row.routes.find(candidate => candidate.tool === "easyeda_control_sdk_read"); assert.ok(route);
     assert.deepEqual(route.documentTypes, [3]); assert.equal(route.implementation, "native-task-equivalent");
     assert.deepEqual(route.source, ["pcb-source-objects-read.ts"]); assert.deepEqual(route.tests, ["pcb-source-objects-read.test.ts"]);
     assert.match(route.scope, /Missing IDs refuse/u); assert.match(route.scope, /No selection RPC/u);
@@ -874,7 +894,8 @@ void test("legacy capture coverage stays separate from the current209 native vie
 void test("current PCB layer coverage preserves the separate legacy route and discloses native execution", () => {
   for (const method of ["getAllLayers", "getTheNumberOfCopperLayers"]) {
     const row = inventoryExtensionApiCoverage().find((entry) => entry.path === `eda.pcb_Layer.${method}`);
-    assert.ok(row); assert.equal(row.status, "implemented-public-subset"); assert.equal(row.routes.length, 3);
+    assert.ok(row); assert.equal(row.status, "implemented-public-subset");
+    assert.deepEqual(row.routes.map(route => `${route.tool}/${route.selector}`).toSorted(), ["easyeda_control_pcb209_opening/observe-layers", "easyeda_control_pcb209_opening/ordinary/observe-layers", "easyeda_control_pcb_layers/explicit-current-pcb-layer-observation", `easyeda_control_sdk_read/eda.pcb_Layer.${method}`].toSorted());
     assert.equal(row.routes.some((route) => route.tool === "easyeda_control_sdk_read"), true);
     const route = row.routes.find((entry) => entry.tool === "easyeda_control_pcb_layers"); assert.ok(route);
     assert.deepEqual(route.documentTypes, [3]); assert.equal(route.implementation, "native-task-equivalent");
@@ -1131,8 +1152,10 @@ void test("spatial coverage separates the restricted native reader from the loss
     assert.ok(row);
     assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
     assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
-    assert.equal(row.routes.length, 1);
-    const route = row.routes[0]; assert.ok(route);
+    const selectors = ["spatial/observe-spatial", "spatial/observe-spatial-lines", "spatial/observe-spatial-arcs"];
+    if (path.endsWith("getPrimitiveAtPoint")) { selectors.push("spatial/observe-spatial-pads", "component-spatial/observe-components", "component-spatial/observe-components-cloned-pads"); }
+    assert.deepEqual(row.routes.map(route => route.selector).toSorted(), selectors.toSorted());
+    const route = row.routes.find(candidate => candidate.selector === "spatial/observe-spatial"); assert.ok(route);
     assert.equal(route.tool, "easyeda_control_pcb209_opening"); assert.equal(route.selector, "spatial/observe-spatial");
     assert.deepEqual(route.documentTypes, [3]);
     for (const text of ["drops native families", "public region getter selects", "calls neither public handler", "standalone unlocked visible through Via",
@@ -1143,6 +1166,47 @@ void test("spatial coverage separates the restricted native reader from the loss
       assert.ok(route.scope.includes(text));
     }
     assert.equal(route.inputDiscovery?.arguments["request"] !== undefined, true);
+  }
+});
+
+void test("Component point discovery retains both bounded representations without region or writer admission", () => {
+  const rows = inventoryExtensionApiCoverage();
+  const point = rows.find(row => row.path === "eda.pcb_Document.getPrimitiveAtPoint"); assert.ok(point);
+  const routes = point.routes.filter(route => route.selector.startsWith("component-spatial/"));
+  assert.equal(routes.length, 2); assert.equal(point.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(point.completeDeclaredContractSupported, false); assert.equal(point.runtimeAdmission, "not-granted-by-inventory");
+  for (const [action, limit] of [["observe-components", 16], ["observe-components-cloned-pads", 11]] as const) {
+    const route = routes.find(value => value.selector === `component-spatial/${action}`); assert.ok(route);
+    assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.deepEqual(route.documentTypes, [3]);
+    assert.ok(route.inputDiscovery);
+    const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"])).result;
+    assert.ok(isRecord(discovery)); assert.ok(isRecord(discovery["requestSchema"]));
+    assert.equal(discovery["wrapperAction"], "component-spatial"); assert.equal(discovery["requestLimit"], 419);
+    assert.equal(discovery[action === "observe-components" ? "maximumPoints" : "maximumClonedPadPoints"], limit);
+    for (const flag of ["connectedValidation", "executionAuthorized", "saveAuthorized"]) { assert.equal(discovery[flag], false); }
+    const request = { action, operationId: "pcb209-spatial-component-coverage", expectedBindingSha256: "a".repeat(64),
+      queries: Array.from({ length: limit }, () => ({ kind: "point", xMil: 0, yMil: 0 })), acceptNativeScratchEffects: true };
+    const accepted = queryOfflineApi(apiRequestSchema.parse({ action: "pcb209-component-spatial-validate", query: { request } })).result; assert.ok(isRecord(accepted)); assert.equal(accepted["valid"], true);
+    for (const input of [{ ...request, queries: [...request.queries, request.queries[0]] },
+      { ...request, queries: [{ kind: "region", leftMil: 0, rightMil: 1, bottomMil: 0, topMil: 1, mode: "inside" }] },
+      { ...request, operationId: "pcb209-spatial-older-owner" }, { ...request, acceptNativeScratchEffects: false }]) {
+      const refused = queryOfflineApi(apiRequestSchema.parse({ action: "pcb209-component-spatial-validate", query: { request: input } })).result; assert.ok(isRecord(refused)); assert.equal(refused["valid"], false);
+      assert.equal(refused["executionAuthorized"], false); assert.equal(refused["saveAuthorized"], false);
+    }
+  }
+  for (const row of rows.filter(candidate => candidate.path !== point.path)) {
+    assert.equal(row.routes.some(route => route.selector.startsWith("component-spatial/")), false, row.path);
+  }
+});
+
+void test("footprint deletion remains omitted while its current retained inverse prefixes are discoverable evidence", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.lib_Footprint.delete"); assert.ok(row?.omission);
+  assert.equal(row.status, "omitted"); assert.deepEqual(row.routes, []);
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  for (const file of ["current-footprint-inverse-public-delete-intent.ts", "current-footprint-inverse-delete-worker-admission.ts",
+    "current-footprint-inverse-delete-callback-collector.ts", "current-footprint-inverse-native-fragment.ts", "current-footprint-delete-observed-saved-source.ts"]) {
+    assert.ok(row.omission.evidence.includes(file), file);
   }
 });
 
@@ -1202,6 +1266,12 @@ void test("model and panel metadata routes stay narrower than SDK contracts and 
   assert.match(cbbSearch?.omission?.reason ?? "", /positive project\/block ownership/u);
   assert.match(cbbGet?.omission?.reason ?? "", /project and its branch profile\/structure/u);
   assert.match(cbbGet?.omission?.nextRequirement ?? "", /before fetching the profile/u);
+  for (const row of [cbbGet, cbbSearch]) {
+    assert.match(row?.omission?.reason ?? "", /concrete omission/u);
+    assert.match(row?.omission?.reason ?? "", /HTTP403/u);
+    assert.equal(row?.omission?.evidence.includes("docs/history/2026-11-07-cbb-omission-decision.md"), true);
+    assert.equal(row?.routes.length, 0);
+  }
 });
 
 void test("selected PCB objects expose source DTOs without promoting the lossy public wrapper", () => {
@@ -1209,7 +1279,8 @@ void test("selected PCB objects expose source DTOs without promoting the lossy p
   const row = inventoryExtensionApiCoverage().find((entry) => entry.path === path); assert.ok(row);
   assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
-  assert.equal(row.routes.length, 2); const route = row.routes.find(value => value.tool === "easyeda_control_sdk_read"); assert.ok(route);
+  assert.deepEqual(row.routes.map(route => route.selector).toSorted(), [path, "observe-selection-relations", "ordinary/observe-selection-relations"].toSorted());
+  const route = row.routes.find(value => value.tool === "easyeda_control_sdk_read"); assert.ok(route);
   assert.equal(route.selector, path); assert.equal(route.tool, "easyeda_control_sdk_read");
   assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [3]);
   assert.deepEqual(route.source, ["pcb-selected-objects-read.ts"]);
@@ -1307,11 +1378,15 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files"].includes(String(request["action"]))) {
+    if (request["action"] === "fixture-import") {
+      assert.ok(isRecord(result["requestSchema"])); assert.equal(result["designExecutionAuthorized"], false);
+    } else if (request["action"] === "pcb209-component-spatial") {
+      assert.ok(isRecord(result["requestSchema"])); assert.equal(result["executionAuthorized"], false);
+    } else if (["generated-schematic-opening", "project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "schematic209-relevance-display-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["generated-schematic-opening", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "schematic209-relevance-display-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -28,7 +29,7 @@ async function registration(retainedOpener: boolean): Promise<{
   const allocations: unknown[][] = [], calls: unknown[] = [], engine = {}, history: string[] = [], opener = {};
   const gate = new SerializedGate();
   let fail = false, handler: Handler | undefined, inputSchema: z.ZodType | undefined;
-  const scope = vm.createContext({ z, currentSchematicRenameOperationRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentSchematicRenameOperationRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
     currentSchematicRenameOperationCoordinator: undefined, currentDisposableOpenCoordinator: retainedOpener ? opener : undefined,
     engine, facadeMode: "calculation-only", facadeToolRegistered: (): boolean => true,
     CurrentSchematicRenameOperationCoordinator: class {
@@ -53,6 +54,7 @@ async function registration(retainedOpener: boolean): Promise<{
       inputSchema = config.inputSchema; handler = registered;
     } },
   });
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(stripTypeScriptTypes(source.slice(start, end)), scope);
   assert.ok(handler !== undefined && inputSchema !== undefined);
   const selectedHandler = handler, selectedSchema = inputSchema;

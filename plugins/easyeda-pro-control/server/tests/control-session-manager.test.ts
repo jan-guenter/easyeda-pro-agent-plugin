@@ -109,6 +109,47 @@ const retire = (id: string, generation: number): string => request({ id, action:
 const loaded = (id: string): string => request({ id, tool: "easyeda_control_api", arguments: { request: { action: "loaded-facade" } } });
 
 const sdkModule = (path: string): string => JSON.stringify(pathToFileURL(join(pluginRoot, "node_modules/@modelcontextprotocol/sdk/dist/esm", path)).href);
+/** An inert metadata peer can exit without claiming native retirement. */
+function selfClosingMetadataPeer(): string {
+  return `import {Server} from ${sdkModule("server/index.js")};
+import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
+const server=new Server({name:'self-closing-metadata-peer',version:'1.0.0'},{capabilities:{tools:{}}});
+const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
+server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session'].map(name=>({name,inputSchema:{type:'object'}}))}));
+server.setRequestHandler(CallToolRequestSchema,async({params})=>{
+ const action=params.arguments?.request?.action;
+ if(params.name==='easyeda_control_api'&&action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
+ if(params.name==='easyeda_control_api'&&action==='fixture-exit'){setTimeout(()=>{void server.close().then(()=>{process.exitCode=7;});},30);return result({closingSyntheticPeer:true,nativeCleanupClaimed:false});}
+ throw new Error('No retirement or native operation is implemented by this synthetic peer.');
+});await server.connect(new StdioServerTransport());`;
+}
+
+void test("manager shutdown closes only itself after its original active child has already exited", { timeout: 15_000 }, async () => {
+  const outputs: unknown[] = [], selected = await fixture(selfClosingMetadataPeer());
+  await selectedProfile(selected.profilePath, async () => {
+    const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); }); await manager.initialize(selected.root);
+    const pid = manager.inspect()["facadePid"]; assert.ok(typeof pid === "number");
+    try {
+      await manager.handle(request({ id: "live-child-shutdown-refused", action: "shutdown" }));
+      assert.equal(manager.inspect()["stage"], "active"); assert.equal(record(outputs.at(-1))["error"], "manager-request-rejected");
+      await manager.handle(request({ id: "exit-synthetic-child", tool: "easyeda_control_api", arguments: { request: { action: "fixture-exit" } } }));
+      for (let attempt = 0; attempt < 80 && manager.inspect()["closure"] === null; attempt += 1) { await wait(25); }
+      assert.deepEqual(record(manager.inspect()["closure"]), { pid, exitObserved: true, closeObserved: true, exitCode: 7, signal: null, stdinEof: false });
+      assert.equal(manager.inspect()["stage"], "active");
+      await manager.handle(request({ id: "closed-child-normal-shutdown", action: "shutdown" }));
+      assert.equal(manager.inspect()["stage"], "closed"); const closing = record(outputs.at(-1));
+      assert.equal(closing["closing"], true); assert.equal(closing["originalFacadeClosed"], true);
+      assert.equal(closing["retirementAcknowledged"], false); assert.equal(closing["nativeCleanupProved"], false); assert.equal(closing["replacementAllowed"], false);
+      await manager.handle(request({ id: "no-replacement-after-shutdown", action: "start", afterGeneration: 1, pluginRoot: selected.root }));
+      assert.equal(record(outputs.at(-1))["error"], "manager-request-rejected"); assert.equal(manager.inspect()["facadePid"], pid); assert.equal(manager.inspect()["stage"], "closed");
+    } finally {
+      if (manager.inspect()["stage"] === "active" && manager.inspect()["closure"] === null) { await manager.handle(request({ id: "finally-exit-synthetic-child", tool: "easyeda_control_api", arguments: { request: { action: "fixture-exit" } } })); }
+      for (let attempt = 0; attempt < 80 && manager.inspect()["closure"] === null; attempt += 1) { await wait(25); }
+      if (manager.inspect()["closure"] !== null && manager.inspect()["stage"] !== "closed") { await manager.handle(request({ id: "finally-shutdown-closed-child", action: "shutdown" })); }
+    }
+  });
+});
 /** Emit one controlled RPC rejection or contradictory retirement reply from a
  * synthetic peer that closes itself without the manager signalling its child. */
 function syntheticPeer(kind: "rpc-rejection" | "bad-retirement"): string {
@@ -404,7 +445,7 @@ void test("manager framing drains one oversized frame, preserves split UTF-8 and
   assert.deepEqual(preservedBom, ["\uFEFF{}"]);
 });
 
-void test("actual manager input loop rejects oversized and invalid UTF-8 frames then retires its same original child", { timeout: 30_000 }, async () => {
+void test("actual manager input loop rejects malformed frames and argument files then retires its same original child", { timeout: 30_000 }, async () => {
   const outputs: unknown[] = [], selected = await fixture();
   await selectedProfile(selected.profilePath, async () => {
     const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
@@ -412,22 +453,30 @@ void test("actual manager input loop rejects oversized and invalid UTF-8 frames 
     const original = manager.inspect()["facadePid"], sentinel = "private-discarded-input";
     assert.ok(typeof original === "number");
     try {
+      const argumentsPath = join(selected.control, "loaded-arguments.json"); const argumentBytes = Buffer.from(JSON.stringify({ request: { action: "loaded-facade" } }) + " ".repeat(6000));
+      await writeFile(argumentsPath, argumentBytes, { mode: 0o600 });
+      const argumentsFile = { path: argumentsPath, expectedSha256: hash(argumentBytes) };
+      const fileCall = request({ id: "file-offline-child", tool: "easyeda_control_api", argumentsFile });
+      assert.ok(Buffer.byteLength(fileCall) < 4096);
+      const badFile = request({ id: "bad-file", tool: "easyeda_control_api", argumentsFile: { ...argumentsFile, expectedSha256: "0".repeat(64) } });
       const oversized = Buffer.from(sentinel.repeat(Math.ceil((MAXIMUM_REQUEST_BYTES + 1) / sentinel.length)));
       const followups = `${request({ id: "same-owner-after-input-rejection", action: "inspect" })}\n${loaded("same-offline-child")}\n${retire("retire-after-input-rejection", 1)}\n${request({ id: "close-after-input-rejection", action: "shutdown" })}\n`;
       const chunks = [
         oversized.subarray(0, MAXIMUM_REQUEST_BYTES), oversized.subarray(MAXIMUM_REQUEST_BYTES), Buffer.from("\n"),
-        Buffer.from([0xC3]), Buffer.from([0x28, 10]), Buffer.from("{malformed}\n"), Buffer.from(followups),
+        Buffer.from([0xC3]), Buffer.from([0x28, 10]), Buffer.from("{malformed}\n"), Buffer.from(`${badFile}\n`), Buffer.from(`${fileCall}\n`), Buffer.from(followups),
       ];
       const result = await runManagerInput(manager, inputChunks(chunks));
       assert.equal(result, "closed"); assert.equal(manager.inspect()["stage"], "closed");
       const rows = outputs.map(value => record(value));
       const rejected = rows.filter(row => row["error"] === "manager-request-rejected");
-      assert.deepEqual(rejected.map(row => record(row["diagnostic"])["reason"]), ["request-too-large", "invalid-utf8", "json-rejected"]);
+      assert.deepEqual(rejected.map(row => record(row["diagnostic"])["reason"]), ["request-too-large", "invalid-utf8", "json-rejected", "arguments-file-rejected"]);
       assert.ok(rejected.every(row => row["dispatched"] === false && row["originalOwnerRetained"] === true));
       const inspected = record(rows.find(row => row["id"] === "same-owner-after-input-rejection")?.["manager"]);
       assert.equal(inspected["facadePid"], original); assert.equal(inspected["generation"], 1); assert.equal(inspected["stage"], "active");
       const offline = record(record(rows.find(row => row["id"] === "same-offline-child")?.["result"])["structuredContent"]);
       assert.equal(record(offline["result"])["pid"], original);
+      const fileOffline = record(record(rows.find(row => row["id"] === "file-offline-child")?.["result"])["structuredContent"]);
+      assert.equal(record(fileOffline["result"])["pid"], original);
       const retired = rows.find(row => row["id"] === "retire-after-input-rejection"); assert.equal(retired?.["retired"], true);
       assert.deepEqual(record(retired?.["closure"]), { pid: original, exitObserved: true, closeObserved: true, exitCode: 0, signal: null, stdinEof: true });
       assert.equal(JSON.stringify(outputs).includes(sentinel), false); assert.equal(JSON.stringify(outputs).includes("{malformed}"), false);
@@ -1073,6 +1122,9 @@ void test("CLI pending capture admits only original inspect and once-confirmed a
       arguments: { request: { action: "footprint-forward-prewrite", request: { action: "capture-project", operationId, expectedBindingSha256,
         target: { rawWindowsPath: String.raw`C:\Disposable\fixture.eprj2`, projectUuid: hash(Buffer.from(String.raw`C:\Disposable\fixture.eprj2`)), documentUuid: "c".repeat(32), expectedSourceSha256: "d".repeat(64) },
         confirmDisposableProject: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true } } } };
+    const capturePath = join(selected.control, "capture-arguments.json"); const captureBytes = Buffer.from(JSON.stringify(capture.arguments) + " ".repeat(5000));
+    await writeFile(capturePath, captureBytes, { mode: 0o600 });
+    const captureFile = { id: capture.id, tool: capture.tool, timeoutMs: capture.timeoutMs, argumentsFile: { path: capturePath, expectedSha256: hash(captureBytes) } };
     const parentId = "pending-capture";
     const side = (id: string, action: string, extra: object = {}): string => request({ id, action: "in-flight-original", generation: 1,
       originalRequestId: parentId, request: { action, ...extra } });
@@ -1080,8 +1132,9 @@ void test("CLI pending capture admits only original inspect and once-confirmed a
       interruptedRequestId: parentId, request: { action, ...extra } });
     const seen = (id: string): boolean => outputs.some(value => record(value)["id"] === id);
     async function* input(): AsyncGenerator<Buffer> {
-      yield Buffer.from(`${request(capture)}\n`);
+      yield Buffer.from(`${request(captureFile)}\n`);
       await managerProgress(() => manager.inspect()["inFlightRequest"] !== null && record(manager.inspect()["inFlightRequest"])["rpcPending"] === true);
+      await writeFile(capturePath, JSON.stringify({ request: { action: "foreign-after-dispatch" } }));
       for (const line of [request({ id: "local-pending", action: "inspect" }), loaded("normal-denied"), request({ ...capture, id: "replay-denied" }),
         retire("retire-denied", 1), request({ id: "start-denied", action: "start", afterGeneration: 1, pluginRoot: selected.root }),
         request({ id: "shutdown-denied", action: "shutdown" }), side("termination-denied", "observe-termination"),
@@ -1125,6 +1178,8 @@ void test("CLI pending capture admits only original inspect and once-confirmed a
     }));
     assert.deepEqual(records.map(row => row["sequence"]), records.map((_row, index) => index + 1));
     assert.equal(records.filter(row => row["kind"] === "in-flight-control-result").length, 2);
+    const originalIntent = records.find(row => row["kind"] === "call-intent" && record(row["value"])["id"] === parentId);
+    assert.deepEqual(record(originalIntent?.["value"])["arguments"], capture.arguments);
   });
 });
 
@@ -1483,4 +1538,184 @@ void test("historical Source timeout retains only original metadata settlement a
       });
     });
   }
+});
+
+/** Inert SDK peer for the exact Via family, with a genuinely pending execute
+ * Promise and independently acknowledged original abort/exit/release stages. */
+function interruptedViaPeer(schematic = false): string {
+  const source = `import {Server} from ${sdkModule("server/index.js")};
+import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
+const server=new Server({name:'synthetic-original-via',version:'1.0.0'},{capabilities:{tools:{}}});
+const op='pcb209-via-write-manager-original',gate=Promise.withResolvers(),calls=[];let active=0,executes=0,aborted=false,released=false,settled=false;
+const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
+const refused=()=>({isError:true,content:[{type:'text',text:'synthetic-original-via-refusal'}]});
+server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session','easyeda_control_current_pcb_via_write'].map(name=>({name,inputSchema:{type:'object'}}))}));
+server.setRequestHandler(CallToolRequestSchema,async({params})=>{
+const q=params.arguments?.request;
+if(params.name==='easyeda_control_api'&&q?.action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
+if(params.name==='easyeda_control_session'){
+ if(q?.action==='retire'&&(active!==0||!released||!settled))return refused();const retired=q?.action==='retire';
+ return result({result:{schema:'easyeda-pro-control.session-retirement.v1',state:retired?'retired':'active',activeCalls:active,liveAdmissionOpen:!retired,leaseReleaseAcknowledged:retired,replacementConnectionRequired:retired}});
+}
+calls.push({tool:params.name,...q});if(params.name!=='easyeda_control_current_pcb_via_write'||q?.operationId!==op)return refused();
+if(q.action==='execute'){if(++executes!==1||!['confirmDisposableViaWrite','confirmOneSave','confirmForwardOnly','confirmNormalOpenEffects'].every(k=>q[k]===true))return refused();active++;await gate.promise;active--;return result({result:{operationId:op,action:q.action,originalReturned:true}});}
+if(q.action==='abort'){if(aborted||q.confirmOriginalJobOnly!==true||Object.keys(q).length!==3)return refused();aborted=true;setTimeout(()=>gate.resolve(),125);return result({result:{operationId:op,action:q.action,terminationDispatched:true}});}
+if(q.action==='observe-termination')return result({result:{operationId:op,action:q.action,terminated:aborted&&active===0}});
+if(q.action==='release'){if(!aborted||active!==0||released)return refused();released=true;return result({result:{operationId:op,action:q.action,released:true}});}
+if(q.action==='settle-publication'){settled=true;return result({result:{operationId:op,action:q.action,settled:true}});}
+if(q.action==='inspect')return result({result:{operationId:op,action:q.action,active,executes,aborted,released,settled,calls}});return refused();
+});
+setTimeout(()=>{gate.resolve();void server.close();},18000).unref();await server.connect(new StdioServerTransport());`;
+  return schematic ? source.replaceAll("easyeda_control_current_pcb_via_write", "easyeda_control_current_schematic_relevance_display_write")
+    .replaceAll("pcb209-via-write-manager-original", "sch209-relevance-display-manager-original")
+    .replaceAll("confirmDisposableViaWrite", "confirmDisposableDisplayTransaction").replaceAll("confirmNormalOpenEffects", "acceptNormalOpenEffects") : source;
+}
+void test("Via and schematic original manager cleanup binds timeout and in-flight abort to the same retained request/client through facade retirement", { timeout: 25_000 }, async context => {
+  for (const [mode, schematic] of [["timeout", false], ["in-flight", false], ["timeout", true], ["in-flight", true]] as const) {
+    const selected = await fixture(interruptedViaPeer(schematic)); const outputs: unknown[] = [];
+    await selectedProfile(selected.profilePath, async () => {
+      const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
+      context.after(async () => {
+        if (manager.inspect()["stage"] === "closed") { return; }
+        const deadline = Date.now() + 19_000;
+        while (manager.inspect()["closure"] === null && Date.now() < deadline) { await wait(10); }
+        await manager.handle(request({ id: `${mode}-fixture-shutdown`, action: "shutdown" }));
+      });
+      await manager.initialize(selected.root); const pid = manager.inspect()["facadePid"];
+      const tool = schematic ? "easyeda_control_current_schematic_relevance_display_write" : "easyeda_control_current_pcb_via_write";
+      const execute = { id: `${mode}-original-execute`, tool, timeoutMs: mode === "timeout" ? 1000 : 10_000,
+        arguments: { request: { action: "execute", operationId: schematic ? "sch209-relevance-display-manager-original" : "pcb209-via-write-manager-original",
+          confirmOneSave: true, confirmForwardOnly: true, ...(schematic ? { confirmDisposableDisplayTransaction: true, acceptNormalOpenEffects: true } : { confirmDisposableViaWrite: true, confirmNormalOpenEffects: true }) } } };
+      const cleanup = (id: string, action: string, extra: object = {}): string => request({ id, action: "cleanup-original", generation: 1,
+        interruptedRequestId: execute.id, request: { action, ...extra } });
+      const side = (id: string, action: string, extra: object = {}): string => request({ id, action: "in-flight-original", generation: 1,
+        originalRequestId: execute.id, request: { action, ...extra } });
+      let parentSettled = false;
+      const pending = (async (): Promise<void> => { try { await manager.handle(request(execute)); } finally { parentSettled = true; } })();
+      await managerProgress(() => record(manager.inspect()["inFlightRequest"])["rpcPending"] === true);
+      if (mode === "in-flight") {
+        await manager.handleInFlight(side("foreign-via-operation", "inspect", { operationId: "pcb209-via-write-foreign" })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+        await manager.handleInFlight(side("original-via-inspect", "inspect"));
+        await manager.handleInFlight(side("original-via-abort", "abort"));
+        assert.equal(parentSettled, false); assert.equal(manager.hasInFlightCapture(), true); assert.equal(manager.inspect()["stage"], "blocked");
+      }
+      await pending; assert.equal(manager.inspect()["stage"], "blocked"); assert.equal(manager.inspect()["facadePid"], pid);
+      for (const rejected of [request({ ...execute, id: `${mode}-replay`, cleanup: true }), loaded(`${mode}-ordinary-refused`),
+        cleanup(`${mode}-foreign-operation`, "inspect", { operationId: "pcb209-via-write-foreign" }), cleanup(`${mode}-caller-confirm`, "abort", { confirmOriginalJobOnly: true }), cleanup(`${mode}-wrong-family`, "release-closed"),
+        request({ id: `${mode}-foreign-request`, action: "cleanup-original", generation: 1, interruptedRequestId: "foreign", request: { action: "inspect" } })]) {
+        await manager.handle(rejected); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      }
+      if (mode === "timeout") {
+        await manager.handle(retire("timeout-via-premature-retire", 1)); assert.equal(manager.inspect()["stage"], "blocked"); assert.equal(record(outputs.at(-1))["retirementRefused"], true);
+        await manager.handle(cleanup("timeout-via-abort", "abort")); await wait(150);
+      }
+      for (const [id, action] of [[`${mode}-via-exit`, "observe-termination"], [`${mode}-via-release`, "release"], [`${mode}-via-publish`, "settle-publication"], [`${mode}-via-inspect`, "inspect"]] as const) {
+        await manager.handle(cleanup(id, action)); const output = record(outputs.at(-1)); assert.notEqual(record(output["result"])["isError"], true);
+      }
+      const finalOutput = record(outputs.at(-1)); const envelope = record(finalOutput["result"]); const content = record(envelope["structuredContent"]); const inspected = record(content["result"]);
+      const calls = z.array(z.record(z.string(), z.unknown())).parse(inspected["calls"]);
+      assert.equal(inspected["executes"], 1); assert.equal(inspected["released"], true); assert.equal(inspected["settled"], true);
+      const aborts = calls.filter(call => call["action"] === "abort"); assert.equal(aborts.length, 1); assert.equal(aborts[0]?.["confirmOriginalJobOnly"], true);
+      assert.ok(calls.every(call => call["operationId"] === execute.arguments.request.operationId && call["tool"] === execute.tool));
+      await manager.handle(cleanup(`${mode}-abort-replay`, "abort")); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      await manager.handle(retire(`${mode}-via-final-retire`, 1)); assert.equal(manager.inspect()["stage"], "between-facades");
+      assert.equal(record(manager.inspect()["closure"])["pid"], pid); await manager.handle(request({ id: `${mode}-via-shutdown`, action: "shutdown" }));
+      assert.equal(manager.inspect()["stage"], "closed");
+    });
+  }
+});
+
+/** This peer has only synthetic lifecycle state; it launches no app/helper. */
+function interruptedSpatialPeer(family: "spatial" | "component-spatial"): string {
+  const operationId = family === "spatial" ? "pcb209-spatial-manager-original" : "pcb209-spatial-component-manager-original";
+  return `import {Server} from ${sdkModule("server/index.js")};
+import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
+const server=new Server({name:'synthetic-original-spatial',version:'1.0.0'},{capabilities:{tools:{}}});
+const op=${JSON.stringify(operationId)},family=${JSON.stringify(family)},calls=[];let active=0,reads=0,closed=false,released=false,aborted=false;
+const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
+const refused=()=>({isError:true,content:[{type:'text',text:'synthetic-original-spatial-refusal'}]});
+const bindingSha256='b'.repeat(64),intentSha256='a'.repeat(64),binding={helperInstance:'c'.repeat(32),jobId:'d'.repeat(32),rootPid:123,rootCreated:'123456789012345'};
+const base=()=>({operationId:op,state:released?'released':closed?'terminated':'launched',bindingSha256,intentSha256,binding,launchAcknowledged:true});
+server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session','easyeda_control_pcb209_opening'].map(name=>({name,inputSchema:{type:'object'}}))}));
+server.setRequestHandler(CallToolRequestSchema,async({params})=>{
+const wrapped=params.arguments?.request,q=wrapped?.request;
+if(params.name==='easyeda_control_api'&&wrapped?.action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
+if(params.name==='easyeda_control_session'){if(wrapped?.action==='retire'&&(active!==0||!released))return refused();const retired=wrapped?.action==='retire';return result({result:{schema:'easyeda-pro-control.session-retirement.v1',state:retired?'retired':'active',activeCalls:active,liveAdmissionOpen:!retired,leaseReleaseAcknowledged:retired,replacementConnectionRequired:retired}});}
+if(params.name!=='easyeda_control_pcb209_opening'||wrapped?.action!==family||q?.operationId!==op)return refused();calls.push(q);
+if(q.action==='observe-spatial'||q.action==='observe-components'){if(++reads!==1)return refused();active++;await new Promise(resolve=>setTimeout(resolve,1250));active--;return result({result:{...base(),readReturned:true}});}
+if(q.action==='inspect')return result({result:{...base(),busy:active!==0,publicationSettlementAvailable:!released,closeAttemptConsumed:closed,releaseAttemptConsumed:released,unlaunchedCleanupAvailable:false,noProcessCleanupAvailable:false,componentAbortAttemptConsumed:aborted,calls,reads}});
+if(q.action==='abort-component'){if(family!=='component-spatial'||aborted||q.expectedBindingSha256!==bindingSha256||q.confirmAbortOriginalComponentJob!==true||Object.keys(q).sort().join(',')!=='action,confirmAbortOriginalComponentJob,expectedBindingSha256,operationId')return refused();aborted=true;closed=true;return result({result:{...base(),terminationDispatched:true,terminationProved:false}});}
+if(active||q.expectedBindingSha256!==bindingSha256)return refused();
+if(q.action==='observe-window')return result({result:{...base(),hwnd:'123'}});
+if(q.action==='normal-close'){if(closed||q.hwnd!=='123'||q.confirmNormalClose!==true)return refused();closed=true;return result({result:{...base(),closeAcknowledged:true}});}
+if(q.action==='observe-termination')return result({result:{...base(),terminated:closed}});
+if(q.action==='release-closed'){if(!closed||released)return refused();released=true;return result({result:{...base(),released:true}});}return refused();
+});setTimeout(()=>{void server.close();},18000).unref();await server.connect(new StdioServerTransport());`;
+}
+void test("spatial and Component manager timeout recovery keeps the original wrapper, window and once-only cleanup", { timeout: 25_000 }, async context => {
+  for (const family of ["spatial", "component-spatial"] as const) {
+    const outputs: unknown[] = []; const selected = await fixture(interruptedSpatialPeer(family));
+    await selectedProfile(selected.profilePath, async () => {
+      const manager = new ForegroundSessionManager(value => { outputs.push(value); return Promise.resolve(); });
+      context.after(async () => {
+        if (manager.inspect()["stage"] === "closed") { return; }
+        const deadline = Date.now() + 19_000; while (manager.inspect()["closure"] === null && Date.now() < deadline) { await wait(10); }
+        await manager.handle(request({ id: `${family}-finally`, action: "shutdown" }));
+      });
+      await manager.initialize(selected.root); const operationId = family === "spatial" ? "pcb209-spatial-manager-original" : "pcb209-spatial-component-manager-original";
+      const originalId = `${family}-read`; const action = family === "spatial" ? "observe-spatial" : "observe-components";
+      const pending = manager.handle(request({ id: originalId, tool: "easyeda_control_pcb209_opening", timeoutMs: 1000,
+        arguments: { request: { action: family, request: { action, operationId, expectedBindingSha256: "b".repeat(64), queries: [{ kind: "point", xMil: 0, yMil: 0 }], acceptNativeScratchEffects: true } } } }));
+      await managerProgress(() => manager.inspect()["inFlightRequest"] !== null && record(manager.inspect()["inFlightRequest"])["rpcPending"] === true);
+      await manager.handleInFlight(request({ id: `${family}-side-inspect`, action: "in-flight-original", generation: 1, originalRequestId: originalId, request: { action: "inspect" } }));
+      await pending; assert.equal(manager.inspect()["stage"], "blocked");
+      const cleanup = (id: string, control: object): string => request({ id, action: "cleanup-original", generation: 1, interruptedRequestId: originalId, request: control });
+      for (const control of [{ action: "normal-close", confirmNormalClose: true, hwnd: "123" }, { action: "inspect", operationId: "foreign" }, { action: "abort" }]) {
+        await manager.handle(cleanup(`${family}-refused-${String(outputs.length)}`, control)); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      }
+      await wait(300);
+      await manager.handle(cleanup(`${family}-inspect`, { action: "inspect" }));
+      await manager.handle(cleanup(`${family}-no-window`, { action: "normal-close", confirmNormalClose: true })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      await manager.handle(cleanup(`${family}-window`, { action: "observe-window" }));
+      await manager.handle(cleanup(`${family}-close`, { action: "normal-close", confirmNormalClose: true }));
+      await manager.handle(cleanup(`${family}-close-again`, { action: "normal-close", confirmNormalClose: true })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      await manager.handle(cleanup(`${family}-termination`, { action: "observe-termination" }));
+      await manager.handle(cleanup(`${family}-release`, { action: "release-closed" }));
+      await manager.handle(cleanup(`${family}-release-again`, { action: "release-closed" })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+      await manager.handle(retire(`${family}-retire`, 1)); assert.equal(manager.inspect()["stage"], "between-facades");
+      await manager.handle(request({ id: `${family}-shutdown`, action: "shutdown" })); assert.equal(manager.inspect()["stage"], "closed");
+    });
+  }
+});
+
+void test("original Component manager abort consumes once during the retained in-flight reader and separately releases its client", { timeout: 25_000 }, async context => {
+  const outputs: unknown[] = [], selected = await fixture(interruptedSpatialPeer("component-spatial"));
+  await selectedProfile(selected.profilePath, async () => {
+    const manager = new ForegroundSessionManager(value => { outputs.push(value); return Promise.resolve(); });
+    context.after(async () => {
+      if (manager.inspect()["stage"] === "closed") { return; }
+      const deadline = Date.now() + 19_000; while (manager.inspect()["closure"] === null && Date.now() < deadline) { await wait(10); }
+      await manager.handle(request({ id: "component-abort-finally", action: "shutdown" }));
+    });
+    await manager.initialize(selected.root);
+    const originalId = "component-pending-read", pending = manager.handle(request({ id: originalId, tool: "easyeda_control_pcb209_opening", timeoutMs: 1000,
+      arguments: { request: { action: "component-spatial", request: { action: "observe-components", operationId: "pcb209-spatial-component-manager-original", expectedBindingSha256: "b".repeat(64), queries: [{ kind: "point", xMil: 0, yMil: 0 }], acceptNativeScratchEffects: true } } } }));
+    await managerProgress(() => manager.inspect()["inFlightRequest"] !== null && record(manager.inspect()["inFlightRequest"])["rpcPending"] === true);
+    const side = (id: string, control: object): string => request({ id, action: "in-flight-original", generation: 1, originalRequestId: originalId, request: control });
+    await manager.handleInFlight(side("component-inspect", { action: "inspect" }));
+    await manager.handleInFlight(side("component-no-pid", { action: "abort-component", confirmAbortOriginalComponentJob: true, rootPid: 123 })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+    await manager.handleInFlight(side("component-abort", { action: "abort-component", confirmAbortOriginalComponentJob: true }));
+    assert.match(JSON.stringify(outputs.at(-1)), /"terminationDispatched":true/u);
+    await manager.handleInFlight(side("component-no-repeat", { action: "abort-component", confirmAbortOriginalComponentJob: true })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+    await pending; await wait(300); assert.equal(manager.inspect()["stage"], "blocked");
+    const cleanup = (id: string, control: object): string => request({ id, action: "cleanup-original", generation: 1, interruptedRequestId: originalId, request: control });
+    await manager.handle(cleanup("component-inspect-after", { action: "inspect" }));
+    await manager.handle(cleanup("component-never-close-after", { action: "normal-close", confirmNormalClose: true })); assert.equal(record(outputs.at(-1))["dispatched"], false);
+    await manager.handle(cleanup("component-exit", { action: "observe-termination" }));
+    await manager.handle(cleanup("component-release", { action: "release-closed" }));
+    await manager.handle(retire("component-retire", 1)); assert.equal(manager.inspect()["stage"], "between-facades");
+    await manager.handle(request({ id: "component-shutdown", action: "shutdown" })); assert.equal(manager.inspect()["stage"], "closed");
+  });
 });

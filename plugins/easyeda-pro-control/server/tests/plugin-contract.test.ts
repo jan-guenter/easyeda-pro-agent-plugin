@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFile } from "node:fs/promises";
-import { FACADE_TOOL_NAMES, hasPortableMcpLaunch } from "../../scripts/plugin-contract.ts";
+import { FACADE_TOOL_NAMES, FACADE_TOOL_POLICY_NAMES, hasPortableMcpLaunch } from "../../scripts/plugin-contract.ts";
 import { mcpConfigurationSchema } from "../../scripts/repository-validation.ts";
 
 void test("portable MCP launch requires the exact bundled launcher tuple without machine-specific environment", () => {
@@ -22,9 +22,9 @@ void test("portable MCP launch requires the exact bundled launcher tuple without
   }
 });
 
-void test("all 54 facade tools include scoped reads, offline files, diagnostic/String validation, title/copy lifecycles and legacy refusals", () => {
-  assert.equal(FACADE_TOOL_NAMES.length, 54);
-  assert.equal(new Set(FACADE_TOOL_NAMES).size, 54);
+void test("all 56 legacy facade tools include scoped reads, offline files, diagnostic/String validation, title/copy lifecycles and legacy refusals", () => {
+  assert.equal(FACADE_TOOL_NAMES.length, 56);
+  assert.equal(new Set(FACADE_TOOL_NAMES).size, 56);
   for (const name of ["easyeda_control_api", "easyeda_control_sdk_read", "easyeda_control_design", "easyeda_control_library", "easyeda_control_runtime", "easyeda_control_native_ui",
     "easyeda_control_execute", "easyeda_control_apply", "easyeda_control_check", "easyeda_control_validate_closed_symbol", "easyeda_control_symbol_metadata", "easyeda_control_system", "easyeda_control_extensions", "easyeda_control_shortcuts", "easyeda_control_pcb_layers", "easyeda_control_project_open", "easyeda_control_pcb_identities", "easyeda_control_history", "easyeda_control_pcb_geometry", "easyeda_control_project_symbol", "easyeda_control_project_symbol_metadata"]) {
     assert.ok(FACADE_TOOL_NAMES.some((entry) => entry === name));
@@ -50,7 +50,10 @@ void test("repository metadata parsing retains the portable launch fields for va
     ["--machine-launch", "server/dist/server.mjs"], ["server/dist/server.mjs", "--machine-launch", "--profile", "/caller/profile"]]) {
     assert.equal(mcpConfigurationSchema.safeParse({ mcpServers: { easyeda_pro_control: { ...server, args } } }).success, false);
   }
-  assert.deepEqual(Object.keys(parsed.mcpServers.easyeda_pro_control.tools).toSorted(), [...FACADE_TOOL_NAMES].toSorted());
+  assert.deepEqual(Object.keys(parsed.mcpServers.easyeda_pro_control.tools).toSorted(), FACADE_TOOL_POLICY_NAMES);
+  assert.equal(FACADE_TOOL_POLICY_NAMES.length, 64);
+  assert.equal(new Set<string>(FACADE_TOOL_NAMES).has("easyeda_control_current_pcb_via_write"), false);
+  for (const tool of ["easyeda_control_current_pcb_via_write", "easyeda_control_current_schematic_relevance_display_write", "easyeda_control_public_readers", "easyeda_control_netlist_files", "easyeda_control_catalog_footprint", "easyeda_control_catalog_components", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup"]) { assert.equal(server.tools[tool]?.approval_mode, "prompt"); }
   assert.equal(parsed.mcpServers.easyeda_pro_control.tools["easyeda_control_disposable_symbol_copy"]?.approval_mode, "prompt");
   assert.equal(parsed.mcpServers.easyeda_pro_control.tools["easyeda_control_disposable_pcb_rename"]?.approval_mode, "prompt");
   assert.equal(parsed.mcpServers.easyeda_pro_control.tools["easyeda_control_disposable_schematic_rename"]?.approval_mode, "prompt");

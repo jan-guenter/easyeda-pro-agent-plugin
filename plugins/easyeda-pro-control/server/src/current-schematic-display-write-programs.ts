@@ -1,0 +1,11 @@
+/** Fixed original parent-realm calls. All arguments are data; none can select
+ * another program, editor family, native process or application method. */
+import { GENERATED_SCHEMATIC_DISPLAY_FUNCTION } from "./generated-schematic-display-program.ts";
+import { GENERATED_SCHEMATIC_NAVIGATION_FUNCTION } from "./managed-schematic-fixture-opening-program.ts";
+
+export const CURRENT_SCHEMATIC_DISPLAY_NATIVE_GROUP = "easyeda-pro-control-schematic-display-native-v1";
+export const CURRENT_SCHEMATIC_DISPLAY_START_FUNCTION = String.raw`function(){"use strict";
+const root=globalThis,bad=()=>{throw new Error("SCHEMATIC_DISPLAY_START");},own=(o,k,optional=false)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d){if(optional)return undefined;bad();}if(!Object.hasOwn(d,"value"))bad();return d.value;};
+const doc=root.document,host=own(root,"gVars"),tab=own(root,"_TAB_ID_"),metadata=own(host,"currentProject"),pid=own(metadata,"projectId",true),branch=own(metadata,"branchUuid",true);if(root.window!==root||root.top!==root||doc.defaultView!==root||doc.nodeType!==9||root.location.origin!=="https://client"||!/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)#?$/.test(root.location.href)||pid!==undefined||branch!==undefined&&branch!==""||typeof tab!=="string"||!/^[A-Za-z0-9_-]{1,128}$/.test(tab)||typeof doc.title!=="string"||doc.title.length===0||doc.title.length>512)bad();return{windowTabId:tab,documentTitle:doc.title};}`;
+export const CURRENT_SCHEMATIC_DISPLAY_NAVIGATION_FUNCTION = `async function(targetJson){"use strict";const root=globalThis,doc=root.document;const navigation=await (${GENERATED_SCHEMATIC_NAVIGATION_FUNCTION})(JSON.parse(targetJson));if(globalThis!==root||root.document!==doc||doc.defaultView!==root||doc.nodeType!==9||typeof doc.title!=="string"||doc.title.length===0||doc.title.length>512)throw new Error("SCHEMATIC_DISPLAY_NAVIGATION_DOCUMENT");return{navigation,documentTitle:doc.title};}`;
+export const CURRENT_SCHEMATIC_DISPLAY_STAGE_FUNCTION = `async function(targetJson,stage,operationJson){"use strict";return Reflect.apply(${GENERATED_SCHEMATIC_DISPLAY_FUNCTION},this,[JSON.parse(targetJson),stage,JSON.parse(operationJson)]);}`;

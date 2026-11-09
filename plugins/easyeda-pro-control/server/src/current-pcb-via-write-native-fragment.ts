@@ -1,0 +1,203 @@
+import { expandCurrentFootprintInverseSmokeVectors, projectCurrentFootprintInverseSmokeVectors } from "./current-footprint-inverse-smoke-vector-storage.ts";
+import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
+import { applyCurrentPcbViaMainLiveHistoryNativeFragment } from "./current-pcb-via-main-live-history-native-fragment.ts";
+/* oxlint-disable import/max-dependencies -- Build the separate original Via protocols and pack only its fixed SDK bytes without changing their runtime encoding. */
+import { createHash } from "node:crypto";
+import { gzipSync } from "node:zlib";
+import { currentPcbViaWriteCommand } from "./current-pcb-via-write-protocol.ts";
+/** Distinct original Via birth. This generator changes only its supplied
+ * source string; root owns helper regeneration and installation pins. */
+import { applyCurrentPcbViaClockNativeFragment } from "./current-pcb-via-clock-native-fragment.ts";
+import { applyCurrentPcbViaMainStructureNativeFragment } from "./current-pcb-via-main-structure-native-fragment.ts";
+import { applyCurrentPcbViaMainHistoryNativeFragment } from "./current-pcb-via-main-history-native-fragment.ts";
+import { applyCurrentPcbViaMainBeginNativeFragment } from "./current-pcb-via-main-begin-native-fragment.ts";
+import { applyCurrentPcbViaMainStepNativeFragment } from "./current-pcb-via-main-step-native-fragment.ts";
+import { applyCurrentPcbViaMainNativeFragment } from "./current-pcb-via-main-native-fragment.ts";
+import { applyCurrentPcbViaWorkerNativeFragment } from "./current-pcb-via-worker-native-fragment.ts";
+import { CURRENT_PCB_VIA_WRITE_FUNCTION } from "./current-pcb-via-write-program.ts";
+import { CURRENT_PCB_VIA_WRITE_NATIVE_PROFILE as PROFILE } from "./current-pcb-via-write-native-profile.ts";
+import { currentMainStartupLibraryV2NativeFragment as currentMainStartupLibraryNativeFragment } from "./current-main-startup-library-v2-native.ts";
+import { currentSelectedFileMainSqlFenceNativeSource } from "./current-selected-file-main-sql-fence-native.ts";
+
+const begin = "// BEGIN GENERATED ORIGINAL VIA MAIN FENCE";
+const end = "// END GENERATED ORIGINAL VIA MAIN FENCE";
+function one(source: string, before: string, after: string): string {
+  if (source.includes(after)) { if (source.split(after).length !== 2) { throw new Error("PCB_VIA_NATIVE_DUPLICATE"); } return source; }
+  if (source.split(before).length !== 2) { throw new Error(`PCB_VIA_NATIVE_ANCHOR:${before.slice(0, 80)}`); } return source.replace(before, after);
+}
+const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
+function packedSdk(): string {
+  const bytes = Buffer.from(CURRENT_PCB_VIA_WRITE_FUNCTION); if (bytes.length === 0 || bytes.length > 65_536) { throw new Error("PCB_VIA_FIXED_SDK_SIZE"); }
+  // oxlint-disable-next-line node/no-sync -- Build-only deterministic packing of this exact unpublished SDK program using the existing bounded native decoder.
+  const packed = gzipSync(bytes, { level: 9 });
+  return `UnpackFixedProgram(${literal(packed.toString("base64"))},${String(bytes.length)},${literal(createHash("sha256").update(bytes).digest("hex"))},${literal(createHash("sha256").update(packed).digest("hex"))})`;
+}
+function sdkWireSmoke(): string {
+  const path = String.raw`C:\Synthetic\Codex_via_only_1111111111111111.eprj2`, project = createHash("sha256").update(path).digest("hex");
+  const target = { rawWindowsPath: path, projectUuid: project, branchUuid: "b".repeat(32), documentUuid: "c".repeat(32), expectedSourceSha256: "d".repeat(64) };
+  const operation = { operationId: "pcb209-via-write-packing-fixture", via: { netName: "" as const, xMil: 1, yMil: 2, holeDiameterMil: 3, diameterMil: 4, viaType: 0 as const, designRuleBlindViaName: "" as const, solderMaskExpansion: { topSolderMask: 0 as const, bottomSolderMask: 0 as const }, primitiveLock: false as const } };
+  const hashes = (["capture", "preflight", "create", "observe", "save"] as const).map(stage => {
+    const command = currentPcbViaWriteCommand(stage, "original_binding", { target, operation }), p = command.params;
+    const selected = p.arguments[0].value;
+    const argumentsValue = [{ value: { rawWindowsPath: selected.rawWindowsPath, projectUuid: selected.projectUuid, branchUuid: selected.branchUuid, documentUuid: selected.documentUuid, expectedSourceSha256: selected.expectedSourceSha256 } }, p.arguments[1], p.arguments[2]];
+    const parameters = { throwOnSideEffect: p.throwOnSideEffect, silent: p.silent, awaitPromise: p.awaitPromise, generatePreview: p.generatePreview, userGesture: p.userGesture, objectGroup: p.objectGroup, functionDeclaration: p.functionDeclaration,
+      ...("uniqueContextId" in p ? { uniqueContextId: p.uniqueContextId } : { objectId: p.objectId }), returnByValue: p.returnByValue, arguments: argumentsValue };
+    const hash = createHash("sha256").update(`${JSON.stringify({ id: 79, method: command.method, params: parameters, sessionId: "original_session" })}\0`).digest("hex");
+    return hash;
+  });
+  return `public static void VerifyPcbViaSdkWireSmoke(){string[] hashes=${currentPcbDiagnosticNativeHashVector(hashes)};int index=0;foreach(string stage in new[]{"capture","preflight","create","observe","save"}){var fields=new System.Collections.Hashtable();fields.Add(stage=="capture"?"uniqueContextId":"objectId","original_binding");fields.Add("targetRawWindowsPath",${literal(path)});fields.Add("targetProjectUuid",${literal(project)});fields.Add("targetBranchUuid",${literal(target.branchUuid)});fields.Add("targetDocumentUuid",${literal(target.documentUuid)});fields.Add("targetExpectedSourceSha256",${literal(target.expectedSourceSha256)});fields.Add("operationId",${literal(operation.operationId)});fields.Add("xMil",1.0);fields.Add("yMil",2.0);fields.Add("holeDiameterMil",3.0);fields.Add("diameterMil",4.0);string encoded=PcbViaSdkProtocolMessage(79,"original_session",stage,fields);using(var sha=System.Security.Cryptography.SHA256.Create())if(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(encoded))).Replace("-","").ToLowerInvariant()!=hashes[index++])throw Error("via-sdk-packed-wire-smoke");foreach(string operationCase in new[]{"pcb209-via-write-abc","pcb209-via-write-"+new string('a',79)}){fields["operationId"]=operationCase;PcbViaSdkProtocolMessage(79,"original_session",stage,fields);}foreach(string operationCase in new[]{"pcb209-via-write-ab","pcb209-via-write-"+new string('a',80)}){fields["operationId"]=operationCase;bool refused=false;try{PcbViaSdkProtocolMessage(79,"original_session",stage,fields);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("via-sdk-operation-length-smoke");}}}`;
+}
+function native(): string {
+  return `${begin}
+${currentSelectedFileMainSqlFenceNativeSource()}
+${currentMainStartupLibraryNativeFragment()}
+internal sealed partial class EasyedaOriginalMainTransport {
+internal EasyedaOriginalMainTransport(string via):this(){Need(via=="pcb-via-write209","via-purpose");normalLimit=${String(PROFILE.main.normal)};cleanupLimit=${String(PROFILE.main.cleanup)};}
+}
+internal enum EasyedaPcbViaWriteBirth { Original }
+public sealed partial class EasyedaDiagnosticOwner {
+bool pcbViaWrite209,viaAbortAttempted,viaRegistrationRemoved,viaConstructionComplete;int viaControls,viaSdkProperties;string viaSession,viaSourceSession,viaPcbSession,viaSdkTuple;bool[] viaSdkStages=new bool[5];
+sealed class ViaSpatialLedger {internal int stage,reads;internal bool released;internal string context;}
+readonly ViaSpatialLedger[] viaSpatial=new[]{new ViaSpatialLedger(),new ViaSpatialLedger()};
+static readonly string ViaSdkFunction=${packedSdk()};
+${sdkWireSmoke()}
+EasyedaDiagnosticOwner(EasyedaPcbViaWriteBirth via):this(false,false,true){if(via!=EasyedaPcbViaWriteBirth.Original)throw Error("via-birth");pcbViaWrite209=true;stockMainEligible=true;generatedFixture209=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport("pcb-via-write209");}
+public static EasyedaDiagnosticOwner CreatePcbViaWrite209(){return new EasyedaDiagnosticOwner(EasyedaPcbViaWriteBirth.Original);}
+public void AdmitPcbViaAction(string action){if(!pcbViaWrite209)throw Error("via-purpose");if(++viaControls>30000)throw Error("via-controls");if(viaAbortAttempted&&action!="identity"&&action!="termination"&&action!="release"&&action!="no-process-proof"&&action!="release-no-process")throw Error("via-cleanup-only");switch(action){case "identity":case "launch":case "send":case "poll":case "window":case "normal-close":case "termination":case "release":case "release-unlaunched":case "release-no-process":case "no-process-proof":case "main-attach":case "main-reprove":case "main-send":case "main-poll":case "pcb-via-sdk":case "pcb-via-sdk-properties":case "pcb-via-spatial":case "pcb-via-abort":break;default:throw Error("via-action");}}
+static string ViaOriginalId(int id,string encoded){const string prefix="{\\"id\\":1,";if(id<1||id>${String(PROFILE.renderer.total)}||encoded==null||!encoded.StartsWith(prefix,StringComparison.Ordinal)||!encoded.EndsWith("}\\0",StringComparison.Ordinal))throw Error("via-envelope");return "{\\"id\\":"+id.ToString(CultureInfo.InvariantCulture)+","+encoded.Substring(prefix.Length);}
+void ViaSession(string session){if(session==null||!System.Text.RegularExpressions.Regex.IsMatch(session,@"\\A[A-Za-z0-9_.:-]{1,128}\\z"))throw Error("via-session");if(viaSession==null)viaSession=session;else if(viaSession!=session)throw Error("via-session");}
+void ViaDiscovery(string method,string session){bool allowed=false;foreach(string m in new[]{"Browser.getVersion","Target.getTargets","Target.attachToTarget","Page.enable","Page.getFrameTree","Runtime.enable","Debugger.enable","Debugger.getScriptSource","DOM.getFrameOwner","DOM.describeNode"})if(m==method)allowed=true;if(!allowed)throw Error("via-discovery");if(session!=null)ViaSession(session);if(method=="Debugger.getScriptSource")viaSourceSession=session;}
+void SendViaMain(int id,string phase,string method,System.Collections.IDictionary fields){MainPurpose();AssertLive();if(id!=mainRequest+1||id-stockMainRequests>${String(PROFILE.main.total)})throw Error("via-main-id");if(phase.StartsWith("sql-fence-",StringComparison.Ordinal)){string text=EasyedaSelectedFileMainSqlFenceProtocol.Encode(id,phase,method,fields);mainRequest=id;originalMain.SendFixed(text,false);if(StockRegistrationMainComplete(phase))viaConstructionComplete=true;AssertLive();return;}if(viaConstructionComplete)throw Error("via-main-construction-consumed");string ordinary=EasyedaFootprintCopyMainBackendProtocol.Encode(id,phase,method,fields);mainRequest=id;if(phase=="remove")viaRegistrationRemoved=true;if(phase=="resume"&&viaRegistrationRemoved)viaConstructionComplete=true;originalMain.SendFixed(ordinary,phase=="release"||phase=="remove"||phase=="resume");AssertLive();}
+public void AbortPcbViaWrite(){if(!pcbViaWrite209||viaAbortAttempted||originalMain==null)throw Error("via-abort-once");viaAbortAttempted=true;originalMain.RequestOriginalJobTermination();}
+public void SendPcbViaSpatial(int id,string method,string session,string observation,string phase,System.Collections.IDictionary fields){if(!pcbViaWrite209||viaAbortAttempted||!viaConstructionComplete||viaPcbSession!=session||viaSourceSession!=session||viaSession!=session)throw Error("via-spatial-owner");int index=observation=="before"?0:observation=="after"?1:-1;if(index<0||index==1&&!viaSpatial[0].released)throw Error("via-spatial-stage");var state=viaSpatial[index];if(state.released)throw Error("via-spatial-consumed");if(phase=="release"){if(state.stage==0)throw Error("via-spatial-sequence");state.released=true;}else if(phase=="properties"){if(state.stage<1||state.stage>4)throw Error("via-spatial-sequence");}else if(phase=="read-track"){if(state.stage!=4||state.reads!=0||SpatialText(fields,"queryKind",32)!="region"||SpatialText(fields,"queryMode",32)!="inside"||SpatialNumber(fields,"leftMil")!=-10000000||SpatialNumber(fields,"rightMil")!=10000000||SpatialNumber(fields,"bottomMil")!=-10000000||SpatialNumber(fields,"topMil")!=10000000)throw Error("via-spatial-query");state.reads++;}else{string[] sequence={"wrapper","handler","bindings-track","functions"};if(state.stage>=4||sequence[state.stage]!=phase)throw Error("via-spatial-sequence");if(phase=="wrapper")state.context=SpatialText(fields,"uniqueContextId",128);state.stage++;}SendMessage(id,ViaOriginalId(id,Spatial209ProtocolMessage(1,method,session,phase,fields)));}
+public static string PcbViaSdkProtocolMessage(int id,string session,string stage,System.Collections.IDictionary fields){if(id<1||id>${String(PROFILE.renderer.total)}||fields==null)throw Error("via-sdk-fields");int position=Array.IndexOf(new[]{"capture","preflight","create","observe","save"},stage);if(position<0)throw Error("via-sdk-stage");string[] names={stage=="capture"?"uniqueContextId":"objectId","targetRawWindowsPath","targetProjectUuid","targetBranchUuid","targetDocumentUuid","targetExpectedSourceSha256","operationId","xMil","yMil","holeDiameterMil","diameterMil"};if(fields.Count!=names.Length)throw Error("via-sdk-fields");foreach(string name in names)if(!fields.Contains(name))throw Error("via-sdk-fields");string path=fields["targetRawWindowsPath"] as string,project=SpatialText(fields,"targetProjectUuid",64),branch=SpatialText(fields,"targetBranchUuid",32),document=SpatialText(fields,"targetDocumentUuid",32),source=SpatialText(fields,"targetExpectedSourceSha256",64);OpeningProtocolMessageCore(false,1,session,"context","preflight",path,project,branch,document,source,false);string operation=fields["operationId"] as string;if(operation==null||!System.Text.RegularExpressions.Regex.IsMatch(operation,@"\\Apcb209-via-write-[a-z0-9][a-z0-9-]{2,78}\\z"))throw Error("via-sdk-operation");double x=SpatialNumber(fields,"xMil"),y=SpatialNumber(fields,"yMil"),hole=SpatialNumber(fields,"holeDiameterMil"),diameter=SpatialNumber(fields,"diameterMil");if(Math.Abs(x)>1000000||Math.Abs(y)>1000000||hole<.1||diameter>100000||hole>=diameter)throw Error("via-sdk-geometry");string target="{\\"rawWindowsPath\\":"+JsonString(path)+",\\"projectUuid\\":"+JsonString(project)+",\\"branchUuid\\":"+JsonString(branch)+",\\"documentUuid\\":"+JsonString(document)+",\\"expectedSourceSha256\\":"+JsonString(source)+"}";string via="{\\"netName\\":\\"\\",\\"xMil\\":"+x.ToString("R",CultureInfo.InvariantCulture)+",\\"yMil\\":"+y.ToString("R",CultureInfo.InvariantCulture)+",\\"holeDiameterMil\\":"+hole.ToString("R",CultureInfo.InvariantCulture)+",\\"diameterMil\\":"+diameter.ToString("R",CultureInfo.InvariantCulture)+",\\"viaType\\":0,\\"designRuleBlindViaName\\":\\"\\",\\"solderMaskExpansion\\":{\\"topSolderMask\\":0,\\"bottomSolderMask\\":0},\\"primitiveLock\\":false}";string parameters="\\"throwOnSideEffect\\":false,\\"silent\\":true,\\"awaitPromise\\":true,\\"generatePreview\\":false,\\"userGesture\\":false,\\"objectGroup\\":\\"easyeda-pro-control-pcb-via-write-v1\\",\\"functionDeclaration\\":"+JsonString(ViaSdkFunction)+","+JsonString(names[0])+":"+JsonString(SpatialText(fields,names[0],256))+",\\"returnByValue\\":"+(stage=="capture"?"false":"true")+",\\"arguments\\":[{\\"value\\":"+target+"},{\\"value\\":"+JsonString(stage)+"},{\\"value\\":{\\"operationId\\":"+JsonString(operation)+",\\"via\\":"+via+"}}]";string message="{\\"id\\":"+id.ToString(CultureInfo.InvariantCulture)+",\\"method\\":\\"Runtime.callFunctionOn\\",\\"params\\":{"+parameters+"},\\"sessionId\\":"+JsonString(session)+"}\\0";if(Encoding.UTF8.GetByteCount(message)>65536)throw Error("via-sdk-bound");return message;}
+public void SendPcbViaSdk(int id,string session,string stage,System.Collections.IDictionary fields){if(!pcbViaWrite209||viaAbortAttempted||!viaConstructionComplete||session!=viaPcbSession||session!=viaSession)throw Error("via-sdk-owner");int index=Array.IndexOf(new[]{"capture","preflight","create","observe","save"},stage);if(index<0||viaSdkStages[index]||index>0&&!viaSdkStages[0]||stage=="save")throw Error("via-sdk-stage-eligibility");RequireGeneratedFixtureOpening(session,stage=="capture"?fields["uniqueContextId"] as string:viaSdkTuple,fields["targetRawWindowsPath"] as string,fields["targetProjectUuid"] as string,fields["targetBranchUuid"] as string,fields["targetDocumentUuid"] as string,fields["targetExpectedSourceSha256"] as string);string message=PcbViaSdkProtocolMessage(id,session,stage,fields);viaSdkStages[index]=true;SendMessage(id,message);}
+public void SendPcbViaSdkProperties(int id,string session,string objectId){if(!pcbViaWrite209||viaAbortAttempted||!viaSdkStages[0]||viaSdkStages[1]||viaSdkProperties>=3||session!=viaSession||session!=viaPcbSession)throw Error("via-sdk-properties");viaSdkProperties++;var fields=new System.Collections.Hashtable();fields.Add("objectId",objectId);string encoded=Spatial209ProtocolMessage(1,"Runtime.getProperties",session,"properties",fields);SendMessage(id,ViaOriginalId(id,encoded));}
+public static void VerifyPcbViaSmoke(){VerifyPcbViaSdkWireSmoke();var owner=CreatePcbViaWrite209();if(!owner.pcbViaWrite209||!owner.generatedFixture209||!owner.layers209||owner.workerStartup||owner.spatial209||owner.workerStartupFootprintCopy209||owner.RequestLimit!=${String(PROFILE.renderer.total)}||owner.originalMain==null||owner.root!=IntPtr.Zero||owner.job!=IntPtr.Zero)throw Error("via-birth-smoke");foreach(var old in new[]{new EasyedaDiagnosticOwner(),CreateLayers209(),CreateSpatial209(),CreateGeneratedFixture209()}){bool refused=false;try{old.AdmitPcbViaAction("identity");}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("via-old-birth-smoke");}foreach(string action in new[]{"worker-startup-send","main-request-send","main-completion-send","main-close-detach","spatial209","saved-cache-held"}){bool refused=false;try{owner.AdmitPcbViaAction(action);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("via-action-smoke");}EasyedaSelectedFileMainSqlFenceProtocol.VerifySmoke();owner.originalMain.Release();}
+}
+${end}`;
+}
+function count(source:string,value:string):number{return source.split(value).length-1;}
+/** The closed schematic driver has no Via birth or SDK dispatch. Retain
+ * explicit rejecting compatibility methods while omitting only its unused
+ * packed SDK and positive codec smoke. Other purpose graphs use native(). */
+export function projectCurrentSchematicViaSdkRuntime(input:string):string {return projectUnusedViaSdkRuntime(input,"SCHEMATIC");}
+/** The closed inverse driver likewise cannot select a Via birth or SDK call.
+ * Its own generator must opt in after proving the complete inverse driver. */
+export function projectCurrentFootprintInverseViaSdkRuntime(input:string):string {
+  if(!input.includes("// BEGIN FIXED INVERSE SMOKE VECTORS V1\n")){return projectUnusedViaSdkRuntime(input,"INVERSE");}
+  const beginBody="Add-Type @'\n",endBody="\n'@\n",start=input.indexOf(beginBody),stop=input.indexOf(endBody,start);
+  if(start===-1||stop<=start||count(input,beginBody)!==1||count(input,endBody)!==1){throw new Error("INVERSE_VIA_SDK_CSHARP_BODY");}
+  const body=input.slice(start+beginBody.length,stop),expanded=expandCurrentFootprintInverseSmokeVectors(body);
+  const projected=projectUnusedViaSdkRuntime(input.slice(0,start+beginBody.length)+expanded+input.slice(stop),"INVERSE");
+  const nextStop=projected.indexOf(endBody,start);const nextBody=projected.slice(start+beginBody.length,nextStop);
+  return projected.slice(0,start+beginBody.length)+projectCurrentFootprintInverseSmokeVectors(nextBody)+projected.slice(nextStop);
+}
+function projectUnusedViaSdkRuntime(input:string,family:"SCHEMATIC"|"INVERSE"):string {
+  const beginClosed=`// BEGIN CLOSED ${family} VIA SDK`,endClosed=`// END CLOSED ${family} VIA SDK`;
+  const error=family==="SCHEMATIC"?"schematic-via-sdk-codec-closed":"inverse-via-sdk-codec-closed";
+  const encoderSignature="public static string PcbViaSdkProtocolMessage(int id,string session,string stage,System.Collections.IDictionary fields)";
+  const senderSignature="public void SendPcbViaSdk(int id,string session,string stage,System.Collections.IDictionary fields)";
+  const field=`static readonly string ViaSdkFunction=${packedSdk()};`;
+  const codec=`${encoderSignature}{throw new InvalidOperationException("${error}");}`;
+  const sender=`${senderSignature}{throw new InvalidOperationException("${error}");}`;
+  const smoke=`public static void VerifyPcbViaSdkWireSmoke(){bool refused=false;try{PcbViaSdkProtocolMessage(1,"closed_schematic","capture",null);}catch(InvalidOperationException failure){if(failure.Message!="${error}")throw;refused=true;}if(!refused)throw Error("schematic-via-sdk-closure-smoke");}`;
+  const marker=`${beginClosed}\n// The fixed selected driver excludes the Via SDK.\n${endClosed}`;
+  /** Require the exact closed-family marker, refusal methods and negative smoke after Via SDK projection.
+   * Each encoder and sender must also retain its exact two-reference census.
+   */
+  const verify=(source:string):void=>{if(count(source,beginClosed)!==1||count(source,endClosed)!==1||count(source,marker)!==1||count(source,codec)!==1||count(source,sender)!==1||count(source,smoke)!==1||source.includes("ViaSdkFunction")||count(source,"PcbViaSdkProtocolMessage(")!==2||count(source,"SendPcbViaSdk(")!==2){throw new Error("SCHEMATIC_VIA_SDK_CLOSED_CENSUS");}};
+  const scopes=family==="SCHEMATIC"?["// BEGIN GENERATED SCHEMATIC RELEVANCE DISPLAY BIRTH209","// BEGIN GENERATED SCHEMATIC WIRE EDIT BIRTH209"]:["public static EasyedaDiagnosticOwner CreateFootprintInverse209()","public void AdmitFootprintInverseAction(string action)"];
+  for(const scope of scopes){if(count(input,scope)!==1){throw new Error("SCHEMATIC_VIA_SDK_PURPOSE_CENSUS");}}
+  if(input.includes(beginClosed)||input.includes(endClosed)){verify(input);return input;}
+  const original=native();
+  /** Select one complete generated native member by its exact line prefix.
+   * A missing, ambiguous or unfinished member refuses projection before any replacement occurs.
+   */
+  const member=(signature:string):string=>{const rows=original.split("\n").filter(line=>line.startsWith(signature));if(rows.length!==1||rows[0]===undefined||!rows[0].endsWith("}")){throw new Error("SCHEMATIC_VIA_SDK_MEMBER");}return rows[0];};
+  // These are the exact fixed target enrollment and startup guards mounted after the Via base.
+  // Any changed or additional sender body refuses the exact-member match.
+  const upgrades=Object.freeze([
+    ['string message=PcbViaSdkProtocolMessage(id,session,stage,fields);','if(index==0){viaStructureNativeProject=fields["targetProjectUuid"] as string;viaStructureNativeBranch=fields["targetBranchUuid"] as string;}string message=PcbViaSdkProtocolMessage(id,session,stage,fields);'],
+    ['if(index==0){viaStructureNativeProject=','if(stage=="create"&&!viaMainPrecreateEnrolled)throw Error("via-main-precreate-required");if(index==0){viaStructureNativeProject='],
+    ['||stage=="save")throw Error("via-sdk-stage-eligibility");','||stage=="save"||stage=="create"&&!viaProducerPrefixEnrolled)throw Error("via-sdk-stage-eligibility");'],
+    ['viaSdkStages[index]=true;SendMessage(id,message);','if(stage=="create"&&viaPeriodicSyncStage!=0&&(!viaMainPrecreateEnrolled||!viaProducerPrefixEnrolled))throw Error("periodic-sync-create-held");viaSdkStages[index]=true;SendMessage(id,message);'],
+  ]as const);
+  let mountedSender=member(senderSignature);
+  for(const[before,after]of upgrades){if(count(mountedSender,before)!==1){throw new Error("SCHEMATIC_VIA_SDK_SENDER_GUARDS");}mountedSender=mountedSender.replace(before,after);}
+  const replacements=Object.freeze([[field,marker],[member(encoderSignature),codec],[mountedSender,sender],[sdkWireSmoke(),smoke]]as const);
+  let source=input;
+  for(const[index,[before,after]]of replacements.entries()){if(count(source,before)!==1){throw new Error(`SCHEMATIC_VIA_SDK_EXACT_MEMBER:${String(index)}:${String(count(source,before))}`);}source=source.replace(before,after);}
+  verify(source);return source;
+}
+
+const dispatch = String.raw`        'pcb-via-sdk-properties' {
+          if (-not $PcbViaWrite209 -or -not $launched -or $request.sessionId -isnot [string] -or $request.objectId -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,objectId,requestId,rootCreated,rootPid,sessionId') {throw 'pcb-diagnostic-via-properties-fields'}
+          $owner.SendPcbViaSdkProperties([int]$request.requestId,$request.sessionId,$request.objectId);$result=@{written=$true}
+        }
+        'pcb-via-abort' {
+          if (-not $PcbViaWrite209 -or $request.confirmOriginalJob -isnot [bool] -or $request.confirmOriginalJob -ne $true -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,confirmOriginalJob,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-via-abort-fields'}
+          $owner.AbortPcbViaWrite();$result=@{terminationDispatched=$true}
+        }
+        {$_ -ceq 'pcb-via-sdk' -or $_ -ceq 'pcb-via-spatial'} {
+          if (-not $PcbViaWrite209 -or -not $launched -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.sessionId -isnot [string]) {throw 'pcb-diagnostic-via-fields'}
+          $baseFields=@('action','helperInstance','id','jobId','rootCreated','rootPid','requestId','sessionId');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+          if ($request.action -ceq 'pcb-via-sdk') {$baseFields+=@('viaWritePhase');if ($request.viaWritePhase -isnot [string]) {throw 'pcb-diagnostic-via-stage'}}
+          else {$baseFields+=@('method','observationPhase','spatialPhase');if ($request.method -isnot [string] -or $request.observationPhase -isnot [string] -or $request.spatialPhase -isnot [string]) {throw 'pcb-diagnostic-via-stage'}}
+          foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'pcb-diagnostic-via-field'}}
+          foreach ($property in $request.PSObject.Properties) {if ($baseFields -cnotcontains $property.Name) {$fields.Add($property.Name,$property.Value)}}
+          if ($request.action -ceq 'pcb-via-sdk') {$owner.SendPcbViaSdk([int]$request.requestId,$request.sessionId,$request.viaWritePhase,$fields)}
+          else {$owner.SendPcbViaSpatial([int]$request.requestId,$request.method,$request.sessionId,$request.observationPhase,$request.spatialPhase,$fields)}
+          $result=@{written=$true}
+        }
+`;
+export function applyCurrentPcbViaWriteNativeFragment(input: string): string {
+  // Upgrade only earlier unpublished Via reservations. Released103/384 stay exact.
+  const currentInput = input.replace(/return pcbViaWrite209\?(?:700|766|837|950|1019|1149|1165|1167|1177|1362|1366|1394|1404|1445|1509|1519|3088|3104|3111|3133|3140|3149|3209):spatial209\?384:/u, `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:`).replace(/\$requestLimit=if \(\$PcbViaWrite209\) \{(?:700|766|837|950|1019|1149|1165|1167|1177|1362|1366|1394|1404|1445|1509|1519|3088|3104|3111|3133|3140|3149|3209)\}/u, `$requestLimit=if ($PcbViaWrite209) {${String(PROFILE.renderer.total)}}`);
+
+  let source = one(currentInput, "[switch]$StringPrecreate,", "[switch]$PcbViaWrite209,[switch]$StringPrecreate,");
+  const switches = [...source.slice(0, source.indexOf("\n")).matchAll(/\[switch\]\$(\w+)/gu)].map(match => match[1]).filter(name => name !== undefined && name !== "CompileOnly" && name !== "PcbViaWrite209" && name !== "SchematicDisplayWrite209");
+  const conflict = `if ($PcbViaWrite209 -and (${switches.map(name => `$${name}`).join(" -or ")})) {throw 'pcb-diagnostic-conflicting-via-purpose'}\n`;
+  const priorConflict = source.split("\n").filter(line => line.startsWith("if ($PcbViaWrite209 -and ("));
+  if (priorConflict.length > 1) { throw new Error("PCB_VIA_NATIVE_CONFLICT_DUPLICATE"); }
+  source = priorConflict[0] === undefined ? one(source, "$ErrorActionPreference = 'Stop'\n", `$ErrorActionPreference = 'Stop'\n${conflict}`) : source.replace(`${priorConflict[0]}\n`, conflict);
+  source = one(source, "if ($GeneratedFixture209 -and ($GeneratedFixtureSpatial209 -or ", "if ($GeneratedFixture209 -and ($GeneratedFixtureSpatial209 -or $PcbViaWrite209 -or ");
+  source = one(source, "$footprintMainPurpose=$ProjectStructure209 -or ", "$footprintMainPurpose=$ProjectStructure209 -or $PcbViaWrite209 -or ");
+  source = one(source, "$startupPurpose=", "if ($PcbViaWrite209) {$Layers209=$true;$GeneratedFixture209=$true}\n$startupPurpose=");
+  source = one(source, "elseif ($GeneratedFixture209) {[EasyedaDiagnosticOwner]::CreateGeneratedFixture209()}", "elseif ($PcbViaWrite209) {[EasyedaDiagnosticOwner]::CreatePcbViaWrite209()} elseif ($GeneratedFixture209) {[EasyedaDiagnosticOwner]::CreateGeneratedFixture209()}");
+  source = one(source, "return spatial209?384:", `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:`);
+  source = one(source, "if(workerStartupFootprintMain209&&!mainCloseDetached&&!originalMain.NeverAttached)", "if(workerStartupFootprintMain209&&!pcbViaWrite209&&!mainCloseDetached&&!originalMain.NeverAttached)");
+  source = one(source, "public void DetachMainForNormalClose(){", "public void DetachMainForNormalClose(){\n    if(pcbViaWrite209)throw Error(\"via-retain-main-until-exit\");");
+  const mainHeader = "public void SendMain(int id,string phase,string method,System.Collections.IDictionary fields){";
+  const viaDispatch = "\n    if(pcbViaWrite209){SendViaMain(id,phase,method,fields);return;}";
+  const legacyStockDispatch = "\n    if(phase!=null&&phase.StartsWith(\"sql-stock-v2-\",StringComparison.Ordinal)){SendStockMain(id,phase,method,fields);return;}\n    if(stockMainRequests>0&&stockMainStage!=19&&(phase==\"resume\"||phase==\"remove\"||phase==\"sql-fence-resume\"))throw Error(\"stock-unfinished-registration\");";
+  const priorStockDispatch = "\n    if(phase!=null&&phase.StartsWith(\"sql-stock-v2-\",StringComparison.Ordinal)){SendStockMain(id,phase,method,fields);return;}\n    if((phase==\"sql-fence-startup-config-resume\"||phase==\"sql-fence-startup-read-owner\")&&!(stockMainRequests>0&&(stockMainStage==10||stockMainStage==13)))throw Error(\"stock-interleave-await-required\");\n    if(stockMainRequests>0&&stockMainStage!=19&&(phase==\"resume\"||phase==\"remove\"||phase==\"sql-fence-resume\"))throw Error(\"stock-unfinished-registration\");";
+  const stockDispatch = priorStockDispatch.replace("\n    if((phase==", "\n    if(phase!=null&&phase.StartsWith(\"sql-fence-startup-registration-\",StringComparison.Ordinal)){ReserveStockRegistrationMain(id,phase,method,fields);}\n    if((phase==");
+  if (source.includes(`${mainHeader}${priorStockDispatch}`)) { source = one(source, `${mainHeader}${priorStockDispatch}`, `${mainHeader}${stockDispatch}`); }
+  if (source.includes(`${mainHeader}${legacyStockDispatch}`)) { source = one(source, `${mainHeader}${legacyStockDispatch}`, `${mainHeader}${stockDispatch}`); }
+  if (!source.includes(`${mainHeader}${stockDispatch}`)) {
+    source = one(source, mainHeader, `${mainHeader}${viaDispatch}`);
+    source = one(source, `${mainHeader}${viaDispatch}`, `${mainHeader}${stockDispatch}${viaDispatch}`);
+  }
+  source = one(source, "string message=ProtocolMessageCore(spatial209?1:id,", "string message=ProtocolMessageCore(spatial209||pcbViaWrite209?1:id,");
+  source = one(source, "if(spatial209) {SpatialDiscovery(method,OptionalText(sessionId));message=SpatialOriginalId(id,message);}", "if(spatial209) {SpatialDiscovery(method,OptionalText(sessionId));message=SpatialOriginalId(id,message);}\n    if(pcbViaWrite209){ViaDiscovery(method,OptionalText(sessionId));message=ViaOriginalId(id,message);}");
+  source = source.replaceAll("OpeningProtocolMessageCore(false,spatial209?1:id,", "OpeningProtocolMessageCore(false,spatial209||pcbViaWrite209?1:id,").replaceAll("OpeningProtocolMessageCore(true,spatial209?1:id,", "OpeningProtocolMessageCore(true,spatial209||pcbViaWrite209?1:id,");
+  // Both fixed opener methods use the same original-ID restoration span.
+  source = source.replaceAll("SendMessage(id,spatial209?SpatialOriginalId(id,encoded):encoded);", "SendMessage(id,pcbViaWrite209?ViaOriginalId(id,encoded):spatial209?SpatialOriginalId(id,encoded):encoded);");
+  source = one(source, "public void SendPcbOpening(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {", "public void SendPcbOpening(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {\n    if(pcbViaWrite209){ViaSession(sessionId);if(phase==\"observe\")viaPcbSession=sessionId;}");
+  source = one(source, "SendMessage(id,Primitives209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));", "string message=Primitives209ProtocolMessage(pcbViaWrite209?1:id,sessionId,uniqueContextId,phase,path,project,branch,document,source);SendMessage(id,pcbViaWrite209?ViaOriginalId(id,message):message);");
+  source = one(source, "generatedFixtureTuple=GeneratedFixtureTuple(session,context,path,project,branch,document,source);SendMessage(id,message);", "if(pcbViaWrite209){ViaSession(session);message=ViaOriginalId(id,message);viaSdkTuple=context;}\ngeneratedFixtureTuple=GeneratedFixtureTuple(session,context,path,project,branch,document,source);SendMessage(id,message);");
+  source = one(source, "GeneratedFixtureRegistrationProtocolMessage(spatial209?1:id,", "GeneratedFixtureRegistrationProtocolMessage(spatial209||pcbViaWrite209?1:id,");
+  source = one(source, "if ($startupPurpose -and @('Browser.getVersion'", "if ($startupPurpose -and -not $PcbViaWrite209 -and @('Browser.getVersion'");
+  source = one(source, "$requestLimit=if ($Spatial209)", `$requestLimit=if ($PcbViaWrite209) {${String(PROFILE.renderer.total)}} elseif ($Spatial209)`);
+  source = one(source, "      if ($ProjectStructure209) {", "      if ($PcbViaWrite209) {$owner.AdmitPcbViaAction($request.action)}\n      if ($ProjectStructure209) {");
+  source = one(source, "        'main-send' {", `${dispatch}        'main-send' {`);
+  source = one(source, "    [EasyedaDiagnosticOwner]::VerifyGeneratedFixtureRegistrationSmoke()", "    [EasyedaDiagnosticOwner]::VerifyPcbViaSmoke()\n    [EasyedaDiagnosticOwner]::VerifyGeneratedFixtureRegistrationSmoke()");
+  const start = source.indexOf(begin), stop = source.indexOf(end);
+  if (start !== -1 || stop !== -1) { if (start === -1 || stop < start || source.includes(begin, start + begin.length) || source.includes(end, stop + end.length)) { throw new Error("PCB_VIA_NATIVE_MARKERS"); } source = source.slice(0, start) + native() + source.slice(stop + end.length); }
+  else { source = one(source, "\n'@\n", `\n${native()}\n'@\n`); }
+  const worker = applyCurrentPcbViaWorkerNativeFragment(source); const clock = applyCurrentPcbViaClockNativeFragment(worker);
+  const main = applyCurrentPcbViaMainStepNativeFragment(applyCurrentPcbViaMainNativeFragment(clock));
+  const history = applyCurrentPcbViaMainHistoryNativeFragment(applyCurrentPcbViaMainBeginNativeFragment(main));
+  return applyCurrentPcbViaMainLiveHistoryNativeFragment(applyCurrentPcbViaMainStructureNativeFragment(history));
+}

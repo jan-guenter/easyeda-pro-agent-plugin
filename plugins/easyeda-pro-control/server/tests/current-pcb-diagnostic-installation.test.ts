@@ -1,3 +1,4 @@
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { chmod, link, mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
@@ -37,7 +38,7 @@ void test("ratline installation extends only its fixed launch plan with every qu
   ]);
 });
 void test("native ratline acquisition checks the exact extended table before retaining all source leases or creating a process", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const admission = source.slice(source.indexOf("public void AdmitRatline("), source.indexOf("public void AssertCurrent()"));
   assert.ok(admission.startsWith("public void AdmitRatline("));
   assert.ok(admission.indexOf("EasyedaRatline209Installation.Validate(paths,sizes,hashes)") < admission.indexOf("Admit(corePaths,coreSizes,coreHashes)"));
@@ -46,7 +47,7 @@ void test("native ratline acquisition checks the exact extended table before ret
   for (const pin of CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE.installedFiles) { assert.ok(source.includes(pin.sha256)); }
   assert.ok(source.includes("[EasyedaRatline209Installation]::VerifySmoke()"));
   assert.ok(source.includes("$ratlinePurpose=$WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209"));
-  assert.ok(source.includes("$fileCount=if ($ratlinePurpose) {[EasyedaRatline209Installation]::FileCount} else {5}"));
+  assert.ok(source.includes("$fileCount=if ($owner.SelectedSqlInstallation) {[EasyedaSelectedSql209Installation]::FileCount} elseif ($ratlinePurpose) {[EasyedaRatline209Installation]::FileCount} else {5}"));
 });
 for (const assetsRoot of ["/mnt/c/CON/resources/app/assets", "/mnt/c/Valid./resources/app/assets", "/mnt/c/Valid /resources/app/assets",
   "/mnt/c/Bad:stream/resources/app/assets", "/mnt/c/Bad\u007F/resources/app/assets", "/mnt/c/A?B/resources/app/assets",
@@ -82,7 +83,7 @@ void test("PowerShell descriptor proof rejects different bytes, links to paths, 
   await chmod(file, 0o400); await verifyCurrentPcbDiagnosticPowerShell(file, expected);
 });
 void test("native installation source retains read leases, ancestry and volume paths through Job closure", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   assert.ok(source.includes("directory?0x80u:0x80000000u,1u"));
   assert.ok(source.includes("leases.Add(lease); // Allocate retention before the native acquisition."));
   assert.ok(source.includes("new SafeFileHandle(lease.Handle,false)"));
@@ -99,7 +100,7 @@ void test("native installation source retains read leases, ancestry and volume p
   assert.ok(!source.includes("TerminateProcess"));
 });
 void test("native DOS creation verifies the retained original image before one primary-thread resume", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const core = source.slice(source.indexOf("void CreateVerifiedRoot()"), source.indexOf("// Exact worker diagnostic program."));
   assert.ok(core.includes("root=info.process; rootThread=info.thread; rootPid=info.processId;"));
   const retained = core.indexOf("creationPhase=CreationPhase.RootRetained");
@@ -187,17 +188,24 @@ void test("native DOS creation verifies the retained original image before one p
         }`;
   assert.equal(dispatcher.split(headAgeDispatch).length, 2);
   assert.equal(source.split("$owner.AbortHeadAge()").length, 2);
+  const component = `public void AbortComponentSpatial(){
+if(!componentSpatial209||componentAbortAttempted||released||root==IntPtr.Zero||job==IntPtr.Zero||rootCreated==0)throw Error("component-abort-owner");
+componentAbortAttempted=true;AssertLimits();long created,exited,kernel,user;bool member;
+if(GetProcessId(root)!=rootPid||!GetProcessTimes(root,out created,out exited,out kernel,out user)||created!=rootCreated||!IsProcessInJob(root,job,out member)||!member)throw Error("component-abort-identity");
+Native(TerminateJobObject(job,0x45444350));
+}`;
+  assert.equal(source.split(component).length, 2); assert.equal(component.match(/\bTerminateJobObject\(/gu)?.length, 1);
   const declaration = '[DllImport("kernel32.dll",SetLastError=true)] static extern bool TerminateJobObject(IntPtr job,uint code);';
   const outsideMain = source.slice(0, mainBegin) + source.slice(mainEnd);
   assert.equal(outsideMain.split(declaration).length, 2); assert.equal(outsideMain.split(visual).length, 2); assert.equal(outsideMain.split(held).length, 2);
   assert.equal(outsideMain.split(headAge).length, 2);
-  assert.ok(!outsideMain.replace(declaration, "").replace(visual, "").replace(held, "").replace(headAge, "").includes("TerminateJobObject"));
+  assert.ok(!outsideMain.replace(declaration, "").replace(visual, "").replace(held, "").replace(headAge, "").replace(component, "").includes("TerminateJobObject"));
   assert.ok(source.includes("public void TerminateMain(){MainPurpose();originalMain.RequestOriginalJobTermination();}"));
   assert.ok(source.includes("$request.confirmTerminateOriginalDiagnosticJob -isnot [bool]"));
   assert.ok(source.includes("if (-not $Visual209 -or $request.confirmAbortOriginalVisualJob -isnot [bool] -or -not $request.confirmAbortOriginalVisualJob"));
 });
 void test("native unlaunched release refuses any consumed launch or retained native root", async () => {
-  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8"));
   const method = source.slice(source.indexOf("public void ReleaseUnlaunched()"), source.indexOf("public void ReleaseClosed()"));
   assert.ok(method.includes('if(launchAttempted || root!=IntPtr.Zero || rootThread!=IntPtr.Zero || rootPid!=0 || rootCreated!=0 || JobCount()!=0) throw Error("unlaunched-release-refused");'));
   assert.ok(method.indexOf('throw Error("unlaunched-release-refused")') < method.indexOf("ReleaseClosed();"));

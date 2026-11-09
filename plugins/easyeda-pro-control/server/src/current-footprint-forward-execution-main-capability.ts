@@ -3,7 +3,7 @@
  * request, completion, paired-clock or whole-writer qualification by themselves. */
 import { types } from "node:util";
 // oxlint-disable-next-line import/no-cycle -- The genuine factory and capability resolve each other's private registries only after native birth; no authority is issued during initialization.
-import { assertOriginalCurrentFootprintForwardExecutionNativeOwner } from "./current-pcb-diagnostic-owner.ts";
+import { assertOriginalCurrentFootprintForwardExecutionNativeOwner, requireOriginalCurrentFootprintForwardPairedClock } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintForwardExecutionNativeOwner } from "./current-pcb-diagnostic-owner.ts";
 // oxlint-disable-next-line import/no-cycle -- The original main engine calls this issuer after construction; an injectable callback table would lose original-owner authority.
 import { captureOriginalCurrentFootprintForwardMainCursor, requireCurrentFootprintForwardMainCursor, requireOriginalCurrentFootprintForwardMainRunner } from "./current-footprint-copy-main-backend-runner.ts";
@@ -12,6 +12,8 @@ import type { CurrentFootprintForwardExecutionOpeningProvider } from "./current-
 import type { CurrentFootprintForwardMainCursor } from "./current-footprint-forward-main-cursor.ts";
 import type { CurrentFootprintCopyMainRequestCollectCommand } from "./current-footprint-copy-main-request-protocol.ts";
 import type { CurrentFootprintCopyMainCompletionCommand } from "./current-footprint-copy-main-completion-protocol.ts";
+import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
+import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
 
 export interface CurrentFootprintForwardExecutionMainCapability {
   readonly profile: "private.current-footprint-forward-execution-main-capability.v2";
@@ -82,6 +84,26 @@ export function isCurrentFootprintForwardExecutionMainCapability(value: unknown)
 }
 export function requireCurrentFootprintForwardExecutionMainCapability(capability: CurrentFootprintForwardExecutionMainCapability,
   runner: CurrentFootprintCopyMainBackendRunner): void { original(capability, runner, "normal"); }
+/** Cross-process original identity only; this issues no clock origin, create
+ * admission, current-head/frontier proof or whole-lifecycle reservation. */
+export function requireCurrentFootprintForwardExecutionPairedSchedule(capability: CurrentFootprintForwardExecutionMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner, clock: CurrentFootprintCopyClockRpcOrigin): void {
+  const held = original(capability, runner, "normal"); requireOriginalCurrentFootprintForwardPairedClock(held.owner, runner, clock);
+}
+/** After the original main release, only retained identity is admissible.
+ * This never restores a normal cursor or qualifies another native request. */
+export function requireRetainedCurrentFootprintForwardPairedSchedule(capability: CurrentFootprintForwardExecutionMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner, clock: CurrentFootprintCopyClockRpcOrigin): void {
+  const held = original(capability, runner, "cleanup");
+  need(requireCurrentFootprintForwardMainCursor(held.cursor, runner).phase === "released", "ORIGINAL_MAIN_NOT_RELEASED");
+  requireOriginalCurrentFootprintForwardPairedClock(held.owner, runner, clock, "cleanup");
+}
+/** A genuine reservation still belongs to exactly one original sealed copy.
+ * This is no current-head/queue/clock or dispatch-eligibility assertion. */
+export function requireCurrentFootprintForwardExecutionPairedCopy(capability: CurrentFootprintForwardExecutionMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintCopyV2Plan {
+  return original(capability, runner, "normal").input.source.owned.copyPlan;
+}
 export function requireCurrentFootprintForwardExecutionMainCleanup(capability: CurrentFootprintForwardExecutionMainCapability,
   runner: CurrentFootprintCopyMainBackendRunner): void { original(capability, runner, "cleanup"); }
 export function currentFootprintForwardExecutionMainGenerationExited(capability: CurrentFootprintForwardExecutionMainCapability,

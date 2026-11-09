@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies, max-classes-per-file -- Compare the real registration, facade and schemas together; keep legacy and combined synthetic coordinators independently scoped so the existing VM fixture retains its semantics. */
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
@@ -43,7 +44,7 @@ void test("registered v2 source wrapper keeps its original methods and aborts th
   const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation") ||');
   const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",', start + 1);
   const helpers = source.slice(source.indexOf("function disposableOwnData("), source.indexOf("function disposableIndexMethods("));
-  const custody = source.slice(source.indexOf("const forwardSourceCustodyMethods ="), source.indexOf("function ownedWindowsRuntime("));
+  const custody = source.slice(source.indexOf("const forwardSourceCustodyMethods ="), source.indexOf("/* oxlint-disable typescript/unbound-method -- Retain original identities",source.indexOf("const forwardSourceCustodyMethods =")));
   assert.ok(start > 0 && end > start && custody.length < 2500);
   const entered = Promise.withResolvers<null>(), finish = Promise.withResolvers<null>();
   const events: string[] = []; let allocations = 0, gateCalls = 0, replacements = 0;
@@ -73,7 +74,7 @@ void test("registered v2 source wrapper keeps its original methods and aborts th
   const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: expectedBindingSha256 }),
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
   let invoke: ((input: { request: unknown }) => Promise<unknown>) | undefined;
-  const scope = vm.createContext({ z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
     currentPcb209WorkerStartupToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentFootprintForwardSourceValidation: Controller,
     ordinaryLaunchCoordinator: undefined, currentPcbWorkerStartupLifecycle: undefined, currentPcbDiagnosticLifecycle: undefined,
     currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined,
@@ -87,6 +88,7 @@ void test("registered v2 source wrapper keeps its original methods and aborts th
     guarded: (handler: NonNullable<typeof invoke>): NonNullable<typeof invoke> => async input => { const result = await handler(input); return result; },
     server: { registerTool: (name: string, _configuration: unknown, handler: typeof invoke): void => { if (name === "easyeda_control_pcb209_worker_startup") { invoke = handler; } } },
   });
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${custody}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   const call = (request: unknown): Promise<unknown> => { assert.ok(invoke); return invoke({ request: { action: "footprint-forward-source-validation", request } }); };
@@ -147,7 +149,7 @@ void test("registered forward methods reject prototype replacement and abort rem
   const gate = new SerializedGate(), upstream = {};
   const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: "a".repeat(64) }),
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
-  const scope = vm.createContext({ z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
     currentPcb209WorkerStartupToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle,
     CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle,
@@ -167,6 +169,7 @@ void test("registered forward methods reject prototype replacement and abort rem
       if (name === "easyeda_control_pcb209_worker_startup") { invoke = handler; }
     } },
   });
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   const id = "footprint-copy-qualify-registration";
@@ -293,7 +296,7 @@ void test("startup public registration binds the actual inherited methods, fixed
   const upstream = {};
   const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: "a".repeat(64) }),
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => { checks += 1; return Promise.resolve(); } };
-  const scope = vm.createContext({ z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle,
     CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle,
     CurrentPcbWorkerStartupLifecycle: Coordinator, currentPcbWorkerStartupLifecycle: undefined,
@@ -314,6 +317,7 @@ void test("startup public registration binds the actual inherited methods, fixed
       assert.equal(configuration.inputSchema.safeParse({ request: wrap(capture), extra: true }).success, false); invoke = handler;
     } },
   });
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   await assert.rejects(invoke({ request: wrap({ ...capture, acceptDebuggerPauseEffects: false }) })); assert.equal(allocations, 0);
@@ -348,6 +352,7 @@ void test("startup public registration binds the actual inherited methods, fixed
     } finally { Object.defineProperty(core, name, descriptor); }
   }
   const guard = source.slice(source.indexOf("function assertOrdinaryRuntimeAllocationAllowed()"), source.indexOf("/** No outer gate/authenticated scope."));
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(stripTypeScriptTypes(`${guard}\ncurrentPcbWorkerStartupLifecycle={hasActiveReservation:()=>true};`), scope);
   assert.throws(() => vm.runInContext("assertOrdinaryRuntimeAllocationAllowed()", scope), /reserves application startup/u);
 });
@@ -418,7 +423,7 @@ void test("registered combined wrapper retains its lifecycle and confirmed abort
   const gate = new SerializedGate(), upstream = {};
   const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: "a".repeat(64) }),
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
-  const scope = vm.createContext({ z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, CurrentPcbSpatialLifecycle, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbSpatialRequestSchema,
     currentPcb209WorkerStartupToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle,
     CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentFootprintCopyPreparationLifecycle,
@@ -441,6 +446,7 @@ void test("registered combined wrapper retains its lifecycle and confirmed abort
       }
     } },
   });
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   const id = "footprint-combined-registration";
