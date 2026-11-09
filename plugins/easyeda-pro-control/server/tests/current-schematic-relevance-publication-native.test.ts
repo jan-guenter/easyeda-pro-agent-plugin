@@ -22,12 +22,12 @@ function fixture(): { readonly raw: readonly unknown[]; readonly known: unknown[
   const base = { publish, onReceivedPublish }, parent = { broadcastPublish, post, onMessage }; Object.setPrototypeOf(parent, base);
   const bc = {}, pulled = {}, pushed = {}, subscribed = {};
   const bus: Record<string, unknown> = { subscribed, pushed, pulled, bc }; Object.setPrototypeOf(bus, parent);
-  const topic = "/pro-mgr/worker/batchPendData", topics = { pushPend: topic }; const publisher = { dataBus: bus, channel: "original-channel" };
+  const topic = "/pro-mgr/worker/batchPendData", topics = { pushPend: topic }; const compiler = {}; const publisher = { dataBus: bus, channel: compiler, windowId: "original-window", path: "original-project" };
   const raw: unknown[] = [Object.getOwnPropertyDescriptor, Object.getOwnPropertyDescriptors, Object.getPrototypeOf, Object.is, Object.hasOwn, Reflect.ownKeys, Reflect.apply, Array.isArray]; raw[15] = Object.prototype; raw[16] = Array.prototype;
-  return { raw, known: [publisher, bus, parent, base, topics, subscribed, pushed, pulled, bc, Object.prototype], publisher, bus, topic, links: [{}, {}, publisher, {}], state: [{}, {}, {}, [], bus, "original-channel", topics], calls: (): number => calls };
+  return { raw, known: [publisher, bus, parent, base, topics, subscribed, pushed, pulled, bc, compiler, Object.prototype], publisher, bus, topic, links: [{}, {}, publisher, {}], state: [{}, {}, {}, [], bus, compiler, topics], calls: (): number => calls };
 }
 void test("held publisher receiver and selected bus chain reject drift and inherited target subscriptions without invoking application bodies", () => {
-  const f = fixture(), roots = run(P.roots, [f.publisher], [f.raw, f.known, f.links, f.state]); assert.ok(Array.isArray(roots));
+  const f = fixture(), roots = run(P.roots, [f.publisher], [f.raw, f.known, f.links, f.state]); assert.ok(Array.isArray(roots)); assert.equal(roots[7], "/original-window/project/original-project"); assert.equal(typeof f.publisher["channel"], "object");
   const methods = run(P.methods, roots, [f.raw, f.known]); assert.ok(Array.isArray(methods)); assert.equal(methods.length, 5); assert.equal(run(P.subscriptions, roots, [f.raw, f.known]), true); assert.equal(f.calls(), 0);
   assert.throws(() => run(P.roots, [{}], [f.raw, f.known, f.links, f.state]));
   let getters = 0; const inherited: unknown = Object.create(null); assert.ok(typeof inherited === "object" && inherited !== null); Object.defineProperty(inherited, f.topic, { get(): never { getters += 1; throw new Error("inherited handler must stay uncalled"); } });
@@ -36,6 +36,13 @@ void test("held publisher receiver and selected bus chain reject drift and inher
   Object.setPrototypeOf(subscribed, Object.prototype); Object.defineProperty(subscribed, f.topic, { value: [], configurable: true }); assert.throws(() => run(P.subscriptions, roots, [f.raw, f.known]));
   Reflect.deleteProperty(subscribed, f.topic); assert.equal(run(P.subscriptions, roots, [f.raw, f.known]), true);
   Object.defineProperty(f.bus, "post", { get(): never { getters += 1; throw new Error("method accessor must stay uncalled"); } }); assert.throws(() => run(P.methods, roots, [f.raw, f.known])); assert.equal(getters, 0); assert.equal(f.calls(), 0);
+});
+void test("native bus naming derives from the initialized publisher factory and never coerces its compiler channel or path", () => {
+ const f=fixture();let hooks=0;const compiler=f.publisher["channel"];assert.ok(compiler!==null&&typeof compiler==="object");Object.defineProperty(compiler,"toString",{value:():never=>{hooks+=1;throw new Error("compiler is not a name");}});
+ const roots=run(P.roots,[f.publisher],[f.raw,f.known,f.links,f.state]);assert.ok(Array.isArray(roots));assert.equal(roots[7],"/original-window/project/original-project");assert.equal(hooks,0);
+ const fieldGetter=():never=>{hooks+=1;throw new Error("field getter");};
+ for(const field of["windowId","path"]){const before=Object.getOwnPropertyDescriptor(f.publisher,field);assert.ok(before!==undefined);try{Object.defineProperty(f.publisher,field,{get:fieldGetter,configurable:true});assert.throws(()=>run(P.roots,[f.publisher],[f.raw,f.known,f.links,f.state]));}finally{Object.defineProperty(f.publisher,field,before);}}
+ const path=f.publisher["path"];f.publisher["path"]=new Proxy({}, {get():never{hooks+=1;throw new Error("no coercion");}});assert.throws(()=>run(P.roots,[f.publisher],[f.raw,f.known,f.links,f.state]));f.publisher["path"]=path;assert.equal(hooks,0);
 });
 void test("complete record waves retain unknown data, symbols and accessor identities without calling getters", () => {
   const f = fixture(), roots = run(P.roots, [f.publisher], [f.raw, f.known, f.links, f.state]); assert.ok(Array.isArray(roots));

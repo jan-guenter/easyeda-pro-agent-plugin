@@ -71,3 +71,14 @@ run retained one test-order failure: the new artifact case followed an existing
 intentional unresolved-lease case. Moving the new case before that terminal
 fixture restored the existing safety boundary; the full affected workflow file
 then passed. Failure and final logs remain private.
+
+## 2026-11-09 payload attribution correction
+
+The earlier 69-case leaf summary did not retain a recoverable complete tested
+source/test manifest. Its exact tested tree is therefore unbound. The later
+composed verification is separate: frozen commit
+`5c90e33be1dd04bf24fecdf220a94274aaf5ecfe`, tree
+`fa0f1781a630cc6d06d0edb7c53bd705b72d4243`, has a retained complete tracked-file
+inventory, non-suite check manifest and final integration log with 67 passes and
+one installed-source environment skip. That result does not retroactively bind
+the earlier leaf logs or establish connected validation.

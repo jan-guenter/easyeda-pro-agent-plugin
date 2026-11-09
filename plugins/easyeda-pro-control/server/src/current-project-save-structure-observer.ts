@@ -16,6 +16,8 @@ import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STR
   CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as RELEVANCE_REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION, CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS as STARTUP_DRAIN,
   qualifyCurrentProjectSaveStructureSource, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentSchematicRelevanceStartupStructureDrained, CurrentProjectSaveStructureSite as Site } from "./current-project-save-structure-protocol.ts";
+import { captureCurrentSchematicRelevanceUiPublicationMetadata } from "./current-schematic-relevance-ui-publication-metadata.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_REQUESTS as MODIFY_WORKER_REQUESTS } from "./current-schematic-relevance-modify-worker-protocol.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_CALLS as MODIFY_CALLS, CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_FLAGS as MODIFY_FLAGS, CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_REQUESTS as MODIFY_REQUESTS, CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_SITES as MODIFY_SITES, validateCurrentSchematicRelevanceModifyStructureCommand as validateModify } from "./current-schematic-relevance-modify-structure-protocol.ts";
 import type { CurrentSchematicRelevanceModifyStructureCommand } from "./current-schematic-relevance-modify-structure-protocol.ts";
 import { requireCurrentSchematicRelevanceModifyStructureCaller } from "./current-schematic-relevance-modify-structure-replies.ts";
@@ -30,6 +32,7 @@ const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const remote = z.looseObject({ type: z.string(), subtype: z.string().optional(), className: z.string().optional(), description: z.string().optional(), objectId: handle.optional(), value: z.unknown().optional() });
 const property = z.looseObject({ name: z.string(), value: remote.optional(), get: z.unknown().optional(), set: z.unknown().optional(), isOwn: z.literal(true) });
 const properties = z.looseObject({ result: z.array(property).max(64) });
+const modifyProperties = z.looseObject({ result: z.array(property).max(MODIFY_WORKER_REQUESTS.objects + 1) });
 const position = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
 const pausedFrame = z.looseObject({ callFrameId: handle, functionName: z.string().optional(), location: position, functionLocation: position, returnValue: remote.optional() });
 const pauseSchema = z.looseObject({ reason: z.literal("other"), hitBreakpoints: z.tuple([handle]), callFrames: z.array(pausedFrame).min(1).max(32) });
@@ -42,6 +45,15 @@ const completionSchema = z.strictObject({ projectUuid: z.string().regex(/^[a-f\d
   bodySha256: z.string().regex(/^[a-f\d]{64}$/u), saveHeadTicket: z.number().int().positive().max(Number.MAX_SAFE_INTEGER), workerClock: z.number().int().positive().max(8_640_000_000_000_000),
   workerEditVersion: z.string().max(128).nullable(), originalHistoryNativeCallbacksCompleted: z.literal(true), selectedSqlStillFenced: z.literal(true) });
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PROJECT_SAVE_STRUCTURE_${code}`); } }
+/** Decode the cumulative original Modify roster up to the worker's256
+ * retained objects. Its one length descriptor is separate from the128-new-
+ * object graph budget, and supplies no owner or continuation permission. */
+export function decodeCurrentSchematicRelevanceModifyStructureArrayFields(input:unknown,length?:number):Map<string,z.infer<typeof remote>>{
+  const list=modifyProperties.parse(captureCurrentSchematicRelevanceUiPublicationMetadata(input)).result;const fields=new Map<string,z.infer<typeof remote>>();
+  for(const field of list){need(field.value!==undefined&&field.get===undefined&&field.set===undefined&&!fields.has(field.name),"MODIFY_ARRAY_DATA");fields.set(field.name,field.value);}
+  const size=fields.get("length")?.value;need(typeof size==="number"&&Number.isSafeInteger(size)&&size>=0&&size<=MODIFY_WORKER_REQUESTS.objects&&(length===undefined||size===length)&&fields.size===size+1,"MODIFY_ARRAY_ROSTER");
+  for(let index=0;index<size;index+=1){need(fields.has(String(index)),"MODIFY_ARRAY_DENSE");}return fields;
+}
 function object(value: z.infer<typeof remote> | undefined): string { need(value?.type === "object" && value.subtype !== "null" && value.objectId !== undefined, "OBJECT"); return value.objectId; }
 function fn(value: z.infer<typeof remote> | undefined): string { need(value?.type === "function" && value.objectId !== undefined, "FUNCTION"); return value.objectId; }
 function remoteResult(raw: unknown): z.infer<typeof remote> { return z.strictObject({ result: remote }).parse(raw).result; }
@@ -495,11 +507,7 @@ export class CurrentProjectSaveStructureObserver {
    * or extra-index replies before selecting any child handle from it. */
   async #modifyArray(modify: ModifyState, raw: unknown, length?: number): Promise<Readonly<{ id: string; fields: Map<string, z.infer<typeof remote>> }>> {
     const result = remoteResult(raw); need(result.type === "object" && result.subtype === "array" && result.className === "Array", "MODIFY_ARRAY");
-    const id = object(result), list = properties.parse(await this.#modifyProperties(modify, id)).result;
-    const fields = new Map<string, z.infer<typeof remote>>();
-    for (const field of list) { need(field.value !== undefined && field.get === undefined && field.set === undefined && !fields.has(field.name), "MODIFY_ARRAY_DATA"); fields.set(field.name, field.value); }
-    const size = fields.get("length")?.value; need(typeof size === "number" && Number.isSafeInteger(size) && size >= 0 && size <= MODIFY_REQUESTS.objects && (length === undefined || size === length) && fields.size === size + 1, "MODIFY_ARRAY_ROSTER");
-    for (let index = 0; index < size; index += 1) { need(fields.has(String(index)), "MODIFY_ARRAY_DENSE"); }
+    const id = object(result);const fields = decodeCurrentSchematicRelevanceModifyStructureArrayFields(await this.#modifyProperties(modify, id), length);
     return { id, fields };
   }
   async #modifyUnchanged(modify: ModifyState): Promise<void> { await this.#modifyTrue(modify, "same", [modify.snapshot, modify.qualified]); }

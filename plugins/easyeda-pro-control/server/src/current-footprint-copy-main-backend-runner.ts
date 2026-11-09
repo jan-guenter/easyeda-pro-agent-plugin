@@ -143,6 +143,7 @@ import { currentFootprintCopyMainRequestPlanSchema, decodeCurrentFootprintCopyMa
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP_CALLS } from "./current-main-startup-config-programs.ts";
 import { qualifyCurrentMainStartupConfigSource } from "./current-main-startup-config-sql.ts";
 import { currentMainStartupLibraryAppDirectory } from "./current-main-startup-library-live-profile.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_READ_OWNER_PROGRAM as STOCK_READ_OWNER } from "./current-main-startup-library-interleave.ts";
 import { CURRENT_MAIN_STARTUP_LIBRARY_V2 as STOCK, isCurrentMainStartupLibraryV2Phase as isCurrentMainStartupLibraryPhase } from "./current-main-startup-library-v2-profile.ts";
 import type { CurrentMainStartupLibraryV2Origin as CurrentMainStartupLibraryOrigin } from "./current-main-startup-library-v2-profile.ts";
 import { qualifyCurrentMainStartupLibrarySource } from "./current-main-startup-library-source.ts";
@@ -158,43 +159,52 @@ import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITES as SAVED_CONFIG_SITES, 
 import { currentSelectedFileMainSqlCaptureError } from "./current-selected-file-main-sql-capture-error.ts";
 
 type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
+/** Reprove the original runner against its distinct structure, forward or combined capability. */
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   if (isCurrentProjectStructureMainCapability(capability)) { requireCurrentProjectStructureMainCapability(capability, runner); }
   else if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCapability(capability, runner); }
   else { requireCurrentFootprintCombinedMainCapability(capability, runner); }
 }
+/** Require cleanup authority from the original capability's own lifecycle. */
 function mainCleanup(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   if (isCurrentProjectStructureMainCapability(capability)) { requireCurrentProjectStructureMainCleanup(capability, runner); }
   else if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCleanup(capability, runner); }
   else { requireCurrentFootprintCombinedMainCleanup(capability, runner); }
 }
+/** Read original-generation exit proof through the matching capability family. */
 function mainExited(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): boolean {
   if (isCurrentProjectStructureMainCapability(capability)) { return currentProjectStructureMainGenerationExited(capability, runner); }
   return isCurrentFootprintForwardExecutionMainCapability(capability) ? currentFootprintForwardExecutionMainGenerationExited(capability, runner) : currentFootprintCombinedMainGenerationExited(capability, runner);
 }
+/** Route a validated request through its original capability without interchanging authority families. */
 async function mainCommand(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner,
   command: CurrentFootprintCopyMainRequestCollectCommand | CurrentProjectStructureMainCommand, id: number): Promise<void> {
   if (isCurrentProjectStructureMainCapability(capability)) { await sendCurrentProjectStructureMainCommand(capability, runner, validateCurrentProjectStructureMainCommand(command), id); return; }
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? sendCurrentFootprintForwardExecutionMainCommand(capability, runner, validateCurrentFootprintCopyMainRequestCollectCommand(command), id) : sendCurrentFootprintCombinedMainCommand(capability, runner, command, id));
 }
+/** Reserve completion capacity for forward or combined work; structure authority refuses. */
 function mainCompletionCapacity(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner, first: number): void {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   if (isCurrentFootprintForwardExecutionMainCapability(capability)) { assertCurrentFootprintForwardExecutionMainCompletionCapacity(capability, runner, first); }
   else { assertCurrentFootprintCombinedMainCompletionCapacity(capability, runner, first); }
 }
+/** Begin the original forward or combined completion once, excluding structure-only authority. */
 async function mainCompletionBegin(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner, first: number): Promise<void> {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? beginCurrentFootprintForwardExecutionMainCompletion(capability, runner, first) : beginCurrentFootprintCombinedMainCompletion(capability, runner, first));
 }
+/** Send completion through the original forward or combined owner, excluding structure-only authority. */
 async function mainCompletionCommand(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner,
   command: CurrentFootprintCopyMainCompletionCommand, id: number): Promise<void> {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? sendCurrentFootprintForwardExecutionMainCompletion(capability, runner, command, id) : sendCurrentFootprintCombinedMainCompletion(capability, runner, command, id));
 }
+/** Join retirement of the original forward or combined completion through its own owner. */
 async function mainCompletionRetire(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? retireCurrentFootprintForwardExecutionMainCompletion(capability, runner) : retireCurrentFootprintCombinedMainCompletion(capability, runner));
 }
+/** Preserve failure on the owning completion lane; structure-only work has no completion to fail. */
 function mainCompletionFail(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   if (isCurrentProjectStructureMainCapability(capability)) { return; }
   if (isCurrentFootprintForwardExecutionMainCapability(capability)) { failCurrentFootprintForwardExecutionMainCompletion(capability, runner); }
@@ -279,10 +289,12 @@ export function requireCurrentProjectStructureMainLease(token: CurrentProjectStr
   const entry = structureLeases.get(token); need(entry !== undefined, "STRUCTURE_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.binding;
 }
+/** Resolve only a retained combined completion origin and reprove its original entry. */
 export function requireCurrentFootprintCopyMainCompletionOrigin(token: CurrentFootprintCopyMainCompletionOrigin): CurrentFootprintCopyMainCompletionOriginBindings {
   const entry = completionOrigins.get(token); need(entry !== undefined && entry.kind === "combined", "COMPLETION_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
 }
+/** Resolve only a retained combined request origin and reprove its original entry. */
 export function requireCurrentFootprintCopyMainRequestOrigin(token: CurrentFootprintCopyMainRequestOrigin): CurrentFootprintCopyMainRequestOriginBindings {
   const entry = requestOrigins.get(token); need(entry !== undefined && entry.kind === "combined", "REQUEST_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
@@ -296,9 +308,11 @@ export function requireCurrentFootprintCopyMainRequestClockOrigin(token: Current
   requireCurrentFootprintCombinedPairedSchedule(entry.capability, entry.runner, clock);
 }
 
+/** Recognize registry-issued forward request origins without reflecting through a proxy. */
 export function isCurrentFootprintForwardMainRequestOrigin(value: unknown): value is CurrentFootprintForwardMainRequestOrigin {
   return value !== null && typeof value === "object" && !types.isProxy(value) && requestOrigins.get(value)?.kind === "forward";
 }
+/** Recognize registry-issued forward completion origins without reflecting through a proxy. */
 export function isCurrentFootprintForwardMainCompletionOrigin(value: unknown): value is CurrentFootprintForwardMainCompletionOrigin {
   return value !== null && typeof value === "object" && !types.isProxy(value) && completionOrigins.get(value)?.kind === "forward";
 }
@@ -307,6 +321,7 @@ export function requireCurrentFootprintForwardMainRequestOrigin(token: CurrentFo
   const entry = requestOrigins.get(token); need(entry !== undefined && entry.kind === "forward", "FORWARD_REQUEST_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
 }
+/** Resolve a retained forward completion origin after rechecking its original entry. */
 export function requireCurrentFootprintForwardMainCompletionOrigin(token: CurrentFootprintForwardMainCompletionOrigin): CurrentFootprintForwardMainCompletionOriginBindings {
   const entry = completionOrigins.get(token); need(entry !== undefined && entry.kind === "forward", "FORWARD_COMPLETION_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
@@ -386,18 +401,22 @@ const schemaIssueCodes = new Set(["custom", "invalid_element", "invalid_format",
   "not_multiple_of", "too_big", "too_small", "unrecognized_keys"]);
 const issuedFailures = new WeakMap<Error, string>();
 const methodNames = ["assertCurrent", "send", "poll"] as const;
+/** Retain the original Main construction error and its private stage code before refusing. */
 function need(value: boolean, detail: string): asserts value {
   if (!value) { const error = createOriginalSourceError("FOOTPRINT_MAIN_CONSTRUCTION", detail); issuedFailures.set(error, detail); throw error; }
 }
+/** Bound diagnostic issue counts and paths while replacing unreviewed keys and codes. */
 function schemaIssues(error: z.ZodError): readonly SchemaIssue[] {
   return Object.freeze(error.issues.slice(0, 6).map(issue => Object.freeze({ code: schemaIssueCodes.has(issue.code) ? issue.code : "other",
     path: Object.freeze(issue.path.slice(0, 8).map(segment => schemaPathSegment(segment))) })));
 }
+/** Preserve only bounded numeric indexes or reviewed diagnostic keys; redact every other segment. */
 function schemaPathSegment(segment: PropertyKey): string | number {
   if (typeof segment === "number" && Number.isSafeInteger(segment) && segment >= 0 && segment <= 256) { return segment; }
   if (typeof segment === "string" && schemaPathKeys.has(segment)) { return segment; }
   return "$unknown";
 }
+/** Seal the frozen transport's exact own data-method roster and original function references. */
 function methods(transport: CurrentFootprintCopyMainBackendTransport): readonly unknown[] {
   need(!types.isProxy(transport) && Object.isFrozen(transport) && Object.getPrototypeOf(transport) === Object.prototype && Reflect.ownKeys(transport).length === methodNames.length, "TRANSPORT");
   return methodNames.map(name => { const entry = Object.getOwnPropertyDescriptor(transport, name); need(entry !== undefined && Object.hasOwn(entry, "value") && typeof entry.value === "function", "TRANSPORT"); return entry.value as unknown; });
@@ -405,6 +424,7 @@ function methods(transport: CurrentFootprintCopyMainBackendTransport): readonly 
 const issued = new WeakMap<CurrentFootprintCopyMainBackendObservation, CurrentFootprintCopyMainBackendRunner>();
 const forwardPollRetainers = new WeakMap<(chunk: string) => void, Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; requireOriginal: () => void }>>();
 const selectedRequestPackets = new WeakMap<CurrentSelectedFileMainRequestObservation, Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; pause: Pause; text: string }>>();
+/** Require the packet's issuing runner and its still-original selected request state. */
 export function requireOriginalCurrentSelectedFileMainRequest(packet: CurrentSelectedFileMainRequestObservation, runner: CurrentFootprintCopyMainBackendRunner): void {
   const original = selectedRequestPackets.get(packet); need(original !== undefined && original.runner === runner, "SELECTED_REQUEST_ORIGINAL"); runner.requireOriginalSelectedMainRequest(packet);
 }
@@ -431,6 +451,11 @@ export class CurrentFootprintCopyMainBackendRunner {
   readonly #stockNativeReturns = new WeakMap<Pause, string>();
   readonly #stockCallerFrames = new WeakMap<Pause, string>();
   readonly #stockRawFrames = new WeakMap<Pause, string>();
+  readonly #sqlRawFrames = new WeakMap<Pause, string>();
+  readonly #stockInterleaveReadOwners = new WeakSet<Pause>();
+  readonly #stockInterleaveConfigurations = new WeakSet<Pause>();
+  readonly #stockInterleaveResumeCommands = new WeakMap<Pause, Readonly<{ command: CurrentSelectedFileMainSqlFenceCommand; requestId: number }>>();
+  readonly #stockInterleaves = new WeakMap<Pause, Readonly<{ origin: CurrentMainStartupLibraryOrigin; tracker: string; enrollment: Pause; command: Pause; point: string; requests: number; progress: string }>>();
   #stockSourceFrame: string | null = null;
   readonly #stockReturnFrames = new WeakMap<Pause, string>();
   readonly #stockPromiseResults = new WeakMap<Pause, Readonly<{ resultObjectId: string; raw: unknown }>>();
@@ -627,7 +652,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(token === this.#forwardMainCursor && this.#packet !== null && issued.get(this.#packet) === this && this.#source !== null &&
       methods(this.#transport).every((value, index) => value === this.#methods[index]), "FORWARD_CURSOR_ORIGINAL");
     requireCurrentFootprintCopyMainBackendSource(this.#source);
-    need(this.#requests === this.#normalRequests + this.#cleanupRequests &&
+    need(this.#requests === this.#normalRequests + this.#cleanupRequests + this.#stockRequests &&
       !(this.#structureAttempted && this.#originAttempted) && (!this.#completionAttempted || this.#originAttempted), "FORWARD_CURSOR_TRANSITION");
     // Admission may retain an exact v2 allocation before its original send.
     // Observed, stopped or detached uncertainty cannot use this in-flight
@@ -1111,10 +1136,14 @@ export class CurrentFootprintCopyMainBackendRunner {
     for (const record of this.#sqlResolutions.filter(item => item.breakpointId === reply.breakpointId)) { this.#sqlLocation(site, record.location); }
     this.#sqlBreakpoints.set(reply.breakpointId, site); this.#sqlArming = null;
   }
+  /** Continue this once-approved original pause. Pending stock keeps its own
+   * cursor and uses only the distinct ordinary startup-config resume phase. */
   async #sqlResume(pause: Pause): Promise<void> {
     need(this.#selectedSqlBootstrap !== null && this.#pause === pause && (pause.sqlSite === "import" || pause.sqlSite === "afterImports" || this.#sqlApprovedConfigurations.has(pause) || this.#sqlApprovedReadRequests.has(pause) || this.#sqlGuardApprovals.has(pause)) &&
       !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_NO_MUTATION_GRANT"); pause.resumeAttempted = true;
-    empty.parse(await this.#request({ phase: "sql-fence-resume", method: "Debugger.resume", params: {} })); await this.#wait(() => pause.resumed);
+    const phase = this.#stockOrigin !== null && !this.#stockCompleted ? "sql-fence-startup-config-resume" : "sql-fence-resume";
+    if (phase === "sql-fence-startup-config-resume") { this.#requireStockInterleave(pause); need(this.#stockInterleaveConfigurations.has(pause) || this.#stockInterleaveReadOwners.has(pause) && this.#sqlGuardApprovals.has(pause), "STOCK_INTERLEAVE_APPROVAL"); }
+    empty.parse(await this.#request({ phase, method: "Debugger.resume", params: {} })); await this.#wait(() => pause.resumed);
   }
   /** Classify one original held SQL pause with its retained module bindings.
    * Only the unchanged predicate's false result permits its guarded continuation.
@@ -1132,7 +1161,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_CAPTURED_EXPRESSIONS[site] } });
     const parsed = objectReply.safeParse(rawReply);
     if (!parsed.success) { issuedFailures.set(parsed.error, currentSelectedMainRawFrameFailure(site, rawReply)); throw parsed.error; }
-    const raw = parsed.data;
+    const raw = parsed.data; this.#sqlRawFrames.set(pause, raw.result.objectId);
     need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && raw.result.description ===
       `Array(${String(SQL_CAPTURED_EXPRESSIONS[site].slice(1, -1).split(",").length)})`, "SELECTED_SQL_CAPTURED_FRAME_RAW_TUPLE");
     const reply = capturedSqlFrameReply.parse(captureCurrentPcbStringClockReply(await this.#request({ phase: "sql-fence-captured-frame", site,
@@ -1503,12 +1532,25 @@ export class CurrentFootprintCopyMainBackendRunner {
     this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
     if (site === "opened") { need(this.#savedRegistrationOpenedPause === null, "SAVED_REGISTRATION_OPENED_ALREADY_RETAINED"); this.#savedRegistrationOpenedPause = pause; }
   }
+  /** Dispatch exact stock frames to their original array cursor; classify
+   * separate startup-config calls without spending or replacing that cursor. */
   async #configureStartupSql(pause: Pause): Promise<boolean> {
     const site = pause.sqlSite;
     need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#sqlCapture !== null && this.#sqlReady, "STARTUP_CONFIG_ORIGINAL_PAUSE");
-    if (this.#stockOrigin !== null && !this.#stockCompleted) { await this.#continueStartupLibrary(pause, false); return true; }
+    const stockPending = this.#stockOrigin !== null && !this.#stockCompleted;
+    if (stockPending && (this.#originalStockContinuationLineage(pause) || this.#originalStockLineage(pause))) { await this.#continueStartupLibrary(pause, false); return true; }
     if (this.#stockOrigin === null && this.#startupConfigTracker !== null && this.#originalStockLineage(pause)) { await this.#continueStartupLibrary(pause, true); return true; }
-    if (await this.#classifyCapturedSqlPause(pause) === "guard-passed") { await this.#sqlResume(pause); return true; }
+    if (stockPending) { this.#beginStockInterleave(pause); }
+    const classification = await this.#classifyCapturedSqlPause(pause);
+    if (stockPending) { this.#requireStockInterleave(pause); }
+    if (classification === "guard-passed") {
+      if (stockPending) {
+        need(site === "queryAll" || site === "queryOne", "STOCK_INTERLEAVE_READ_SITE"); const rawFrame = this.#sqlRawFrames.get(pause); need(rawFrame !== undefined && this.#startupConfigTracker !== null, "STOCK_INTERLEAVE_READ_FRAME");
+        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-startup-read-owner", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, objectId: rawFrame, functionDeclaration: STOCK_READ_OWNER, arguments: [{ objectId: this.#startupConfigTracker }], returnByValue: true } }));
+        this.#requireStockInterleave(pause); this.#stockInterleaveReadOwners.add(pause);
+      }
+      await this.#sqlResume(pause); return true;
+    }
     if (site === "initializerSerialize" || site === "initializerPragma") { await this.#configureSelectedSqlInitializer(pause); return true; }
     if (site === "startupVersion" || site === "startupJB" || site === "startupDC") {
       const selected = this.#capturedSqlFrame(pause, site);
@@ -1548,9 +1590,40 @@ export class CurrentFootprintCopyMainBackendRunner {
         this.#captureStartupRefusalContext(pause, "selection-unrecognized", selection); return false;
       }
     } else { return false; }
-    await this.#requireSelectedSqlCapture(); this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
+    await this.#requireSelectedSqlCapture();
+    if (stockPending) { this.#requireStockInterleave(pause); this.#stockInterleaveConfigurations.add(pause); }
+    this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
     if (site === "startupVersion" || site === "startupJB" || site === "startupDC") { this.#startupMetadataContinuations += 1; } else { this.#startupSqlContinuations += 1; }
     return true;
+  }
+  /** Retain the exact still-pending stock receiver/cursor while a separate
+   * original startup-config call is classified on the ordinary SQL budget. */
+  #beginStockInterleave(pause: Pause): void {
+    need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#stockOrigin !== null && this.#stockTracker !== null && this.#stockEnrollmentPause !== null && this.#stockReturnPoint !== null && this.#stockCommandPause !== null && this.#stockCommandPause !== pause && this.#stockCommandPause.resumeAttempted && this.#stockCommandPause.resumed && !this.#stockCompleted && !this.#stockInterleaves.has(pause), "STOCK_INTERLEAVE_PENDING");
+    const progress = canonicalJson(this.#stockProgress.snapshot());
+    const held = Object.freeze({ origin: this.#stockOrigin, tracker: this.#stockTracker, enrollment: this.#stockEnrollmentPause, command: this.#stockCommandPause, point: this.#stockReturnPoint, requests: this.#stockRequests, progress });
+    this.#stockInterleaves.set(pause, held);
+  }
+  /** No ordinary await may change or spend the pending original stock lane. */
+  #requireStockInterleave(pause: Pause): void {
+    this.#same(false); const held = this.#stockInterleaves.get(pause);
+    need(held !== undefined && this.#pause === pause && this.#stockOrigin === held.origin && this.#stockTracker === held.tracker && this.#stockEnrollmentPause === held.enrollment && this.#stockCommandPause === held.command && held.command.resumed && this.#stockReturnPoint === held.point && this.#stockRequests === held.requests && canonicalJson(this.#stockProgress.snapshot()) === held.progress && !this.#stockCompleted, "STOCK_INTERLEAVE_CHANGED");
+  }
+  /** Reprove the original approved config/read pause at every Core await and
+   * actual submission. The consumed resume alone may observe its own resumed
+   * transition; other commands and replaced pending requests remain refused. */
+  public requireOriginalStartupInterleaveCommand(capability: CurrentSelectedFileMainSqlFenceBootstrap, command: CurrentSelectedFileMainSqlFenceCommand): void {
+    need(this.#selectedSqlBootstrap === capability, "STOCK_INTERLEAVE_ORIGINAL_BOOTSTRAP");
+    const pause = this.#pause;
+    if (pause === null || !this.#stockInterleaves.has(pause)) { need(command.phase !== "sql-fence-startup-read-owner" && command.phase !== "sql-fence-startup-config-resume", "STOCK_INTERLEAVE_REQUIRED"); return; }
+    need(this.#busy && this.#sqlReady && this.#packet === null && this.#startupConfigTracker !== null && this.#pendingId !== null, "STOCK_INTERLEAVE_ORIGINAL_PAUSE"); this.#requireStockInterleave(pause);
+    if (command.phase === "sql-fence-startup-config-resume") {
+      let retained = this.#stockInterleaveResumeCommands.get(pause);
+      if (retained === undefined) { need(!pause.resumed && pause.resumeAttempted, "STOCK_INTERLEAVE_FIRST_RESUME"); retained = Object.freeze({ command, requestId: this.#pendingId }); this.#stockInterleaveResumeCommands.set(pause, retained); }
+      need(retained.command === command && retained.requestId === this.#pendingId, "STOCK_INTERLEAVE_RESUME_REQUEST_CHANGED");
+    } else { need(!pause.resumed, "STOCK_INTERLEAVE_READ_AFTER_RESUME"); }
+    if (command.phase === "sql-fence-startup-read-owner") { need(!pause.resumeAttempted && this.#sqlGuardApprovals.has(pause) && (pause.sqlSite === "queryAll" || pause.sqlSite === "queryOne") && command.params.objectId === this.#sqlRawFrames.get(pause) && command.params.arguments[0].objectId === this.#startupConfigTracker, "STOCK_INTERLEAVE_READ_OWNER"); }
+    else if (command.phase === "sql-fence-startup-config-resume") { need(pause.resumeAttempted && (this.#stockInterleaveConfigurations.has(pause) || this.#sqlGuardApprovals.has(pause) && this.#stockInterleaveReadOwners.has(pause)), "STOCK_INTERLEAVE_APPROVED_RESUME"); }
   }
   #originalStockLineage(pause: Pause): boolean {
     const frames = this.#stockFrames.get(pause);

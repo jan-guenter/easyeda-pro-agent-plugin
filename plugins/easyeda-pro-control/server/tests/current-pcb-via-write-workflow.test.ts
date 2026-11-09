@@ -3,6 +3,8 @@
 /* oxlint-disable import/max-dependencies -- The actual outer scheduler, journal validator and shared original launch lease are tested together with explicit inert factory seams; splitting the imports would hide the concurrent-lease regression. */
 /* oxlint-disable eslint/max-classes-per-file -- The two inert test-only replacements preserve the production journal and observer constructor/method signatures. */
 /* oxlint-disable eslint/class-methods-use-this -- Fixed test-only instance methods deliberately model native callbacks without manufacturing production private state. */
+import { createCurrentMainStartupLibraryRefusalContext } from "../src/current-main-startup-library-refusal-context.ts";
+import { CurrentMainStartupLibraryProgress } from "../src/current-main-startup-library-progress.ts";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -26,7 +28,7 @@ function ack(stage: "preflight" | "create" | "save"): Readonly<Record<string, un
     createAttempted: stage !== "preflight", createAcknowledged: stage !== "preflight", saveAttempted: stage === "save", saveAcknowledged: stage === "save",
     inverseAvailable: false, persistenceVerified: false });
 }
-async function fixture(mode: Mode, startupDiagnostic: unknown = null, predicateDiagnostic: unknown = null, startupRefusalContext: unknown = null): Promise<Readonly<{ workflow: CurrentPcbViaWriteWorkflow; calls: string[]; saveAck: unknown; permitOriginalExit: () => void; rejectNextOriginalExit: (error: Error) => void; replaceMainStatus:()=>void; replaceStartupDiagnostic:()=>void; replacePredicateDiagnostic:()=>void; replaceStartupRefusalContext:()=>void; failureEvidence:()=>Readonly<Record<string,unknown>>|undefined }>> {
+async function fixture(mode: Mode, startupDiagnostic: unknown = null, predicateDiagnostic: unknown = null, startupRefusalContext: unknown = null, stockRefusalContext: unknown = null): Promise<Readonly<{ workflow: CurrentPcbViaWriteWorkflow; calls: string[]; saveAck: unknown; permitOriginalExit: () => void; rejectNextOriginalExit: (error: Error) => void; replaceMainStatus:()=>void; replaceStartupDiagnostic:()=>void; replacePredicateDiagnostic:()=>void; replaceStartupRefusalContext:()=>void; failureEvidence:()=>Readonly<Record<string,unknown>>|undefined }>> {
   const calls: string[] = [], operationId = `pcb209-via-write-workflow-${randomUUID()}`;
   const prepared = Object.freeze({ qualification: {}, history: {}, inertOriginalPreparation: true });
   const plan = Object.freeze({ operationId, target: { expectedSourceSha256: "a".repeat(64) }, initialLogicalSha256: "b".repeat(64) });
@@ -42,6 +44,7 @@ async function fixture(mode: Mode, startupDiagnostic: unknown = null, predicateD
     public retainedFootprintMainConstruction():unknown{assert.equal(this,mainStatusOwner);calls.push("main-failure-snapshot");return mainRunner?.retained()??null;}
     public retainedFootprintMainStartupDiagnostic():unknown{assert.equal(this,mainStatusOwner);calls.push("main-startup-snapshot");return startupDiagnostic;}
     public retainedFootprintMainStartupRefusalContext():unknown{assert.equal(this,mainStatusOwner);calls.push("main-startup-context-snapshot");return startupRefusalContext;}
+    public retainedFootprintMainStartupLibraryRefusalContext():unknown{assert.equal(this,mainStatusOwner);calls.push("main-stock-context-snapshot");return stockRefusalContext;}
     public retainedFootprintMainPredicateDiagnostic():unknown{assert.equal(this,mainStatusOwner);calls.push("main-predicate-snapshot");return predicateDiagnostic;}
   }
   const noResource = Object.freeze({ inertOriginalNoResource: true });
@@ -447,6 +450,18 @@ void test("optional predicate data rejects substituted accessors and malformed v
   }
   assert.equal(getters, 0);
 });
+void test("stock context beyond V1 request count reaches only the original private failure artifact", async () => {
+  const packet = createCurrentMainStartupLibraryRefusalContext("run", false, true, 1999,
+    { ...new CurrentMainStartupLibraryProgress().snapshot(), receiverBound: true, scriptCallsConsumed: 331 },
+    captureCurrentSelectedFileMainSqlStartupPauseLocations([{ scriptId: "app", lineNumber: 0, columnNumber: 1 }], "app", "abc"));
+  const f = await fixture("main-construction-failed", null, null, null, packet); await assert.rejects(f.workflow.execute());
+  const evidence = f.failureEvidence(); assert.ok(evidence !== undefined, JSON.stringify({ diagnostic: f.workflow.diagnostic(), calls: f.calls, inspect: f.workflow.inspect() })); assert.deepEqual(evidence["mainStartupLibraryRefusalContext"], packet);
+  assert.ok(Object.isFrozen(evidence["mainStartupLibraryRefusalContext"])); assert.equal(Object.hasOwn(f.workflow.mainFailure() ?? {}, "mainStartupLibraryRefusalContext"), false);
+  assert.equal(Object.hasOwn(f.workflow.inspect(), "mainStartupLibraryRefusalContext"), false); assert.equal(f.calls.filter(value => value === "main-stock-context-snapshot").length, 1);
+  assert.ok(f.calls.indexOf("main-stock-context-snapshot") < f.calls.indexOf("original-abort")); assert.equal(f.calls.includes("project-open"), false);
+});
+
+
 void test("a new protocol failure cannot reuse the prior exhausted-round eligibility", async () => {
   const f = await fixture("exit-late"); await assert.rejects(f.workflow.execute(), /Save acknowledgement unknown/u);
   const initialReads = f.calls.filter(value => value === "original-exit").length;

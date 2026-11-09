@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {Session} from "node:inspector/promises";
 import {test} from "node:test";
 import {createContext,runInContext} from "node:vm";
-import {CurrentSchematicRelevancePublicationController} from "../src/current-schematic-relevance-publication-controller.ts";
+import {CurrentSchematicRelevancePublicationController,assertOriginalCurrentSchematicRelevancePublicationController as originalController} from "../src/current-schematic-relevance-publication-controller.ts";
 import type {CurrentSchematicRelevancePublicationHeld,CurrentSchematicRelevancePublicationOriginal} from "../src/current-schematic-relevance-publication-controller.ts";
 import {CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_RETURN_ROLES as ROLES,currentSchematicRelevancePublicationReturnPoint as endPoint,currentSchematicRelevancePublicationFunctionPoint as fnPoint} from "../src/current-schematic-relevance-publication-control-protocol.ts";
 import {CURRENT_SCHEMATIC_RELEVANCE_BROADCAST_CALLEE_SOURCE as BUS} from "../src/current-schematic-relevance-broadcast-callee-source.ts";
@@ -23,7 +23,7 @@ void test("original publisher source lane joins both pause/ACK orders and consum
    if(index===4){const arrow=BUS[0].roles.loopback;callFrames.push({callFrameId:"loopback-caller",functionLocation:{scriptId:"source",lineNumber:arrow.lineNumber,columnNumber:arrow.columnNumber},location:{scriptId:"source",lineNumber:arrow.lineNumber,columnNumber:arrow.columnNumber+10}});}
    const event:Event={sessionId:"ui",method:"Debugger.paused",params:{reason:"other",hitBreakpoints:[id],callFrames}};let done:Promise<CurrentSchematicRelevancePublicationHeld>;if(early){assert.equal(lane.observe(event),true);done=lane.complete(reservation);}else{done=lane.complete(reservation);await Promise.resolve();assert.equal(lane.observe(event),true);}const completed=await done;assert.equal(completed.role,target);assert.equal(failed,false);
   }
-  assert.ok(held!==null);const final=held;assert.throws(()=>lane.reserve(final));
+  assert.ok(held!==null);const final=held;assert.throws(()=>lane.reserve(final));originalController(lane);assert.throws(()=>{originalController(new Proxy(lane,{}));});let removed=0;await lane.retireForOriginalEcho(final,(command):Promise<unknown>=>{assert.equal(command.phase,"modify-echo-control-publication-remove");removed+=1;return Promise.resolve({});});assert.equal(removed,6);const terminal=lane.reserveTerminalForOriginalEcho(final);assert.throws(()=>lane.reserveTerminalForOriginalEcho(final));lane.markTerminalSubmitted(terminal);if(early){lane.acknowledgeTerminal(terminal,{});}assert.equal(lane.observe({sessionId:"ui",method:"Debugger.resumed",params:{}}),true);if(!early){lane.acknowledgeTerminal(terminal,{});}await lane.completeTerminal(terminal);lane.requireCompleted();assert.equal(failed,false);
  }
 });
 

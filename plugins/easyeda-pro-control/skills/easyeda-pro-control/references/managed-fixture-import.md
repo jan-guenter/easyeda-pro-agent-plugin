@@ -169,4 +169,4 @@ original owners released after closure and exact closed raw/SQL preservation.
 Fresh post-reader initial qualification still refused WSL birth time zero;
 reference-linked points, general Component scenes, registration and writer
 authority remain unproved. See the
-[scoped Component case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-08-generated-component-import-qualification.md).
+[scoped Component case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/5e42f5817360f830a7b8d2e53e5870e208519bca/docs/history/2026-11-08-generated-component-import-qualification.md).

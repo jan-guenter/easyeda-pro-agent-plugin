@@ -62,3 +62,13 @@ application, SDK, controller-selection or bundle actor ran. The parent owns the
 composed native/source review, compiler caps, generated bundles, installation and
 connected proof. This leaf changes no Core/native budget or persisted result
 schema, and grants no production Save or persistence claim.
+
+## 2026-11-09 payload attribution correction
+
+The thirteen-case leaf summary has no recoverable complete tested source/test
+manifest, so its exact tested tree remains unbound. The later composed non-suite
+checks retained the complete tracked-file inventory for frozen commit
+`1620d84e6fbc985e57155b8a72986bfd5ceffe2c`, tree
+`16c41988fd9d0694384259ff5633514b842ff4af`. Those types, lint, build and mandatory
+validator results apply to that later payload and do not identify the earlier
+thirteen-case test tree or supply connected proof.

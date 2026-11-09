@@ -2,15 +2,17 @@
  * peers; no app/native owner or write authority is issued by this fixture. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { Session } from "node:inspector";
 import { types } from "node:util";
 import { createContext, runInContext } from "node:vm";
-import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE } from "../src/current-selected-file-main-sql-fence-programs.ts";
+import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE, CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_PROGRAM as CLASSIFY, CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_EXPRESSIONS as EXPRESSIONS } from "../src/current-selected-file-main-sql-fence-programs.ts";
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as CALLS } from "../src/current-main-startup-config-programs.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_READ_OWNER_PROGRAM as READ_OWNER } from "../src/current-main-startup-library-interleave.ts";
 import { CURRENT_MAIN_STARTUP_CONFIG_SQL as SQL } from "../src/current-main-startup-config-sql.ts";
 import { CurrentMainStartupConfigProgress, currentMainStartupConfigSelectionSchema } from "../src/current-main-startup-config-progress.ts";
 
-function fixture(): ReturnType<typeof createContext> {
-  const context = createContext({ nativeProxy: types.isProxy, jbScript: SQL.scripts.jb.map(row => row.sql).join("\n\n"), dcScript: SQL.scripts.dc.map(row => row.sql).join("\n\n") });
+function fixture(name = "synthetic-startup-config"): ReturnType<typeof createContext> {
+  const context = createContext({ nativeProxy: types.isProxy, jbScript: SQL.scripts.jb.map(row => row.sql).join("\n\n"), dcScript: SQL.scripts.dc.map(row => row.sql).join("\n\n") }, {name});
   runInContext(String.raw`let calls=0;const forbidden=()=>{calls++;throw Error("application/native call");};
 class Z2{constructor(db){this.db=db;}}class Yo{constructor(path,db){this.path=path;this.db=db;this.dbWrap=new Z2(db);this.transactionDepth=0;}}
 const F5={types:{isProxy:nativeProxy}},sc={Database:Map,Statement:Set},documents="C:\\Synthetic\\Documents",root=documents+"\\EasyEDA-Pro",directory=root+"\\database",path=directory+"\\web.db";
@@ -32,6 +34,19 @@ function select(context: ReturnType<typeof createContext>, role: "jb" | "dc", si
   return runInContext(`(${CALLS.select}).call(${frame},tracker,${JSON.stringify(site)})`, context);
 }
 function accept(progress: CurrentMainStartupConfigProgress, value: unknown): void { const captured = currentMainStartupConfigSelectionSchema.parse(structuredClone(value)); assert.equal(progress.consume(captured), true); }
+void test("path-derived startup names still pass the unchanged original tracker and reject another app root", () => {
+  const context = fixture();
+  runInContext(`function versionRaw(Je){const t=path,a=init.db,o=init,A=row,_=path,nl=documents,A2=directory;return ${EXPRESSIONS.startupVersion};}
+    function jbRaw(){const e=jb,r={},_=path,nl=documents,Je=root,A2=directory,h6=jbScript;return ${EXPRESSIONS.startupJB};}
+    function dcRaw(){const t=dc,_=path,nl=documents,Je=root,A2=directory,KB=dcScript;return ${EXPRESSIONS.startupDC};}
+    function classified(raw,site){return (${CLASSIFY}).call(raw,capture,site);}
+    tracker=(${CALLS.version}).call(classified(versionRaw(root),"startupVersion"),capture);
+    (${CALLS.bindJB}).call(classified(jbRaw(),"startupJB"),tracker);
+    (${CALLS.bindDC}).call(classified(dcRaw(),"startupDC"),tracker);`, context);
+  assert.equal(runInContext("typeof lc", context), "undefined");
+  assert.throws(() => runInContext(`(${CALLS.version}).call(classified(versionRaw(documents+"\\\\LCEDA-Pro"),"startupVersion"),capture)`, context));
+  assert.equal(runInContext("calls", context), 0);
+});
 void test("actual retained profile frames admit only the complete ordered startup sequence and retain the actual prepared statement", () => {
   const context = fixture(), progress = new CurrentMainStartupConfigProgress(); version(context); progress.version(); bind(context, "jb"); progress.bind("jb");
   runInContext("jb.transactionDepth=1", context); accept(progress, select(context, "jb", "run", SQL.transaction.begin));
@@ -74,4 +89,41 @@ void test("sequence refuses skipping, duplicate SQL, rollback, wrong transaction
     assert.throws(() => { progress.consume({ recognized: true, role: "jb", site: "run", sql, parametersEmpty: true, transactionDepth: depth, designWriteGrant: false, nativeCompletionProven: false }); });
   }
   const progress = new CurrentMainStartupConfigProgress(); progress.version(); assert.throws(() => { progress.bind("dc"); }); assert.throws(() => { progress.complete(); });
+});
+
+void test("pending-stock read ownership rejoins only an original registered JB/DC wrapper without invoking application code", () => {
+  const context = fixture(); version(context); bind(context, "jb"); bind(context, "dc");
+  const read = (): unknown => runInContext(`(${READ_OWNER}).call([dc.dbWrap,"select name from web_cookies",[],sc],tracker)`, context);
+  assert.equal(read(), true);
+  runInContext("const foreign=new Yo(path,db());", context);
+  assert.throws(() => runInContext(`(${READ_OWNER}).call([foreign.dbWrap,"select name from web_cookies",[],sc],tracker)`, context));
+  runInContext('Object.defineProperty(dc.dbWrap,"db",{get:forbidden})', context);
+  assert.throws(read); assert.equal(runInContext("calls", context), 0);
+});
+
+/** Decode only the actual local Inspector object reference, keeping its realm
+ * intact rather than copying a peer through another context's globals. */
+function inspectorObjectId(input: unknown): string {
+  assert.ok(input!==null&&typeof input==="object"); const result: unknown=Reflect.get(input,"result");
+  assert.ok(result!==null&&typeof result==="object"); const objectId: unknown=Reflect.get(result,"objectId"); assert.ok(typeof objectId==="string"); return objectId;
+}
+void test("the exact pending-stock owner proof succeeds with actual Node24 throwOnSideEffect true", () => {
+  const context = fixture("synthetic-stock-interleave-read"); version(context); bind(context, "jb"); bind(context, "dc");
+  const session = new Session(); session.connect();
+  let contextId: number | null = null;
+  session.on("Runtime.executionContextCreated",event=>{if(event.params.context.name==="synthetic-stock-interleave-read"){contextId=event.params.context.id;}});
+  const request = (method: string, params: object): unknown => {
+    let completed = false; let reply: unknown; const outcome: {error: Error | null} = {error:null};
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Same-process Inspector completes this passive request synchronously; no external session or application is used.
+    session.post(method, params, (error, value): void => { completed=true;outcome.error=error;reply=value; });
+    assert.equal(completed,true); if(outcome.error!==null){throw outcome.error;} return reply;
+  };
+
+  try {
+    request("Runtime.enable",{}); assert.ok(contextId!==null);
+    const raw = inspectorObjectId(request("Runtime.evaluate",{expression:'[dc.dbWrap,"select name from web_cookies",[],sc]',contextId,returnByValue:false}));
+    const retained = inspectorObjectId(request("Runtime.evaluate",{expression:"tracker",contextId,returnByValue:false}));
+    assert.deepEqual(request("Runtime.callFunctionOn",{objectId:raw,functionDeclaration:READ_OWNER,arguments:[{objectId:retained}],returnByValue:true,throwOnSideEffect:true}),{result:{type:"boolean",value:true}});
+    assert.equal(runInContext("calls",context),0);
+  } finally { session.disconnect(); }
 });

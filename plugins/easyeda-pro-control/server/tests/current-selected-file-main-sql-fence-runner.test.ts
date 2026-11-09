@@ -1,3 +1,4 @@
+/* oxlint-disable eslint/max-classes-per-file -- Two explicit inert sequence peers preserve original production scheduling while substituting independent catalogue replies. */
 /** Production runner scheduling against a deliberately synthetic CDP peer.
  * Only source/transport issuance are substituted; actual cursor, decoders,
  * ordering, predicates, counters and mutation-hold logic run unchanged. */
@@ -11,6 +12,9 @@ import { historyBaseline, viaMainHistoryReply, viaMainHistoryWindow } from "./he
 import { currentPcbViaMainBeginNativeCases, validateCurrentPcbViaMainBeginCommand } from "../src/current-pcb-via-main-begin-protocol.ts";
 import type { CurrentPcbViaMainBeginCommand } from "../src/current-pcb-via-main-begin-protocol.ts";
 import { viaMainActorProperties, viaMainActorValue } from "./helpers/via-main-actor-replies.ts";
+import { CurrentMainStartupLibraryV2Schedule, CURRENT_MAIN_STARTUP_LIBRARY_V2 as STOCK } from "../src/current-main-startup-library-v2-profile.ts";
+import { CurrentMainStartupLibraryProgress, captureCurrentMainStartupLibrarySelection, currentMainStartupLibrarySelectionSchema } from "../src/current-main-startup-library-progress.ts";
+import type { CurrentMainStartupLibraryV2Command } from "../src/current-main-startup-library-v2-protocol.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
@@ -70,12 +74,12 @@ const configPacket = (role: "jb" | "dc", site: "run" | "prepare" | "prepared", s
  * not replace the real command validators, counters or continuation gates. */
 async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed" | null = null, unsupportedNative = false,
   firstStartup: SqlPauseFixture | null = null, startupCallerFrames: readonly Data[] = [],
-  failureProbe?: Readonly<{ consumeError?: Error; projectionError?: Error; locationProjectionCount?: { count: number } }>): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
+  failureProbe?: Readonly<{ consumeError?: Error; projectionError?: Error; locationProjectionCount?: { count: number } }>, stockMode: "complete" | "lineage" | "early-registration" | "interleave" | "interleave-refused" | null = null): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
   injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole) => void; injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole) => void; injectBeginPoint: (role: "save" | "transaction" | "run" | "callback" | "returned") => void; injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean | "structure") => void; injectMutation: () => void; injectSql: (pause: SqlPauseFixture) => void; injectDriver: () => void; resumes: () => number; resumeBatches: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
   const ids = new Map<number, number>(), phases: string[] = [], queue: Data[] = [], retainedRegistration: Data[] = [];
   let currentRequest = { method: "GET", url: "", delta: 0, pathHeader:"f".repeat(64) }, fetchScriptSeen = false;
-  const startup: { site: keyof typeof SOURCE.sites; value?: Data }[] = [{ site: "startupVersion" }, { site: "startupJB" },
+  const startup: { site: keyof typeof SOURCE.sites; value?: Data; stock?: number }[] = [{ site: "startupVersion" }, { site: "startupJB" },
     { site: "run", value: configPacket("jb", "run", CONFIG_SQL.transaction.begin, 1) },
     ...CONFIG_SQL.scripts.jb.map(row => ({ site: "run" as const, value: configPacket("jb", "run", row.sql, 1) })),
     { site: "run", value: configPacket("jb", "run", `${CONFIG_SQL.broadcastDeletePrefix}1793920000000`, 1) },
@@ -83,10 +87,17 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     ...CONFIG_SQL.scripts.dc.map(row => ({ site: "run" as const, value: configPacket("dc", "run", row.sql, 0) })),
     { site: "run", value: configPacket("dc", "run", `${CONFIG_SQL.cookieDeletePrefix}1793920000`, 0) },
     { site: "prepare", value: configPacket("dc", "prepare", CONFIG_SQL.cookieUpsert, 0) }, { site: "prepared", value: configPacket("dc", "prepared", CONFIG_SQL.cookieUpsert, 0) }];
+  const interleaved = stockMode === "interleave" || stockMode === "interleave-refused";
+  const configTail = interleaved ? startup.splice(-3) : [];
+  if (interleaved) { configTail.splice(1,0,{site:"queryAll"}); }
+  if (stockMode !== null) { startup.push({ site: "run", stock: 0 }); }
+  let interleaveIndex = -1;
   if (wrongStartup === "order") { startup[2] = { site: "run", value: configPacket("jb", "run", CONFIG_SQL.scripts.jb[0]?.sql ?? "", 1) }; }
   if (wrongStartup === "foreign") { startup[2] = { site: "run", value: { recognized: false } }; }
   if (wrongStartup === "malformed") { startup[2] = { site: "run", value: { recognized: false, sql: "private malformed SQL" } }; }
   if (firstStartup !== null) { startup.unshift({ site: firstStartup.site }); }
+  let stockIndex = 0; const stockSchedule = new CurrentMainStartupLibraryV2Schedule();
+  const stockOrigin = Object.freeze({ profile: "private.current-main-startup-library-origin.v2" as const, executionAuthorized: false as const });
   let startupIndex = -1; let historySlot = "data";
   let queuedBytes = Buffer.alloc(0); let contextPointActive = false, loseDriverStep = false, plannedResumes = 0, resumeBatches = 0;
   let holdRegistration = false, normalResumes = 0, runner: CurrentFootprintCopyMainBackendRunner | null = null, sqlResumes = 0;
@@ -101,6 +112,11 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
   const location = (site: keyof typeof SOURCE.sites): Data => ({ scriptId: "app", lineNumber: SOURCE.sites[site].lineNumber, columnNumber: SOURCE.sites[site].breakpointColumnNumber + (site === "import" ? delta : 0) });
   /** Deliver the exact armed SQL point, with optional negative event data. */
   const pause = (site: keyof typeof SOURCE.sites, options: SqlPauseFixture | null = null): void => { currentSqlPause = options; const frames:Data[]=[{callFrameId:`frame-${site}`,location:location(site),...(site==="driver"?{functionName:"",functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:2434}}:{})},...startupCallerFrames];
+    if (stockMode !== null && interleaveIndex < 0 && startup[startupIndex]?.stock === 0) {
+      frames.splice(0, frames.length, ...STOCK.initialLineage.map((point, index) => ({ callFrameId: `stock-${String(stockIndex)}-${String(index)}`, location: { scriptId: "app", ...point } })));
+      if (stockIndex > 0 && stockMode !== "lineage") { frames.pop(); }
+    }
+    if (interleaveIndex >= 0) { frames.splice(0, frames.length, { callFrameId: `config-${site}`, location: location(site) }, ...[{lineNumber:1025,columnNumber:847},{lineNumber:1025,columnNumber:3173},{lineNumber:8583,columnNumber:256}].map(point => ({callFrameId:`config-caller-${String(point.columnNumber)}`,location:{scriptId:"app",...point}}))); }
     if(site==="driver"){frames.push({callFrameId:"frame-caller",functionName:"interceptHttpProtocol",functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:51_072},location:{scriptId:"app",lineNumber:1164,columnNumber:51_414}});}
     event("Debugger.paused",{reason:"other",hitBreakpoints:options?.hitBreakpoints??[site==="import"?EARLY_ID:`sql-${site}`],callFrames:frames});
   };
@@ -113,12 +129,14 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     else if (command.phase === "sql-fence-after-imports-arm" || command.phase === "sql-fence-held-arm") {
       if (command.phase === "sql-fence-held-arm") { assert.equal(command.params.condition, "true"); }
       const site = command.phase === "sql-fence-after-imports-arm" ? "afterImports" : command.site; result = { breakpointId: `sql-${site}`, actualLocation: location(site) };
-    } else if (command.phase === "sql-fence-resume") {
+    } else if (command.phase === "sql-fence-resume" || command.phase === "sql-fence-startup-config-resume") {
+      if (command.phase === "sql-fence-startup-config-resume") { assert.ok(runner !== null); runner.requireOriginalStartupInterleaveCommand(capability, command); assert.equal(stockSchedule.requests, 10); assert.equal(runner.startupLibraryState()["requests"], 10); }
       if (currentSqlPause?.fault === "resume-ack") { return Promise.reject(new Error("original-sql-resume-ack-lost")); }
       const following = currentSqlPause?.following;
       sqlResumes += 1; event("Debugger.resumed", {});
       if(contextPointActive&&currentRequest.method==="GET"){event("Debugger.paused",{reason:"other",hitBreakpoints:["via-2540"],callFrames:[{callFrameId:"wrong-get-context",location:{scriptId:"app",lineNumber:1164,columnNumber:2540}}]});}
-      if (sqlResumes === 1) { pause("afterImports"); }
+      if (interleaveIndex >= 0) { interleaveIndex += 1; const next = configTail[interleaveIndex]; if (next === undefined) { interleaveIndex = -1; stockIndex += 1; pause("run"); } else { pause(next.site, next.site === "queryAll" ? {site:"queryAll",classification:"guard-passed"} : null); } }
+      else if (sqlResumes === 1) { pause("afterImports"); }
       else { startupIndex += 1; const next = startup[startupIndex]; if (next === undefined) { holdRegistration = false; queue.push(...retainedRegistration.splice(0)); }
         else { pause(next.site, startupIndex === 0 ? firstStartup : null); } }
       if (following === "driver") { pause("driver"); }
@@ -186,7 +204,8 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     else if (command.phase === "sql-fence-require") { result = { result: { type: "boolean", value: true } }; }
     else if (command.phase === "sql-fence-startup-version") { assert.equal(command.params.objectId, "legacy-startupVersion"); result = { result: { type: "object", subtype: "array", className: "Array", description: "Array(6)", objectId: "original-startup-tracker" } }; }
     else if (command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc") { assert.equal(command.params.objectId, command.phase === "sql-fence-startup-jb" ? "legacy-startupJB" : "legacy-startupDC"); result = { result: { type: "boolean", value: true } }; }
-    else if (command.phase === "sql-fence-startup-select") { assert.equal(command.params.objectId, `legacy-${command.site}`); result = { result: { type: "object", value: startup[startupIndex]?.value ?? { recognized: false } } }; }
+    else if (command.phase === "sql-fence-startup-read-owner") { assert.ok(runner !== null); runner.requireOriginalStartupInterleaveCommand(capability, command); assert.equal(command.params.objectId,"raw-queryAll"); assert.deepEqual(command.params.arguments,[{objectId:"original-startup-tracker"}]); assert.equal(command.params.throwOnSideEffect,true); result = {result:{type:"boolean",value:stockMode !== "interleave-refused"}}; }
+    else if (command.phase === "sql-fence-startup-select") { assert.equal(command.params.objectId, `legacy-${command.site}`); result = { result: { type: "object", value: (interleaveIndex < 0 ? startup[startupIndex]?.value : configTail[interleaveIndex]?.value) ?? { recognized: false } } }; }
     if (command.phase.startsWith("sql-fence-request-") || command.phase.startsWith("sql-fence-driver-") || command.phase === "sql-fence-fetch-source" ||
       command.phase === "sql-fence-properties" && "objectId" in command.params && command.params.objectId !== diagnosticObjectId && !["sql-fence-frame", "sql-fence-native-frame", "native0", "native1", "native2", "native3", "native4"].includes(command.params.objectId)) { result = selectedRequestPeer(command, currentRequest); }
     queue.push({ id, result });
@@ -196,13 +215,38 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     }
     return Promise.resolve();
   };
+  /** The runner/codec/schedule are real. This inert peer substitutes only
+   * catalog/native replies; it executes no SQL or inspector program. */
+  const stockSend = (command: CurrentMainStartupLibraryV2Command, id: number): Promise<void> => {
+    assert.ok(runner !== null); runner.requireOriginalStartupLibraryCommand(capability, stockOrigin, command); stockSchedule.consume(command.phase); phases.push(command.phase);
+    let result: unknown = {};
+    const suffix = command.phase.slice("sql-stock-v2-".length);
+    const array = (length: number): object => ({ result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(length)})`, objectId: `stock-${suffix}-${String(stockIndex)}` } });
+    if (suffix === "raw" || suffix === "bind") { result = array(4); }
+    else if (suffix === "captured") { result = array(5); }
+    else if (suffix === "caller" || suffix === "frame") { result = array(3); }
+    else if (suffix === "points") { result = { locations: [{ scriptId: "app", ...STOCK.returnPoint, type: "return" }] }; }
+    else if (suffix === "arm") { result = { breakpointId: "stock-return", actualLocation: { scriptId: "app", ...STOCK.returnPoint } }; }
+    else if (suffix === "select") { result = { result: { type: "object", value: { recognized: true, role: "jl", site: "run", scriptIndex: stockIndex, sql: `inert-stock-${String(stockIndex)}`, parametersEmpty: true, transactionDepth: 0, designWriteGrant: false, nativeCompletionProven: false, normalReturnProven: false } } }; }
+    else if (suffix === "require" || suffix === "return") { result = { result: { type: "boolean", value: true } }; }
+    else if (suffix === "return-frame") { result = array(1); }
+    else if (suffix === "return-properties") { result = { result: [], internalProperties: [{ name: "[[Prototype]]", value: { type: "object", className: "Promise", description: "Promise", objectId: "promise-prototype" } }, { name: "[[PromiseState]]", value: { type: "string", value: "fulfilled" } }, { name: "[[PromiseResult]]", value: { type: "object", className: "Yo", description: "Yo", objectId: "stock-owner" } }] }; }
+    else if (suffix === "resume") {
+      event("Debugger.resumed", {});
+      if (interleaved && stockIndex === 0) { interleaveIndex = 0; const first = configTail[0]; assert.ok(first !== undefined); pause(first.site); }
+      else if (stockIndex < 331 && stockMode !== "early-registration") { stockIndex += 1; pause("run"); }
+      else if (stockIndex === 331) { stockIndex += 1; event("Debugger.paused", { reason: "other", hitBreakpoints: ["stock-return"], callFrames: [{ callFrameId: "stock-return-frame", location: { scriptId: "app", ...STOCK.returnPoint }, returnValue: { type: "object", subtype: "promise", className: "Promise", description: "Promise", objectId: "stock-native-return" } }] }); }
+      else { holdRegistration = false; queue.push(...retainedRegistration.splice(0)); }
+    }
+    queue.push({ id, result }); return Promise.resolve();
+  };
   const transport: CurrentFootprintCopyMainBackendTransport = Object.freeze({
     assertCurrent: (): Promise<void> => base.transport.assertCurrent(),
     send: (command: Command, id: number): Promise<void> => {
       phases.push(command.phase); const local = base.commands.length + 1; ids.set(local, id);
       if (command.phase === "resume") {
         normalResumes += 1;
-        if (normalResumes === 1) { holdRegistration = true; event("Debugger.resumed", {}); event("Debugger.scriptParsed", { scriptId: "app", url: "file:///synthetic/app.js", executionContextId: 1 }); pause("import"); }
+        if (normalResumes === 1) { holdRegistration = true; event("Debugger.resumed", {}); event("Debugger.scriptParsed", { scriptId: "app", url: stockMode === null ? "file:///synthetic/app.js" : "file:///C:/Synthetic/app.js", executionContextId: 1 }); pause("import"); }
       }
       return base.transport.send(command, local);
     },
@@ -236,7 +280,15 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
       if (failureProbe?.consumeError !== undefined) { throw failureProbe.consumeError; } return super.consume(input);
     }
   }
+  class InertStockProgress {
+    #bound = false; #count = 0;
+    public bind(): void { assert.equal(this.#bound, false); this.#bound = true; }
+    public consume(input: unknown): boolean { const packet = captureCurrentMainStartupLibrarySelection(input); assert.ok(packet.recognized); assert.equal(packet.scriptIndex, this.#count); assert.equal(packet.sql, `inert-stock-${String(this.#count)}`); this.#count += 1; return true; }
+    public requireAllCallsConsumed(): void { assert.equal(this.#count, 332); }
+    public snapshot(): object { return { ...new CurrentMainStartupLibraryProgress().snapshot(), receiverBound: this.#bound, scriptCallsConsumed: this.#count, allCallsConsumed: this.#bound && this.#count === 332 }; }
+  }
   const module = await mainBackendModule({
+    ...(stockMode === null ? {} : { "./current-main-startup-library-progress.ts": { CurrentMainStartupLibraryProgress: InertStockProgress, currentMainStartupLibrarySelectionSchema } }),
     ...(failureProbe?.consumeError === undefined ? {} : { "./current-main-startup-config-progress.ts": { currentMainStartupConfigSelectionSchema, CurrentMainStartupConfigProgress: RefusingProgress } }),
     ...(failureProbe?.projectionError === undefined && failureProbe?.locationProjectionCount === undefined ? {} : { "./current-selected-file-main-sql-startup-refusal-context.ts": {
       captureCurrentSelectedFileMainSqlStartupPauseLocations: (...input: Parameters<typeof captureCurrentSelectedFileMainSqlStartupPauseLocations>): ReturnType<typeof captureCurrentSelectedFileMainSqlStartupPauseLocations> => {
@@ -247,6 +299,7 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
       } } }),
     "./current-selected-file-main-request-reader.ts": { CurrentSelectedFileMainRequestReader: RequestReader },
     "./current-pcb-via-main-live-history-source.ts": { qualifyCurrentPcbViaMainLiveHistorySource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
+    "./current-main-startup-library-source.ts": { qualifyCurrentMainStartupLibrarySource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
     "./current-main-startup-config-sql.ts": { qualifyCurrentMainStartupConfigSource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
     "./current-footprint-copy-main-request-source.ts": {
       qualifyCurrentFootprintCopyMainRequestSource: (source: unknown): unknown => { assert.equal(source, "synthetic-complete-app-source"); return capability; },
@@ -255,6 +308,8 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     "./current-selected-file-main-sql-fence-source.ts": { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE: SOURCE,
       qualifyCurrentSelectedFileMainSqlFenceSource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
     "./current-selected-file-main-sql-fence-bootstrap.ts": {
+      enrollOriginalCurrentMainStartupLibrary: (token: unknown, original: CurrentFootprintCopyMainBackendRunner): typeof stockOrigin => { assert.equal(token, capability); assert.equal(original, runner); assert.ok(stockMode !== null); original.requireOriginalStartupLibraryEnrollment(capability); return stockOrigin; },
+      sendOriginalCurrentMainStartupLibrary: (token: unknown, original: unknown, origin: unknown, command: CurrentMainStartupLibraryV2Command, id: number): Promise<void> => { assert.equal(token, capability); assert.equal(original, runner); assert.equal(origin, stockOrigin); return stockSend(command, id); },
       prepareOriginalCurrentSelectedFileStartupActors: (token: unknown, original: CurrentFootprintCopyMainBackendRunner): Promise<void> => {
         assert.equal(token, capability); assert.equal(original, runner); original.requireOriginalStartupActorPause(capability); phases.push("startup-actors"); return Promise.resolve();
       },
@@ -820,3 +875,38 @@ for (const scenario of ["complete", "sql-ack-lost", "foreign-callback", "final-c
   for(const role of["controller","query","selected","update","exec","updateReturned","serviceReturned","controllerReturned","response"]){await remove(role);}await send("via-main-structure-release",null,{},true);
   f.injectRequest("GET");await original.bindings.nextEvent();const after=await original.bindings.observeRequest();await original.bindings.continueReadonlyRequest(after);assert.equal(original.bindings.originalStructureEffects(),effects);assert.equal(f.phases.includes("via-main-structure-remove-callback"),false);
 }); }
+
+void test("stock V2 runner joins initial4/later3 pauses through332 calls and the original JL return before registration", async () => {
+  const f = await fixture(0, null, false, null, [], undefined, "complete"); await f.runner.observe();
+  const state = f.runner.startupLibraryState(); assert.equal(state["originalNormalReturnProven"], true); assert.equal(state["requests"], 2002);
+  assert.equal(f.phases.filter(phase => phase === "sql-stock-v2-caller").length, 332); assert.equal(f.phases.filter(phase => phase === "sql-stock-v2-resume").length, 333);
+  assert.equal(f.phases.includes("sql-stock-resume"), false); assert.equal(f.runner.retainedStartupLibraryRefusalContext(), null);
+  const requestsBefore = f.phases.length; const cursor = f.runner.issueForwardMainCursor();
+  assert.equal(cursor.profile, "private.current-footprint-forward-main-cursor.v1"); assert.equal(cursor.executionAuthorized, false);
+  assert.equal(f.runner.issueForwardMainCursor(), cursor); assert.equal(f.phases.length, requestsBefore);
+  await assert.rejects(f.runner.release(), /SELECTED_SQL_RETAIN_THROUGH_EXIT/u);
+});
+void test("stock V2 runner holds foreign continuation lineage with zero additional refusal requests and denies early registration", async () => {
+  const f = await fixture(0, null, false, null, [], undefined, "lineage"); await assert.rejects(f.runner.observe(), /STOCK_ORIGINAL_LINEAGE/u);
+  const packet = f.runner.retainedStartupLibraryRefusalContext(); assert.ok(packet !== null); assert.equal(packet.progress.scriptCallsConsumed, 1); assert.equal(packet.stockRequests, 10); assert.equal(packet.callFrames.totalFrames, 4);
+  assert.equal(packet.additionalRequests, 0); assert.equal(packet.resumeAuthorized, false); assert.equal(f.phases.filter(phase => phase === "sql-stock-v2-select").length, 1);
+  const early = await fixture(0, null, false, null, [], undefined, "early-registration"); await assert.rejects(early.runner.observe(), /STOCK_REGISTRATION_BEFORE_NORMAL_RETURN/u);
+  assert.equal(early.runner.startupLibraryState()["originalNormalReturnProven"], false); assert.equal(early.phases.includes("sql-stock-v2-return"), false);
+});
+
+void test("pending original stock retains its cursor through source-profile cookie cleanup and an original config read", async () => {
+  const f = await fixture(0, null, false, null, [], undefined, "interleave"); await f.runner.observe();
+  const first = f.phases.indexOf("sql-stock-v2-resume"), second = f.phases.indexOf("sql-stock-v2-raw", first);
+  const interleave = f.phases.slice(first + 1, second);
+  assert.equal(interleave.filter(phase => phase === "sql-fence-startup-select").length, 3);
+  assert.equal(interleave.filter(phase => phase === "sql-fence-startup-read-owner").length, 1);
+  assert.equal(interleave.filter(phase => phase === "sql-fence-startup-config-resume").length, 4);
+  assert.equal(interleave.some(phase => phase.startsWith("sql-stock-")), false);
+  assert.equal(interleave.length, 19);
+  assert.equal(f.runner.startupLibraryState()["requests"], 2002);
+  assert.equal(f.runner.startupLibraryState()["originalNormalReturnProven"], true);
+  const refused = await fixture(0, null, false, null, [], undefined, "interleave-refused"); await assert.rejects(refused.runner.observe());
+  assert.equal(refused.runner.startupLibraryState()["requests"], 10);
+  assert.equal(refused.phases.filter(phase => phase === "sql-fence-startup-config-resume").length, 1);
+  assert.equal(refused.phases.at(-1), "sql-fence-startup-read-owner");
+});

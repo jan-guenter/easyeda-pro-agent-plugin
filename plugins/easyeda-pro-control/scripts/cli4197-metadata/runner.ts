@@ -56,6 +56,15 @@ export function observeCli4197MetadataChild(child: ChildProcess): Promise<Cli419
     child.once("close", (): void => { childClosed = true; settle(); });
   return deferred.promise;
 }
+/** Keep host failures distinct from a started child without a valid report.
+ * The v1 failure artifact remains historical; no outcome authorizes retry. */
+export function cli4197MetadataClosedFailure(command: Cli4197MetadataCommand, observed: Cli4197OriginalChildResult | null): Readonly<Record<string, string | number | boolean | null>> {
+  return Object.freeze({ profile: "private.cli4197-developer-metadata-failure.v2", command,
+    childSpawnAttempted: observed !== null, spawnFailed: observed?.spawnFailed ?? false, spawnOrStreamErrorSeen: observed?.errorSeen ?? false,
+    invalidChunk: observed?.invalidChunk ?? false, signal: observed?.signal ?? null,
+    originalChildExitObserved: observed?.exitObserved ?? false, originalChildStdioClosed: observed?.stdioClosed ?? false, exitCode: observed?.exitCode ?? null,
+    stdoutOverflow: observed?.stdoutOverflow ?? false, stderrOverflow: observed?.stderrOverflow ?? false, hostSignalIssued: false, runtimeAdmitted: false, retryAuthorized: false });
+}
 const encoded = z.strictObject({ base64: z.string().max(27_308), bytes: z.number().int().min(0).max(LIMITS.outputBytes), sha256: z.string().regex(/^[a-f\d]{64}$/u) });
 const namespaceName = z.string().min(7).max(64).regex(/^(?:user|mnt|pid|net|ipc|uts):\[\d+\]$/u);
 const reportSchema = z.strictObject({
@@ -141,9 +150,7 @@ export async function runCli4197MetadataProbe(input: unknown): Promise<Readonly<
       hostSignalIssued: false, editorOpenAuthorized: false, apiInvocationAuthorized: false, networkAuthorized: false })); return result;
   } catch (caughtError) {
     const observed = original === null ? null : await original;
-    if (artifacts !== null) { await artifacts.write("closed-failure.json", json({ profile: "private.cli4197-developer-metadata-failure.v1", command: options.command,
-      childSpawnAttempted: original !== null, originalChildExitObserved: observed?.exitObserved ?? false, originalChildStdioClosed: observed?.stdioClosed ?? false, exitCode: observed?.exitCode ?? null,
-      stdoutOverflow: observed?.stdoutOverflow ?? false, stderrOverflow: observed?.stderrOverflow ?? false, hostSignalIssued: false, runtimeAdmitted: false, retryAuthorized: false })); }
+    if (artifacts !== null) { await artifacts.write("closed-failure.json", json(cli4197MetadataClosedFailure(options.command, observed))); }
     throw caughtError;
   } finally {
     if (original !== null) { await original; }

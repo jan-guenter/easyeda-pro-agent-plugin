@@ -8,9 +8,11 @@ import { createHash } from "node:crypto";
 
 const hash = (source: string): string => createHash("sha256").update(source).digest("hex");
 const own = "SchematicRelevanceDisplayWrite209", wire = "SchematicWireEdit209";
+/** Replace one required schematic-source anchor; missing or repeated anchors refuse. */
 function replace(source: string, before: string, after: string): string {
   if (source.split(before).length !== 2) { throw new Error("SCHEMATIC_NATIVE_DRIVER_ANCHOR"); } return source.replace(before, after);
 }
+/** Render fixed identity fields as TypeScript literals with readable numeric separators. */
 function literal(value: object): string { return `{ ${Object.entries(value).map(([key, cell]: [string, unknown]) => `${key}: ${typeof cell === "number" ? String(cell).replaceAll(/\B(?=(?:\d{3})+(?!\d))/gu, "_") : JSON.stringify(cell)}`).join(", ")} }`; }
 
 /** The broad source compiler is build-only. Its emitted script is narrowed to
@@ -52,6 +54,7 @@ ${source.slice(end)}`;
   if (Buffer.byteLength(source) > MAXIMUM || Buffer.byteLength(compiler) > MAXIMUM) { throw new Error("SCHEMATIC_NATIVE_FIXED_BOUND"); }
   return Object.freeze({ helper: source, review, compiler });
 }
+/** Emit byte counts and digests for the generated schematic helper, review and compiler input. */
 export function schematicEditNativeIdentity(data: ReturnType<typeof generateSchematicEditNativeSource>): string {
   const fields = { schema: "private.current-schematic-edit-native-identity.v1", seed: CURRENT_NATIVE_BASELINE,
     helper: { relativePath: "scripts/schematic-edit-native.ps1", bytes: Buffer.byteLength(data.helper), sha256: hash(data.helper) },

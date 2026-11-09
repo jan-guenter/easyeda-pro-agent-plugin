@@ -62,3 +62,14 @@ facade/manager lease, connected compatibility tuple, controller selection,
 bundles and public capability declarations are unchanged. Parent review, final
 exact-commit CI, bundle generation and any separately authorized connected
 validation remain outstanding.
+
+## 2026-11-09 payload attribution correction
+
+The twelve-case leaf logs and earlier-check summary retain the commands and
+outcomes but no recoverable complete source/test manifest. Their exact tested
+tree is unbound. Later composed non-suite verification retained the complete
+tracked-file inventory for frozen commit
+`1620d84e6fbc985e57155b8a72986bfd5ceffe2c`, tree
+`16c41988fd9d0694384259ff5633514b842ff4af`. Its dependency, type, lint, build and
+mandatory validator results apply to that payload. They neither identify the
+earlier leaf tree nor imply vendor, sandbox or connected execution.

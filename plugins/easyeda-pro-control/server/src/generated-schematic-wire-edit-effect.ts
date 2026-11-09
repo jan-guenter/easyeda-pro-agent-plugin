@@ -6,7 +6,9 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import type { GeneratedSchematicWireEditNativeArguments } from "./generated-schematic-wire-edit.ts";
 
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`SCH209_WIRE_EFFECT_${code}`); } }
-function compareSource(args: GeneratedSchematicWireEditNativeArguments, source: string, expectedBody: Readonly<Record<string, unknown>>): Readonly<{ roots: readonly Readonly<{ id: string; zIndex: number }>[]; headers: string; document: string; order: string }> {
+/** Data comparison shared with the distinct cold reader. It issues no native
+ * origin and accepts no caller callback, path or source normalization rule. */
+export function compareGeneratedSchematicWireSourceData(args: GeneratedSchematicWireEditNativeArguments, source: string, expectedBody: Readonly<Record<string, unknown>>): Readonly<{ roots: readonly Readonly<{ id: string; zIndex: number }>[]; headers: string; document: string; order: string }> {
   need(source.isWellFormed() && Buffer.byteLength(source) <= 16_384 && source.endsWith("|\n"), "SOURCE_BOUND");
   const [head, ...rows] = parseNativeRecords(source), { operation } = args;
   need(head?.header["type"] === "DOCHEAD" && head.body?.["docType"] === "SCH_PAGE" && head.body["uuid"] === args.target.pageUuid && rows.length === 7, "DOCUMENT_ROSTER");
@@ -31,7 +33,7 @@ export function compareGeneratedSchematicWireEditEffect(args: GeneratedSchematic
   exactLineGeometryVerified: true; completePeerBodyRosterPreserved: true; explicitRelevanceAttributePreserved: true; originalRecordHeadersPreserved: true;
   nativeInvocationVerified: false; connectivityVerified: false; selectedSqlAuthorized: false; persistenceVerified: false; inverseAvailable: false;
 }> {
-  const initial = compareSource(args, before, args.operation.beforeBody); const next = compareSource(args, modified, args.operation.afterBody); const later = compareSource(args, observed, args.operation.afterBody);
+  const initial = compareGeneratedSchematicWireSourceData(args, before, args.operation.beforeBody); const next = compareGeneratedSchematicWireSourceData(args, modified, args.operation.afterBody); const later = compareGeneratedSchematicWireSourceData(args, observed, args.operation.afterBody);
   need(canonicalJson(initial) === canonicalJson(next) && canonicalJson(initial) === canonicalJson(later), "NATIVE_BOOKKEEPING_CHANGED");
   return freezeDeep({ schema: "private.generated-schematic-wire-edit-effect.v1", operationId: args.operation.operationId, documentUuid: args.target.pageUuid,
     wireId: args.operation.wireId, lineId: args.operation.lineId, beforeSourceSha256: sha256Text(before), modifiedSourceSha256: sha256Text(modified), observedSourceSha256: sha256Text(observed),

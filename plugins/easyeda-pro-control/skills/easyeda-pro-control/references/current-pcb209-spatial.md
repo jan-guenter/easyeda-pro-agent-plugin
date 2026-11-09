@@ -211,7 +211,7 @@ The original root/Job closed and helper release was acknowledged. Complete close
 raw bytes and all 35 SQL tables matched the initial capture. Fresh initial
 qualification separately refused WSL birth time zero and retained its false
 acceptance flags. This
-[scoped case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-08-generated-component-import-qualification.md#original-cloned-pad-point-reader-and-closure)
+[scoped case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/5e42f5817360f830a7b8d2e53e5870e208519bca/docs/history/2026-11-08-generated-component-import-qualification.md#original-cloned-pad-point-reader-and-closure)
 does not validate another payload, reference-linked representation or ordinary
 populated board. It supplies no writer or persistent-registration authority.
 

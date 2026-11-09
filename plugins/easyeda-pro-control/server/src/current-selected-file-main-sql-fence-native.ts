@@ -1,6 +1,9 @@
+import { CURRENT_MAIN_STARTUP_LIBRARY_READ_OWNER_PROGRAM as STARTUP_READ_OWNER } from "./current-main-startup-library-interleave.ts";
 /* oxlint-disable import/max-dependencies -- This fixed SQL codec pins separate capture, source, request and registration programs; combining their modules would obscure the independently checked contracts. */
 /** Fixed generic selected-file main codebook. A native birth, never a caller
  * string, selects this codec and its original inspector connection. */
+import { currentMainStartupLibraryV2NativeRows } from "./current-main-startup-library-v2-native.ts";
+import { currentMainStartupLibraryNativeRows } from "./current-main-startup-library-native.ts";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
@@ -47,7 +50,7 @@ export function currentSelectedFileMainSqlFenceWire(input: unknown, id: number):
     else if (command.phase === "sql-fence-request-capture" || command.phase === "sql-fence-request-bind" || command.phase === "sql-fence-request-rebind" || command.phase === "sql-fence-request-private-bind" || command.phase === "sql-fence-request-private-rebind") {
       for (const [index, argument] of command.params.arguments.entries()) { request[`argument${String(index)}`] = argument.objectId; }
     }
-    else if (command.phase === "sql-fence-select" || command.phase === "sql-fence-configure" || command.phase === "sql-fence-startup-version" || command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc" || command.phase === "sql-fence-startup-select" || command.phase === "sql-fence-captured-frame" || command.phase === "sql-fence-driver-rebase-capture") { request["argument0"] = command.params.arguments[0].objectId; }
+    else if (command.phase === "sql-fence-startup-read-owner" || command.phase === "sql-fence-select" || command.phase === "sql-fence-configure" || command.phase === "sql-fence-startup-version" || command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc" || command.phase === "sql-fence-startup-select" || command.phase === "sql-fence-captured-frame" || command.phase === "sql-fence-driver-rebase-capture") { request["argument0"] = command.params.arguments[0].objectId; }
   }
   return freezeDeep({ command: { ...command, id }, request });
 }
@@ -57,6 +60,8 @@ export function currentSelectedFileMainSqlFenceNativeCases(): readonly Command[]
   const callFrameId = marker("callFrameId"), objectId = marker("objectId"), scriptId = marker("scriptId");
   const rows: Command[] = [
     ...currentSavedProjectRegistrationConfigNativeCases(),
+    { phase: "sql-fence-startup-read-owner", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: STARTUP_READ_OWNER, arguments: [{ objectId: marker("argument0") }], returnByValue: true } },
+    { phase: "sql-fence-startup-config-resume", method: "Debugger.resume", params: {} },
     { phase: "sql-fence-early-arm", method: "Debugger.setBreakpointByUrl", params: { urlRegex: URL,
       lineNumber: SOURCE.sites.import.lineNumber, columnNumber: SOURCE.sites.import.breakpointColumnNumber } },
     { phase: "sql-fence-after-imports-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId,
@@ -116,6 +121,7 @@ export function currentSelectedFileMainSqlFenceNativeSource(): string {
     }
     return [wire.request["phase"], command.method, fields.join(","), template].join("\t");
   });
+  rows.push(...currentMainStartupLibraryNativeRows(), ...currentMainStartupLibraryV2NativeRows());
   const groups: string[][] = [[]];
   for (const row of rows) {
     let selected = groups.at(-1); if (selected === undefined || Buffer.byteLength(row) > 60_000) { throw new Error("SELECTED_SQL_TABLE_BOUND"); }

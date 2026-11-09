@@ -9,7 +9,7 @@ import type { CurrentSchematicDisplaySaveWorkerEvent } from "./current-schematic
 
 export type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 export type CurrentSchematicDisplayRoutedEvent = CurrentSchematicDisplaySaveWorkerEvent;
-export type CurrentSchematicDisplayEventLane = "save" | "clock" | "structure" | "structureTransport" | "producer" | "quiesce" | "library";
+export type CurrentSchematicDisplayEventLane = "save" | "clock" | "structure" | "structureTransport" | "producer" | "quiesce" | "library" | "modify";
 export interface CurrentSchematicDisplayEventPoint { readonly sessionId: string; readonly scriptId: string; readonly breakpointId: string;
   readonly lineNumber: number; readonly columnNumber: number; readonly role: string }
 export interface CurrentSchematicDisplayEventRouterBindings {
@@ -30,11 +30,11 @@ export class CurrentSchematicDisplayEventRouter {
   readonly #points = new Map<string, Readonly<{ lane: CurrentSchematicDisplayEventLane; point: CurrentSchematicDisplayEventPoint }>>();
   readonly #paused = new Map<string, OriginalPausedDelivery>();
   readonly #pauseEvents = new WeakMap<CurrentSchematicDisplaySaveWorkerEvent, OriginalPausedDelivery>();
-  readonly #queues: Record<CurrentSchematicDisplayEventLane, CurrentSchematicDisplaySaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [], producer: [], quiesce: [], library: [] };
-  readonly #reading = { save: false, clock: false, structure: false, structureTransport: false, producer: false, quiesce: false, library: false };
+  readonly #queues: Record<CurrentSchematicDisplayEventLane, CurrentSchematicDisplaySaveWorkerEvent[]> = { save: [], clock: [], structure: [], structureTransport: [], producer: [], quiesce: [], library: [], modify: [] };
+  readonly #reading = { save: false, clock: false, structure: false, structureTransport: false, producer: false, quiesce: false, library: false, modify: false };
   readonly #resumeRoles = new WeakMap<CurrentSchematicDisplaySaveWorkerEvent, Readonly<{ lane: CurrentSchematicDisplayEventLane; role: string }>>();
   readonly #completedClock = new Set<string>();
-  #poll: Promise<boolean> | null = null; #failed = false; #clockUiPending = false; #changed = Promise.withResolvers<true>();
+  #poll: Promise<boolean> | null = null; #failed = false; #clockUiPending = false; #modifyStructureActive = false; #changed = Promise.withResolvers<true>();
   public constructor(bindings: CurrentSchematicDisplayEventRouterBindings) {
     need(bindings !== null && typeof bindings === "object" && !types.isProxy(bindings) && Object.getPrototypeOf(bindings) === Object.prototype && Object.isFrozen(bindings));
     const fields = ["workerSessionId", "uiSessionId", "nextEvent", "assertCurrent", "fail"]; need(Reflect.ownKeys(bindings).length === fields.length);
@@ -54,19 +54,105 @@ export class CurrentSchematicDisplayEventRouter {
     need(!this.#failed && original !== undefined && original === current && original.lane === "producer" && original.delivered && !original.resumeAttempted && original.point.role === role && allowedRoles.includes(role));
     original.resumeAttempted = true; this.notifyEvent();
   }
+  /** The seven-record subclass alone consumes a delivered Modify pause.
+   * Generic startup/producer resume routes cannot spend this reservation. */
+  protected reserveOriginalModifyContinuation(event: CurrentSchematicDisplaySaveWorkerEvent, role: string): void {
+    const current = this.#paused.get(event.sessionId), original = this.#pauseEvents.get(event);
+    need(this.acceptsLane("modify") && !this.#failed && original !== undefined && original === current && original.lane === "modify" && original.delivered && !original.resumeAttempted && original.point.role === role && ["handler", "batch", "batchReturned", "handlerReturned"].includes(role));
+    original.resumeAttempted = true; this.notifyEvent();
+  }
+  /** Only the dedicated seven-record controller may spend a delivered
+   * nested CM event. Neither generic startup nor the older four-role Modify
+   * route accepts these roles or copied Inspector packets. */
+  protected reserveOriginalModifyCmContinuation(event: CurrentSchematicDisplaySaveWorkerEvent, role: string): void {
+    const current = this.#paused.get(event.sessionId), original = this.#pauseEvents.get(event);
+    need(this.acceptsLane("modify") && !this.#failed && original !== undefined && original === current && original.lane === "modify" && original.delivered && !original.resumeAttempted && original.point.role === role && ["remote", "onChange", "ticket", "ticketReturned", "canWs", "canWsReturned", "remoteReturned"].includes(role));
+    original.resumeAttempted = true; this.notifyEvent();
+  }
+  /** The own7 policy alone may spend these original Canvas deliveries. Old
+   * producer/CM routes still reject them, and copied events acquire no epoch. */
+  protected reserveOriginalModifyCanvasContinuation(event: CurrentSchematicDisplaySaveWorkerEvent, role: string): void {
+    const current = this.#paused.get(event.sessionId), original = this.#pauseEvents.get(event);
+    need(this.acceptsLane("modify") && !this.#failed && original !== undefined && original === current && original.lane === "modify" && original.delivered && !original.resumeAttempted && original.point.role === role && ["onDataChange", "publishCanvas", "executor", "constructed", "publishCanvasReturned", "onDataChangeReturned", "timer", "timerReturned"].includes(role));
+    original.resumeAttempted = true; this.notifyEvent();
+  }
+  /** Spend only an actual delivered own7 Canvas sender/loopback pause. Other
+   * Modify continuations retain their separate finite source catalogues. */
+  protected reserveOriginalModifyEchoContinuation(event: CurrentSchematicDisplaySaveWorkerEvent, role: string): void {
+    const current = this.#paused.get(event.sessionId), original = this.#pauseEvents.get(event);
+    need(this.acceptsLane("modify") && !this.#failed && original !== undefined && original === current && original.lane === "modify" && original.delivered && !original.resumeAttempted && original.point.role === role && ["workerPublish", "workerPost", "workerPostReturned", "workerLoopback", "workerLoopbackReturned"].includes(role));
+    original.resumeAttempted = true; this.notifyEvent();
+  }
+  /** Retire only the original acknowledged Echo allocations while their
+   * genuine final loopback return remains delivered and unspent. */
+  protected retireOriginalModifyEchoPoint(breakpointId: string, role: string, event: CurrentSchematicDisplaySaveWorkerEvent): void {
+    const current = this.#paused.get(this.#bindings.workerSessionId), original = this.#pauseEvents.get(event);
+    need(this.acceptsLane("modify") && !this.#failed && original !== undefined && original === current && event.sessionId === this.#bindings.workerSessionId && original.lane === "modify" && original.point.role === "workerLoopbackReturned" && original.delivered && !original.resumeAttempted);
+    const key = `${this.#bindings.workerSessionId}\0${breakpointId}`, selected = this.#points.get(key);
+    need(selected?.lane === "modify" && selected.point.role === role && ["workerPublish", "workerPost", "workerPostReturned", "workerLoopback", "workerLoopbackReturned"].includes(role) && !this.#queues.modify.some(queued => queued.method === "Debugger.paused" && paused.parse(queued.params).hitBreakpoints.includes(breakpointId)));
+    this.#points.delete(key);
+  }
+  /** Only acknowledged Canvas guards may retire while their exact final
+   * timer return remains delivered; historical pause custody survives. */
+  protected retireOriginalModifyCanvasPoint(breakpointId: string, role: string, event: CurrentSchematicDisplaySaveWorkerEvent): void {
+    const current = this.#paused.get(this.#bindings.workerSessionId), original = this.#pauseEvents.get(event);
+    need(this.acceptsLane("modify") && !this.#failed && original !== undefined && original === current && event.sessionId === this.#bindings.workerSessionId && original.lane === "modify" && original.point.role === "timerReturned" && original.delivered && !original.resumeAttempted);
+    const key = `${this.#bindings.workerSessionId}\0${breakpointId}`, selected = this.#points.get(key);
+    need(selected?.lane === "modify" && selected.point.role === role && ["onDataChange", "publishCanvas", "executor", "constructed", "publishCanvasReturned", "onDataChangeReturned", "timer", "timerReturned"].includes(role) && !this.#queues.modify.some(queued => queued.method === "Debugger.paused" && paused.parse(queued.params).hitBreakpoints.includes(breakpointId)));
+    this.#points.delete(key);
+  }
+  /** Remove an acknowledged CM routing epoch only while the exact normal
+   * remote return remains delivered and unspent. Its immutable pause token
+   * survives removal; a fresh allocation cannot adopt that held delivery. */
+  protected retireOriginalModifyCmPoint(breakpointId: string, role: string, event: CurrentSchematicDisplaySaveWorkerEvent): void {
+    const current = this.#paused.get(this.#bindings.workerSessionId), original = this.#pauseEvents.get(event);
+    need(this.acceptsLane("modify") && !this.#failed && original !== undefined && original === current && event.sessionId === this.#bindings.workerSessionId && original.lane === "modify" && original.point.role === "remoteReturned" && original.delivered && !original.resumeAttempted);
+    const key = `${this.#bindings.workerSessionId}\0${breakpointId}`, selected = this.#points.get(key);
+    need(selected?.lane === "modify" && selected.point.role === role && ["remote", "onChange", "ticket", "ticketReturned", "canWs", "canWsReturned", "remoteReturned"].includes(role) && !this.#queues.modify.some(queued => queued.method === "Debugger.paused" && paused.parse(queued.params).hitBreakpoints.includes(breakpointId)));
+    this.#points.delete(key);
+  }
+  /** Retire the enclosing receive/body guards only while their original
+   * handler return remains held. The spent native ACK is supplied by Core;
+   * a caller copy or unrelated nested CM return cannot select this epoch. */
+  protected retireOriginalModifyParentPoint(breakpointId: string, role: string, event: CurrentSchematicDisplaySaveWorkerEvent): void {
+    const current = this.#paused.get(this.#bindings.workerSessionId), original = this.#pauseEvents.get(event);
+    need(this.acceptsLane("modify") && !this.#failed && original !== undefined && original === current && event.sessionId === this.#bindings.workerSessionId && original.lane === "modify" && original.point.role === "handlerReturned" && original.delivered && !original.resumeAttempted);
+    const key = `${this.#bindings.workerSessionId}\0${breakpointId}`, selected = this.#points.get(key);
+    need(selected?.lane === "modify" && selected.point.role === role && ["handler", "batch", "batchReturned", "handlerReturned"].includes(role) && !this.#queues.modify.some(queued => queued.method === "Debugger.paused" && paused.parse(queued.params).hitBreakpoints.includes(breakpointId)));
+    this.#points.delete(key);
+  }
+  /** Retire only an acknowledged own7 structure allocation epoch. A held or
+   * queued delivery cannot be removed and adopted as a fresh breakpoint. */
+  protected retireOriginalModifyStructurePoint(breakpointId: string, role: string): void {
+    need(this.acceptsLane("modify") && !this.#failed && ["startupEntry", "startupReturn", "modifyEntry", "modifyReturned"].includes(role));
+    const key = `${this.#bindings.workerSessionId}\0${breakpointId}`, selected = this.#points.get(key);
+    const queued = this.#queues.structure.some(event => event.method === "Debugger.paused" && paused.parse(event.params).hitBreakpoints.includes(breakpointId));
+    need(selected?.lane === "structure" && selected.point.role === role &&
+      ![...this.#paused.values()].some(value => value.point.breakpointId === breakpointId) &&
+      !queued);
+    this.#points.delete(key);
+    if (role === "startupEntry" || role === "startupReturn") { this.#modifyStructureActive = true; }
+  }
+  /** Spend the same reader's exact Modify TEXT/finalizer event. Generic
+   * structure resumes cannot supply this operation-local event identity. */
+  protected reserveOriginalModifyStructureContinuation(event: CurrentSchematicDisplaySaveWorkerEvent, role: "modifyEntry" | "modifyReturned" | "initialFinally"): void {
+    const current = this.#paused.get(event.sessionId), original = this.#pauseEvents.get(event);
+    need(this.acceptsLane("modify") && !this.#failed && original !== undefined && original === current && original.lane === "structure" && original.delivered && !original.resumeAttempted && original.point.role === role);
+    original.resumeAttempted = true; this.notifyEvent();
+  }
   protected requireOriginalProducerFrontier():void{need(!this.#failed&&!this.#reading.producer&&this.#queues.producer.length===0&&this.#poll===null&&![...this.#paused.values()].some(pause=>pause.lane==="producer"));}
   public register(lane: CurrentSchematicDisplayEventLane, input: CurrentSchematicDisplayEventPoint): void {
     need(!this.#failed && this.acceptsLane(lane)); const point = Object.freeze(pointSchema.parse(captureCurrentPcbStringClockReply(input).value));
     need((point.sessionId === this.#bindings.workerSessionId || lane === "clock" && point.sessionId === this.#bindings.uiSessionId) && this.#points.size < this.maximumRegisteredPoints());
     const key = `${point.sessionId}\0${point.breakpointId}`;
-    need(!this.#points.has(key) && ![...this.#points.values()].some(value => value.point.sessionId === point.sessionId && value.point.scriptId === point.scriptId &&
+    need(!this.#points.has(key) && ![...this.#paused.values()].some(value => value.point.sessionId === point.sessionId && (value.point.breakpointId === point.breakpointId || value.point.scriptId === point.scriptId && value.point.lineNumber === point.lineNumber && value.point.columnNumber === point.columnNumber)) && ![...this.#points.values()].some(value => value.point.sessionId === point.sessionId && value.point.scriptId === point.scriptId &&
       value.point.lineNumber === point.lineNumber && value.point.columnNumber === point.columnNumber));
     this.#points.set(key, Object.freeze({ lane, point }));
   }
   /** Consume only the original collector's current pause before dispatch. An
    * unknown acknowledgement never refunds this one continuation attempt. */
   public reserveResume(lane: CurrentSchematicDisplayEventLane, sessionId: string, role?: string): void {
-    const pause = this.#paused.get(sessionId); need(lane !== "producer" && !this.#failed && pause !== undefined && pause.lane === lane && pause.delivered && !pause.resumeAttempted && (role === undefined || pause.point.role === role)); pause.resumeAttempted = true; if (lane === "clock" && sessionId === this.#bindings.workerSessionId && pause.point.role === "push") { this.#clockUiPending = true; } this.notifyEvent();
+    const pause = this.#paused.get(sessionId); need(lane !== "producer" && lane !== "modify" && !(lane === "structure" && this.#modifyStructureActive) && !this.#failed && pause !== undefined && pause.lane === lane && pause.delivered && !pause.resumeAttempted && (role === undefined || pause.point.role === role)); pause.resumeAttempted = true; if (lane === "clock" && sessionId === this.#bindings.workerSessionId && pause.point.role === "push") { this.#clockUiPending = true; } this.notifyEvent();
   }
   /** Consume one exact delivered initial-cache pause. Source/body/job and
    * native one-shot authorization remain separate; generic producer resumes
@@ -121,6 +207,7 @@ export class CurrentSchematicDisplayEventRouter {
     } else {
       need(event.method === "Debugger.resumed"); empty.parse(event.params); const previous = this.#paused.get(session);
       need(previous !== undefined && previous.resumeAttempted); lane = previous.lane; resumeRole = previous.point.role; this.#paused.delete(session); if (lane === "clock" && session === this.#bindings.uiSessionId && resumeRole === "complete") { this.#clockUiPending = false; }
+      if (lane === "structure" && this.#modifyStructureActive && resumeRole === "initialFinally") { this.#modifyStructureActive = false; }
     }
     const queued = Object.freeze({ method: event.method, sessionId: session, params: event.params });
     if (event.method === "Debugger.paused") { const original = this.#paused.get(session); need(original !== undefined); this.#pauseEvents.set(queued, original); }

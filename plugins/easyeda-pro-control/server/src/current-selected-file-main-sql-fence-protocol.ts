@@ -14,6 +14,7 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_GROUP as GROUP,CURRENT_SELECTED_FILE_MAIN_SQL_PREDICATE_DIAGNOSTIC_PROGRAM as PREDICATE_DIAGNOSTIC,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as REQUIRE,CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SELECT_PROGRAM as SELECT } from "./current-selected-file-main-sql-fence-programs.ts";
 
+import { CURRENT_MAIN_STARTUP_LIBRARY_READ_OWNER_PROGRAM as STARTUP_READ_OWNER } from "./current-main-startup-library-interleave.ts";
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP } from "./current-main-startup-config-programs.ts";
 
 import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as REQUEST, CURRENT_SELECTED_FILE_MAIN_REQUEST_FRAME as REQUEST_FRAME } from "./current-selected-file-main-request-programs.ts";
@@ -81,7 +82,10 @@ const startupSelectParams = z.object({ ...callFlags, throwOnSideEffect: z.litera
 const startupVersionParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.version), arguments: selectArguments, returnByValue: z.literal(false) }).strict();
 const startupJBParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.bindJB), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
 const startupDCParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.bindDC), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
+const startupReadOwnerParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(STARTUP_READ_OWNER), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
 const command = z.discriminatedUnion("phase", [
+  z.object({ phase: z.literal("sql-fence-startup-read-owner"), method: z.literal("Runtime.callFunctionOn"), params: startupReadOwnerParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-startup-config-resume"), method: z.literal("Debugger.resume"), params: empty }).strict(),
   ...currentSavedProjectRegistrationConfigCommandSchemas,
   z.object({ phase: z.literal("sql-fence-startup-version"), method: z.literal("Runtime.callFunctionOn"), params: startupVersionParams }).strict(),
   z.object({ phase: z.literal("sql-fence-startup-jb"), method: z.literal("Runtime.callFunctionOn"), params: startupJBParams }).strict(),
