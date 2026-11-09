@@ -42,7 +42,7 @@ export function normalizeCurrentSchematicRelevanceDisplayNativeFamily(input: str
     if (source[from - 1] !== "\n" || source[to + end.length] !== "\n") { throw new Error("SCHEMATIC_RELEVANCE_NATIVE_MARKER_LINES"); }
     source = source.slice(0, from - 1) + source.slice(to + end.length);
   }
-  return source.replace(`id>(schematicRelevanceDisplayWrite209?${String(PROFILE.main.total - REGISTRATION.main)}:${String(SIX_PROFILE.main.total)})`, `id>${String(SIX_PROFILE.main.total)}`)
+  return source.replace(`id-stockMainRequests>(schematicRelevanceDisplayWrite209?${String(PROFILE.main.total - REGISTRATION.main)}:${String(SIX_PROFILE.main.total)})`, `id-stockMainRequests>${String(SIX_PROFILE.main.total)}`)
     .replace(` if(schematicRelevanceDisplayWrite209)return ${String(PROFILE.renderer.total - REGISTRATION.rendererHelperSource)};`, "")
     .replace(`          if ($SchematicRelevanceDisplayWrite209) {$requestLimit=${String(PROFILE.renderer.total - REGISTRATION.rendererHelperSource)}}\n`, "")
     .replaceAll("SchematicDisplayFamily", "schematicDisplayWrite209")
@@ -90,7 +90,7 @@ static readonly string SchematicRelevanceDisplayStage=${packed(STAGE)};
 static string SchematicRelevancePhase(string changes,int length,string hash){string text=SchematicRelevanceDisplayStage;string[] rows=changes.Split('\\0');if(rows.Length!=${String(CAPTURE_REPLACEMENTS.length*2)}&&rows.Length!=${String(MODIFY_REPLACEMENTS.length*2)})throw Error("schematic-relevance-phase-rows");for(int i=0;i<rows.Length;i+=2){int at=text.IndexOf(rows[i],StringComparison.Ordinal);if(at<0||text.IndexOf(rows[i],at+rows[i].Length,StringComparison.Ordinal)>=0)throw Error("schematic-relevance-phase-anchor");text=text.Substring(0,at)+rows[i+1]+text.Substring(at+rows[i].Length);}byte[] bytes=Encoding.UTF8.GetBytes(text);using(var sha=System.Security.Cryptography.SHA256.Create())if(bytes.Length!=length||BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=hash)throw Error("schematic-relevance-phase-hash");return text;}
 static readonly string SchematicRelevanceDisplayCapture=SchematicRelevancePhase(${packed(CAPTURE_REPLACEMENTS.flat().join("\0"))},${String(Buffer.byteLength(CAPTURE))},${quote(createHash("sha256").update(CAPTURE).digest("hex"))});
 static readonly string SchematicRelevanceDisplayModify=SchematicRelevancePhase(${packed(MODIFY_REPLACEMENTS.flat().join("\0"))},${String(Buffer.byteLength(MODIFY))},${quote(createHash("sha256").update(MODIFY).digest("hex"))});
-EasyedaDiagnosticOwner(EasyedaSchematicRelevanceDisplayBirth birth):this(){if(birth!=EasyedaSchematicRelevanceDisplayBirth.Original)throw Error("schematic-relevance-birth");schematicRelevanceDisplayWrite209=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport(EasyedaSchematicRelevanceDisplayBirth.Original);}
+EasyedaDiagnosticOwner(EasyedaSchematicRelevanceDisplayBirth birth):this(){if(birth!=EasyedaSchematicRelevanceDisplayBirth.Original)throw Error("schematic-relevance-birth");schematicRelevanceDisplayWrite209=true;stockMainEligible=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport(EasyedaSchematicRelevanceDisplayBirth.Original);}
 public static EasyedaDiagnosticOwner CreateSchematicRelevanceDisplayWrite209(){return new EasyedaDiagnosticOwner(EasyedaSchematicRelevanceDisplayBirth.Original);}
 ${admission}
 ${encoder}

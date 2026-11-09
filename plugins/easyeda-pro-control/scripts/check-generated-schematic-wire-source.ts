@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { GENERATED_SCHEMATIC_WIRE_SET_LINES_SOURCE, GENERATED_SCHEMATIC_WIRE_SOURCE_PROFILE } from "../server/src/generated-schematic-wire-source.ts";
 import { GENERATED_SCHEMATIC_WIRE_NATIVE_SOURCE } from "../server/src/generated-schematic-wire-native-source.ts";
+import { qualifyCurrentSchematicWireAccessorSource } from "../server/src/current-schematic-wire-accessor-observer.ts";
 
 async function main(): Promise<void> {
 const assetsRoot = process.argv[2] ?? process.env["EASYEDA_ASSETS_ROOT"];
@@ -22,6 +23,7 @@ for (const file of GENERATED_SCHEMATIC_WIRE_SOURCE_PROFILE.files) {
     ({sameLine:[...group._lines][0]===line,originalPointsIntact:JSON.stringify(originalPoints)==='[{"x":0,"y":0},{"x":100,"y":0}]',replacementInstalled:line.points===replacement,points:line.points,lines:group._lines.size});`, {}, { timeout: 1000 });
   assert.equal(JSON.stringify(result), JSON.stringify({ sameLine: true, originalPointsIntact: true, replacementInstalled: true, points: [{ x: 20, y: -30 }, { x: 120, y: -30 }], lines: 1 }));
   const full = bytes.toString("utf8"), native = GENERATED_SCHEMATIC_WIRE_NATIVE_SOURCE.find(row => row.relativePath === file.relativePath); assert.ok(native !== undefined);
+  assert.equal(qualifyCurrentSchematicWireAccessorSource({ scriptSource: full }), GENERATED_SCHEMATIC_WIRE_SOURCE_PROFILE.files.indexOf(file));
   for (const pin of Object.values(native.methods)) { assert.equal(createHash("sha256").update(full.slice(pin.start, pin.end)).digest("hex"), pin.sha256); }
   const take = (role: keyof typeof native.methods): string => { const pin = native.methods[role]; return full.slice(pin.start, pin.end); };
   assert.equal(take("pointConstructor"), native.methods.pointConstructor.source);

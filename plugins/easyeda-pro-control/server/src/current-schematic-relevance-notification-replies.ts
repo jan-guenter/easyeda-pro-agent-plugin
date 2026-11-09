@@ -8,6 +8,12 @@ const remote=z.strictObject({type:z.string(),subtype:z.string().optional(),class
 const slot=z.strictObject({name:z.string(),value:remote});
 const packet=z.strictObject({result:z.array(z.unknown()).length(0),internalProperties:z.array(slot).length(3)});
 function need(value:boolean):asserts value{if(!value){throw new Error("SCH_NOTIFICATION_PROMISE_METADATA");}}
+/** Capture the descriptive native-Promise envelope before reading its opaque
+ * handle. This issues no ownership or settlement permission. */
+export function captureCurrentSchematicRelevanceNotificationPromiseRemote(input:unknown):Readonly<{type:"object";subtype:"promise";className:"Promise";description:"Promise";objectId:string}>{const actual=remote.parse(captureCurrentPcbStringClockReply(input).value);need(actual.type==="object"&&actual.subtype==="promise"&&actual.className==="Promise"&&actual.description==="Promise"&&actual.objectId!==undefined&&actual.value===undefined);return Object.freeze({type:"object",subtype:"promise",className:"Promise",description:"Promise",objectId:actual.objectId});}
+/** Read the one native-call result envelope before capturing its Promise.
+ * This preserves the descriptor-safe metadata boundary without settling it. */
+export function captureCurrentSchematicRelevanceNotificationPromiseResult(input:unknown):ReturnType<typeof captureCurrentSchematicRelevanceNotificationPromiseRemote>{const copied=captureCurrentPcbStringClockReply(input).value;need(copied!==null&&typeof copied==="object"&&!Array.isArray(copied)&&Object.keys(copied).length===1);return captureCurrentSchematicRelevanceNotificationPromiseRemote(Reflect.get(copied,"result"));}
 /** Decode a native Promise handle with exactly the expected state, result and prototype slots.
  * Pending and fulfilled states both require an undefined result; this metadata does not establish original Promise ownership.
  */

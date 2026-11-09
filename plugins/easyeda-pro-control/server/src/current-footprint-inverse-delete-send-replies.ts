@@ -9,6 +9,8 @@ const location=z.strictObject({scriptId:handle,lineNumber:z.number().int().nonne
 const remote=z.strictObject({type:z.enum(["object","function","undefined","string","number","boolean"]),subtype:z.string().optional(),className:z.string().optional(),description:z.string().optional(),objectId:handle.optional(),value:z.unknown().optional()});
 const frame=z.strictObject({callFrameId:handle,functionName:z.string(),functionLocation:location,location,url:z.string(),scopeChain:z.array(z.unknown()).max(16),this:remote,returnValue:remote.optional(),canBeRestarted:z.boolean().optional()});
 const paused=z.strictObject({method:z.literal("Debugger.paused"),sessionId:handle,params:z.strictObject({callFrames:z.array(frame).min(13).max(14),reason:z.enum(["other","debugCommand"]),hitBreakpoints:z.tuple([handle]),asyncStackTrace:z.unknown().optional(),asyncStackTraceId:z.unknown().optional()})});
+/** Reject an event whose selected sender role, source stack or exact pause
+ * location differs, without retaining caller-provided error or payload text. */
 function need(value:boolean):asserts value{if(!value){throw new Error("INVERSE_DELETE_SEND_PAUSE");}}
 interface Row{readonly name:string;readonly file:"ui"|"manager";readonly lineNumber:number;readonly columnNumber:number;readonly functionColumn:number;readonly pcLine?:number;}
 /** Admit the selected original breakpoint and complete synchronous DEL caller

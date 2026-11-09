@@ -50,6 +50,7 @@ interface SqlSlot { readonly proof: string; value: z.infer<typeof sqlValueSchema
 function isSiteRole(value: FrameRole): value is Role { return Object.hasOwn(SITES, value); }
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_HISTORY_CUSTODY_${code}`); } }
 export class CurrentPcbViaMainHistoryCustody {
+  readonly #rawFrames = new Set<string>(); readonly #frameAttempts = new Set<string>();
   readonly #host: CurrentPcbViaMainHistoryHost; readonly #points = new Map<Role, string>(); readonly #frames = new Map<string, string>(); readonly #packets = new Map<ProgramRole, string>();
   readonly #values = new Set<string>(); readonly #slots = new Map<Slot, SqlSlot>();
   #normal = 0; #cleanup = 0; #step = 0; #failed = false; #started = false;
@@ -115,6 +116,9 @@ export class CurrentPcbViaMainHistoryCustody {
     if (role === "controllerReturned" && this.#step === 19) { return { receiver, arguments: [this.#packet("saveReturned")] }; }
     throw new Error("PCB_VIA_HISTORY_CUSTODY_JOIN_STAGE");
   }
+  /** Consume each frame attempt before awaiting transport, retain its exact
+   * version, and bind the matching join to original capture/packet handles.
+   * Existing source, step, callback, clock and native-grant checks still apply. */
   public async request(input: Command, cleanup: boolean): Promise<unknown> {
     this.#same(); const command = validateCurrentPcbViaMainHistoryCommand(input);
     try { if (cleanup) { this.#cleanup += 1; need(command.phase === "via-main-history-remove" && this.#cleanup <= LIMITS.cleanup && this.#result !== null, "CLEANUP"); }
@@ -124,15 +128,15 @@ export class CurrentPcbViaMainHistoryCustody {
       else if (command.phase === "via-main-history-properties") { need(this.#started && this.#step === 0 && this.#handoff !== null, "METADATA_STAGE"); const objectId = command.params.objectId;
         need(command.role === "transaction" ? this.#callbackFunction === null && objectId === this.#handoff.transactionObjectId : this.#callbackFunction !== null && !this.#callbackQualified && objectId === this.#callbackFunction, "ORIGINAL_CALLBACK_METADATA"); }
       else if (command.phase === "via-main-history-callback-arm") { need(this.#started && this.#step === 0 && this.#callbackQualified && command.params.objectId === this.#callbackFunction && !this.#points.has("callback"), "ORIGINAL_CALLBACK_ARM"); }
-      else if (command.phase === "via-main-history-frame") { need(this.#started && command.params.callFrameId === this.#frameId(command.role) && !this.#frames.has(this.#frameKey(command.role)), "ORIGINAL_FRAME"); }
-      else if (command.phase === "via-main-history-join") { const expected = this.#joinExpected(command.role), key = `${String(this.#step)}:${command.role}`; need(!this.#values.has(key) && command.params.objectId === expected.receiver && canonicalJson(command.params.arguments.map(argument => argument.objectId)) === canonicalJson(expected.arguments), "ORIGINAL_JOIN_ARGUMENTS"); this.#values.add(key); }
+      else if (command.phase === "via-main-history-frame" || command.phase === "via-main-history-raw-frame") { const key = this.#frameKey(command.role); need(this.#started && command.params.callFrameId === this.#frameId(command.role) && !this.#frameAttempts.has(key), "ORIGINAL_FRAME"); this.#frameAttempts.add(key); if (command.phase === "via-main-history-raw-frame") { this.#rawFrames.add(key); } }
+      else if (command.phase === "via-main-history-join" || command.phase === "via-main-history-rebase" || command.phase === "via-main-history-bookkeeping") { const expected = this.#joinExpected(command.role), key = `${String(this.#step)}:${command.role}`; let sqlFrame: "sqlCallback" | "sqlRun" | null = null; if (command.role === "sqlCallback") { sqlFrame = "sqlCallback"; } else if (command.role.startsWith("run")) { sqlFrame = "sqlRun"; } if (sqlFrame !== null) { need((command.phase === "via-main-history-rebase") === this.#rawFrames.has(this.#frameKey(sqlFrame)), "FRAME_VERSION"); } const args = command.phase === "via-main-history-rebase" && command.role === "sqlCallback" ? [this.#host.captureObjectId, ...expected.arguments] : expected.arguments; need(!this.#values.has(key) && command.params.objectId === expected.receiver && canonicalJson(command.params.arguments.map(argument => argument.objectId)) === canonicalJson(args), "ORIGINAL_JOIN_ARGUMENTS"); this.#values.add(key); }
       else { need(this.#points.get(command.role) === command.params.breakpointId, "ORIGINAL_POINT"); }
       const reply = captureCurrentPcbStringClockReply(await this.#host.send(command, cleanup)).value; this.#same();
       if (command.phase === "via-main-history-arm") { const allocated = z.strictObject({ breakpointId: handle, actualLocation: point }).parse(reply); need(canonicalJson(allocated.actualLocation) === canonicalJson(command.params.location) && ![...this.#points.values()].includes(allocated.breakpointId), "ARM_REPLY"); this.#host.registerPoint(allocated.breakpointId, allocated.actualLocation); this.#points.set(command.role, allocated.breakpointId); }
       else if (command.phase === "via-main-history-properties") { if (command.role === "transaction") { this.#callbackFunction = decodeCallback(reply); } else { decodeCallbackMetadata(reply, this.#host.scriptId); this.#callbackQualified = true; } }
       else if (command.phase === "via-main-history-callback-arm") { const allocated = z.strictObject({ breakpointId: handle }).parse(reply); need(![...this.#points.values()].includes(allocated.breakpointId), "CALLBACK_POINT_ALIAS"); this.#host.registerPoint(allocated.breakpointId, { scriptId: this.#host.scriptId, lineNumber: SITES.callback.lineNumber, columnNumber: SITES.callback.columnNumber }); this.#points.set("callback", allocated.breakpointId); }
-      else if (command.phase === "via-main-history-frame") { this.#frames.set(this.#frameKey(command.role), decodeArray(reply, currentPcbViaMainHistoryFrame(command.role).length)); }
-      else if (command.phase === "via-main-history-join") { await this.#retainJoin(command.role, reply); }
+      else if (command.phase === "via-main-history-frame" || command.phase === "via-main-history-raw-frame") { this.#frames.set(this.#frameKey(command.role), decodeArray(reply, currentPcbViaMainHistoryFrame(command.role).length - (command.phase === "via-main-history-raw-frame" ? 1 : 0))); }
+      else if (command.phase === "via-main-history-join" || command.phase === "via-main-history-rebase" || command.phase === "via-main-history-bookkeeping") { await this.#retainJoin(command.role, reply); }
       else { z.strictObject({}).parse(reply); this.#host.removePoint(command.params.breakpointId); }
       return reply;
     } catch (error) { this.#failed = true; throw error; }
