@@ -1,3 +1,5 @@
+import { createCurrentMainStartupLibraryRefusalContext } from "./current-main-startup-library-refusal-context.ts";
+import type { CurrentMainStartupLibraryRefusalContext } from "./current-main-startup-library-refusal-context.ts";
 import type { CurrentSelectedProjectMainOrigin } from "./current-selected-project-main-origin.ts";
 import type { CurrentSchematicRelevanceDisplaySaveMainBackendBindings, CurrentSchematicRelevanceDisplaySaveMainOrigin } from "./current-schematic-relevance-display-save-main-origin.ts";
 import { CurrentFootprintInverseMainHistoryCustody } from "./current-footprint-inverse-main-history-custody.ts";
@@ -89,7 +91,7 @@ import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureM
 import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
 // oxlint-disable-next-line import/no-cycle -- The actual selected-file native factory creates this runner; no capability issues during module initialization.
-import { originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentSchematicRelevanceDisplayMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+import { enrollOriginalCurrentMainStartupLibrary, originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentMainStartupLibrary, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentSchematicRelevanceDisplayMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SQL_SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "./current-selected-file-main-sql-fence-source.ts";
 import { currentSelectedMainRawFrameFailure } from "./current-selected-main-raw-frame-failure.ts";
@@ -140,6 +142,16 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_EXPRESSIONS as VIA_FRAMES } from ".
 import { currentFootprintCopyMainRequestPlanSchema, decodeCurrentFootprintCopyMainRequestPromise as decodeViaPromise, decodeCurrentFootprintCopyMainRequestValue as decodeViaValue } from "./current-footprint-copy-main-request-contract.ts";
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP_CALLS } from "./current-main-startup-config-programs.ts";
 import { qualifyCurrentMainStartupConfigSource } from "./current-main-startup-config-sql.ts";
+import { currentMainStartupLibraryAppDirectory } from "./current-main-startup-library-live-profile.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_V2 as STOCK, isCurrentMainStartupLibraryV2Phase as isCurrentMainStartupLibraryPhase } from "./current-main-startup-library-v2-profile.ts";
+import type { CurrentMainStartupLibraryV2Origin as CurrentMainStartupLibraryOrigin } from "./current-main-startup-library-v2-profile.ts";
+import { qualifyCurrentMainStartupLibrarySource } from "./current-main-startup-library-source.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_FRAME_EXPRESSION as STOCK_FRAME } from "./current-main-startup-library-programs.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_V2_CALLER_EXPRESSION as STOCK_CALLER, CURRENT_MAIN_STARTUP_LIBRARY_V2_CALLS as STOCK_CALLS } from "./current-main-startup-library-v2-programs.ts";
+import { captureCurrentMainStartupLibraryReturnReply } from "./current-main-startup-library-return-reply.ts";
+import { CurrentMainStartupLibraryProgress, currentMainStartupLibrarySelectionSchema } from "./current-main-startup-library-progress.ts";
+import { validateCurrentMainStartupLibraryV2Command as validateCurrentMainStartupLibraryCommand } from "./current-main-startup-library-v2-protocol.ts";
+import type { CurrentMainStartupLibraryV2Command as CurrentMainStartupLibraryCommand } from "./current-main-startup-library-v2-protocol.ts";
 import { CurrentMainStartupConfigProgress, currentMainStartupConfigSelectionSchema } from "./current-main-startup-config-progress.ts";
 import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegistrationIntent } from "./current-saved-project-registration-origin.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITES as SAVED_CONFIG_SITES, qualifyCurrentSavedProjectRegistrationConfigSource } from "./current-saved-project-registration-config-source.ts";
@@ -234,6 +246,7 @@ type MainRequestOrigin = CurrentFootprintCopyMainRequestOrigin | CurrentFootprin
 type MainCompletionOrigin = CurrentFootprintCopyMainCompletionOrigin | CurrentFootprintForwardMainCompletionOrigin;
 interface OriginEntry { readonly kind: "combined" | "forward"; readonly assertOriginalEntry: () => void; readonly bindings: CurrentFootprintForwardMainRequestOriginBindings;
   readonly capability: MainCapability; readonly runner: CurrentFootprintCopyMainBackendRunner }
+const STOCK_RETURN = STOCK_CALLS.returned;
 const requestOrigins = new WeakMap<object, OriginEntry>();
 const completionOrigins = new WeakMap<object, Readonly<{
   kind: "combined" | "forward"; assertOriginalEntry: () => void; bindings: CurrentFootprintForwardMainCompletionOriginBindings;
@@ -324,7 +337,7 @@ const savedRegistrationRunValue = z.strictObject({ schema: z.literal("private.cu
 const savedRegistrationRunRemote = z.strictObject({ type: z.literal("object"), value: savedRegistrationRunValue });
 const savedRegistrationRunReply = z.strictObject({ result: savedRegistrationRunRemote });
 type SavedRegistrationSite = typeof CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES[number];
-interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; readonly savedRegistrationSite?: SavedRegistrationSite; resumeAttempted: boolean; resumed: boolean }
+interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly stockReturn?: true; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; readonly savedRegistrationSite?: SavedRegistrationSite; resumeAttempted: boolean; resumed: boolean }
 interface SavedProjectRegistrationEnrollment {
   readonly kind: "saved";
   readonly intent: CurrentSavedProjectRegistrationIntent; readonly bindings: CurrentSavedProjectRegistrationBindings;
@@ -401,6 +414,26 @@ export class CurrentFootprintCopyMainBackendRunner {
   readonly #decoder = new TextDecoder("utf-8", { fatal: true });
   #decoderPendingContinuations = 0;
   readonly #scripts = new Map<string, number>();
+  #stockAppDirectory: string | null = null;
+  #stockAppUrl: string | null = null;
+  #stockOrigin: CurrentMainStartupLibraryOrigin | null = null;
+  #stockTracker: string | null = null;
+  #stockCommandPause: Pause | null = null;
+  #stockEnrollmentPause: Pause | null = null;
+  #stockRequests = 0;
+  #stockCompleted = false;
+  #stockReturnPoint: string | null = null;
+  #stockRefusalContext: CurrentMainStartupLibraryRefusalContext | null = null; #stockRefusalContextAttempted = false;
+  #stockArming = false;
+  #stockResolution: Resolved | null = null;
+  readonly #stockProgress = new CurrentMainStartupLibraryProgress();
+  readonly #stockFrames = new WeakMap<Pause, z.infer<typeof frame>[]>();
+  readonly #stockNativeReturns = new WeakMap<Pause, string>();
+  readonly #stockCallerFrames = new WeakMap<Pause, string>();
+  readonly #stockRawFrames = new WeakMap<Pause, string>();
+  #stockSourceFrame: string | null = null;
+  readonly #stockReturnFrames = new WeakMap<Pause, string>();
+  readonly #stockPromiseResults = new WeakMap<Pause, Readonly<{ resultObjectId: string; raw: unknown }>>();
   #selectedRequestReader: CurrentSelectedFileMainRequestReader | null = null;
   #selectedRequestPause: Pause | null = null;
   #selectedFetchScript: Readonly<{ scriptId: string; executionContextId: number }> | null = null;
@@ -640,6 +673,11 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(matches, "REGISTRATION_LOCATION");
   }
   #resolve(record: Resolved): void {
+    if (this.#stockArming || record.breakpointId === this.#stockReturnPoint) {
+      need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === STOCK.returnPoint.lineNumber && record.location.columnNumber === STOCK.returnPoint.columnNumber &&
+        (this.#stockResolution === null || this.#stockResolution.breakpointId === record.breakpointId), "STOCK_RETURN_RESOLUTION");
+      this.#stockResolution = record; return;
+    }
     if (this.#inverseMainHistoryArming || this.#inverseMainHistoryPoint?.id === record.breakpointId) {
       const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
       need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === site.lineNumber && record.location.columnNumber === site.columnNumber &&
@@ -707,7 +745,7 @@ export class CurrentFootprintCopyMainBackendRunner {
           isLiveEdit: z.literal(false), hasSourceURL: z.literal(false), isModule: z.literal(false), scriptLanguage: z.literal("JavaScript") }).parse(input);
         need(this.#selectedFetchScript === null, "SELECTED_FETCH_SCRIPT_REPLACED"); this.#selectedFetchScript = Object.freeze({ scriptId: builtin.scriptId, executionContextId: builtin.executionContextId });
       }
-      if (new RegExp(URL_PATTERN, "u").test(script.url)) { need(!this.#scripts.has(script.scriptId) && this.#scripts.size === 0, "APP_SCRIPT_CHANGED"); this.#scripts.set(script.scriptId, script.executionContextId); }
+      if (new RegExp(URL_PATTERN, "u").test(script.url)) { need(!this.#scripts.has(script.scriptId) && this.#scripts.size === 0, "APP_SCRIPT_CHANGED"); this.#scripts.set(script.scriptId, script.executionContextId); this.#stockAppUrl = script.url; }
       return;
     }
     if (method === "Runtime.executionContextCreated") { z.looseObject({ context: z.looseObject({ id: z.number().int().positive() }) }).parse(input); return; }
@@ -719,6 +757,13 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (method === "Debugger.paused") {
       need(this.#pause === null || this.#pause.resumed, "DUPLICATE_PAUSE"); const event = pauseSchema.parse(input), first = event.callFrames[0]; need(first !== undefined, "PAUSE_FRAME");
       const points = event.hitBreakpoints ?? [], sqlSite = points.length === 1 ? this.#sqlBreakpoints.get(points[0] ?? "") : undefined;
+      if (points.length === 1 && points[0] === this.#stockReturnPoint) {
+        need(this.#stockOrigin !== null && !this.#stockCompleted && event.reason === "other" && first.location.scriptId === this.#appScriptId &&
+          first.location.lineNumber === STOCK.returnPoint.lineNumber && first.location.columnNumber === STOCK.returnPoint.columnNumber, "STOCK_ORIGINAL_RETURN_PAUSE");
+        const returned = z.strictObject({ type: z.literal("object"), subtype: z.literal("promise"), className: z.literal("Promise"), description: z.literal("Promise"), objectId: handle }).parse(first["returnValue"]);
+        const pause: Pause = { frameId: first.callFrameId, location: first.location, registration: false, stockReturn: true, resumeAttempted: false, resumed: false };
+        this.#pause = pause; this.#stockNativeReturns.set(pause, returned.objectId); return;
+      }
       if (points.length === 1 && points[0] === this.#inverseMainHistoryPoint?.id) {
         const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
         need(event.reason === "other" && first.location.scriptId === this.#appScriptId && first.location.lineNumber === site.lineNumber && first.location.columnNumber === site.columnNumber && this.#inverseMainHistoryPause === null, "INVERSE_HISTORY_ORIGINAL_PAUSE");
@@ -752,6 +797,7 @@ export class CurrentFootprintCopyMainBackendRunner {
    * Full-source bounds are checked once only if startup actually refuses. */
   #captureSqlStartupPauseLocations(pause: Pause, frames: z.infer<typeof pauseSchema>["callFrames"]): void {
     if (this.#source === null || this.#appScriptId === null || this.#appSource === null) { return; }
+    this.#stockFrames.set(pause, [...frames]);
     try { this.#sqlStartupPauseLocations.set(pause, Object.freeze(frames.map(call => Object.freeze({
       scriptId: call.location.scriptId, lineNumber: call.location.lineNumber, columnNumber: call.location.columnNumber })))); }
     catch {
@@ -873,13 +919,14 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Consume one fixed request number and retain its sole pending reply.
    * Head-age exceptions are captured before success decoding; cleanup keeps
    * its own counter and cannot repeat a consumed normal request. */
-  async #request(input: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand | CurrentFootprintInverseMainHistoryCommand,
+  async #request(input: Command | CurrentMainStartupLibraryCommand | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand | CurrentFootprintInverseMainHistoryCommand,
     cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
     if (this.#viaMainOrigin !== null && this.#viaMainPoll !== null) { await this.#viaMainPoll; await this.#current(cleanup); }
     const inverseHistory = input.phase.startsWith("inverse-main-history-");
     const via = input.phase.startsWith("via-main-");
     const sqlFence = input.phase.startsWith("sql-fence-");
+    const stock = isCurrentMainStartupLibraryPhase(input.phase);
     const collection = input.phase.startsWith("request-");
     const completion = input.phase.startsWith("completion-");
     const structure = input.phase.startsWith("structure-main-");
@@ -891,25 +938,30 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (via || inverseHistory) { cleanupCommand = cleanup; }
     else if (completion || structure) { cleanupCommand = ["Debugger.resume", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"].includes(input.method); }
     else if (collection) { cleanupCommand = (CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES as readonly string[]).includes(input.phase); }
-    else { cleanupCommand = !sqlFence && ["resume", "remove", "release"].includes(input.phase); }
+    else { cleanupCommand = !sqlFence && !stock && ["resume", "remove", "release"].includes(input.phase); }
     const normalMaximum = this.#structureAttempted ? CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeNormal + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.originIssueNormal + CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.normal : CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeNormal + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.originIssueNormal + CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS.normal +
       (this.#completionToken === null ? 0 : CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.normal);
     const cleanupMaximum = this.#structureAttempted ? CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeCleanup + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.releaseCleanup + CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.cleanup : CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeCleanup + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.releaseCleanup + CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS.cleanup +
       (this.#completionToken === null ? 0 : CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.cleanup - 2);
     const initialMaximum = this.#selectedSqlBootstrap === null ? 64 : 72 + SQL_REQUESTS.normal + (this.#savedRegistrationEnrollment === null ? 0 : SAVED_CONFIG_REQUESTS);
     const requestMaximum = cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum + (this.#inverseMainHistoryIntent === null ? 0 : INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total);
+    const ordinaryRequests = this.#requests - this.#stockRequests;
     let withinBound: boolean;
-    if (inverseHistory) { withinBound = this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null && this.#requests < initialMaximum + INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total; }
-    else if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + VIA_STRUCTURE.total + VIA_LIVE_HISTORY.total; }
-    else if (this.#originAttempted || this.#structureAttempted) { withinBound = this.#requests < normalMaximum + cleanupMaximum && (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum); }
-    else { withinBound = this.#requests < requestMaximum; }
+    if (stock) { withinBound = !cleanup && this.#stockOrigin !== null && this.#stockRequests < STOCK.requests; }
+    else if (inverseHistory) { withinBound = this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null && ordinaryRequests < initialMaximum + INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total; }
+    else if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && ordinaryRequests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + VIA_STRUCTURE.total + VIA_LIVE_HISTORY.total; }
+    else if (this.#originAttempted || this.#structureAttempted) { withinBound = ordinaryRequests < normalMaximum + cleanupMaximum && (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum); }
+    else { withinBound = ordinaryRequests < requestMaximum; }
     need(this.#pendingId === null && withinBound, "REQUEST_BOUND");
-    this.#requests += 1; if (cleanupCommand) { this.#cleanupRequests += 1; } else { this.#normalRequests += 1; }
+    this.#requests += 1; if (stock) { this.#stockRequests += 1; } else if (cleanupCommand) { this.#cleanupRequests += 1; } else { this.#normalRequests += 1; }
     const id = this.#requests; this.#pendingId = id; this.#replySeen = false; this.#reply = null;
     const allocation = retainAllocationReply === undefined ? null : { id, retain: retainAllocationReply, seen: false, stopped: false };
     if (allocation !== null) { need(this.#structureAllocation === null, "STRUCTURE_ALLOCATION_PENDING"); this.#structureAllocation = allocation; }
     try {
-    if (inverseHistory) {
+    if (stock) {
+      need(this.#selectedSqlBootstrap !== null && this.#stockOrigin !== null, "STOCK_ORIGINAL_BOOTSTRAP");
+      await sendOriginalCurrentMainStartupLibrary(this.#selectedSqlBootstrap, this, this.#stockOrigin, validateCurrentMainStartupLibraryCommand(input), id);
+    } else if (inverseHistory) {
       need(this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null, "INVERSE_HISTORY_ORIGINAL_BOOTSTRAP");
       await sendOriginalCurrentFootprintInverseMainHistory(this.#selectedSqlBootstrap, this, validateCurrentFootprintInverseMainHistoryCommand(input), id);
     } else if (via) {
@@ -1101,7 +1153,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   async #startSelectedSqlFence(): Promise<void> {
     const initial = this.#pause; need(initial?.sqlSite === "import" && this.#selectedSqlPath !== null, "SELECTED_SQL_BEFORE_IMPORT_REQUIRED");
-    await this.#qualify(initial.location.scriptId); need(this.#appSource !== null, "SELECTED_SQL_FULL_SOURCE"); qualifyCurrentSelectedFileMainSqlFenceSource(this.#appSource); qualifyCurrentMainStartupConfigSource(this.#appSource);
+    await this.#qualify(initial.location.scriptId); need(this.#appSource !== null, "SELECTED_SQL_FULL_SOURCE"); qualifyCurrentSelectedFileMainSqlFenceSource(this.#appSource); qualifyCurrentMainStartupConfigSource(this.#appSource); qualifyCurrentMainStartupLibrarySource(this.#appSource);
     await this.#armSelectedSql("afterImports"); for (const site of SQL_SITES) { await this.#armSelectedSql(site); }
     await this.#sqlResume(initial); await this.#wait(() => this.#pause !== initial);
     const after = this.#pause; need(after?.sqlSite === "afterImports", "SELECTED_SQL_AFTER_IMPORTS_REQUIRED");
@@ -1132,7 +1184,8 @@ export class CurrentFootprintCopyMainBackendRunner {
     await this.#wait(() => this.#pause !== after);
     while (this.#pause !== null && !this.#pause.registration) {
       const configuration = this.#pause;
-      if (!await this.#configureStartupSql(configuration)) {
+      if (configuration.stockReturn === true) { await this.#finishStartupLibrary(configuration); }
+      else if (!await this.#configureStartupSql(configuration)) {
         await this.#captureStartupRefusal(configuration);
         if (configuration.sqlSite === "initializerBirth") { await this.#captureStartupPredicate(configuration); }
         need(false, "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION");
@@ -1140,6 +1193,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       await this.#wait(() => this.#pause !== configuration);
     }
     this.#startupConfigProgress.complete();
+    need(this.#stockOrigin === null || this.#stockCompleted, "STOCK_REGISTRATION_BEFORE_NORMAL_RETURN");
     // Every mutation stays paused until a distinct original request/SQL issuer
     // Proves that exact current call. This bootstrap publishes no such grant.
     need(this.#pause?.registration === true, "SELECTED_SQL_MUTATION_BEFORE_REGISTRATION");
@@ -1452,6 +1506,8 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #configureStartupSql(pause: Pause): Promise<boolean> {
     const site = pause.sqlSite;
     need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#sqlCapture !== null && this.#sqlReady, "STARTUP_CONFIG_ORIGINAL_PAUSE");
+    if (this.#stockOrigin !== null && !this.#stockCompleted) { await this.#continueStartupLibrary(pause, false); return true; }
+    if (this.#stockOrigin === null && this.#startupConfigTracker !== null && this.#originalStockLineage(pause)) { await this.#continueStartupLibrary(pause, true); return true; }
     if (await this.#classifyCapturedSqlPause(pause) === "guard-passed") { await this.#sqlResume(pause); return true; }
     if (site === "initializerSerialize" || site === "initializerPragma") { await this.#configureSelectedSqlInitializer(pause); return true; }
     if (site === "startupVersion" || site === "startupJB" || site === "startupDC") {
@@ -1488,11 +1544,134 @@ export class CurrentFootprintCopyMainBackendRunner {
       let consumed: boolean;
       try { consumed = this.#startupConfigProgress.consume(selection); }
       catch (caughtError) { this.#captureStartupRefusalContext(pause, "selection-sequence-refused", selection); throw caughtError; }
-      if (!consumed) { this.#captureStartupRefusalContext(pause, "selection-unrecognized", selection); return false; }
+      if (!consumed) {
+        this.#captureStartupRefusalContext(pause, "selection-unrecognized", selection); return false;
+      }
     } else { return false; }
     await this.#requireSelectedSqlCapture(); this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
     if (site === "startupVersion" || site === "startupJB" || site === "startupDC") { this.#startupMetadataContinuations += 1; } else { this.#startupSqlContinuations += 1; }
     return true;
+  }
+  #originalStockLineage(pause: Pause): boolean {
+    const frames = this.#stockFrames.get(pause);
+    return this.#pause === pause && pause.sqlSite === "run" && frames?.length === STOCK.initialLineage.length && frames.every((call, index) => {
+      const point = STOCK.initialLineage[index]; return point !== undefined && call.location.scriptId === this.#appScriptId && call.location.lineNumber === point.lineNumber && call.location.columnNumber === point.columnNumber;
+    });
+  }
+  #originalStockContinuationLineage(pause: Pause): boolean {
+    const frames = this.#stockFrames.get(pause);
+    return this.#pause === pause && pause.sqlSite === "run" && frames?.length === STOCK.continuationLineage.length && frames.every((call, index) => {
+      const point = STOCK.continuationLineage[index]; return point !== undefined && call.location.scriptId === this.#appScriptId && call.location.lineNumber === point.lineNumber && call.location.columnNumber === point.columnNumber;
+    });
+  }
+  public requireOriginalStartupLibraryEnrollment(capability: CurrentSelectedFileMainSqlFenceBootstrap): void {
+    this.#same(false); need(this.#selectedSqlBootstrap === capability && this.#busy && this.#sqlReady && this.#packet === null && this.#stockOrigin === null &&
+      this.#stockEnrollmentPause !== null && this.#originalStockLineage(this.#stockEnrollmentPause) && !this.#sqlClassificationAttempts.has(this.#stockEnrollmentPause) &&
+      !this.#stockEnrollmentPause.resumeAttempted && !this.#stockEnrollmentPause.resumed, "STOCK_ORIGINAL_ENROLLMENT");
+  }
+  public requireOriginalStartupLibraryCommand(capability: CurrentSelectedFileMainSqlFenceBootstrap, origin: CurrentMainStartupLibraryOrigin, command: CurrentMainStartupLibraryCommand): void {
+    this.#same(false); need(this.#selectedSqlBootstrap === capability && this.#stockOrigin === origin && this.#busy && this.#sqlReady && this.#packet === null &&
+      this.#stockCommandPause !== null && this.#pause === this.#stockCommandPause && this.#sqlCapture !== null && this.#startupConfigTracker !== null &&
+      (this.#stockCommandPause.stockReturn === true || (this.#stockCommandPause === this.#stockEnrollmentPause ? this.#originalStockLineage(this.#stockCommandPause) : this.#originalStockContinuationLineage(this.#stockCommandPause))), "STOCK_ORIGINAL_COMMAND");
+    const pause = this.#stockCommandPause; need(pause !== null, "STOCK_COMMAND_PAUSE");
+    switch (command.phase) {
+      case "sql-stock-v2-raw": { need(command.params.callFrameId === pause.frameId, "STOCK_RAW_FRAME"); break; }
+      case "sql-stock-v2-captured": { need(command.params.objectId === this.#stockRawFrames.get(pause) && command.params.arguments[0].objectId === this.#sqlCapture, "STOCK_CAPTURED_FRAME"); break; }
+      case "sql-stock-v2-caller": { need(command.params.callFrameId === this.#stockFrames.get(pause)?.[2]?.callFrameId, "STOCK_RUN_SCRIPTS_FRAME"); break; }
+      case "sql-stock-v2-frame": { need(command.params.callFrameId === this.#stockFrames.get(pause)?.[3]?.callFrameId, "STOCK_JL_FRAME"); break; }
+      case "sql-stock-v2-bind": { need(command.params.objectId === this.#stockSourceFrame && command.params.arguments[0].objectId === this.#startupConfigTracker && command.params.arguments[1].value === this.#stockAppDirectory && command.params.arguments[2].objectId === this.#stockCallerFrames.get(pause), "STOCK_BIND_FRAME"); break; }
+      case "sql-stock-v2-points": { need(command.params.start.scriptId === this.#appScriptId && command.params.end.scriptId === this.#appScriptId, "STOCK_POINTS_SCRIPT"); break; }
+      case "sql-stock-v2-arm": { need(command.params.location.scriptId === this.#appScriptId, "STOCK_ARM_SCRIPT"); break; }
+      case "sql-stock-v2-select": { need(command.params.objectId === this.#sqlCapturedFrames.get(pause)?.result.objectId && command.params.arguments[0].objectId === this.#startupConfigTracker && command.params.arguments[1].objectId === this.#stockTracker && command.params.arguments[2].objectId === this.#stockCallerFrames.get(pause), "STOCK_SELECT_FRAME"); break; }
+      case "sql-stock-v2-require": { need(command.params.objectId === this.#sqlCapture, "STOCK_REQUIRE_CAPTURE"); break; }
+      case "sql-stock-v2-return-frame": { need(command.params.callFrameId === pause.frameId, "STOCK_RETURN_FRAME"); break; }
+      case "sql-stock-v2-return-properties": { need(command.params.objectId === this.#stockNativeReturns.get(pause), "STOCK_RETURN_PROMISE"); break; }
+      case "sql-stock-v2-return": { need(command.params.objectId === this.#stockReturnFrames.get(pause) && command.params.arguments[0].objectId === this.#startupConfigTracker && command.params.arguments[1].objectId === this.#stockTracker &&
+        command.params.arguments[2].objectId === this.#stockNativeReturns.get(pause) && command.params.arguments[3].objectId === this.#stockPromiseResults.get(pause)?.resultObjectId, "STOCK_RETURN_ORIGINAL_REFERENCES"); break; }
+      case "sql-stock-v2-remove": { need(command.params.breakpointId === this.#stockReturnPoint, "STOCK_REMOVE_POINT"); break; }
+      case "sql-stock-v2-resume": { need(pause.resumeAttempted && !pause.resumed, "STOCK_RESERVED_RESUME"); break; }
+      default: { throw new Error("MAIN_STARTUP_LIBRARY_COMMAND_PHASE"); }
+    }
+  }
+  async #stockRequireCapture(): Promise<void> {
+    need(this.#sqlCapture !== null, "STOCK_SQL_CAPTURE_REQUIRED");
+    sqlTrueReply.parse(await this.#request({ phase: "sql-stock-v2-require", method: "Runtime.callFunctionOn", params: { ...SQL_CALL,
+      objectId: this.#sqlCapture, functionDeclaration: SQL_REQUIRE, arguments: [], returnByValue: true } }));
+  }
+  async #stockResume(pause: Pause): Promise<void> {
+    need(this.#pause === pause && this.#stockCommandPause === pause && !pause.resumeAttempted && !pause.resumed, "STOCK_RESUME_ONCE");
+    pause.resumeAttempted = true; empty.parse(await this.#request({ phase: "sql-stock-v2-resume", method: "Debugger.resume", params: {} })); await this.#wait(() => pause.resumed);
+  }
+  #captureStockRefusalContext(pause: Pause, first: boolean): void {
+    if (this.#stockRefusalContextAttempted || this.#packet !== null) { return; } this.#stockRefusalContextAttempted = true;
+    try {
+      const locations = this.#sqlStartupPauseLocations.get(pause), site = pause.sqlSite;
+      need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#source !== null && this.#appSource !== null && this.#appScriptId !== null &&
+        locations !== undefined && site !== undefined && site !== "import" && site !== "afterImports", "STOCK_REFUSAL_ORIGINAL_PAUSE");
+      const projected = captureCurrentSelectedFileMainSqlStartupPauseLocations(locations, this.#appScriptId, this.#appSource);
+      this.#stockRefusalContext = createCurrentMainStartupLibraryRefusalContext(site, first, this.#stockOrigin !== null, this.#stockRequests, this.#stockProgress.snapshot(), projected);
+    } catch {
+      // Optional context cannot replace the first failure, inspect an Error,
+      // Read a frame, retry a command or resume the original held call.
+    }
+  }
+  async #continueStartupLibrary(pause: Pause, first: boolean): Promise<void> {
+    const lineage = first ? this.#originalStockLineage(pause) : this.#originalStockContinuationLineage(pause); if (!lineage) { this.#captureStockRefusalContext(pause, first); }
+    need(lineage && !pause.resumeAttempted && !pause.resumed && this.#startupConfigTracker !== null && this.#sqlCapture !== null &&
+      this.#selectedSqlBootstrap !== null && this.#appScriptId !== null && this.#stockAppUrl !== null && !this.#stockCompleted, "STOCK_ORIGINAL_LINEAGE");
+    this.#stockAppDirectory ??= currentMainStartupLibraryAppDirectory(this.#stockAppUrl);
+    this.#stockCommandPause = pause;
+    if (first) {
+      need(this.#stockOrigin === null && this.#stockTracker === null && this.#stockEnrollmentPause === null, "STOCK_ENROLL_CONSUMED");
+      this.#stockEnrollmentPause = pause; this.#stockOrigin = enrollOriginalCurrentMainStartupLibrary(this.#selectedSqlBootstrap, this);
+    }
+    need(this.#stockOrigin !== null && !this.#sqlClassificationAttempts.has(pause), "STOCK_CALL_CONSUMED"); this.#sqlClassificationAttempts.add(pause);
+    const raw = objectReply.parse(await this.#request({ phase: "sql-stock-v2-raw", method: "Debugger.evaluateOnCallFrame", params: { ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_CAPTURED_EXPRESSIONS.run } }));
+    need(raw.result.description === "Array(4)", "STOCK_RAW_RUN_FRAME"); this.#stockRawFrames.set(pause, raw.result.objectId);
+    const captured = objectReply.parse(await this.#request({ phase: "sql-stock-v2-captured", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
+      objectId: raw.result.objectId, functionDeclaration: SQL_CAPTURED_FRAME, arguments: [{ objectId: this.#sqlCapture }, { value: "run" }], returnByValue: false } }));
+    need(captured.result.description === "Array(5)", "STOCK_ORIGINAL_RUN_TUPLE"); this.#sqlCapturedFrames.set(pause, captured);
+    const callerFrameId = this.#stockFrames.get(pause)?.[2]?.callFrameId; need(callerFrameId !== undefined, "STOCK_RUN_SCRIPTS_FRAME_REQUIRED");
+    const caller = objectReply.parse(await this.#request({ phase: "sql-stock-v2-caller", method: "Debugger.evaluateOnCallFrame", params: { ...SQL_FRAME, callFrameId: callerFrameId, expression: STOCK_CALLER } }));
+    need(caller.result.description === "Array(3)", "STOCK_RUN_SCRIPTS_CAPTURE"); this.#stockCallerFrames.set(pause, caller.result.objectId);
+    if (first) {
+      const frameId = this.#stockFrames.get(pause)?.[3]?.callFrameId; need(frameId !== undefined, "STOCK_JL_FRAME_REQUIRED");
+      const source = objectReply.parse(await this.#request({ phase: "sql-stock-v2-frame", method: "Debugger.evaluateOnCallFrame", params: { ...SQL_FRAME, callFrameId: frameId, expression: STOCK_FRAME } }));
+      need(source.result.description === "Array(3)", "STOCK_JL_CAPTURE"); this.#stockSourceFrame = source.result.objectId;
+      const tracker = objectReply.parse(await this.#request({ phase: "sql-stock-v2-bind", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
+        objectId: source.result.objectId, functionDeclaration: STOCK_CALLS.bind, arguments: [{ objectId: this.#startupConfigTracker }, { value: this.#stockAppDirectory }, { objectId: caller.result.objectId }], returnByValue: false } }));
+      need(tracker.result.description === "Array(4)", "STOCK_TRACKER"); this.#stockTracker = tracker.result.objectId; this.#stockProgress.bind();
+      const breakpoint = z.strictObject({ ...location.shape, type: z.enum(["return", "call", "debuggerStatement"]).optional() });
+      const pointReply = z.strictObject({ locations: z.array(breakpoint).max(16) });
+      const points = pointReply.parse(
+        await this.#request({ phase: "sql-stock-v2-points", method: "Debugger.getPossibleBreakpoints", params: { start: { scriptId: this.#appScriptId, ...STOCK.functionStart }, end: { scriptId: this.#appScriptId, ...STOCK.functionEnd }, restrictToFunction: true } }));
+      const returned = points.locations.filter(point => point.type === "return"); need(returned.length === 1 && returned[0]?.scriptId === this.#appScriptId &&
+        returned[0].lineNumber === STOCK.returnPoint.lineNumber && returned[0].columnNumber === STOCK.returnPoint.columnNumber, "STOCK_NATIVE_RETURN_LOCATION");
+      this.#stockArming = true;
+      const armed = z.strictObject({ breakpointId: handle, actualLocation: location }).parse(await this.#request({ phase: "sql-stock-v2-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#appScriptId, ...STOCK.returnPoint }, condition: "true" } }));
+      need(armed.actualLocation.scriptId === this.#appScriptId && armed.actualLocation.lineNumber === STOCK.returnPoint.lineNumber && armed.actualLocation.columnNumber === STOCK.returnPoint.columnNumber &&
+        !this.#sqlBreakpoints.has(armed.breakpointId) && (this.#stockResolution === null || this.#stockResolution.breakpointId === armed.breakpointId), "STOCK_RETURN_ARM");
+      this.#stockReturnPoint = armed.breakpointId; this.#stockArming = false;
+    }
+    need(this.#stockTracker !== null && lineage, "STOCK_TRACKER_REQUIRED");
+    const selected = this.#capturedSqlFrame(pause, "run");
+    const reply = z.strictObject({ result: z.strictObject({ type: z.literal("object"), value: currentMainStartupLibrarySelectionSchema }) }).parse(
+      await this.#request({ phase: "sql-stock-v2-select", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false, objectId: selected.result.objectId,
+        functionDeclaration: STOCK_CALLS.select, arguments: [{ objectId: this.#startupConfigTracker }, { objectId: this.#stockTracker }, { objectId: caller.result.objectId }], returnByValue: true } }));
+    need(this.#stockProgress.consume(reply.result.value), "STOCK_EXACT_SQL_REQUIRED"); await this.#stockRequireCapture(); await this.#stockResume(pause);
+  }
+  async #finishStartupLibrary(pause: Pause): Promise<void> {
+    need(this.#pause === pause && pause.stockReturn === true && !pause.resumeAttempted && !pause.resumed && this.#stockOrigin !== null && this.#stockTracker !== null &&
+      this.#startupConfigTracker !== null && this.#stockReturnPoint !== null && !this.#stockCompleted, "STOCK_ORIGINAL_RETURN_REQUIRED");
+    this.#stockProgress.requireAllCallsConsumed(); this.#stockCommandPause = pause; const returned = this.#stockNativeReturns.get(pause); need(returned !== undefined, "STOCK_NATIVE_RETURN_VALUE_REQUIRED");
+    const returnedFrame = objectReply.parse(await this.#request({ phase: "sql-stock-v2-return-frame", method: "Debugger.evaluateOnCallFrame", params: { ...SQL_FRAME, callFrameId: pause.frameId, expression: "[t]" } }));
+    need(returnedFrame.result.description === "Array(1)", "STOCK_RETURN_FRAME"); this.#stockReturnFrames.set(pause, returnedFrame.result.objectId);
+    const nativePromise = captureCurrentMainStartupLibraryReturnReply(await this.#request({ phase: "sql-stock-v2-return-properties", method: "Runtime.getProperties", params: {
+      objectId: returned, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } })); this.#stockPromiseResults.set(pause, nativePromise);
+    sqlTrueReply.parse(await this.#request({ phase: "sql-stock-v2-return", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false, objectId: returnedFrame.result.objectId,
+      functionDeclaration: STOCK_RETURN, arguments: [{ objectId: this.#startupConfigTracker }, { objectId: this.#stockTracker }, { objectId: returned }, { objectId: nativePromise.resultObjectId }], returnByValue: true } }));
+    empty.parse(await this.#request({ phase: "sql-stock-v2-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#stockReturnPoint } }));
+    await this.#stockRequireCapture(); await this.#stockResume(pause); this.#stockCompleted = true;
   }
   #requireSelectedRequestPause(pause: Pause): void {
     this.#same(false); need(this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#packet !== null && issued.get(this.#packet) === this && this.#sqlCapture !== null &&
@@ -1647,6 +1826,11 @@ export class CurrentFootprintCopyMainBackendRunner {
       need(pause.resumed && resumed?.method === "Debugger.resumed", "VIA_MAIN_READONLY_ORIGINAL_RESUMED"); empty.parse(resumed.params);
     }
   }
+  public startupLibraryState(): Readonly<Record<string, unknown>> {
+    return Object.freeze({ schema: "private.current-main-startup-library-state.v2", originEnrolled: this.#stockOrigin !== null,
+      dataProgress: this.#stockProgress.snapshot(), originalNormalReturnProven: this.#stockCompleted, requests: this.#stockRequests,
+      selectedProjectWriteGrant: false, executionAuthorized: false });
+  }
   public selectedSqlFenceState(): Readonly<Record<string, unknown>> {
     return Object.freeze({ profile: "private.selected-file-main-sql-fence.v1", originalBootstrapRetained: this.#selectedSqlBootstrap !== null,
       ready: this.#sqlReady, conditionalBreakpoints: Math.max(0, this.#sqlBreakpoints.size - 2), nativePrimitivesReplaced: false,
@@ -1657,6 +1841,8 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Historical private data for the original workflow's separate diagnostic
    * artifact. This getter performs no reads and leaves retained()/v1 unchanged. */
   public retainedSelectedSqlStartupDiagnostic(): CurrentSelectedFileMainSqlStartupDiagnosticV2 | null { return this.#sqlStartupDiagnostic; }
+  /** Original stock locations and scalar progress only; no reads or grant. */
+  public retainedStartupLibraryRefusalContext(): CurrentMainStartupLibraryRefusalContext | null { return this.#stockRefusalContext; }
   /** Original paused-event locations and first selection/progress data only.
    * No getter request, reevaluation or historical packet can issue a grant. */
   public retainedSelectedSqlStartupRefusalContext(): CurrentSelectedFileMainSqlStartupRefusalContext | null { return this.#sqlStartupRefusalContext; }

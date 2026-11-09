@@ -25,7 +25,8 @@ forwards duplicate=false and previousType=TEXT, rather than undefined values.
 A committed, hash-qualified inert excerpt now executes the unchanged
 remoteChange, publishChange and onChange functions to prove the actual argument
 vector and reject the old vector. This corrects the earlier source-only reader
-record; its 17-case result is retained and did not establish a connected wave.
+[record](2026-11-08-schematic-modify-text-no-publication-reader.md); its
+17-case result is retained and did not establish a connected wave.
 
 The exact O9/_7 constructor chain passes document UUID first and project UUID
 second. The selected publisher therefore owns uuid=page and path=project.

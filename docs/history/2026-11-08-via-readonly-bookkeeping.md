@@ -37,7 +37,7 @@ performed by spread/fromEntries. The corrected shared writer refuses inherited
 accessors/non-writable fields before assignment and verifies the exact own
 writable/enumerable/configurable data descriptor with `Object.is` afterward.
 It also requires the standard fresh-result/Object.prototype chain. The fix
-hardens the earlier six rebase programs. A separate actual Inspector probe
+hardens the [earlier six rebase programs](2026-11-08-via-captured-main-frames.md). A separate actual Inspector probe
 confirmed that fresh `Object.defineProperty` is rejected under the true flag,
 so that alternative was not used. Private-realm state/field regressions prove
 zero setter hooks and conservative refusal; unchanged legacy copies still

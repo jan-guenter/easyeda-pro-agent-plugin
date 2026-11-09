@@ -5,6 +5,9 @@ import { currentSchematicRelevancePublicationNativeCases, currentSchematicReleva
 import { currentSchematicRelevanceNormalCommandBodyPrograms } from "./current-schematic-relevance-normal-command-ui-native.ts";
 import { currentSchematicRelevanceUiCodecNativeSource } from "./current-schematic-relevance-ui-codec-native-source.ts";
 
+/** Emit the separate publisher codec with exact message hashes. Reuse only
+ * byte-identical body programs; reject missing or mismatched program indexes
+ * before constructing the fixed native tables. */
 export function currentSchematicRelevancePublicationNativeSource(): string {
   const cases = currentSchematicRelevancePublicationNativeCases(), shared = currentSchematicRelevanceNormalCommandBodyPrograms(); const programs = [...shared];
   const rows = cases.map(command => {

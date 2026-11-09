@@ -18,7 +18,11 @@ const delta=(finished:boolean):string=>`function(native,original,objects,members
 const cleared=delta(false),timer=delta(true);
 /** The same source-created envelope is used by post's own microtask. Its
  * old cache remains retained after the publisher installs a new empty cache. */
-const loopback=post.replace("function(native,roots,pristine,pending,objects)","function(native,roots,pristine,pending,objects,state,original)").replace("dense(this,2);dense(roots,8);", "dense(this,2);dense(original,2);same(this,original);dense(state,7);dense(roots,8);").replace('cache=own(p,"pendCache")','cache=own(state,0)').replace('||own(own(objects,1),0)!==own(objects,2)','||own(own(objects,1),"length")!==0');
-const publisherSame=postSame.replace("dense(this,2);dense(original,2);", "dense(this,1);dense(original,1);");
-if(loopback===post||publisherSame===postSame){throw new Error("SCH_PUBLICATION_RETURN_DERIVATION");}
+/** Refuse each missing or duplicate anchor before deriving fixed programs. */
+function once(text:string,anchor:string,inserted:string):string { const at=text.indexOf(anchor); if(at===-1||text.includes(anchor,at+anchor.length)){throw new Error("SCH_PUBLICATION_RETURN_DERIVATION");} return text.slice(0,at)+inserted+text.slice(at+anchor.length); }
+const withHeader=once(post,"function(native,roots,pristine,pending,objects)","function(native,roots,pristine,pending,objects,state,original)");
+const withChecks=once(withHeader,"dense(this,2);dense(roots,8);", "dense(this,2);dense(original,2);same(this,original);dense(state,7);dense(roots,8);");
+const withCache=once(withChecks,'cache=own(p,"pendCache")','cache=own(state,0)');
+const loopback=once(withCache,'||own(own(objects,1),0)!==own(objects,2)','||own(own(objects,1),"length")!==0');
+const publisherSame=once(postSame,"dense(this,2);dense(original,2);", "dense(this,1);dense(original,1);");
 export const CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_BODY_PROGRAMS=freezeDeep({before,post,payload,postSame,target,cache,cleared,timer,loopback,publisherSame}as const);

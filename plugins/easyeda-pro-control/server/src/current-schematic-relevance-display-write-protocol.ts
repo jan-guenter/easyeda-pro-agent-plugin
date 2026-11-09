@@ -1,4 +1,5 @@
 /* oxlint-disable import/max-dependencies -- Each fixed purpose lane validates its own complete native codec; a caller-selected generic encoder would erase those boundaries. */
+import { currentSchematicRelevanceSdkCompletionWire } from "./current-schematic-relevance-sdk-completion-wire.ts";
 import { currentSchematicRelevanceModifyEchoContinuationWire } from "./current-schematic-relevance-modify-echo-continuation-wire.ts";
 import { currentSchematicRelevancePublicationReturnWire } from "./current-schematic-relevance-publication-return-wire.ts";
 import { currentSchematicRelevanceModifyReturnContinuationWire } from "./current-schematic-relevance-modify-return-continuation-wire.ts";
@@ -105,6 +106,11 @@ export function currentSchematicRelevanceDisplayWriteNativeRequest(chunk: Buffer
     const fixed = currentSchematicRelevanceNotificationWire(input, id);
     if (!chunk.equals(Buffer.from(`${JSON.stringify({ id, ...fixed.command, schematicRelevanceNotificationCommand: true, sessionId })}\0`))) { throw new Error("SCHEMATIC_NOTIFICATION_FIXED_WIRE"); }
     return fixed.request;
+  }
+  if(Object.hasOwn(raw,"schematicRelevanceSdkCompletionCommand")){
+    const {id,sessionId,schematicRelevanceSdkCompletionCommand:marker,...input}=raw;
+    if(marker!==true||typeof sessionId!=="string"||!/^[A-Za-z\d_.:-]{1,128}$/u.test(sessionId)){throw new Error("SCHEMATIC_SDK_COMPLETION_NATIVE_COMMAND");}
+    const fixed=currentSchematicRelevanceSdkCompletionWire(input,id);if(!chunk.equals(Buffer.from(`${JSON.stringify({id,...fixed.command,schematicRelevanceSdkCompletionCommand:true,sessionId})}\0`))){throw new Error("SCHEMATIC_SDK_COMPLETION_NATIVE_BYTES");}return fixed.request;
   }
   if (Object.hasOwn(raw, "schematicRelevanceModifyEchoCommand")) {
     const { id, sessionId, schematicRelevanceModifyEchoCommand: marker, ...input } = raw;

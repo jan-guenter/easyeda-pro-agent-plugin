@@ -12,6 +12,8 @@ import {currentPcbViaWriteMainFailure,refusedCurrentPcbViaWriteMainFailure} from
 import type {CurrentPcbViaWriteMainFailure} from "./current-pcb-via-write-main-failure.ts";
 import { currentSelectedFileMainSqlStartupDiagnosticRecordSchema } from "./current-selected-file-main-sql-startup-diagnostic-v2.ts";
 import type { CurrentSelectedFileMainSqlStartupDiagnosticRecord } from "./current-selected-file-main-sql-startup-diagnostic-v2.ts";
+import { currentMainStartupLibraryRefusalContextSchema } from "./current-main-startup-library-refusal-context.ts";
+import type { CurrentMainStartupLibraryRefusalContext } from "./current-main-startup-library-refusal-context.ts";
 import { currentSelectedFileMainSqlStartupRefusalContextSchema } from "./current-selected-file-main-sql-startup-refusal-context.ts";
 import type { CurrentSelectedFileMainSqlStartupRefusalContext } from "./current-selected-file-main-sql-startup-refusal-context.ts";
 import { currentSelectedFileMainSqlPredicateDiagnosticSchema } from "./current-selected-file-main-sql-predicate-diagnostic.ts";
@@ -45,6 +47,8 @@ const originalMainStatus=CurrentPcbViaWriteOwner.prototype.retainedFootprintMain
 const originalMainStartupDiagnostic = CurrentPcbViaWriteOwner.prototype.retainedFootprintMainStartupDiagnostic;
 /* oxlint-disable-next-line typescript/unbound-method -- Read only the same original owner's separate passive context through this exact retained method. */
 const originalMainStartupRefusalContext = CurrentPcbViaWriteOwner.prototype.retainedFootprintMainStartupRefusalContext;
+/* oxlint-disable-next-line typescript/unbound-method -- Read only the original owner's fixed passive stock getter before cleanup. */
+const originalMainStockRefusalContext = CurrentPcbViaWriteOwner.prototype.retainedFootprintMainStartupLibraryRefusalContext;
 /* oxlint-disable-next-line typescript/unbound-method -- Only the same admitted original owner supplies this separate failure-only reevaluation packet. */
 const originalMainPredicateDiagnostic = CurrentPcbViaWriteOwner.prototype.retainedFootprintMainPredicateDiagnostic;
 /* oxlint-disable-next-line typescript/unbound-method -- This separate captured private-field getter supplies only its fixed safe native failure fields on the same admitted owner. */
@@ -79,6 +83,7 @@ export class CurrentPcbViaWriteWorkflow {
   #failureDiagnostic: CurrentPcbViaWriteDiagnostic | null = null;
   #mainFailure:CurrentPcbViaWriteMainFailure|null=null;
   #mainStartupDiagnostic: CurrentSelectedFileMainSqlStartupDiagnosticRecord | null = null;
+  #mainStockRefusalContext: CurrentMainStartupLibraryRefusalContext | null = null;
   #mainStartupRefusalContext: CurrentSelectedFileMainSqlStartupRefusalContext | null = null;
   #mainPredicateDiagnostic: CurrentSelectedFileMainSqlPredicateDiagnostic | null = null;
   #saveEntered = false; #saveAcknowledgement: CurrentPcbViaWriteStageResult | null = null;
@@ -185,6 +190,26 @@ export class CurrentPcbViaWriteWorkflow {
       need(same, "MAIN_STARTUP_CONTEXT_ORIGINAL_METHOD");
       const value = originalMainStartupRefusalContext.call(owner); this.#current(true);
       if (value !== null) { this.#mainStartupRefusalContext = freezeDeep(currentSelectedFileMainSqlStartupRefusalContextSchema.parse(captureCurrentPcbStringClockReply(value).value)); }
+    } catch {
+      // Optional context cannot replace the first failure, broaden public v1
+      // Snapshots, inspect an Error or interfere with original cleanup.
+    }
+  }
+  #captureFirstMainStockRefusalContext(): void {
+    if (this.#stage !== "main" || this.#mainStockRefusalContext !== null) { return; }
+    try {
+      this.#current(true); const owner = this.#ownerRequired(true);
+      need(typeof originalMainStockRefusalContext === "function", "MAIN_STOCK_CONTEXT_ORIGINAL_METHOD");
+      let prototype: object | null = CurrentPcbViaWriteOwner.prototype, same = false;
+      for (let depth = 0; prototype !== null && depth < 4; depth += 1) {
+        const descriptor = Object.getOwnPropertyDescriptor(prototype, "retainedFootprintMainStartupLibraryRefusalContext");
+        if (descriptor !== undefined) { same = Object.hasOwn(descriptor, "value") && descriptor.value === originalMainStockRefusalContext; break; }
+        const parent: unknown = Object.getPrototypeOf(prototype);
+        need(parent === null || typeof parent === "object" || typeof parent === "function", "MAIN_STOCK_CONTEXT_ORIGINAL_PROTOTYPE"); prototype = parent;
+      }
+      need(same, "MAIN_STOCK_CONTEXT_ORIGINAL_METHOD");
+      const value = originalMainStockRefusalContext.call(owner); this.#current(true);
+      if (value !== null) { this.#mainStockRefusalContext = freezeDeep(currentMainStartupLibraryRefusalContextSchema.parse(captureCurrentPcbStringClockReply(value).value)); }
     } catch {
       // Optional context cannot replace the first failure, broaden public v1
       // Snapshots, inspect an Error or interfere with original cleanup.
@@ -398,6 +423,7 @@ export class CurrentPcbViaWriteWorkflow {
         this.#failed = true; this.#failureDiagnostic ??= currentPcbViaWriteDiagnostic(this.#stage, currentPcbViaWriteErrorCode(caughtError));
         this.#captureFirstMainFailure();
         this.#captureFirstMainStartupRefusalContext();
+        this.#captureFirstMainStockRefusalContext();
         this.#captureFirstMainStartupDiagnostic();
         this.#captureFirstMainPredicateDiagnostic();
         try { await this.#cleanupOriginal(); } catch {
@@ -449,6 +475,7 @@ export class CurrentPcbViaWriteWorkflow {
       if (!this.#journalReserveEntered && !this.#journal.retained().reserved && !this.#journal.retained().publicationPending) { need(this.#factory === null, "UNPUBLISHED_FACTORY"); return; }
       await this.#journalReady(); this.#cleanupPublicationBlocked = false;
       await this.#cleanupRecord("failure", { stage: this.#stage, originalExecutionStopped: true, retryAuthorized: false,
+        ...(this.#mainStockRefusalContext === null ? {} : { mainStartupLibraryRefusalContext: this.#mainStockRefusalContext }),
         ...(this.#mainStartupRefusalContext === null ? {} : { mainStartupRefusalContext: this.#mainStartupRefusalContext }),
         ...(this.#mainStartupDiagnostic === null ? {} : { mainStartupDiagnostic: this.#mainStartupDiagnostic }),
         ...(this.#mainPredicateDiagnostic === null ? {} : { mainStartupPredicateDiagnostic: this.#mainPredicateDiagnostic }) }); this.#current(true);

@@ -74,3 +74,38 @@ allowing replay. Any later writer attempt requires fresh qualification and a
 new operation. The [passive original context](2026-11-09-startup-refusal-context.md)
 and [captured-tuple diagnostic V2](2026-11-09-captured-startup-diagnostic-v2.md)
 are subsequent source corrections, not observations from this frozen run.
+
+## Combined generation and later Via result
+
+A later frozen development batch, commit
+`04f3ace18da87ec962ad87ad968d0afb6ba2bc97`, was selected as generation eight by
+the original foreground manager. Generation seven retired normally, released
+its lease and exited; the original process handle independently observed exit.
+The manager itself remained unchanged. The new package materialization matched
+4738 files, 94,413,419 bytes and 45 directories, including committed modes and
+single-link identities. Actual process, Node executable, module and source
+admission passed. This was a development selection, not official installation.
+
+Strict type-aware lint, types and 38 focused transport/diagnostic checks passed.
+The non-suite build, dependency, privacy, compatibility and skill checks passed
+on the frozen payload. Exact changed inverse and schematic C# inputs compiled
+and passed 37 offline codec/state checks. Some checks construct inert managed
+objects; none allocates a native process or executes Windows/EasyEDA actions.
+The complete final GitHub suites and connected writer lifecycle remain separate.
+
+The fresh disposable Via attempt reached the same startup SQL refusal with
+362 requests, 362 replies, zero pending replies and 670 events. Neither Create
+nor Save was attempted. Unlike the earlier run, diagnostic V2 retained the
+original cached five-slot SQL tuple using exactly one property request. The
+original four-frame stack and complete pinned Main source identify JL, the
+bundled stock-library initializer, as the caller. This is distinct from web.db
+bookkeeping and selected design SQL. Exact stock-library handling is subsequent
+source work and was not executed by this frozen attempt.
+
+The original application exited, its original Job became empty, its helper was
+released, and independent inspection showed no owned resources, call or
+publication. The terminal disposable abandonment body hash was independently
+verified as `1082347171fbc33e97390de946c72d9ad4e35ecc8fd26ceaf67386ad9c48f518`.
+It relinquishes historical quarantine and grants no authority, file invariance,
+retry or completed writer claim. The consumed attempt must never be replayed.
+No user project was opened or edited.
