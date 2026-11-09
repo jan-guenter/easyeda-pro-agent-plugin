@@ -241,6 +241,13 @@ are build/check dependencies only.
   action, retaining its original pidfd through observed exit, before returning
   or waiting through another controller's native work. This grants no native
   allocation, signal, owner adoption or retry of a closed transport.
+- Retain the complete MCP reply, including `structuredContent`, before formatting
+  its display. A successful metadata-only session inspection can be lost by
+  printing only `content`. If its original conflict-only connection remains
+  open, one correctly retained read-only inspection may recover that metadata.
+  Preserve the lost projection, use only the newly returned own PID and retain
+  its pidfd before supported closure. This grants no native replay, signal,
+  owner reconstruction or retry of a closed transport.
 - Keep new and resumed agent turns outside the controller's retirement-to-
   replacement window. The host can eagerly create a new MCP connection on a
   follow-up turn after that agent's previous transport closed. Attribute a new

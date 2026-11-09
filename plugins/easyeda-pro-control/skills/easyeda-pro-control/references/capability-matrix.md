@@ -85,8 +85,14 @@ connected acceptance. One historical Arc/Line/Via six-query branch passed on a
 generated fixture with exact point/region results and complete closed-file/SQL
 invariance. A separate generated-Pad case accepted five points and complete
 closed raw/SQL/history invariance, then an old report-schema defect blocked
-original helper release. Its missing acknowledgment remains unknown. Component,
-other variants and later runtime admission remain separate. Component-only
+original helper release. Its missing acknowledgment remains unknown. A separate
+frozen `20261108135950` Component cloned-Pad v2 case matched one centre hit and two outside
+misses with model state 64, matching samples and unchanged selection/descriptors.
+Original root/Job/helper cleanup completed and closed raw bytes/all 35 SQL tables
+matched the initial capture. Fresh initial qualification still refused WSL birth
+time zero; its false acceptance flags remain authoritative. Reference-linked
+Component points, other variants and later runtime admission remain separate.
+Component-only
 original-Job abort and the manager's
 retained cleanup adapter do not transfer ownership or replay a failed read.
 The [generated disposable Via controller](generated-pcb-via-write.md) has a

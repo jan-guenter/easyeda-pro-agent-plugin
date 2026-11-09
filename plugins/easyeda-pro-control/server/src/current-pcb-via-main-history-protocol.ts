@@ -1,6 +1,8 @@
 /** Closed history continuation vocabulary. Only the original Via backend may
  * consume the actual pending SQL/callback slot represented by a command. */
 import { z } from "zod";
+import { CURRENT_MAIN_CAPTURED_SCOPE_FRAMES as CAPTURED } from "./current-main-captured-scope-frames.ts";
+import { CURRENT_PCB_VIA_MAIN_HISTORY_BOOKKEEPING as BOOKKEEPING, CURRENT_PCB_VIA_MAIN_HISTORY_REBASE as REBASE, captureCurrentPcbViaMainRebaseCommand } from "./current-pcb-via-main-captured-rebase.ts";
 import { types } from "node:util";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -57,6 +59,9 @@ const command = z.discriminatedUnion("phase", [
   z.strictObject({ phase: z.literal("via-main-history-callback-arm"), method: z.literal("Debugger.setBreakpointOnFunctionCall"), params: ref }),
   z.strictObject({ phase: z.literal("via-main-history-properties"), role: z.enum(["transaction", "callback"]), method: z.literal("Runtime.getProperties"), params: propertiesParams }),
   z.strictObject({ phase: z.literal("via-main-history-frame"), role: frameRole, method: z.literal("Debugger.evaluateOnCallFrame"), params: frameParams }),
+  z.strictObject({ phase: z.literal("via-main-history-raw-frame"), role: z.enum(["sqlRun", "sqlCallback"]), method: z.literal("Debugger.evaluateOnCallFrame"), params: frameParams }),
+  z.strictObject({ phase: z.literal("via-main-history-bookkeeping"), role: z.enum(["callback", "branch", "branchValue", "writer", "encryptEntry", "cipher", "cipherValue", "sqlValue", "sqlCallbackValue", "commitReturned", "projectReturned", "saveReturned", "controllerReturned"]), method: z.literal("Runtime.callFunctionOn"), params: joinParams }),
+  z.strictObject({ phase: z.literal("via-main-history-rebase"), role: z.enum(["runData", "runHead", "runBranch", "runCommit", "runProject", "sqlCallback"]), method: z.literal("Runtime.callFunctionOn"), params: joinParams }),
   z.strictObject({ phase: z.literal("via-main-history-join"), role: programRole, method: z.literal("Runtime.callFunctionOn"), params: joinParams }),
   z.strictObject({ phase: z.literal("via-main-history-step"), role: z.enum(CURRENT_PCB_VIA_MAIN_HISTORY_STEPS), method: z.literal("Debugger.resume"), params: empty }),
   z.strictObject({ phase: z.literal("via-main-history-remove"), role: roleSchema, method: z.literal("Debugger.removeBreakpoint"), params: removeParams }),
@@ -68,6 +73,7 @@ function plain(value: unknown): value is Record<string, unknown> { return value 
  * inert capture. Unknown source and the shared16KiB scalar guard stay intact. */
 function captureCommand(input: unknown): unknown {
   if (!plain(input)) { return captureCurrentPcbStringClockReply(input).value; }
+  if ((Object.getOwnPropertyDescriptor(input, "phase")?.value === "via-main-history-rebase" || Object.getOwnPropertyDescriptor(input, "phase")?.value === "via-main-history-bookkeeping")) { return captureCurrentPcbViaMainRebaseCommand(input); }
   const params = Object.getOwnPropertyDescriptor(input, "params"), raw: unknown = params?.value;
   if (params === undefined || !Object.hasOwn(params, "value") || !plain(raw)) { return captureCurrentPcbStringClockReply(input).value; }
   const declaration = Object.getOwnPropertyDescriptor(raw, "functionDeclaration"), source: unknown = declaration?.value;
@@ -78,13 +84,20 @@ function captureCommand(input: unknown): unknown {
   if (!plain(captured) || !plain(captured["params"])) { throw new Error("PCB_VIA_HISTORY_FIXED_CAPTURE"); }
   return { ...captured, params: { ...captured["params"], functionDeclaration: source } };
 }
+/** Parse only the fixed legacy vocabulary or its separate captured-frame
+ * partner. No caller expression, program, argument value or grant is accepted. */
 export function validateCurrentPcbViaMainHistoryCommand(input: unknown): CurrentPcbViaMainHistoryCommand {
   const value = command.parse(captureCommand(input));
   if (value.phase === "via-main-history-arm") { if (value.role === "callback" || value.role === "sqlCallback") { throw new Error("PCB_VIA_HISTORY_ORIGINAL_FUNCTION_POINT_REQUIRED"); } const site = CURRENT_PCB_VIA_MAIN_HISTORY_SITES[value.role]; if (value.params.location.lineNumber !== site.lineNumber || value.params.location.columnNumber !== site.columnNumber || value.params.condition !== undefined) { throw new Error("PCB_VIA_HISTORY_FIXED_SITE"); } }
   else if (value.phase === "via-main-history-frame") { if (value.params.expression !== currentPcbViaMainHistoryFrame(value.role).expression) { throw new Error("PCB_VIA_HISTORY_FIXED_FRAME"); } }
+  else if (value.phase === "via-main-history-raw-frame") { if (value.params.expression !== { sqlRun: CAPTURED.historyRun, sqlCallback: CAPTURED.historyCallback }[value.role].rawExpression) { throw new Error("PCB_VIA_HISTORY_FIXED_RAW_FRAME"); } }
+  else if (value.phase === "via-main-history-bookkeeping") { const fixed = BOOKKEEPING[value.role]; if (value.params.functionDeclaration !== fixed.program || value.params.arguments.length !== fixed.arguments || value.params.returnByValue !== fixed.returnByValue) { throw new Error("PCB_VIA_HISTORY_FIXED_BOOKKEEPING"); } }
+  else if (value.phase === "via-main-history-rebase") { const fixed = REBASE[value.role]; if (value.params.functionDeclaration !== fixed.program || value.params.arguments.length !== fixed.arguments || value.params.returnByValue) { throw new Error("PCB_VIA_HISTORY_FIXED_REBASE"); } }
   else if (value.phase === "via-main-history-join") { const fixed = PROGRAMS[value.role]; if (value.params.functionDeclaration !== fixed.program || value.params.arguments.length !== fixed.arguments || value.params.returnByValue !== fixed.returnByValue) { throw new Error("PCB_VIA_HISTORY_FIXED_PROGRAM"); } }
   return freezeDeep(value);
 }
+/** Enumerate immutable legacy rows first, then closed captured/bookkeeping
+ * alternatives. Replacing existing requests leaves live request caps fixed. */
 export function currentPcbViaMainHistoryNativeCases(): readonly CurrentPcbViaMainHistoryCommand[] {
   const commands: unknown[] = [];
   for (const role of roles) { const site = CURRENT_PCB_VIA_MAIN_HISTORY_SITES[role]; if (role !== "callback" && role !== "sqlCallback") { commands.push({ phase: "via-main-history-arm", role, method: "Debugger.setBreakpoint", params: { location: { scriptId: "via_script", lineNumber: site.lineNumber, columnNumber: site.columnNumber } } }); } commands.push({ phase: "via-main-history-remove", role, method: "Debugger.removeBreakpoint", params: { breakpointId: "via_point" } }); }
@@ -93,5 +106,9 @@ export function currentPcbViaMainHistoryNativeCases(): readonly CurrentPcbViaMai
   for (const role of CURRENT_PCB_VIA_MAIN_HISTORY_STEPS) { commands.push({ phase: "via-main-history-step", role, method: "Debugger.resume", params: {} }); }
   for (const role of ["transaction", "callback"]) { commands.push({ phase: "via-main-history-properties", role, method: "Runtime.getProperties", params: { objectId: "via_packet", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }); }
   commands.push({ phase: "via-main-history-callback-arm", method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: "via_callback" } });
+
+  for (const [role, fixed] of Object.entries({ sqlRun: CAPTURED.historyRun, sqlCallback: CAPTURED.historyCallback })) { commands.push({ phase: "via-main-history-raw-frame", role, method: "Debugger.evaluateOnCallFrame", params: { objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false, callFrameId: "via_frame", expression: fixed.rawExpression } }); }
+  for (const [role, fixed] of Object.entries(REBASE)) { commands.push({ phase: "via-main-history-rebase", role, method: "Runtime.callFunctionOn", params: { ...CURRENT_PCB_VIA_MAIN_HISTORY_FLAGS, objectId: "via_packet", functionDeclaration: fixed.program, arguments: Array.from({ length: fixed.arguments }, (_, index) => ({ objectId: `via_argument${String(index)}` })), returnByValue: false } }); }
+    for (const [key, fixed] of Object.entries(BOOKKEEPING)) { commands.push({ phase: "via-main-history-bookkeeping", role: key, method: "Runtime.callFunctionOn", params: { ...CURRENT_PCB_VIA_MAIN_HISTORY_FLAGS, objectId: "via_packet", functionDeclaration: fixed.program, arguments: Array.from({ length: fixed.arguments }, (_, index) => ({ objectId: `via_argument${String(index)}` })), returnByValue: fixed.returnByValue } }); }
   return freezeDeep(commands.map(item => validateCurrentPcbViaMainHistoryCommand(item)));
 }

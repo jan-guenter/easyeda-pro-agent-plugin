@@ -163,4 +163,10 @@ and fixture-owner releases, `stage-component-for-fresh-opening` transfers only
 that original qualified data to the separate `component-spatial` native birth.
 Use its [Component point contract](current-pcb209-spatial.md#separate-generated-component-point-birth).
 Older PCB/Pad owners, old reader closed capture and historical data loaders refuse
-this target. No positive connected Component import/cache/point case is recorded.
+this target. Frozen build `20261108135950` passed one initial two-document/35-table qualification
+and a separate three-point cloned-Pad case with normalized model state 64. Its
+original owners released after closure and exact closed raw/SQL preservation.
+Fresh post-reader initial qualification still refused WSL birth time zero;
+reference-linked points, general Component scenes, registration and writer
+authority remain unproved. See the
+[scoped Component case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-08-generated-component-import-qualification.md).

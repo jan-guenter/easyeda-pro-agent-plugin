@@ -204,6 +204,17 @@ getters leave model state and descriptors unchanged. Historical cloned v1 keeps
 its immutable0or5202 contract; parsing it grants no current ownership. These
 source and offline checks do not establish a connected match.
 
+Frozen build `20261108135950` subsequently passed one three-point cloned-Pad v2 case: the centre
+returned its owned Pad, two outside points returned no identities, and both
+samples preserved selection and retained descriptors. Its model state was64.
+The original root/Job closed and helper release was acknowledged. Complete closed
+raw bytes and all 35 SQL tables matched the initial capture. Fresh initial
+qualification separately refused WSL birth time zero and retained its false
+acceptance flags. This
+[scoped case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-08-generated-component-import-qualification.md#original-cloned-pad-point-reader-and-closure)
+does not validate another payload, reference-linked representation or ordinary
+populated board. It supplies no writer or persistent-registration authority.
+
 No caller chooses classes, supplies alternate source or relaxes guards. Normal
 close, complete closed capture, original process/Job termination and helper
 release are required after either representation's attempt.
