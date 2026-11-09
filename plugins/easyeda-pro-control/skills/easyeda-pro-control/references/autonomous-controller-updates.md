@@ -91,6 +91,32 @@ Ordinary tool requests retain the existing foreground-client grammar:
 {"id":"status-1","tool":"easyeda_control_api","arguments":{"request":{"action":"loaded-facade"}}}
 ```
 
+For a large tool argument object, write that object alone as a UTF-8 JSON file
+and send a short selector instead of the inline `arguments` field:
+
+```json
+{"id":"status-file","tool":"easyeda_control_api","argumentsFile":{"path":"/absolute/private/session-args.json","expectedSha256":"<actual 64 lowercase hexadecimal SHA-256 digits>"}}
+```
+
+The file contains the ordinary tool arguments, for example
+`{"request":{"action":"loaded-facade"}}`. Use an absolute canonical path,
+a regular single-link file owned by the manager user with mode `0600`, and a
+canonical owner-only parent directory with mode `0700`. Symlinks, alias paths,
+BOMs, invalid UTF-8, non-object JSON and a mismatched complete-file hash refuse
+before dispatch. The selector line plus the original file bytes must fit the
+same 65,536-byte request limit. Keep the selector below the PTY line limit, or
+use a pipe or the terminal mode described above. The manager never changes the
+terminal or reconstructs bytes that it discarded.
+
+`argumentsFile` and inline `arguments` are mutually exclusive. Only an ordinary
+tool-call envelope accepts the selector; manager inspect, retirement, startup,
+shutdown and original-cleanup/control selectors do not. The manager opens and
+verifies one bounded descriptor snapshot, then keeps the decoded arguments for
+its intent and original cleanup. Changing the file later cannot change that
+request. Refusal or an uncertain dispatch never triggers a reload or retry.
+This requires a frontend build containing file-input support; updating files
+on disk cannot change an already-running frontend.
+
 Use a fresh `responseFile` in a canonical owner-only directory for large results.
 Normal calls remain serial through publication. The bounded pending-capture
 control below is the only concurrent exception. The manager writes private
@@ -382,10 +408,19 @@ native owner remains. The manager's bounded evidence budgets reserve cleanup
 and control capacity; budget refusal grants no replay or takeover.
 
 Keep new MCP connection creation outside the retirement-to-replacement window.
+This includes resumed and follow-up agent turns: the host can eagerly create a
+new connection even after that agent's previous transport closed. Start those
+turns while the admitted controller still holds its lease. Attribute any new
+process to its original connection before inspection or supported closure;
+never retry the old closed transport or adopt a process through another client.
 Source/review subagents can initialize their plugin connection while the live
-controller still owns the lease. A competing connection from the same agent
-team must retire through its own supported tool; another chat's owner cannot
-be displaced. If startup fails, inspect first. A selection or runtime failure
+controller still owns the lease. An owning connection from the same agent
+team must finish its original workflows and retire through its own supported
+path. A conflict-only connection instead uses its own `inspect`, then one
+`close-conflict` with `confirmCloseConflict:true`; retain the original pidfd and
+observe that process exiting separately. It cannot retire or displace the
+owning connection. Another chat's owner cannot be displaced. If startup fails,
+inspect first. A selection or runtime failure
 before child allocation leaves no original starting child, so `cleanup-startup`
 refuses. Shut down only after inspection confirms no owned child remains.
 If startup retained an unused child, with no caller tool dispatched, use

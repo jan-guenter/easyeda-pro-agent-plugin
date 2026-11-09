@@ -7,7 +7,7 @@ import { currentPcbViaMainHistoryWire } from "../src/current-pcb-via-main-histor
 import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clock-reply.ts";
 
 void test("all fixed history cases contain only scalar native handles and retain the ordinary16KiB arbitrary-source guard", () => {
-  const cases = currentPcbViaMainHistoryNativeCases(); assert.equal(cases.length, 82);
+  const cases = currentPcbViaMainHistoryNativeCases(); assert.equal(cases.length, 103);
   for (const command of cases) { const wire = currentPcbViaMainHistoryWire(command, 79); assert.equal(wire.request["action"], "pcb-via-main-history");
     for (const key of ["functionDeclaration", "expression", "condition", "sql", "body", "cipherHex", "keyHex"]) { assert.equal(Object.hasOwn(wire.request, key), false); }
     assert.throws(() => validateCurrentPcbViaMainHistoryCommand({ ...command, grant: true }));

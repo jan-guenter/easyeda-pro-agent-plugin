@@ -2,6 +2,8 @@
  * native callbacks. This packet grants no SDK Save or persistence authority. */
 /* oxlint-disable import/max-dependencies -- Compose original operation custody with fixed source/cipher selectors, never caller code or SQL. */
 import { z } from "zod";
+import { CURRENT_MAIN_CAPTURED_SCOPE_FRAMES as CAPTURED } from "./current-main-captured-scope-frames.ts";
+import { CURRENT_PCB_VIA_MAIN_HISTORY_BOOKKEEPING as BOOKKEEPING, CURRENT_PCB_VIA_MAIN_HISTORY_REBASE as REBASE } from "./current-pcb-via-main-captured-rebase.ts";
 import { canonicalJson } from "./core.ts";
 import { requireOriginalCurrentPcbViaMainOrigin } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentPcbViaWriteOwner } from "./current-pcb-via-write-owner.ts";
@@ -25,6 +27,7 @@ export interface CurrentPcbViaMainHistoryCompletion {
   readonly selectedSqlStillFenced: true; readonly structurePublicationVerified: false; readonly persistenceVerified: false;
 }
 const issued = new WeakMap<CurrentPcbViaMainHistoryCompletion, Readonly<{ observer: CurrentPcbViaMainHistoryObserver; owner: CurrentPcbViaWriteOwner; plan: CurrentPcbViaWritePlan; origin: CurrentPcbViaMainOrigin; effects: CurrentProjectHistorySqlEffects }>>();
+const bookkeepingCalls = Object.freeze({ ...PROGRAMS, ...BOOKKEEPING });
 const point = z.looseObject({ scriptId: z.string(), lineNumber: z.number().int(), columnNumber: z.number().int() });
 const frame = z.looseObject({ callFrameId: z.string(), functionName: z.string(), functionLocation: point, location: point });
 const eventParams = z.looseObject({ hitBreakpoints: z.tuple([z.string()]), callFrames: z.array(frame).min(1).max(64) });
@@ -56,13 +59,19 @@ export class CurrentPcbViaMainHistoryObserver {
       else { if (role !== "sqlRun") { need(event.params.hitBreakpoints[0] === this.#points.get(role), "ORIGINAL_POINT"); } return event.params; }
     } throw new Error("PCB_VIA_HISTORY_OBSERVER_READ_BOUND");
   }
+  /** Read the held original frame without ambient F5 and perform its fixed
+   * capture reconstruction plus legacy join within the original request slot. */
   async #frame(role: FrameRole, paused: Paused): Promise<string> {
-    const expected = currentPcbViaMainHistoryFrame(role); const matches = paused.callFrames.filter(item => item.functionName === expected.name && item.functionLocation.scriptId === this.#bindings.scriptId && item.functionLocation.lineNumber === expected.lineNumber && item.functionLocation.columnNumber === expected.functionColumn);
-    need(matches.length === 1 && matches[0] !== undefined, "ORIGINAL_FRAME"); return decodeArray(await this.#send({ phase: "via-main-history-frame", role, method: "Debugger.evaluateOnCallFrame", params: { objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true,
-      callFrameId: matches[0].callFrameId, expression: expected.expression, returnByValue: false, includeCommandLineAPI: false } }, true), expected.length);
+    const expected = currentPcbViaMainHistoryFrame(role); let captured: typeof CAPTURED.historyRun | null = null; if (role === "sqlRun") { captured = CAPTURED.historyRun; } else if (role === "sqlCallback") { captured = CAPTURED.historyCallback; } const matches = paused.callFrames.filter(item => item.functionName === expected.name && item.functionLocation.scriptId === this.#bindings.scriptId && item.functionLocation.lineNumber === expected.lineNumber && item.functionLocation.columnNumber === expected.functionColumn);
+    need(matches.length === 1 && matches[0] !== undefined, "ORIGINAL_FRAME"); return decodeArray(await this.#send({ phase: captured === null ? "via-main-history-frame" : "via-main-history-raw-frame", role, method: "Debugger.evaluateOnCallFrame", params: { objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true,
+      callFrameId: matches[0].callFrameId, expression: captured?.rawExpression ?? expected.expression, returnByValue: false, includeCommandLineAPI: false } }, true), expected.length - (captured === null ? 0 : 1));
   }
+  /** Bind SQL reconstruction and descriptor-only bookkeeping to fixed phase
+   * rows while preserving original argument IDs, readonly flags and timing. */
   #join(role: ProgramRole, objectId: string, arguments_: readonly string[]): Promise<unknown> {
-    const fixed = PROGRAMS[role]; return this.#send({ phase: "via-main-history-join", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId, functionDeclaration: fixed.program, arguments: arguments_.map(argument => ({ objectId: argument })), returnByValue: fixed.returnByValue } }, true);
+    const captured = role === "runData" || role === "runHead" || role === "runBranch" || role === "runCommit" || role === "runProject" || role === "sqlCallback" ? REBASE[role] : null;
+    const fixed = captured ?? bookkeepingCalls[role]; const args = role === "sqlCallback" ? [this.#bindings.sqlCaptureObjectId, ...arguments_] : arguments_;
+    return this.#send({ phase: captured === null ? "via-main-history-bookkeeping" : "via-main-history-rebase", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId, functionDeclaration: fixed.program, arguments: args.map(argument => ({ objectId: argument })), returnByValue: fixed.returnByValue } }, true);
   }
   async #packet(role: ProgramRole, objectId: string, arguments_: readonly string[]): Promise<string> { const fixed = PROGRAMS[role]; need(!fixed.returnByValue, "PACKET_PROGRAM"); return decodeArray(await this.#join(role, objectId, arguments_), fixed.length); }
   async #capture(role: Role, program: ProgramRole, arguments_: readonly string[]): Promise<string> { return this.#packet(program, await this.#frame(role, await this.#next(role)), arguments_); }

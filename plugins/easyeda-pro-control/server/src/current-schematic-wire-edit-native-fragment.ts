@@ -75,7 +75,7 @@ bool schematicWireEdit209;
 static string SchematicWireEditStart {get{return SchematicRelevanceDisplayStart;}}
 static string SchematicWireEditNavigation {get{return SchematicRelevanceDisplayNavigation;}}
 static readonly string SchematicWireEditStage=${packed(STAGE)};
-EasyedaDiagnosticOwner(EasyedaSchematicWireEditBirth birth):this(){if(birth!=EasyedaSchematicWireEditBirth.Original)throw Error("schematic-wire-birth");schematicWireEdit209=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport(EasyedaSchematicWireEditBirth.Original);}
+EasyedaDiagnosticOwner(EasyedaSchematicWireEditBirth birth):this(){if(birth!=EasyedaSchematicWireEditBirth.Original)throw Error("schematic-wire-birth");schematicWireEdit209=true;stockMainEligible=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport(EasyedaSchematicWireEditBirth.Original);}
 public static EasyedaDiagnosticOwner CreateSchematicWireEdit209(){return new EasyedaDiagnosticOwner(EasyedaSchematicWireEditBirth.Original);}
 static int SchematicWireEditIndex(string phase){return Array.IndexOf(new[]{"start","navigate","capture","preflight","modify","observe"},phase);}
 ${admission}

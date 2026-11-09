@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { types } from "node:util";
 import { createContext, runInContext } from "node:vm";
-import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE } from "../src/current-selected-file-main-sql-fence-programs.ts";
+import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE, CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_PROGRAM as CLASSIFY, CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_EXPRESSIONS as EXPRESSIONS } from "../src/current-selected-file-main-sql-fence-programs.ts";
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as CALLS } from "../src/current-main-startup-config-programs.ts";
 import { CURRENT_MAIN_STARTUP_CONFIG_SQL as SQL } from "../src/current-main-startup-config-sql.ts";
 import { CurrentMainStartupConfigProgress, currentMainStartupConfigSelectionSchema } from "../src/current-main-startup-config-progress.ts";
@@ -32,6 +32,19 @@ function select(context: ReturnType<typeof createContext>, role: "jb" | "dc", si
   return runInContext(`(${CALLS.select}).call(${frame},tracker,${JSON.stringify(site)})`, context);
 }
 function accept(progress: CurrentMainStartupConfigProgress, value: unknown): void { const captured = currentMainStartupConfigSelectionSchema.parse(structuredClone(value)); assert.equal(progress.consume(captured), true); }
+void test("path-derived startup names still pass the unchanged original tracker and reject another app root", () => {
+  const context = fixture();
+  runInContext(`function versionRaw(Je){const t=path,a=init.db,o=init,A=row,_=path,nl=documents,A2=directory;return ${EXPRESSIONS.startupVersion};}
+    function jbRaw(){const e=jb,r={},_=path,nl=documents,Je=root,A2=directory,h6=jbScript;return ${EXPRESSIONS.startupJB};}
+    function dcRaw(){const t=dc,_=path,nl=documents,Je=root,A2=directory,KB=dcScript;return ${EXPRESSIONS.startupDC};}
+    function classified(raw,site){return (${CLASSIFY}).call(raw,capture,site);}
+    tracker=(${CALLS.version}).call(classified(versionRaw(root),"startupVersion"),capture);
+    (${CALLS.bindJB}).call(classified(jbRaw(),"startupJB"),tracker);
+    (${CALLS.bindDC}).call(classified(dcRaw(),"startupDC"),tracker);`, context);
+  assert.equal(runInContext("typeof lc", context), "undefined");
+  assert.throws(() => runInContext(`(${CALLS.version}).call(classified(versionRaw(documents+"\\\\LCEDA-Pro"),"startupVersion"),capture)`, context));
+  assert.equal(runInContext("calls", context), 0);
+});
 void test("actual retained profile frames admit only the complete ordered startup sequence and retain the actual prepared statement", () => {
   const context = fixture(), progress = new CurrentMainStartupConfigProgress(); version(context); progress.version(); bind(context, "jb"); progress.bind("jb");
   runInContext("jb.transactionDepth=1", context); accept(progress, select(context, "jb", "run", SQL.transaction.begin));

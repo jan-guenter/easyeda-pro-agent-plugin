@@ -20,13 +20,13 @@ export function currentSchematicRelevanceHistoryCommandNativeSource(): string {
   const rows = cases.map(command => { const row = currentSchematicRelevanceHistoryCommandTemplate(command); return [row.phase, row.method, row.names.join(","), row.template]; });
   const programs = CALLS.map((row, index) => [String(index), JSON.stringify(row[1])]);
   const hashes = cases.map(command => hash(Buffer.from(`${JSON.stringify({ id: 83, method: command.method, params: command.params, sessionId: "original_ui" })}\0`)));
-  return `public static class EasyedaSchematicRelevanceHistoryCommandProtocol{
-static void Need(bool value){if(!value)throw new System.InvalidOperationException("schematic-history-command-codec");}
-${table("Rows", rows, 4)}
-${table("Programs", programs, 2)}
-static string Handle(object input){string value=input as string;Need(value!=null&&System.Text.RegularExpressions.Regex.IsMatch(value,@"\\A[A-Za-z0-9_.:-]{1,256}\\z"));return value;}
-static string Json(string value){return "\\""+value+"\\"";}
-public static string Encode(int id,string session,string phase,string method,System.Collections.IDictionary fields){Need(id>0&&fields!=null);Handle(session);string[] row=null;foreach(string[] candidate in Rows)if(candidate[0]==phase){Need(row==null);row=candidate;}Need(row!=null&&row[1]==method);string[] names=row[2].Length==0?new string[0]:row[2].Split(',');Need(fields.Count==names.Length);var values=new System.Collections.Generic.Dictionary<string,string>(System.StringComparer.Ordinal);foreach(string name in names){Need(fields.Contains(name));values.Add(name,Json(Handle(fields[name])));}foreach(string[] program in Programs)values.Add("program"+program[0],program[1]);string text=System.Text.RegularExpressions.Regex.Replace(row[3],"\\"__schematic_historycommand_([A-Za-z0-9]+)__\\"",match=>{string value;Need(values.TryGetValue(match.Groups[1].Value,out value));return value;});text="{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+text.Substring(1,text.Length-2)+",\\"sessionId\\":"+Json(session)+"}\\0";Need(System.Text.Encoding.UTF8.GetByteCount(text)<=65536);return text;}
-public static void VerifySmoke(){string[] hashes=${currentPcbDiagnosticNativeHashVector(hashes)};for(int index=0;index<Rows.Length;index++){string[] row=Rows[index];var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);foreach(string name in row[2].Length==0?new string[0]:row[2].Split(','))fields.Add(name,"original_ref");string text=Encode(83,"original_ui",row[0],row[1],fields);using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text))).Replace("-","").ToLowerInvariant()==hashes[index]);fields.Add("functionDeclaration","caller");bool refused=false;try{Encode(83,"original_ui",row[0],row[1],fields);}catch(System.InvalidOperationException){refused=true;}Need(refused);}bool resumeRefused=false;try{Encode(83,"original_ui","unknown-resume","Debugger.resume",new System.Collections.Hashtable());}catch(System.InvalidOperationException){resumeRefused=true;}Need(resumeRefused);}
-}`;
+  return [
+    `public static class EasyedaSchematicRelevanceHistoryCommandProtocol{`,
+    `static void Need(bool value){if(!value)throw new System.InvalidOperationException("schematic-history-command-codec");}`,
+    table("Rows", rows, 4),
+    table("Programs", programs, 2),
+    `public static string Encode(int id,string session,string phase,string method,System.Collections.IDictionary fields){return EasyedaSchematicUiFixedCodec.Encode(id,session,phase,method,fields,Rows,Programs,"historycommand",Need);}`,
+    `public static void VerifySmoke(){EasyedaSchematicUiFixedCodec.VerifySmoke(Rows,${currentPcbDiagnosticNativeHashVector(hashes)},Encode,Need);}`,
+    `}`,
+  ].join("");
 }

@@ -5,13 +5,15 @@ import type { CurrentPcbViaMainHistoryCommand } from "./current-pcb-via-main-his
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export interface CurrentPcbViaMainHistoryTemplate { readonly phase: string; readonly method: string; readonly fields: readonly string[]; readonly values: Readonly<Record<string, string>>; readonly template: string }
+/** Replace original inspector handles only; the fixed source, readonly
+ * flags and role remain sealed in the corresponding native codebook row. */
 export function currentPcbViaMainHistoryTemplate(input: unknown): CurrentPcbViaMainHistoryTemplate {
   const command = validateCurrentPcbViaMainHistoryCommand(input), fields: string[] = [], values: Record<string, string> = {};
   const field = (name: string, value: string): string => { if (fields.includes(name)) { throw new Error("PCB_VIA_HISTORY_FIELD_ALIAS"); } fields.push(name); values[name] = value; return `__via_history_${name}__`; };
   const params: Record<string, unknown> = { ...command.params };
   if (command.phase === "via-main-history-arm") { params["location"] = { ...command.params.location, scriptId: field("scriptId", command.params.location.scriptId) }; }
-  else if (command.phase === "via-main-history-frame") { params["callFrameId"] = field("callFrameId", command.params.callFrameId); }
-  else if (command.phase === "via-main-history-join") { params["objectId"] = field("objectId", command.params.objectId); params["arguments"] = command.params.arguments.map((argument, index) => ({ objectId: field(`argument${String(index)}`, argument.objectId) })); }
+  else if ((command.phase === "via-main-history-frame" || command.phase === "via-main-history-raw-frame")) { params["callFrameId"] = field("callFrameId", command.params.callFrameId); }
+  else if ((command.phase === "via-main-history-join" || command.phase === "via-main-history-rebase" || command.phase === "via-main-history-bookkeeping")) { params["objectId"] = field("objectId", command.params.objectId); params["arguments"] = command.params.arguments.map((argument, index) => ({ objectId: field(`argument${String(index)}`, argument.objectId) })); }
   else if (command.phase === "via-main-history-remove") { params["breakpointId"] = field("breakpointId", command.params.breakpointId); }
   else if (command.phase !== "via-main-history-step") { params["objectId"] = field("objectId", command.params.objectId); }
   return freezeDeep({ phase: "role" in command ? `${command.phase}-${command.role}` : command.phase, method: command.method, fields, values, template: JSON.stringify({ method: command.method, params }) });
