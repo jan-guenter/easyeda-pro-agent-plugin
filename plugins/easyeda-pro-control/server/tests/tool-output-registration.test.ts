@@ -19,7 +19,6 @@ const constants = new Map([
   ["CURRENT_PCB_VIA_WRITE_TOOL", CURRENT_PCB_VIA_WRITE_TOOL],
   ["CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL", CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL],
 ]);
-/** Parse the actual facade output-schema declaration and retain all properties, including computed keys, without importing the native owner. */
 async function sourceTable(): Promise<Readonly<{ source: string; properties: ObjectExpression["properties"] }>> {
   const source = stripTypeScriptTypes(await readFile(new URL("../src/index.ts", import.meta.url), "utf8"));
   const declarations = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.filter(row => row.type === "VariableDeclaration" && row.declarations.some(value => value.id.type === "Identifier" && value.id.name === "toolOutputSchemas"));

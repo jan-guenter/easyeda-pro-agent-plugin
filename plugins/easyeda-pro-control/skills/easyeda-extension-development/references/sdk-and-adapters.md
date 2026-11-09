@@ -707,3 +707,35 @@ callback and fresh lexical Jd values. Its runtime transport is fixed and parent
 owned. A task or offset sample does not prove the callback handled the native
 document request or that another responder could not answer. Those event and
 backend proofs remain required before writer admission.
+
+
+## Paused Main frames
+
+A module import need not be available in an inner function's debugger scope.
+Inventory the exact source references and inspect the actual paused frame.
+Capture required module exports at their qualified original import site and
+retain that original private capture. A later raw tuple can omit an unavailable
+import and reconstruct only that operand from the retained capture. Keep every
+other operand, predicate and original-pause check intact. A reference error is
+not evidence of an unsupported SQL method or permission to change its guard.
+
+Inspector scope properties have two views. Runtime.getProperties can present
+virtual bindings, while callFunctionOn receives a wrapper with its own
+description and object fields. Qualify the complete source and scope metadata,
+then accept only the exact wrapper's own data descriptors before using its
+binding object. Do not treat the wrapper as the lexical binding object or invoke
+an accessor to recover a missing field.
+
+V8's side-effect checker can refuse scratch bookkeeping and native brand
+checks. Preserve historical commands and flags. If a new fixed adapter needs a
+different flag, audit its entire call graph, qualify the original getter,
+prototype and brand, and bind the separate command to its original owner and
+pause. A local Inspector analogue proves neither target runtime compatibility
+nor a design-write or Save lifecycle. Never turn off the checker for an entire
+family to work around a single refusal.
+
+Combine tuple reconstruction with its original fixed consumer when adding a
+separate RPC would exceed the lane's existing budget. Unknown shapes, lost
+acknowledgments and changed pauses consume the attempt and remain stopped.
+See the [source integration record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-08-main-captured-frame-integration.md)
+for its bounded evidence and pending connected validation.

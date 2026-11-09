@@ -44,18 +44,3 @@ private harness compile lacked surrounding using declarations and selected the
 wrong existing decoder overload; correcting that harness changed no production
 code. Core/controller/pipe/profile/generator mounting and full union compilation
 remain with the coordinating agent. No live application call was made.
-
-## 2026-11-08 provenance correction
-
-This record entered the local implementation history in `4ddaf6af98a8d50c21c610e8050731fc713ced1f`,
-Git tree `fdc90c566aac8586220f4cfbc004edbedd6ca13e`, with Git author timestamp
-`2026-11-08T06:42:27+01:00`. Those objects are retained in the local private
-repository. They are source-introduction provenance, not a recovered timestamp
-or sealed identity for the earlier tested worktree. That worktree and its
-uncommitted changes were not completely sealed in the retained evidence and
-cannot be reconstructed for attribution. The stated checks and measurements
-remain historical observations with that limit. Any compiler SHA256 above
-identifies only its emitted C# input; it does not identify the complete
-TypeScript, test or generator tree. No earlier test was rerun or attributed to
-a later commit for this correction. Private implementation ancestors are not
-published to fill this gap.

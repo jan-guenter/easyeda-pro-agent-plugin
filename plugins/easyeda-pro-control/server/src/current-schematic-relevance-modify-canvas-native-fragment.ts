@@ -1,0 +1,41 @@
+/** One original onChange/Canvas segment. Its native ledger stops at the
+ * retained CM ticket entry; timer delivery, TEXT, SDK and Save stay closed. */
+import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
+import { currentSchematicRelevanceModifyCanvasNativeSource } from "./current-schematic-relevance-modify-canvas-native.ts";
+import { currentSchematicRelevanceModifyCanvasControlNativeSource } from "./current-schematic-relevance-modify-canvas-control-native.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CANVAS_REQUESTS as DATA } from "./current-schematic-relevance-modify-canvas-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CANVAS_FUNCTION_ROLES as FUNCTIONS, CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CANVAS_SOURCE_ROLES as SOURCES } from "./current-schematic-relevance-modify-canvas-control-protocol.ts";
+
+const begin = "// BEGIN ORIGINAL SCHEMATIC MODIFY CANVAS", end = "// END ORIGINAL SCHEMATIC MODIFY CANVAS";
+const dispatch = String.raw`        'schematic-relevance-modify-canvas' {
+          if(-not $SchematicRelevanceDisplayWrite209 -or -not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])){throw 'schematic-modify-canvas-fields'}
+          $base=@('action','id','helperInstance','jobId','rootPid','rootCreated','requestId','phase','method');foreach($field in $base){if(@($request.PSObject.Properties.Name) -cnotcontains $field){throw 'schematic-modify-canvas-field'}}
+          $fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal);foreach($property in $request.PSObject.Properties){if($base -cnotcontains $property.Name){$fields.Add($property.Name,$property.Value)}}
+          if($request.method -ceq 'control'){if($request.requestId -ne 0 -or $fields.Count -ne 0){throw 'schematic-modify-canvas-control'};$owner.ControlSchematicRelevanceModifyCanvas($request.phase)}else{$owner.StepSchematicRelevanceModifyCanvas([int]$request.requestId,$request.phase,$request.method,$fields)}
+          $result=@{written=$true}
+        }
+`;
+/** Encode only source-owned constant role names into the immutable ledger. */
+const quoted = (rows: readonly string[]): string => rows.map(row => `"${row}"`).join(",");
+/** Mount source-owned fixed data and six guarded Canvas continuations. The
+ * eight arms include future timer guards, but this action cannot release them. */
+export function applyCurrentSchematicRelevanceModifyCanvasNativeFragment(input: string): string {
+ const arms = [...SOURCES.flatMap(role => [`modify-canvas-control-possible-${role}`, `modify-canvas-control-point-${role}`]), ...FUNCTIONS.map(role => `modify-canvas-control-function-${role}`)];
+ const block = `${begin}
+${currentSchematicRelevanceModifyCanvasNativeSource()}
+${currentSchematicRelevanceModifyCanvasControlNativeSource()}
+public sealed partial class EasyedaDiagnosticOwner{
+public static void VerifySchematicRelevanceModifyCanvasCodecSmoke(){EasyedaSchematicRelevanceModifyCanvasProtocol.VerifySmoke();EasyedaSchematicRelevanceModifyCanvasControlProtocol.VerifySmoke();}
+bool relevanceModifyCanvasBound,relevanceModifyCanvasBefore,relevanceModifyCanvasArmed,relevanceModifyCanvasParent,relevanceModifyCanvasProof,relevanceModifyCanvasTicket;int relevanceModifyCanvasReads,relevanceModifyCanvasArms,relevanceModifyCanvasResumes,relevanceModifyCanvasProofReads;
+void AssertSchematicRelevanceModifyCanvas(){AssertSchematicRelevanceModifyContinuation();if(!relevanceModifyBatchHeld||!relevanceModifyCmDelta||!relevanceModifyStructureBound||relevanceModifyCmParentResumes!=1||relevanceModifyCmResumes<1||relevanceModifyCmResumes>2)throw Error("schematic-modify-canvas-original");}
+public void ControlSchematicRelevanceModifyCanvas(string phase){AssertSchematicRelevanceModifyCanvas();if(phase=="bind"){if(relevanceModifyCanvasBound||relevanceModifyCmResumes!=1)throw Error("schematic-modify-canvas-bind-once");relevanceModifyCanvasBound=true;return;}if(!relevanceModifyCanvasBound||relevanceModifyCanvasTicket)throw Error("schematic-modify-canvas-state");if(phase=="before-ready"&&!relevanceModifyCanvasBefore&&relevanceModifyCanvasReads>0&&!relevanceModifyCanvasParent){relevanceModifyCanvasBefore=true;return;}if(phase=="guards-armed"&&relevanceModifyCanvasBefore&&!relevanceModifyCanvasArmed&&relevanceModifyCanvasArms==${String(arms.length)}&&!relevanceModifyCanvasParent){relevanceModifyCanvasArmed=true;return;}if(phase=="ticket-held"&&relevanceModifyCanvasResumes==6&&relevanceModifyCmResumes==2&&!relevanceModifyCanvasProof){relevanceModifyCanvasTicket=true;return;}string[] expected={"data-ready","entry-ready","executor-ready","constructed-ready","registered-ready","returned-ready"};if(relevanceModifyCanvasParent&&relevanceModifyCanvasResumes<expected.Length&&phase==expected[relevanceModifyCanvasResumes]&&!relevanceModifyCanvasProof&&relevanceModifyCanvasReads>relevanceModifyCanvasProofReads){relevanceModifyCanvasProof=true;relevanceModifyCanvasProofReads=relevanceModifyCanvasReads;return;}throw Error("schematic-modify-canvas-control-order");}
+public void StepSchematicRelevanceModifyCanvas(int id,string phase,string method,System.Collections.IDictionary fields){AssertSchematicRelevanceModifyCanvas();if(!relevanceModifyCanvasBound||relevanceModifyCanvasTicket||phase==null)throw Error("schematic-modify-canvas-unavailable");string text;if(phase=="modify-cm-control-resume-onChange"){if(!relevanceModifyCanvasBefore||!relevanceModifyCanvasArmed||relevanceModifyCanvasParent||relevanceModifyCmResumes!=1)throw Error("schematic-modify-canvas-parent-once");text=EasyedaSchematicRelevanceModifyCmControlProtocol.Encode(id,schematicWorkerSession,phase,method,fields);relevanceModifyCanvasParent=true;relevanceModifyCmResumes++;}else if(phase.StartsWith("modify-canvas-control-",StringComparison.Ordinal)){if(phase.StartsWith("modify-canvas-control-resume-",StringComparison.Ordinal)){string[] roles={"onDataChange","publishCanvas","executor","constructed","publishCanvasReturned","onDataChangeReturned"};if(!relevanceModifyCanvasParent||!relevanceModifyCanvasProof||relevanceModifyCanvasResumes>=roles.Length||phase!="modify-canvas-control-resume-"+roles[relevanceModifyCanvasResumes])throw Error("schematic-modify-canvas-body-held");text=EasyedaSchematicRelevanceModifyCanvasControlProtocol.Encode(id,schematicWorkerSession,phase,method,fields);relevanceModifyCanvasProof=false;relevanceModifyCanvasResumes++;}else{string[] arms={${quoted(arms)}};if(!relevanceModifyCanvasBefore||relevanceModifyCanvasArmed||relevanceModifyCanvasParent||relevanceModifyCanvasArms>=arms.Length||phase!=arms[relevanceModifyCanvasArms])throw Error("schematic-modify-canvas-arm-order");text=EasyedaSchematicRelevanceModifyCanvasControlProtocol.Encode(id,schematicWorkerSession,phase,method,fields);relevanceModifyCanvasArms++;}}else{if(!phase.StartsWith("modify-canvas-",StringComparison.Ordinal)||relevanceModifyCanvasReads>=${String(DATA.reads)}||!relevanceModifyCanvasParent&&relevanceModifyCanvasBefore)throw Error("schematic-modify-canvas-read-bound");text=EasyedaSchematicRelevanceModifyCanvasProtocol.Encode(id,schematicWorkerSession,phase,method,fields);relevanceModifyCanvasReads++;}SendMessage(id,text);}
+}
+${end}`;
+ let source = input; const admission = 'case "schematic-relevance-modify-cm-control":';
+ if (!source.includes('case "schematic-relevance-modify-canvas":')) { if (source.split(admission).length !== 2) { throw new Error("SCH_MODIFY_CANVAS_ADMISSION"); } source = source.replace(admission, `case "schematic-relevance-modify-canvas":${admission}`); }
+ source = installOwnedNativeDispatch(source, dispatch, "        'schematic-relevance-modify-cm-control' {");
+ const from = source.indexOf(begin), through = source.indexOf(end);
+ if (from !== -1 || through !== -1) { if (from === -1 || through < from || source.includes(begin, from + begin.length) || source.includes(end, through + end.length)) { throw new Error("SCH_MODIFY_CANVAS_MARKERS"); } return source.slice(0, from) + block + source.slice(through + end.length); }
+ const anchor = "// BEGIN ORIGINAL SCHEMATIC MODIFY CM"; if (source.split(anchor).length !== 2) { throw new Error("SCH_MODIFY_CANVAS_ANCHOR"); } return source.replace(anchor, `${block}\n${anchor}`);
+}

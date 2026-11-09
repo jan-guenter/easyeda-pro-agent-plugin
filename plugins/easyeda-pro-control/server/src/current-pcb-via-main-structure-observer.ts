@@ -2,6 +2,8 @@
  * response finalizer. It owns no second event reader or persistence claim. */
 /* oxlint-disable import/max-dependencies -- Fixed source/program, actual original cursor and inert inspector metadata have distinct ownership boundaries. */
 import { z } from "zod";
+import { CURRENT_MAIN_CAPTURED_SCOPE_FRAMES as CAPTURED } from "./current-main-captured-scope-frames.ts";
+import { CURRENT_PCB_VIA_MAIN_STRUCTURE_BOOKKEEPING as BOOKKEEPING, CURRENT_PCB_VIA_MAIN_STRUCTURE_REBASE as REBASE } from "./current-pcb-via-main-captured-rebase.ts";
 import { canonicalJson } from "./core.ts";
 import { requireOriginalCurrentPcbViaMainOrigin } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentPcbViaWriteOwner } from "./current-pcb-via-write-owner.ts";
@@ -23,6 +25,7 @@ export interface CurrentPcbViaMainStructureCompletion {
   readonly selectedSqlStillFenced: true; readonly producerFrontierVerified: false; readonly persistenceVerified: false;
 }
 const issued = new WeakMap<CurrentPcbViaMainStructureCompletion, Readonly<{ observer: CurrentPcbViaMainStructureObserver; owner: CurrentPcbViaWriteOwner; plan: CurrentPcbViaWritePlan; origin: CurrentPcbViaMainOrigin; effects: CurrentProjectStructureSqlEffects }>>();
+const bookkeepingCalls = Object.freeze({ ...PROGRAMS, ...BOOKKEEPING });
 const point = z.looseObject({ scriptId: z.string(), lineNumber: z.number().int(), columnNumber: z.number().int() });
 const frame = z.looseObject({ callFrameId: z.string(), functionName: z.string(), functionLocation: point, location: point });
 const eventParams = z.looseObject({ hitBreakpoints: z.tuple([z.string()]), callFrames: z.array(frame).min(1).max(64) });
@@ -55,9 +58,13 @@ export class CurrentPcbViaMainStructureObserver {
       } else { need(role !== "driver", "ORIGINAL_DRIVER_REQUIRED"); if (role !== "run" && role !== "callback") { need(paused.hitBreakpoints[0] === this.#points.get(role), "ORIGINAL_POINT"); } return paused; }
     } throw new Error("PCB_VIA_STRUCTURE_OBSERVER_READ_BOUND");
   }
-  async #frame(role: FrameRole, paused: Pause): Promise<string> { const fixed = currentPcbViaMainStructureFrame(role), matches = paused.callFrames.filter(row => row.functionName === fixed.name && row.functionLocation.scriptId === this.#bindings.scriptId && row.functionLocation.lineNumber === fixed.lineNumber && row.functionLocation.columnNumber === fixed.functionColumn);
-    need(matches.length === 1 && matches[0] !== undefined, "ORIGINAL_FRAME"); return decodeArray(await this.#send({ phase: "via-main-structure-frame", role, method: "Debugger.evaluateOnCallFrame", params: { ...FRAME_FLAGS, callFrameId: matches[0].callFrameId, expression: fixed.expression } }, true), fixed.length); }
-  #join(role: ProgramRole, objectId: string, arguments_: readonly unknown[]): Promise<unknown> { const fixed = PROGRAMS[role]; return this.#send({ phase: "via-main-structure-join", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId, functionDeclaration: fixed.program, arguments: arguments_, returnByValue: fixed.returnByValue } }, true); }
+  /** Read the held original frame without ambient F5 and perform its fixed
+   * capture reconstruction plus legacy join within the original request slot. */
+  async #frame(role: FrameRole, paused: Pause): Promise<string> { const fixed = currentPcbViaMainStructureFrame(role); let captured: typeof CAPTURED.structureRun | null = null; if (role === "run") { captured = CAPTURED.structureRun; } else if (role === "callback") { captured = CAPTURED.structureCallback; } const matches = paused.callFrames.filter(row => row.functionName === fixed.name && row.functionLocation.scriptId === this.#bindings.scriptId && row.functionLocation.lineNumber === fixed.lineNumber && row.functionLocation.columnNumber === fixed.functionColumn);
+    need(matches.length === 1 && matches[0] !== undefined, "ORIGINAL_FRAME"); return decodeArray(await this.#send({ phase: captured === null ? "via-main-structure-frame" : "via-main-structure-raw-frame", role, method: "Debugger.evaluateOnCallFrame", params: { ...FRAME_FLAGS, callFrameId: matches[0].callFrameId, expression: captured?.rawExpression ?? fixed.expression } }, true), fixed.length - (captured === null ? 0 : 1)); }
+  /** Use fixed SQL/bookkeeping adapters while six construction/query roles
+   * retain their legacy joins. Original arguments and readonly flags remain. */
+  #join(role: ProgramRole, objectId: string, arguments_: readonly unknown[]): Promise<unknown> { const captured = role === "run" || role === "callback" ? REBASE[role] : null, fixed = captured ?? bookkeepingCalls[role]; let phase = "via-main-structure-join"; if (captured !== null) { phase = "via-main-structure-rebase"; } else if (Object.hasOwn(BOOKKEEPING, role)) { phase = "via-main-structure-bookkeeping"; } const args = role === "callback" ? [{ objectId: this.#bindings.sqlCaptureObjectId }, ...arguments_] : arguments_; return this.#send({ phase, role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId, functionDeclaration: fixed.program, arguments: args, returnByValue: fixed.returnByValue } }, true); }
   async #packet(role: ProgramRole, objectId: string, arguments_: readonly string[]): Promise<string> { const fixed = PROGRAMS[role]; need(!fixed.returnByValue, "PACKET_PROGRAM"); return decodeArray(await this.#join(role, objectId, arguments_.map(id => ({ objectId: id }))), fixed.length); }
   async #capture(role: Role, program: ProgramRole, arguments_: readonly string[]): Promise<string> { return this.#packet(program, await this.#frame(role, await this.#next(role)), arguments_); }
   async #value(role: ProgramRole, packet: string): Promise<unknown> { need(PROGRAMS[role].returnByValue, "VALUE_PROGRAM"); return valueSchema.parse(await this.#join(role, packet, [])).result.value; }

@@ -5,7 +5,7 @@ import { test } from "node:test";
 import type { CurrentSchematicRelevanceDisplayWriteObservers } from "../src/current-schematic-relevance-display-write-observers.ts";
 import { loadSyntheticRegistryModule } from "./helpers/load-synthetic-registry-module.ts";
 
-function armOnly(): object { return { arm: (): Promise<void> => Promise.resolve() }; }
+function armOnly(): object { return { arm: (): Promise<void> => Promise.resolve(), retireAfterOriginalExit: (): Promise<void> => Promise.resolve() }; }
 async function fixture(startupReady = false): Promise<Readonly<{ group: CurrentSchematicRelevanceDisplayWriteObservers; requireComposition: (value: unknown, copiedOwner?: boolean, copiedArguments?: boolean) => unknown; requireCompositionSource: () => void; construction: PromiseWithResolvers<true>; packet: PromiseWithResolvers<object>; producer: PromiseWithResolvers<object>; exit: () => void; calls: string[]; setups: Promise<unknown>[]; polling: PromiseWithResolvers<object>; libraryFirst: PromiseWithResolvers<object>; libraryMount: PromiseWithResolvers<object>; intents: Readonly<{ polling: { profile: "private.generated-schematic-relevance-display-polling-intent.v1" }; library: { profile: "private.generated-schematic-relevance-display-library-intent.v1" } }> }>> {
   const construction = Promise.withResolvers<true>(), packet = Promise.withResolvers<object>(), producer = Promise.withResolvers<object>();
   const libraryFirst = Promise.withResolvers<object>(), libraryMount = Promise.withResolvers<object>(), polling = Promise.withResolvers<object>();

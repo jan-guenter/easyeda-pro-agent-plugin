@@ -2,17 +2,21 @@
  * A reservation burns before transport and every transition joins resumed,
  * the original empty ACK and the exact next source boundary. */
 import {z} from "zod";
+import {types} from "node:util";
 import type {DiagnosticEvent} from "./current-pcb-diagnostic-protocol.ts";
 import {captureCurrentPcbStringClockReply} from "./current-pcb-string-clock-reply.ts";
 import {CURRENT_SCHEMATIC_RELEVANCE_BROADCAST_CALLEE_SOURCE as BUS} from "./current-schematic-relevance-broadcast-callee-source.ts";
 import {CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_RETURN_ROLES as RETURNS,currentSchematicRelevancePublicationFunctionPoint as functionPoint,currentSchematicRelevancePublicationReturnPoint as returnPoint,validateCurrentSchematicRelevancePublicationControlCommand as validate} from "./current-schematic-relevance-publication-control-protocol.ts";
 import type {CurrentSchematicRelevancePublicationControlCommand as Command,CurrentSchematicRelevancePublicationReturnRole as ReturnRole} from "./current-schematic-relevance-publication-control-protocol.ts";
+import {validateCurrentSchematicRelevanceModifyEchoControlCommand as echoValidate} from "./current-schematic-relevance-modify-echo-control-protocol.ts";
+import type {CurrentSchematicRelevanceModifyEchoControlCommand as EchoCommand} from "./current-schematic-relevance-modify-echo-control-protocol.ts";
 
 const roles=["publicationPost","publicationPostReturned","publicationPublisherReturned","publicationTimerReturned","publicationLoopback","publicationLoopbackReturned"]as const;
 export type CurrentSchematicRelevancePublicationRole=typeof roles[number];
 export interface CurrentSchematicRelevancePublicationOriginal{readonly event:DiagnosticEvent;readonly role:string;readonly callFrameId:string}
 export interface CurrentSchematicRelevancePublicationHeld extends CurrentSchematicRelevancePublicationOriginal{readonly role:CurrentSchematicRelevancePublicationRole}
 export interface CurrentSchematicRelevancePublicationResume{readonly original:CurrentSchematicRelevancePublicationOriginal;readonly target:CurrentSchematicRelevancePublicationRole;readonly ordinal:number}
+export interface CurrentSchematicRelevancePublicationTerminalResume{readonly original:CurrentSchematicRelevancePublicationOriginal;readonly terminal:true}
 export interface CurrentSchematicRelevancePublicationControllerHost{readonly current:()=>void;readonly request:(command:Command)=>Promise<unknown>;readonly held:(value:CurrentSchematicRelevancePublicationHeld)=>void;readonly resumed:()=>void;readonly fail:()=>void}
 const token=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const point=z.strictObject({scriptId:token,lineNumber:z.number().int().nonnegative(),columnNumber:z.number().int().nonnegative()});
@@ -22,15 +26,18 @@ const locations=z.array(optionalPoint).max(64);
 const possibleReply=z.strictObject({locations});
 const armReply=z.strictObject({breakpointId:token,actualLocation:point});
 const functionReply=z.strictObject({breakpointId:token});
+const emptyReply=z.strictObject({});
 function need(value:boolean):asserts value{if(!value){throw new Error("SCH_PUBLICATION_ORIGINAL_EVENT");}}
+const originals=new WeakSet<object>();
 export class CurrentSchematicRelevancePublicationController{
  readonly #host:CurrentSchematicRelevancePublicationControllerHost;readonly #session:string;readonly #script:string;readonly #variant:0|1;readonly #foreign:ReadonlySet<string>;
  readonly #points=new Map<string,CurrentSchematicRelevancePublicationRole>();
  #held:CurrentSchematicRelevancePublicationOriginal|null;#attempted=false;#armed=false;#failed=false;#ordinal=0;
  #reservation:CurrentSchematicRelevancePublicationResume|null=null;#submitted=false;#resumed=false;
  #resumeSignal:ReturnType<typeof Promise.withResolvers<boolean>>|null=null;#heldSignal:ReturnType<typeof Promise.withResolvers<CurrentSchematicRelevancePublicationHeld|null>>|null=null;
+ #retireAttempted=false;#retired=false;#terminal:CurrentSchematicRelevancePublicationTerminalResume|null=null;#terminalSubmitted=false;#terminalAcknowledged=false;#terminalResumed=false;#completed=false;#terminalSignal:PromiseWithResolvers<boolean>|null=null;
  /** Retain the exact held publisher and original source/receiver handles. */
- public constructor(host:CurrentSchematicRelevancePublicationControllerHost,session:string,script:string,variant:0|1,original:CurrentSchematicRelevancePublicationOriginal,foreign:readonly string[]){this.#host=host;this.#session=token.parse(session);this.#script=token.parse(script);this.#variant=variant;this.#held=original;this.#foreign=new Set(foreign);need(original.role==="publicationPublish");Object.freeze(this);}
+ public constructor(host:CurrentSchematicRelevancePublicationControllerHost,session:string,script:string,variant:0|1,original:CurrentSchematicRelevancePublicationOriginal,foreign:readonly string[]){this.#host=host;this.#session=token.parse(session);this.#script=token.parse(script);this.#variant=variant;this.#held=original;this.#foreign=new Set(foreign);need(original.role==="publicationPublish");originals.add(this);Object.freeze(this);}
  /** Keep every fixed request inside the original owner generation across awaits. */
  async #request(command:Command):Promise<unknown>{this.#host.current();const value=await this.#host.request(command);this.#host.current();return captureCurrentPcbStringClockReply(value).value;}
  /** Refuse collisions with any earlier original lane before storing a guard. */
@@ -62,6 +69,25 @@ export class CurrentSchematicRelevancePublicationController{
  public async waitResumed(value:CurrentSchematicRelevancePublicationResume):Promise<void>{need(this.#reservation===value&&this.#resumeSignal!==null);need(await this.#resumeSignal.promise);this.#host.current();need(!this.#failed&&this.#resumed);}
  /** Called only after the actual empty ACK; an early next-pause remains retained. */
  public async complete(value:CurrentSchematicRelevancePublicationResume):Promise<CurrentSchematicRelevancePublicationHeld>{need(this.#reservation===value&&this.#submitted&&this.#resumed&&this.#heldSignal!==null);const held=await this.#heldSignal.promise;need(held!==null&&this.#reservation===value&&this.#ordinal===value.ordinal);this.requireHeld(held);this.#ordinal+=1;this.#reservation=null;return held;}
+ /** Remove only the six original native-acknowledged allocations while the
+  * final local-loopback return is still held. Its release uses a new ledger. */
+ public async retireForOriginalEcho(held:CurrentSchematicRelevancePublicationOriginal,request:(command:EchoCommand)=>Promise<unknown>):Promise<void>{
+  try{this.requireHeld(held);need(held.role==="publicationLoopbackReturned"&&this.#ordinal===roles.length&&this.#reservation===null&&!this.#retireAttempted);this.#retireAttempted=true;
+   for(const[id,role]of this.#points){const command=echoValidate({phase:"modify-echo-control-publication-remove",role,method:"Debugger.removeBreakpoint",params:{breakpointId:id}});const raw=await request(command);this.requireHeld(held);emptyReply.parse(captureCurrentPcbStringClockReply(raw).value);}this.#retired=true;
+  }catch(caughtError){this.fail();throw caughtError;}
+ }
+ /** Burn the separate final release after every original guard was removed.
+  * This neither removes another lane nor permits an unarmed Echo receiver. */
+ public reserveTerminalForOriginalEcho(held:CurrentSchematicRelevancePublicationOriginal):CurrentSchematicRelevancePublicationTerminalResume{this.requireHeld(held);need(held.role==="publicationLoopbackReturned"&&this.#ordinal===roles.length&&this.#retired&&this.#terminal===null&&this.#reservation===null);const value=Object.freeze({original:held,terminal:true as const});this.#terminal=value;this.#terminalSignal=Promise.withResolvers<boolean>();return value;}
+ /** Submission is marked only inside the actual original owner transfer. */
+ public markTerminalSubmitted(value:CurrentSchematicRelevancePublicationTerminalResume):void{this.requireHeld(value.original);need(this.#terminal===value&&!this.#terminalSubmitted&&!this.#terminalResumed);this.#terminalSubmitted=true;}
+ /** Retain the real empty ACK independently from the original resumed event. */
+ public acknowledgeTerminal(value:CurrentSchematicRelevancePublicationTerminalResume,raw:unknown):void{try{this.#host.current();need(!this.#failed&&this.#terminal===value&&this.#terminalSubmitted&&!this.#terminalAcknowledged);emptyReply.parse(captureCurrentPcbStringClockReply(raw).value);this.#terminalAcknowledged=true;}catch(caughtError){this.fail();throw caughtError;}}
+ /** Join the same consumed terminal reservation; the next source stream owns
+  * any subsequent native Event. No SDK/Modify completion follows from this. */
+ public async completeTerminal(value:CurrentSchematicRelevancePublicationTerminalResume):Promise<void>{need(this.#terminal===value&&this.#terminalSignal!==null);need(await this.#terminalSignal.promise);this.#host.current();need(!this.#failed&&this.#terminalAcknowledged&&this.#terminalResumed&&this.#held===null&&this.#terminal===value);this.#completed=true;}
+ /** Require the actual terminal ACK/event/removal history, never a DTO. */
+ public requireCompleted():void{this.#host.current();need(!this.#failed&&this.#completed&&this.#retired&&this.#terminalAcknowledged&&this.#terminalResumed&&this.#held===null);}
  /** Classify exact source locations and the original local-loopback caller. */
  #eventRole(event:DiagnosticEvent):CurrentSchematicRelevancePublicationRole|null{
   const ids=event.params["hitBreakpoints"];const frames=event.params["callFrames"];if(!Array.isArray(ids)||!Array.isArray(frames)||frames.length===0){return null;}const matches=ids.filter((id:unknown):id is string=>typeof id==="string"&&this.#points.has(id));if(matches.length===0){return null;}need(ids.length===1&&matches.length===1);const id=matches[0];need(id!==undefined);const role=this.#points.get(id);need(role!==undefined);const first=frame.parse(frames[0]);
@@ -73,10 +99,15 @@ export class CurrentSchematicRelevancePublicationController{
  /** Consume only this source lane on the original callback reader. */
  public observe(event:DiagnosticEvent):boolean{
   if(event.sessionId!==this.#session){return false;}
+  if(event.method==="Debugger.resumed"&&this.#terminal!==null&&!this.#completed){try{this.#host.current();need(!this.#failed&&this.#terminalSubmitted&&!this.#terminalResumed&&this.#held===this.#terminal.original&&Reflect.ownKeys(event.params).length===0);this.#held=null;this.#terminalResumed=true;this.#host.resumed();this.#terminalSignal?.resolve(true);}catch{this.fail();}return true;}
   if(event.method==="Debugger.resumed"){if(this.#reservation===null){return false;}try{this.#host.current();need(!this.#failed&&this.#submitted&&!this.#resumed&&this.#held===this.#reservation.original&&Reflect.ownKeys(event.params).length===0);this.#held=null;this.#resumed=true;this.#host.resumed();this.#resumeSignal?.resolve(true);}catch{this.fail();}return true;}
   if(event.method!=="Debugger.paused"){return false;}
   try{const role=this.#eventRole(event);if(role===null){return false;}this.#host.current();need(!this.#failed&&this.#armed&&this.#reservation!==null&&this.#submitted&&this.#resumed&&this.#held===null&&this.#reservation.target===role&&this.#heldSignal!==null&&event.params["reason"]==="other");const frames=event.params["callFrames"];need(Array.isArray(frames));const first=frame.parse(frames[0]),held=Object.freeze({event,role,callFrameId:first.callFrameId});this.#held=held;this.#host.held(held);this.#heldSignal.resolve(held);return true;}catch{this.fail();return true;}
  }
  /** Stop every original waiter without repeating a body or native control. */
- public fail():void{this.#resumeSignal?.resolve(false);this.#heldSignal?.resolve(null);if(!this.#failed){this.#failed=true;this.#host.fail();}}
+ public fail():void{this.#terminalSignal?.resolve(false);this.#resumeSignal?.resolve(false);this.#heldSignal?.resolve(null);if(!this.#failed){this.#failed=true;this.#host.fail();}}
 }
+const originalMethods=Object.getOwnPropertyDescriptors(CurrentSchematicRelevancePublicationController.prototype);
+/** Reject a copied controller or changed complete source methods before the
+ * new Echo continuation can use the retained original publication lane. */
+export function assertOriginalCurrentSchematicRelevancePublicationController(value:CurrentSchematicRelevancePublicationController):void{need(value!==null&&typeof value==="object"&&!types.isProxy(value)&&originals.has(value)&&Object.getPrototypeOf(value)===CurrentSchematicRelevancePublicationController.prototype&&Reflect.ownKeys(value).length===0);const now=Object.getOwnPropertyDescriptors(CurrentSchematicRelevancePublicationController.prototype);need(Reflect.ownKeys(now).length===Reflect.ownKeys(originalMethods).length&&Object.entries(originalMethods).every(([name,before])=>{const current=now[name];return current!==undefined&&current.value===before.value&&current.get===before.get&&current.set===before.set&&current.writable===before.writable&&current.enumerable===before.enumerable&&current.configurable===before.configurable;}));}

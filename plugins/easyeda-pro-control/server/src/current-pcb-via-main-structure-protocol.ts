@@ -1,7 +1,8 @@
 /** Closed Via-only structure request/SQL/publication grammar. Parsing this
  * data cannot issue original body, callback-loan or native mutation authority. */
 import { z } from "zod";
-import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CURRENT_MAIN_CAPTURED_SCOPE_FRAMES as CAPTURED } from "./current-main-captured-scope-frames.ts";
+import { CURRENT_PCB_VIA_MAIN_STRUCTURE_BOOKKEEPING as BOOKKEEPING, CURRENT_PCB_VIA_MAIN_STRUCTURE_REBASE as REBASE, captureCurrentPcbViaMainRebaseCommand } from "./current-pcb-via-main-captured-rebase.ts";
 import { CURRENT_PROJECT_STRUCTURE_MAIN_PROGRAMS as LEGACY } from "./current-project-structure-main-programs.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_MAIN_PROGRAMS as CURRENT } from "./current-project-save-structure-main-programs.ts";
 import { CURRENT_PCB_VIA_MAIN_STRUCTURE_CALLERS as CALLERS, CURRENT_PCB_VIA_MAIN_STRUCTURE_CONDITIONS as CONDITIONS, CURRENT_PCB_VIA_MAIN_STRUCTURE_SITES as SITES } from "./current-pcb-via-main-structure-source.ts";
@@ -57,12 +58,17 @@ const propertiesParams = z.strictObject({ objectId: handle, ownProperties: z.lit
 const frameParams = z.strictObject({ ...frameFlags, callFrameId: handle, expression: z.string().max(256) });
 const expectedArgument = z.strictObject({ value: currentPcbViaMainStructureExpectedSchema }); const argumentSchema = z.union([ref, expectedArgument]);
 const joinParams = z.strictObject({ ...callFlags, objectId: handle, functionDeclaration: z.string().max(16_384), arguments: z.array(argumentSchema).max(3), returnByValue: z.boolean() });
+const rebaseParams = z.strictObject({ ...callFlags, objectId: handle, functionDeclaration: z.string(), arguments: z.array(ref).min(2).max(3), returnByValue: z.literal(false) });
+const bookkeepingParams = z.strictObject({ ...callFlags, objectId: handle, functionDeclaration: z.string(), arguments: z.array(ref).max(1), returnByValue: z.boolean() });
 const empty = z.strictObject({}); const removeParams = z.strictObject({ breakpointId: handle }); const releaseParams = z.strictObject({ objectGroup: z.literal(GROUP) });
 const schema = z.discriminatedUnion("phase", [
   z.strictObject({ phase: z.literal("via-main-structure-arm"), role: z.enum(roles), method: z.literal("Debugger.setBreakpoint"), params: armParams }),
   z.strictObject({ phase: z.literal("via-main-structure-final-arm"), method: z.literal("Debugger.setBreakpointOnFunctionCall"), params: ref }),
   z.strictObject({ phase: z.literal("via-main-structure-properties"), role: z.enum(["query", "promise", "final", "finalFunction"]), method: z.literal("Runtime.getProperties"), params: propertiesParams }),
   z.strictObject({ phase: z.literal("via-main-structure-frame"), role: z.enum([...roles, ...callers]), method: z.literal("Debugger.evaluateOnCallFrame"), params: frameParams }),
+  z.strictObject({ phase: z.literal("via-main-structure-raw-frame"), role: z.enum(["run", "callback"]), method: z.literal("Debugger.evaluateOnCallFrame"), params: frameParams }),
+  z.strictObject({ phase: z.literal("via-main-structure-bookkeeping"), role: z.enum(["selected", "selectedValue", "update", "rowsValue", "exec", "runValue", "callbackValue", "updateReturned", "serviceReturned", "controllerReturned", "response", "responseValue", "finalSelect", "finalEntry", "finalReturned", "finalValue"]), method: z.literal("Runtime.callFunctionOn"), params: bookkeepingParams }),
+  z.strictObject({ phase: z.literal("via-main-structure-rebase"), role: z.enum(["run", "callback"]), method: z.literal("Runtime.callFunctionOn"), params: rebaseParams }),
   z.strictObject({ phase: z.literal("via-main-structure-join"), role: z.enum(programs), method: z.literal("Runtime.callFunctionOn"), params: joinParams }),
   z.strictObject({ phase: z.literal("via-main-structure-step"), role: z.enum(CURRENT_PCB_VIA_MAIN_STRUCTURE_STEPS), method: z.literal("Debugger.resume"), params: empty }),
   z.strictObject({ phase: z.literal("via-main-structure-remove"), role: z.enum(roles), method: z.literal("Debugger.removeBreakpoint"), params: removeParams }),
@@ -70,15 +76,22 @@ const schema = z.discriminatedUnion("phase", [
 ]);
 export type CurrentPcbViaMainStructureCommand = z.infer<typeof schema>;
 export function currentPcbViaMainStructureFrame(role: CurrentPcbViaMainStructureFrameRole): Readonly<{ lineNumber: number; functionColumn: number; name: string; expression: string; length: number }> { return Object.hasOwn(SITES, role) ? SITES[z.enum(roles).parse(role)] : CALLERS[z.enum(callers).parse(role)]; }
+/** Parse only the fixed legacy vocabulary or its separate captured-frame
+ * partner. No caller expression, program, argument value or grant is accepted. */
 export function validateCurrentPcbViaMainStructureCommand(input: unknown): CurrentPcbViaMainStructureCommand {
-  const command = schema.parse(captureCurrentPcbStringClockReply(input).value);
+  const command = schema.parse(captureCurrentPcbViaMainRebaseCommand(input));
   if (command.phase === "via-main-structure-arm") { if (command.role === "callback" || command.role === "finalEntry") { throw new Error("PCB_VIA_STRUCTURE_ORIGINAL_POINT_REQUIRED"); } const site = SITES[command.role]; const expected: unknown = Object.getOwnPropertyDescriptor(CONDITIONS, command.role)?.value; if (command.params.location.lineNumber !== site.lineNumber || command.params.location.columnNumber !== site.columnNumber || command.params.condition !== expected) { throw new Error("PCB_VIA_STRUCTURE_FIXED_SITE"); } }
   else if (command.phase === "via-main-structure-frame") { if (command.params.expression !== currentPcbViaMainStructureFrame(command.role).expression) { throw new Error("PCB_VIA_STRUCTURE_FIXED_FRAME"); } }
+  else if (command.phase === "via-main-structure-raw-frame") { if (command.params.expression !== { run: CAPTURED.structureRun, callback: CAPTURED.structureCallback }[command.role].rawExpression) { throw new Error("PCB_VIA_STRUCTURE_FIXED_RAW_FRAME"); } }
+  else if (command.phase === "via-main-structure-bookkeeping") { const fixed = BOOKKEEPING[command.role]; if (command.params.functionDeclaration !== fixed.program || command.params.arguments.length !== fixed.arguments || command.params.returnByValue !== fixed.returnByValue) { throw new Error("PCB_VIA_STRUCTURE_FIXED_BOOKKEEPING"); } }
+  else if (command.phase === "via-main-structure-rebase") { const fixed = REBASE[command.role]; if (command.params.functionDeclaration !== fixed.program || command.params.arguments.length !== fixed.arguments || command.params.returnByValue) { throw new Error("PCB_VIA_STRUCTURE_FIXED_REBASE"); } }
   else if (command.phase === "via-main-structure-join") { const fixed = CURRENT_PCB_VIA_MAIN_STRUCTURE_PROGRAMS[command.role]; if (command.params.functionDeclaration !== fixed.program || command.params.arguments.length !== fixed.arguments || command.params.returnByValue !== fixed.returnByValue || command.params.arguments.some((argument, index) => Object.hasOwn(argument, "value") !== (command.role === "controller" && index === 2))) { throw new Error("PCB_VIA_STRUCTURE_FIXED_JOIN"); } }
   else if (command.phase === "via-main-structure-remove" && command.role === "callback") { throw new Error("PCB_VIA_STRUCTURE_BORROWED_CALLBACK"); }
   return freezeDeep(command);
 }
 function location(role: CurrentPcbViaMainStructureRole): Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }> { return { scriptId: "via_script", lineNumber: SITES[role].lineNumber, columnNumber: SITES[role].columnNumber }; }
+/** Enumerate immutable legacy rows first, then closed captured/bookkeeping
+ * alternatives. Replacing existing requests leaves live request caps fixed. */
 export function currentPcbViaMainStructureNativeCases(): readonly CurrentPcbViaMainStructureCommand[] {
   const commands: unknown[] = [];
   for (const role of roles) { if (role !== "callback" && role !== "finalEntry") { const condition: unknown = Object.getOwnPropertyDescriptor(CONDITIONS, role)?.value; commands.push({ phase: "via-main-structure-arm", role, method: "Debugger.setBreakpoint", params: { location: location(role), ...(condition === undefined ? {} : { condition }) } }); }
@@ -87,5 +100,9 @@ export function currentPcbViaMainStructureNativeCases(): readonly CurrentPcbViaM
   for (const role of programs) { const fixed = CURRENT_PCB_VIA_MAIN_STRUCTURE_PROGRAMS[role]; commands.push({ phase: "via-main-structure-join", role, method: "Runtime.callFunctionOn", params: { ...CURRENT_PCB_VIA_MAIN_STRUCTURE_CALL_FLAGS, objectId: "via_packet", functionDeclaration: fixed.program, arguments: Array.from({ length: fixed.arguments }, (_, index) => role === "controller" && index === 2 ? { value: { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), ticket: 3, structureText: "{}" } } : { objectId: `via_argument${String(index)}` }), returnByValue: fixed.returnByValue } }); }
   for (const role of CURRENT_PCB_VIA_MAIN_STRUCTURE_STEPS) { commands.push({ phase: "via-main-structure-step", role, method: "Debugger.resume", params: {} }); }
   for (const role of ["query", "promise", "final", "finalFunction"]) { commands.push({ phase: "via-main-structure-properties", role, method: "Runtime.getProperties", params: { objectId: "via_packet", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }); }
-  commands.push({ phase: "via-main-structure-final-arm", method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: "via_function" } }, { phase: "via-main-structure-release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }); return freezeDeep(commands.map(command => validateCurrentPcbViaMainStructureCommand(command)));
+  commands.push({ phase: "via-main-structure-final-arm", method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: "via_function" } }, { phase: "via-main-structure-release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } });
+  for (const [role, fixed] of Object.entries({ run: CAPTURED.structureRun, callback: CAPTURED.structureCallback })) { commands.push({ phase: "via-main-structure-raw-frame", role, method: "Debugger.evaluateOnCallFrame", params: { objectGroup: CURRENT_PCB_VIA_MAIN_STRUCTURE_GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false, callFrameId: "via_frame", expression: fixed.rawExpression } }); }
+  for (const [role, fixed] of Object.entries(REBASE)) { commands.push({ phase: "via-main-structure-rebase", role, method: "Runtime.callFunctionOn", params: { ...CURRENT_PCB_VIA_MAIN_STRUCTURE_CALL_FLAGS, objectId: "via_packet", functionDeclaration: fixed.program, arguments: Array.from({ length: fixed.arguments }, (_, index) => ({ objectId: `via_argument${String(index)}` })), returnByValue: false } }); }
+  for (const [key, fixed] of Object.entries(BOOKKEEPING)) { commands.push({ phase: "via-main-structure-bookkeeping", role: key, method: "Runtime.callFunctionOn", params: { ...CURRENT_PCB_VIA_MAIN_STRUCTURE_CALL_FLAGS, objectId: "via_packet", functionDeclaration: fixed.program, arguments: Array.from({ length: fixed.arguments }, (_, index) => ({ objectId: `via_argument${String(index)}` })), returnByValue: fixed.returnByValue } }); }
+  return freezeDeep(commands.map(command => validateCurrentPcbViaMainStructureCommand(command)));
 }

@@ -9,11 +9,13 @@ type Data = Record<string, unknown>;
 const property = (name: string, value: Data, writable = false, enumerable = false, configurable = true): Data => ({ name, value, writable, enumerable, configurable, isOwn: true });
 const parent = { name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", objectId: "array-parent" } };
 const arrayProperties = (length: number, special: Data): Data => ({ result: [...Array.from({ length }, (_, index) => property(String(index), index === length - 1 ? special : { type: "object", objectId: `structure-member-${String(index)}` }, true, true)), property("length", { type: "number", value: length }, true, false, false)], internalProperties: [parent] });
+/** Return explicit inert CDP receipts for both legacy and captured frame
+ * lengths. The real custody and program validators remain production code. */
 export function viaMainStructureReply(command: Command, id: number, project: string): unknown {
   const array = (length: number): Data => ({ result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(length)})`, objectId: `structure-packet-${String(id)}` } });
   if (command.phase === "via-main-structure-arm") { return { breakpointId: `structure-${command.role}`, actualLocation: command.params.location }; }
   if (command.phase === "via-main-structure-final-arm") { return { breakpointId: "structure-finalEntry" }; }
-  if (command.phase === "via-main-structure-frame") { return array(currentPcbViaMainStructureFrame(command.role).length); }
+  if (command.phase === "via-main-structure-frame" || command.phase === "via-main-structure-raw-frame") { return array(currentPcbViaMainStructureFrame(command.role).length - (command.phase === "via-main-structure-raw-frame" ? 1 : 0)); }
   if (command.phase === "via-main-structure-properties") {
     if (command.role === "query") { return arrayProperties(7, { type: "object", subtype: "promise", className: "Promise", objectId: "structure-db-promise" }); }
     if (command.role === "promise") { return { result: [], internalProperties: [{ name: "[[PromiseState]]", value: { type: "string", value: "fulfilled" } }, { name: "[[PromiseResult]]", value: { type: "object", className: "yo", objectId: "structure-yo" } }, { name: "[[Prototype]]", value: { type: "object", className: "Promise", objectId: "promise-parent" } }] }; }
@@ -22,7 +24,7 @@ export function viaMainStructureReply(command: Command, id: number, project: str
       { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: { scriptId: "app", lineNumber: FINAL.functionLine, columnNumber: FINAL.functionColumn } } },
       { name: "[[Prototype]]", value: { type: "function", className: "Function", objectId: "function-parent" } }, { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", objectId: "scopes", description: "Scopes[5]" } }] };
   }
-  if (command.phase === "via-main-structure-join") { const fixed = PROGRAMS[command.role]; if (!fixed.returnByValue) { return array(fixed.length); }
+  if (command.phase === "via-main-structure-join" || command.phase === "via-main-structure-rebase" || command.phase === "via-main-structure-bookkeeping") { const fixed = PROGRAMS[command.role]; if (!fixed.returnByValue) { return array(fixed.length); }
     if (command.role === "contextJoin" || command.role === "connection") { return { result: { type: "boolean", value: true } }; }
     let value: Data;
     if (command.role === "selectedValue") { value = { ticket: 1, structureText: historyBaseline.structure.structure }; }

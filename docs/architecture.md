@@ -102,15 +102,6 @@ packet cannot stand in for a native send, worker success, dropped-Promise
 completion, collateral restoration or saved absence. Those boundaries need
 separate original observations and private owner joins.
 
-Before that DEL RPC can continue, its own readonly collateral preparation checks
-the original row, project, source callees and complete bounded UI tab census.
-The supported profile requires the actual `uuid@project` tab to be absent. It
-qualifies the original tab method and native `some`/`includes`, binds both class
-and module scopes, and retains a fresh reproof. A present tab refuses before
-dispatch. The preparation proves neither the original `yy` early return nor the
-dropped log Promise settlement; both still require their original execution
-receipts. It cannot grant preference removal, restoration or tab closure.
-
 The combined diagnostic helper stores its fixed C# compiler body as gzip/base64
 in the final PowerShell output. The stored helper and actual runtime compiler
 input each retain the 2 MiB ceiling. Storage introduces no native purpose,

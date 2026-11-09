@@ -42,7 +42,7 @@ void test("new SDK wire contains fixed scalars only and cannot be spent by relea
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, functionDeclaration: `${CURRENT_PCB_VIA_WRITE_FUNCTION}\n` } })));
     assert.throws(() => currentPcbViaWriteNativeRequest(bytes({ ...command, params: { ...command.params, awaitPromise: false } })));
   }
-  assert.equal(PROFILE.renderer.total, 5946); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1120, 43, 1163]);
+  assert.equal(PROFILE.renderer.total, 5946); assert.deepEqual([PROFILE.main.normal, PROFILE.main.cleanup, PROFILE.main.total], [1121, 43, 1164]);
 });
 void test("fixed Via SDK retains its reviewed large-program schema and identical packed bytes", async () => {
   assert.ok(CURRENT_PCB_VIA_WRITE_FUNCTION.length > 16_384); assert.throws(() => captureCurrentPcbStringClockReply({ program: CURRENT_PCB_VIA_WRITE_FUNCTION }));
@@ -74,7 +74,7 @@ void test("full API pin refuses small sources, proxies and getters before touchi
   assert.throws(() => { qualifyCurrentPcbViaSdkSource(new Proxy({}, { ownKeys: rejected, getPrototypeOf: rejected })); }); assert.equal(calls, 0);
 });
 void test("early fence vocabulary retains fixed source sites and admits no arbitrary conditions, SQL or caller programs", () => {
-  const cases = currentSelectedFileMainSqlFenceNativeCases(); assert.equal(cases.length, 81);
+  const cases = currentSelectedFileMainSqlFenceNativeCases(); assert.equal(cases.length, 164);
   for (const command of cases) {
     const wire = currentSelectedFileMainSqlFenceWire(command, PROFILE.main.total); assert.equal(wire.request["action"], "main-send");
     for (const field of ["condition", "lineNumber", "functionDeclaration", "sql", "sessionId"]) { assert.equal(Object.hasOwn(wire.request, field), false); }
@@ -115,6 +115,8 @@ void test("composed native fragment is idempotent and keeps old births, caps and
   assert.equal(compose(earlierVia), generated); assert.ok(Buffer.byteLength(packCurrentPcbDiagnosticCSharpReviewStorage(generated)) < 2 * 1024 * 1024);
   for (const text of ["EasyedaPcbViaWriteBirth", "CreatePcbViaWrite209()", "via-old-birth-smoke", "via-retain-main-until-exit", "viaConstructionComplete", "stage==\"save\"", "pcb-diagnostic-conflicting-via-purpose",
     `return pcbViaWrite209?${String(PROFILE.renderer.total)}:spatial209?384:componentSpatial209?419:workerStartup?256:stringPrecreate?3309:103`, "viaSdkProperties>=3", "SendPcbViaSpatial", "via-main-precreate-required", "via-main-precreate-original-enrollment", "VerifyViaMainPrecreateSmoke", "VerifyPcbViaMainLiveHistorySmoke", "viaHistoryStep!=20", "viaBeginArms.Count!=4", "viaHistoryArms.Count!=9", "viaStructureMainArms.Count!=9"]) { assert.ok(generated.includes(text), text); }
+  assert.ok(generated.includes('if((phase=="sql-fence-startup-config-resume"||phase=="sql-fence-startup-read-owner")&&!(stockMainRequests>0&&(stockMainStage==10||stockMainStage==13)))throw Error("stock-interleave-await-required");'));
+  assert.ok(generated.includes('if(stockMainRequests>0&&stockMainStage!=19&&(phase=="resume"||phase=="remove"||phase=="sql-fence-resume"))throw Error("stock-unfinished-registration");'));
   assert.equal(generated.includes("sqlite3.Database="), false); assert.equal(generated.includes("Object.setPrototypeOf(sc.Database"), false);
   assert.throws(() => compose(original.replace("[switch]$StringPrecreate,", "[switch]$ForeignPurpose,")), /ANCHOR/u);
 });

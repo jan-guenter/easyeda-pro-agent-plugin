@@ -19,11 +19,13 @@ const plain = gzipSync(Buffer.from(`{"type":"EDIT_HEAD"}||${JSON.stringify(viaMa
 const encrypted = Buffer.concat([cipher.update(plain), cipher.final(), cipher.getAuthTag()]);
 const property = (name: string, value: Data, writable = false, enumerable = false, configurable = true): Data => ({ name, value, writable, enumerable, configurable, isOwn: true });
 const value = (data: unknown): Data => ({ result: { type: "object", value: data } });
+/** Return explicit inert CDP receipts for both legacy and captured frame
+ * lengths. The real custody and program validators remain production code. */
 export function viaMainHistoryReply(command: Command, id: number, slot: string): unknown {
   const array = (length: number): Data => ({ result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(length)})`, objectId: `history-packet-${String(id)}` } });
   if (command.phase === "via-main-history-arm") { return { breakpointId: `history-${command.role}`, actualLocation: command.params.location }; }
   if (command.phase === "via-main-history-callback-arm") { return { breakpointId: "history-callback" }; }
-  if (command.phase === "via-main-history-frame") { return array(currentPcbViaMainHistoryFrame(command.role).length); }
+  if (command.phase === "via-main-history-frame" || command.phase === "via-main-history-raw-frame") { return array(currentPcbViaMainHistoryFrame(command.role).length - (command.phase === "via-main-history-raw-frame" ? 1 : 0)); }
   if (command.phase === "via-main-history-properties") {
     if (command.role === "transaction") { const source = "async()=>{let o=await hB(e,r,a.history_uuid,a.uuid);!o||o.is_lock||!Number(o.is_within_one_minute)?s=await bB(e,r,i,a):s=await OB(e,r,i,a,o)}";
       return { result: [property("0", { type: "object", objectId: "transaction-frame" }, true, true), property("1", { type: "object", objectId: "save-packet" }, true, true), property("2", { type: "function", className: "AsyncFunction", description: source, objectId: "original-history-callback" }, true, true), property("length", { type: "number", value: 3 }, true, false, false)], internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", objectId: "array-prototype" } }] };
@@ -32,7 +34,7 @@ export function viaMainHistoryReply(command: Command, id: number, slot: string):
       { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: { scriptId: "app", lineNumber: 8572, columnNumber: 20_054 } } },
       { name: "[[Prototype]]", value: { type: "object", className: "AsyncFunction", objectId: "async-prototype" } }, { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[4]", objectId: "scopes" } }] };
   }
-  if (command.phase === "via-main-history-join") {
+  if (command.phase === "via-main-history-join" || command.phase === "via-main-history-rebase" || command.phase === "via-main-history-bookkeeping") {
     if (!PROGRAMS[command.role].returnByValue) { return array(PROGRAMS[command.role].length); }
     if (command.role === "branchValue") { return value({ mode: "append", branch: historyBaseline.branch, head: historyBaseline.head, withinOneMinute: 0 }); }
     if (command.role === "cipherValue") { return value({ historyUuid: history, chunkUuid: history, keyHex: key, cipherHexParts: [encrypted.toString("hex")] }); }

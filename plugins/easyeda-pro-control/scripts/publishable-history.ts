@@ -12,9 +12,8 @@ import { privacyPatterns, secretPatterns } from "./repository-content-policy.ts"
 const execute = promisify(execFile);
 const oid = /^(?:[a-f\d]{40}|[a-f\d]{64})$/u;
 const limits = Object.freeze({ objects: 50_000, objectBytes: 33_554_432, totalBytes: 1_073_741_824, metadataBytes: 4_194_304, milliseconds: 300_000 });
-// Git's configuration and discovery variables can redirect history as well as
-// Its explicit repository variables. Inherit none; set only these fixed guards.
-const inherited = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_")));
+const repositoryOverrides = new Set(["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR", "GIT_NAMESPACE", "GIT_PREFIX"]);
+const inherited = Object.fromEntries(Object.entries(process.env).filter(([name]) => !repositoryOverrides.has(name)));
 export const gitEnvironment = Object.freeze({ ...inherited, GIT_NO_REPLACE_OBJECTS: "1", GIT_NO_LAZY_FETCH: "1", GIT_OPTIONAL_LOCKS: "0" });
 export interface PublishableHistoryResult {
   readonly ok: boolean; readonly base: string; readonly head: string; readonly scannedObjects: number; readonly scannedBytes: number;

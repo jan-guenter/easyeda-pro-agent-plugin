@@ -6,12 +6,11 @@ import { requireOriginalCurrentSchematicRelevanceDisplaySaveMainOrigin } from ".
 import type { CurrentSchematicRelevanceDisplayWriteOwner } from "./current-schematic-relevance-display-write-owner.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
 import type { CurrentSchematicRelevanceDisplaySaveMainOrigin } from "./current-schematic-relevance-display-save-main-origin.ts";
+import type { CurrentPcbViaMainLiveHistoryRows } from "./current-pcb-via-main-live-history-custody.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_FUNCTIONS as FUNCTIONS, CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE as SITE } from "./current-pcb-via-main-live-history-source.ts";
 import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_CALL_FLAGS as CALL, CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_FRAME_FLAGS as FRAME, CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_GROUP as GROUP, validateCurrentPcbViaMainLiveHistoryCommand } from "./current-pcb-via-main-live-history-protocol.ts";
 import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_PROGRAMS as PROGRAMS } from "./current-pcb-via-main-live-history-programs.ts";
-
-type OriginalRows=ReturnType<CurrentSchematicRelevanceDisplayWriteOwner["requireSchematicRelevanceDisplayLiveHistoryRows"]>;
 
 const location=z.strictObject({scriptId:z.string(),lineNumber:z.number().int().nonnegative(),columnNumber:z.number().int().nonnegative()});
 const object = z.strictObject({ result: z.looseObject({ type: z.literal("object"), subtype: z.literal("array"), objectId: z.string() }) });
@@ -48,7 +47,7 @@ export class CurrentSchematicRelevanceDisplayMainLiveHistoryObserver {
       need(allocated.breakpointId!==this.#bindings.persistentDriverBreakpointId,"ARM_DRIVER_ALIAS");this.#point=allocated.breakpointId;
     } catch (caughtError) { this.#failed = true; this.#bindings.fail(); throw caughtError; } finally { this.#busy = false; }
   }
-  public async observe(): Promise<OriginalRows> {
+  public async observe(): Promise<CurrentPcbViaMainLiveHistoryRows> {
     need(this.#point !== null && !this.#observed && !this.#busy, "OBSERVATION_CONSUMED"); this.#observed = true; this.#busy = true;
     try {
       let frameId: string | null = null;

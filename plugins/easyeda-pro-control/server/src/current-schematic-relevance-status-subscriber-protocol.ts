@@ -4,13 +4,13 @@ import {z} from "zod";
 import {freezeDeep} from "./sqlite-inventory-core.ts";
 import {captureCurrentPcbStringClockReply} from "./current-pcb-string-clock-reply.ts";
 import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_CLONE_CALLS as CLONE} from "./current-schematic-relevance-status-clone-protocol.ts";
-import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_BEFORE as BEFORE,CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_CALLBACK as CALLBACK,CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_EXPRESSIONS as EXPRESSIONS,CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_TARGET as TARGET,CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_WRAPPER as WRAPPER} from "./current-schematic-relevance-status-subscriber-programs.ts";
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_CALLBACK as CALLBACK,CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_BEFORE as BEFORE,CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_WRAPPER as WRAPPER,CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_TARGET as TARGET,CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_EXPRESSIONS as EXPRESSIONS} from "./current-schematic-relevance-status-subscriber-programs.ts";
 
 export const CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_FLAGS=Object.freeze({objectGroup:"easyeda-pro-control-schematic-relevance-status-subscriber-v1",silent:true,generatePreview:false,throwOnSideEffect:true}as const);
 export const CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_REQUESTS=Object.freeze({beforeReads:25,wrapperReads:22,targetReads:21,arms:2,retireClone:1,resumes:2,controls:4,total:25+22+21+2+1+2+4});
 const keep=["hooks","same","maps","intrinsics","iterator","command-attributes","parsed-same","document-proof","status-delta","reflection-reprove","native-defaultInstance","native-hooks"]as const;
 export const CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_CALLS=freezeDeep([...CLONE.filter(row=>keep.some(role=>role===row[0])),["callback",CALLBACK,2,false],["before",BEFORE,8,true],["wrapper",WRAPPER,7,true],["target",TARGET,5,true]]as const);
-const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);const arg=z.strictObject({objectId:handle});const flags={objectGroup:z.literal(CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_FLAGS.objectGroup),silent:z.literal(true),generatePreview:z.literal(false),throwOnSideEffect:z.literal(true)};
+const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u),arg=z.strictObject({objectId:handle});const flags={objectGroup:z.literal(CURRENT_SCHEMATIC_RELEVANCE_STATUS_SUBSCRIBER_FLAGS.objectGroup),silent:z.literal(true),generatePreview:z.literal(false),throwOnSideEffect:z.literal(true)};
 const schema=z.discriminatedUnion("phase",[
  z.strictObject({phase:z.literal("source"),method:z.literal("Debugger.getScriptSource"),params:z.strictObject({scriptId:handle})}),
  z.strictObject({phase:z.literal("frame"),stage:z.enum(["wrapper","target","wrapperCaller","targetCaller"]),method:z.literal("Debugger.evaluateOnCallFrame"),params:z.strictObject({...flags,callFrameId:handle,expression:z.string().max(64),returnByValue:z.literal(false),includeCommandLineAPI:z.literal(false)})}),

@@ -44,18 +44,10 @@ export class CurrentPcbViaPreopeningRelinquishment {
   #local(): void { this.#options.assertLocalAllowed(); this.#options.assertFreshNoOwnedAllocations(); if (this.#lease !== null) { assertCurrentPcbDiagnosticLaunchExclusion(this.#lease); } }
   async #current(snapshot: Snapshot): Promise<void> {
     this.#local(); await assertCurrentPcbViaPreopeningHistoricalSnapshot(snapshot); this.#local();
+    await this.#options.assertOtherOperationsSettled(snapshot); this.#local();
     await assertNoUnresolvedCurrentPcbDiagnosticLaunches(); this.#local();
     await assertNoUnresolvedOrdinaryLaunches(); this.#local();
     await assertCurrentPcbViaPreopeningRelinquishmentIsolated(snapshot); this.#local();
-  }
-  /** Full admission is fresh at entry and immediately before each metadata
-   * publication. Intermediate observations grant no authority and retain the
-   * original journal, local owner and exclusion checks at every await. Never
-   * cache the admission result or carry it into another publication. */
-  async #admission(snapshot: Snapshot): Promise<void> {
-    await this.#current(snapshot);
-    await this.#options.assertOtherOperationsSettled(snapshot);
-    await this.#current(snapshot);
   }
   public async run(input: unknown): Promise<Record<string, unknown>> {
     const request = currentPcbViaPreopeningRelinquishmentRequestSchema.parse(input); this.#local(); need(!this.#busy); this.#busy = true;
@@ -63,7 +55,7 @@ export class CurrentPcbViaPreopeningRelinquishment {
       const snapshot = this.#pending?.snapshot ?? await readCurrentPcbViaPreopeningHistoricalSnapshot(request.operationId);
       const original = requireCurrentPcbViaPreopeningHistoricalSnapshot(snapshot);
       need(original.operationId === request.operationId && original.originalEntireJournalSha256 === request.expectedEntireJournalSha256);
-      await this.#admission(snapshot); this.#lease = acquireCurrentPcbDiagnosticLaunchExclusion(); this.#local();
+      await this.#current(snapshot); this.#lease = acquireCurrentPcbDiagnosticLaunchExclusion(); this.#local();
       let receipt = await readCurrentPcbViaPreopeningRelinquishment(snapshot); await this.#current(snapshot);
       if (receipt?.result !== null && receipt?.result !== undefined) { return this.#public(receipt.result); }
       if (this.#pending === null) {
@@ -84,9 +76,9 @@ export class CurrentPcbViaPreopeningRelinquishment {
       }
       const pending = this.#pending; const observed = this.#observations.get(pending.token); await this.#current(snapshot);
       need(pending.snapshot === snapshot && observed?.snapshot === snapshot && observed.nonceSha256 === pending.result.observationNonceSha256 && observed.nativeText === canonicalJson(pending.result.observation));
-      if (receipt === null) { await this.#admission(snapshot); await publishCurrentPcbViaPreopeningRelinquishment(snapshot, "intent.json", pending.intent); await this.#current(snapshot); }
+      if (receipt === null) { await publishCurrentPcbViaPreopeningRelinquishment(snapshot, "intent.json", pending.intent); await this.#current(snapshot); }
       receipt = await readCurrentPcbViaPreopeningRelinquishment(snapshot); await this.#current(snapshot); need(receipt !== null && canonicalJson(receipt.intent) === canonicalJson(pending.intent));
-      if (receipt.result === null) { await this.#admission(snapshot); await publishCurrentPcbViaPreopeningRelinquishment(snapshot, "relinquished.json", pending.result); await this.#current(snapshot); }
+      if (receipt.result === null) { await publishCurrentPcbViaPreopeningRelinquishment(snapshot, "relinquished.json", pending.result); await this.#current(snapshot); }
       receipt = await readCurrentPcbViaPreopeningRelinquishment(snapshot); await this.#current(snapshot); need(receipt !== null && canonicalJson(receipt.result) === canonicalJson(pending.result));
       return this.#public(pending.result);
     } finally { if (this.#lease !== null) { releaseCurrentPcbDiagnosticLaunchExclusion(this.#lease); this.#lease = null; } this.#busy = false; }

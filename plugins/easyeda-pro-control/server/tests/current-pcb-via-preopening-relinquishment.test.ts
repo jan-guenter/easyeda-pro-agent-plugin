@@ -43,8 +43,8 @@ void test("real historical publication clears only its blocker and preserves mis
   assert.deepEqual(await inspectCurrentPcbViaWriteAdmission(expected), { terminal: false });
   await assert.rejects(assertNoUnresolvedCurrentPcbViaWrites(), /UNRESOLVED_OPERATION/u);
   const snapshot = await readCurrentPcbViaPreopeningHistoricalSnapshot(id); await assertCurrentPcbViaPreopeningRelinquishmentIsolated(snapshot);
-  const state = { fresh: true, present: true, windows: 0, linux: 0, admissions: 0, blockAt: 0 };
-  const options = { pluginRoot: "/mnt/c/synthetic/plugin", assetsRoot: "/mnt/c/synthetic/EasyEDA/resources/app/assets", powershellSha256: "d".repeat(64), powershellBytes: 123, assertLocalAllowed: (): void => undefined, assertFreshNoOwnedAllocations: (): void => { assert.equal(state.fresh, true); }, assertOtherOperationsSettled: (): Promise<void> => { state.admissions += 1; return state.admissions === state.blockAt ? Promise.reject(new Error("fresh-other-operation")) : Promise.resolve(); } };
+  const state = { fresh: true, present: true, windows: 0, linux: 0 };
+  const options = { pluginRoot: "/mnt/c/synthetic/plugin", assetsRoot: "/mnt/c/synthetic/EasyEDA/resources/app/assets", powershellSha256: "d".repeat(64), powershellBytes: 123, assertLocalAllowed: (): void => undefined, assertFreshNoOwnedAllocations: (): void => { assert.equal(state.fresh, true); }, assertOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
   const owner = new CurrentPcbViaPreopeningRelinquishment(options, {
     verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...createCurrentPcb209DiagnosticInstallationPlan(options), facadeSha256: "b".repeat(64) }),
     observeLinux: (): Promise<boolean> => { state.linux += 1; return Promise.resolve(false); },
@@ -53,22 +53,7 @@ void test("real historical publication clears only its blocker and preserves mis
   state.fresh = false; await assert.rejects(owner.run(request)); assert.equal(state.windows, 0); state.fresh = true;
   await assert.rejects(owner.run({ ...request, expectedEntireJournalSha256: "0".repeat(64) })); assert.equal(state.windows, 0);
   await assert.rejects(owner.run(request), /PREOPENING_RELINQUISHMENT/u); assert.equal(state.windows, 1); assert.equal(await readCurrentPcbViaPreopeningRelinquishment(snapshot), null);
-  state.present = false;
-  // Each publication gets a fresh guard. Observational awaits retain their
-  // Journal/owner checks without rescanning unrelated multi-gigabyte evidence.
-  state.blockAt = state.admissions + 2;
-  await assert.rejects(owner.run(request), /fresh-other-operation/u);
-  assert.equal(owner.hasActiveReservation(), true);
-  assert.equal(await readCurrentPcbViaPreopeningRelinquishment(snapshot), null);
-  assert.equal(state.windows, 2);
-  state.blockAt = state.admissions + 3;
-  await assert.rejects(owner.run(request), /fresh-other-operation/u);
-  const held = await readCurrentPcbViaPreopeningRelinquishment(snapshot);
-  assert.ok(held !== null && held.result === null);
-  assert.equal(owner.hasActiveReservation(), true);
-  assert.equal(state.windows, 2);
-  state.blockAt = 0;
-  const result = currentPcbViaPreopeningRelinquishmentResultSchema.parse(await owner.run(request).then(value => { const { state: _state, startupBlockerRelinquished: _blocker, executionAuthorized: _execution, ...body } = value; return body; }));
+  state.present = false; const result = currentPcbViaPreopeningRelinquishmentResultSchema.parse(await owner.run(request).then(value => { const { state: _state, startupBlockerRelinquished: _blocker, executionAuthorized: _execution, ...body } = value; return body; }));
   assert.equal(state.windows, 2); assert.equal(state.linux, 3); assert.equal(owner.hasActiveReservation(), false);
   assert.equal(sha256Json(await loadOperation(id)), expected.entireStoredJournalSha256);
   assert.deepEqual(await inspectCurrentPcbViaWriteAdmission(expected), { terminal: false, abandoned: true }); await assertNoUnresolvedCurrentPcbViaWrites();

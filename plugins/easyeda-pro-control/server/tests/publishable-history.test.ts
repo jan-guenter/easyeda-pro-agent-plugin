@@ -12,7 +12,6 @@ import { privateDesignName } from "../../scripts/repository-content-policy.ts";
 
 // oxlint-disable-next-line typescript/strict-void-return -- Node returns a child; promisify consumes only its completion callback.
 const execute = promisify(execFile);
-/** Create an isolated Git repository and baseline, ignoring ambient Git overrides and removing only this test-owned directory afterward. */
 async function fixture(context: TestContext): Promise<Readonly<{ repository: string; base: string; git: (args: readonly string[]) => Promise<string> }>> {
   const repository = await mkdtemp(join(tmpdir(), "publishable-history-"));
   context.after(async () => { await rm(repository, { recursive: true, force: true }); });

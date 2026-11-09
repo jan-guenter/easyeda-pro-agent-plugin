@@ -11,20 +11,14 @@ import {CURRENT_SCHEMATIC_WIRE_PUBLIC_FACTS as FACTS,CURRENT_SCHEMATIC_WIRE_PUBL
 import type {CurrentSchematicWirePublicSourceSpan} from "../src/current-schematic-wire-public-source.ts";
 import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAssets} from "./helpers/installed-easyeda-source.ts";
 
-/** Require an actual native Promise before retaining its completion in the inert SDK fixture. */
 function promise(value:unknown):Promise<unknown>{assert.ok(types.isPromise(value));return value;}
-/** Read a field only from the test-created SDK object after its object shape has been checked. */
 function field(value:unknown,key:string):unknown{assert.ok(value!==null&&typeof value==="object");return Reflect.get(value,key)as unknown;}
-/** Call the retained test callback after checking its function type; this helper issues no application-owned SDK instance. */
 function invoke(value:unknown,args:readonly unknown[]):unknown{assert.ok(typeof value==="function");return Reflect.apply(value,undefined,args);}
-/** Hash exact UTF-8 source text for comparison with the pinned public SDK span. */
 function hash(text:string):string{return createHash("sha256").update(text).digest("hex");}
 interface RpcCall {readonly topic:string;readonly args:unknown;readonly inner:Promise<unknown>;readonly promises:readonly Promise<unknown>[];}
-/** Retain the original Promise and record settlement after its own awaited completion, without replacing the SDK Promise. */
 function observe(pending:Promise<unknown>):{state:{settled:boolean};result:Promise<unknown>}{
  const state={settled:false};async function wait():Promise<unknown>{const value=await pending;state.settled=true;return value;}return{state,result:wait()};
 }
-/** Evaluate the original SDK classes on an inert bus and retain the actual Promises created during a single public call. */
 function fixture():{realm:Context;calls:readonly RpcCall[];start:(expression:string)=>Promise<unknown>}{
  const calls:RpcCall[]=[],promises:Promise<unknown>[]=[];
  let collecting=false;

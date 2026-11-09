@@ -69,7 +69,7 @@ export class CurrentSchematicRelevanceRawCursor {
     } }
   }
   public accept(command: CurrentSchematicRelevanceDisplayModifyEntryCommand, raw: unknown): void {
-    need(!this.#failed && this.#reserved && command === this.#command);
+    need(!this.#failed && this.#reserved && this.#command !== null && command === this.#command);
     try {
       switch (this.#phase) {
         case "native-frame": { this.#roots = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(raw, 5); this.#phase = "root-array"; break; }
@@ -105,7 +105,7 @@ export class CurrentSchematicRelevanceRawCursor {
       this.#command = null; this.#reserved = false;
     } catch (error) { this.#failed = true; throw error; }
   }
-  public reserve(command: CurrentSchematicRelevanceDisplayModifyEntryCommand): void { need(!this.#failed && !this.#reserved && command === this.#command && this.#requests < REQUESTS.rawObservation); this.#reserved = true; this.#requests += 1; }
+  public reserve(command: CurrentSchematicRelevanceDisplayModifyEntryCommand): void { need(!this.#failed && !this.#reserved && this.#command !== null && command === this.#command && this.#requests < REQUESTS.rawObservation); this.#reserved = true; this.#requests += 1; }
   public fail(): void { this.#failed = true; }
   public requireCompleted(): CurrentSchematicRelevanceRawCapture { need(!this.#failed && this.#result !== null && this.#command === null); return this.#result; }
 }

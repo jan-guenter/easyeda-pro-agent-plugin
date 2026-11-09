@@ -39,18 +39,3 @@ The final private C#5 compiler input is 2,095,945 bytes, the stored helper is
 The full C#5 body compiles and seven owner-free codec groups run; all 37 original
 CompileOnly entries remain in the driver. No native owner, app or MCP was used.
 This is source/offline evidence, not connected inverse deletion validation.
-
-## 2026-11-08 provenance correction
-
-This record entered the local implementation history in `effd444e3b5cad2822ecfb2936b67f6b834b50f9`,
-Git tree `0eebaf434b00a30cf2b4d35cee99c369b649a25b`, with Git author timestamp
-`2026-11-08T07:25:37+01:00`. Those objects are retained in the local private
-repository. They are source-introduction provenance, not a recovered timestamp
-or sealed identity for the earlier tested worktree. That worktree and its
-uncommitted changes were not completely sealed in the retained evidence and
-cannot be reconstructed for attribution. The stated checks and measurements
-remain historical observations with that limit. Any compiler SHA256 above
-identifies only its emitted C# input; it does not identify the complete
-TypeScript, test or generator tree. No earlier test was rerun or attributed to
-a later commit for this correction. Private implementation ancestors are not
-published to fill this gap.

@@ -33,7 +33,7 @@ Validation at the checked source worktree: 54 focused cases passed, including
 actual source-preserving Node24 Inspector execution and the corrected rounded
 render-return regression. Both TypeScript projects and changed strict lint pass.
 The four layouts generate twice identically, and the whole schematic generator
-is idempotent. Full C# 5 compilation and static codecs pass without constructing
+is idempotent. Full C#5 compilation and static codecs pass without constructing
 an owner or invoking Windows. The final writer compiler/helper sizes are
 2,069,724/1,523,264 bytes; the other three layouts are byte-identical to the
 checked 8623c187 base. The per-compiler 2 MiB cap is unchanged.

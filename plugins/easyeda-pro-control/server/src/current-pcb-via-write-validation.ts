@@ -3,8 +3,6 @@
 import { z } from "zod";
 import { CURRENT_PCB_VIA_WRITE_CLEANUP_ACTIONS, CURRENT_PCB_VIA_WRITE_TOOL, currentPcbViaWriteActionSchema, currentPcbViaWriteResultSchema } from "./current-pcb-via-write-contract.ts";
 import { facadeToolRegistered } from "./facade-mode.ts";
-import { currentPcbViaWriteDiagnosticSchema } from "./current-pcb-via-write-diagnostic.ts";
-import {currentPcbViaWriteMainFailureSchema} from "./current-pcb-via-write-main-failure.ts";
 
 export function queryCurrentPcbViaWrite(includeSchemas = false): Record<string, unknown> {
   return { offline: true, tool: CURRENT_PCB_VIA_WRITE_TOOL, mountedInPublicUtilities: facadeToolRegistered("public-utilities-only", CURRENT_PCB_VIA_WRITE_TOOL),
@@ -20,9 +18,8 @@ export function queryCurrentPcbViaWrite(includeSchemas = false): Record<string, 
       "A Save acknowledgement alone is not completion. Original writer and reader closure, helper release, complete SQL/source comparisons and reopened verification remain separate requirements.",
       "Failed cleanup stays with its original controller. Settle original publication before bounded cleanup settlement; an unknown Abort acknowledgement allows only independent original exit observation, not a second Abort.",
       "An immutable abandonment record may clear historical quarantine after actual original resource closure. It preserves failed saved/reopened status and grants no inverse, retry or owner transfer.",
-      "The separate Main failure snapshot retains only bounded original runner data before cleanup, without Error text, paths or continuation authority.",
       "Schema discovery and controller implementation do not establish connected execution. Ordinary projects, named nets and inverses remain outside this disposable composition.",
-    ], ...(includeSchemas ? { inputSchema: z.toJSONSchema(currentPcbViaWriteActionSchema), outputSchema: z.toJSONSchema(currentPcbViaWriteResultSchema), diagnosticSchema: z.toJSONSchema(currentPcbViaWriteDiagnosticSchema), mainFailureSchema:z.toJSONSchema(currentPcbViaWriteMainFailureSchema) } : {}) };
+    ], ...(includeSchemas ? { inputSchema: z.toJSONSchema(currentPcbViaWriteActionSchema), outputSchema: z.toJSONSchema(currentPcbViaWriteResultSchema) } : {}) };
 }
 export function validateCurrentPcbViaWriteArguments(input: unknown): Record<string, unknown> {
   const parsed = currentPcbViaWriteActionSchema.safeParse(input);

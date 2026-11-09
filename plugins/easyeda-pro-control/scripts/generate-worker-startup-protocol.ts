@@ -1,7 +1,21 @@
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
-import {expandCurrentSelectedMainNativePrograms} from "../server/src/current-selected-main-native-program-storage.ts";
-import {expandCurrentFootprintInverseNativePrograms,projectCurrentFootprintInverseNativePrograms} from "../server/src/current-footprint-inverse-native-program-storage.ts";
-import {expandCurrentSchematicNativePrograms,projectCurrentSchematicNativePrograms} from "../server/src/current-schematic-native-program-storage.ts";
+import { applyCurrentSchematicRelevanceSdkCompletionNativeFragment } from "../server/src/current-schematic-relevance-sdk-completion-native-fragment.ts";
+import { applyCurrentSchematicRelevanceModifyEchoNativeFragment } from "../server/src/current-schematic-relevance-modify-echo-native-fragment.ts";
+import { factorCurrentFootprintInverseLegacyCodecs } from "../server/src/current-footprint-inverse-legacy-codecs.ts";
+import { compactCurrentFootprintInversePrivateFields } from "../server/src/current-footprint-inverse-private-fields.ts";
+import { expandCurrentFootprintInverseNativeHashVectors, hasCurrentFootprintInverseNativeHashVectorStorage, projectCurrentFootprintInverseNativeHashVectors } from "../server/src/current-footprint-inverse-native-hash-vector-storage.ts";
+import { applyCurrentSchematicRelevancePublicationReturnNativeFragment } from "../server/src/current-schematic-relevance-publication-return-native-fragment.ts";
+import { applyCurrentSchematicRelevanceModifyReturnNativeFragment } from "../server/src/current-schematic-relevance-modify-return-native-fragment.ts";
+import { applyCurrentSchematicRelevanceModifyCanvasNativeFragment } from "../server/src/current-schematic-relevance-modify-canvas-native-fragment.ts";
+import { applyCurrentSchematicRelevanceModifyCmNativeFragment } from "../server/src/current-schematic-relevance-modify-cm-native-fragment.ts";
+import { expandCurrentSchematicNativeTypeAliasesV2, hasCurrentSchematicNativeTypeAliasesV2, projectCurrentSchematicNativeTypeAliasesV2 } from "../server/src/current-schematic-native-type-aliases-v2.ts";
+import { expandCurrentSchematicNativeHashVectors, hasCurrentSchematicNativeHashVectorStorage, projectCurrentSchematicNativeHashVectors } from "../server/src/current-schematic-native-hash-vector-storage.ts";
+import { applyCurrentSchematicRelevanceModifyStructureNativeFragment } from "../server/src/current-schematic-relevance-modify-structure-native-fragment.ts";
+import { applyCurrentSchematicRelevanceModifyContinuationNativeFragment } from "../server/src/current-schematic-relevance-modify-continuation-native-fragment.ts";
+import {expandCurrentSelectedMainNativePrograms,projectCurrentSelectedMainNativePrograms} from "../server/src/current-selected-main-native-program-storage.ts";
+import { expandCurrentFootprintInverseNativeTypeAliases, projectCurrentFootprintInverseNativeTypeAliases } from "../server/src/current-footprint-inverse-native-type-aliases.ts";
+import {expandCurrentFootprintInverseNativePrograms,projectCurrentFootprintInverseTaskNativePrograms} from "../server/src/current-footprint-inverse-native-program-storage.ts";
+import {expandCurrentSchematicNativePrograms,projectCurrentSchematicCapturedNativePrograms} from "../server/src/current-schematic-native-program-storage.ts";
 import {applyCurrentSchematicRelevanceNotificationNativeFragment} from "../server/src/current-schematic-relevance-notification-native-fragment.ts";
 import {applyCurrentSchematicRelevanceSdkGateNativeFragment} from "../server/src/current-schematic-relevance-sdk-gate-native-fragment.ts";
 import {applyCurrentSchematicRelevanceModifyWorkerNativeFragment} from "../server/src/current-schematic-relevance-modify-worker-native-fragment.ts";
@@ -12,10 +26,12 @@ import {applyCurrentSchematicRelevanceRenderDelegateNativeFragment} from "../ser
 import {applyCurrentSchematicRelevanceStatusTabMutationNativeFragment} from "../server/src/current-schematic-relevance-status-tab-mutation-native-fragment.ts";
 import {applyCurrentSchematicRelevanceStatusTabLookupNativeFragment} from "../server/src/current-schematic-relevance-status-tab-lookup-native-fragment.ts";
 import {applyCurrentSchematicRelevanceStatusSubscriberNativeFragment} from "../server/src/current-schematic-relevance-status-subscriber-native-fragment.ts";
-import{expandCurrentFootprintInverseSmokeVectors,projectCurrentFootprintInverseSmokeVectors}from"../server/src/current-footprint-inverse-smoke-vector-storage.ts";
+import{expandCurrentFootprintInverseSmokeVectors}from"../server/src/current-footprint-inverse-smoke-vector-storage.ts";
 import { projectCurrentFootprintInverseComponentRuntime } from "../server/src/current-footprint-inverse-component-projection.ts";
 import {applyCurrentSchematicRelevanceStatusCloneNativeFragment} from "../server/src/current-schematic-relevance-status-clone-native-fragment.ts";
 import { projectCurrentFootprintInverseSchematicRuntime } from "../server/src/current-footprint-inverse-native-schematic-projection.ts";
+import { compactCurrentSchematicPrivateFields } from "../server/src/current-schematic-private-fields.ts";
+import { factorCurrentSchematicBoundHolderCodecs } from "../server/src/current-schematic-bound-holder-codec-native.ts";
 import {applyCurrentSchematicRelevanceUiFixedCodec} from "../server/src/current-schematic-relevance-ui-fixed-codec-native.ts";
 import {applyCurrentSchematicRelevanceStatusDeliveryNativeFragment} from "../server/src/current-schematic-relevance-status-delivery-native-fragment.ts";
 import { applyCurrentSelectedFileMainInstallationNative } from "../server/src/current-selected-file-main-installation-native.ts";
@@ -185,9 +201,14 @@ async function main(): Promise<void> {
 /** Pure complete composition, used by repeated-generation regressions without writing a helper. */
 export function generateWorkerStartupProtocol(source: string, layout: "diagnostic" | "inverse" | "schematic" | "schematic-saved" = "diagnostic"): string {
   if (layout !== "diagnostic" && layout !== "inverse" && layout !== "schematic" && layout !== "schematic-saved") { throw new Error("NATIVE_BUILD_LAYOUT"); }
-  const storedPrograms = expandCurrentFootprintInverseNativePrograms(expandCurrentSchematicNativePrograms(expandCurrentPcbDiagnosticCSharpReviewSource(source)));
+  const review = expandCurrentPcbDiagnosticCSharpReviewSource(source);
+  const inverseUnaliased = review.includes("FIXED INVERSE TYPE ALIASES V1") || review.includes("fixed-inverse-type-alias-source") ? nativeCompilerView(review, expandCurrentFootprintInverseNativeTypeAliases) : review;
+  const unaliased = hasCurrentSchematicNativeTypeAliasesV2(inverseUnaliased) || inverseUnaliased.includes("// BEGIN FIXED SCHEMATIC TYPE ALIASES V1\n") || inverseUnaliased.includes("// END FIXED SCHEMATIC TYPE ALIASES V1\n") ? nativeCompilerView(inverseUnaliased, expandCurrentSchematicNativeTypeAliasesV2) : inverseUnaliased;
+  const inverseUnhashed = hasCurrentFootprintInverseNativeHashVectorStorage(unaliased) ? nativeCompilerView(unaliased, expandCurrentFootprintInverseNativeHashVectors) : unaliased;
+  const unhashed = hasCurrentSchematicNativeHashVectorStorage(inverseUnhashed) ? nativeCompilerView(inverseUnhashed, expandCurrentSchematicNativeHashVectors) : inverseUnhashed;
+  const storedPrograms = expandCurrentFootprintInverseNativePrograms(expandCurrentSchematicNativePrograms(unhashed));
   const view = expandCurrentSelectedMainNativePrograms(storedPrograms);
-  const expanded = view.includes("// BEGIN FIXED INVERSE SMOKE VECTORS V1\n") ? inverseSmokeVectorView(view,expandCurrentFootprintInverseSmokeVectors) : view;
+  const expanded = view.includes("// BEGIN FIXED INVERSE SMOKE VECTORS V1\n") ? nativeCompilerView(view,expandCurrentFootprintInverseSmokeVectors) : view;
   const publicSmokesNormalized = normalizeSchematicPublicCompileSmokes(expanded);
   const original = normalizeCurrentSchematicWireEditNativeFamily(normalizeCurrentSchematicRelevanceSavedReadbackNative(publicSmokesNormalized, layout === "schematic-saved" ? "saved-only" : "default"));
   const prepared = layout === "schematic-saved" ? prepareCurrentSchematicRelevanceSavedReadbackNativeSwitch(original) : original;
@@ -281,6 +302,14 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
     next = applyCurrentSchematicRelevanceSdkGateNativeFragment(next);
     next = applyCurrentSchematicRelevancePublicationNativeFragment(next);
     next = applyCurrentSchematicRelevanceModifyWorkerNativeFragment(next);
+    next = applyCurrentSchematicRelevanceModifyContinuationNativeFragment(next);
+    next = applyCurrentSchematicRelevanceModifyStructureNativeFragment(next);
+    next = applyCurrentSchematicRelevanceModifyCmNativeFragment(next);
+    next = applyCurrentSchematicRelevanceModifyCanvasNativeFragment(next);
+    next = applyCurrentSchematicRelevanceModifyReturnNativeFragment(next);
+    next = applyCurrentSchematicRelevancePublicationReturnNativeFragment(next);
+    next = applyCurrentSchematicRelevanceModifyEchoNativeFragment(next);
+    next = applyCurrentSchematicRelevanceSdkCompletionNativeFragment(next);
     next = applyCurrentSchematicRelevanceUiFixedCodec(next);
     next = applyCurrentSchematicRelevanceRunGuardNativeFragment(next);
     next = applyCurrentSchematicRelevanceDisplayClockNativeFragment(next);
@@ -307,16 +336,20 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
   if(layout==="schematic"){next=projectCurrentSchematicViaSdkRuntime(next);}
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   assertCurrentFootprintCopyForwardNativeRequestIds(next);
-  if(layout==="inverse"){next=projectCurrentFootprintInverseNativePrograms(next);}
-  if(layout==="schematic"){next=projectCurrentSchematicNativePrograms(next);}
-  if(layout==="inverse"){next=inverseSmokeVectorView(next,projectCurrentFootprintInverseSmokeVectors);}
+  if (layout === "schematic") { next = factorCurrentSchematicBoundHolderCodecs(next); }
+  next = projectCurrentSelectedMainNativePrograms(next);
+  if(layout==="inverse"){next=projectCurrentFootprintInverseTaskNativePrograms(next);}
+  if(layout==="schematic"){next=projectCurrentSchematicCapturedNativePrograms(next);next=nativeCompilerView(next,compactCurrentSchematicPrivateFields);next=nativeCompilerView(next,projectCurrentSchematicNativeHashVectors);next=nativeCompilerView(next,projectCurrentSchematicNativeTypeAliasesV2);}
+  if(layout==="inverse"){next=nativeCompilerView(next,factorCurrentFootprintInverseLegacyCodecs);next=nativeCompilerView(next,compactCurrentFootprintInversePrivateFields);next=nativeCompilerView(next,projectCurrentFootprintInverseNativeHashVectors);next=nativeCompilerView(next,projectCurrentFootprintInverseNativeTypeAliases);}
   next = layout==="inverse" || layout==="schematic" ? packCurrentPcbDiagnosticCSharpTokenFusionStorage(next) : packCurrentPcbDiagnosticCSharpReviewStorage(next);
   if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {
     throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >${String(CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES)}`);
   }
   return next;
 }
-function inverseSmokeVectorView(source:string,project:(body:string)=>string):string{const begin="Add-Type @'\n",end="\n'@\n";const start=source.indexOf(begin),stop=source.indexOf(end,start);if(start===-1||stop<=start||source.split(begin).length!==2||source.split(end).length!==2){throw new Error("INVERSE_SMOKE_VECTOR_LITERAL");}return source.slice(0,start+begin.length)+project(source.slice(start+begin.length,stop))+source.slice(stop);}
+/** Transform only the uniquely delimited original C# body. Purpose-specific
+ * build projections never inspect or replace PowerShell request dispatch. */
+function nativeCompilerView(source:string,project:(body:string)=>string):string{const begin="Add-Type @'\n",end="\n'@\n";const start=source.indexOf(begin),stop=source.indexOf(end,start);if(start===-1||stop<=start||source.split(begin).length!==2||source.split(end).length!==2){throw new Error("INVERSE_SMOKE_VECTOR_LITERAL");}return source.slice(0,start+begin.length)+project(source.slice(start+begin.length,stop))+source.slice(stop);}
 function continuationSource(): string {
   const limits = { RequestLimit: continuation.requestLimit, NormalRequestLimit: continuation.normalRequestLimit, CleanupRequestLimit: continuation.cleanupRequests,
     NormalByteLimit: continuation.bytes.normal, TotalByteLimit: continuation.bytes.total, NormalPollLimit: continuation.polling.normalLimit, PollLimit: continuation.polling.limit,

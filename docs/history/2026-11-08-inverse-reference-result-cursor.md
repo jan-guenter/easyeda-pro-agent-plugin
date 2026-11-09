@@ -53,18 +53,3 @@ result lifecycle. No Core issuer, native emitter, helper/pin/bundle or live
 application was changed by this leaf. Original manager/worker/scene custody
 and the separate downstream l/force-sync/tab/preferences/deletion chain remain
 required before any actual deletion can proceed.
-
-## 2026-11-08 provenance correction
-
-This record entered the local implementation history in `f649cc6af992ebeef3de5baef6ca73cdf0a67f65`,
-Git tree `a24004886a024330c4994eeab83e8b0d88d65e39`, with Git author timestamp
-`2026-11-08T06:11:27+01:00`. Those objects are retained in the local private
-repository. They are source-introduction provenance, not a recovered timestamp
-or sealed identity for the earlier tested worktree. That worktree and its
-uncommitted changes were not completely sealed in the retained evidence and
-cannot be reconstructed for attribution. The stated checks and measurements
-remain historical observations with that limit. Any compiler SHA256 above
-identifies only its emitted C# input; it does not identify the complete
-TypeScript, test or generator tree. No earlier test was rerun or attributed to
-a later commit for this correction. Private implementation ancestors are not
-published to fill this gap.
