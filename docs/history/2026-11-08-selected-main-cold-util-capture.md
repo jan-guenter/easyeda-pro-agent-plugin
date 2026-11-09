@@ -21,8 +21,10 @@ ESM `node:util` facade first makes the historical capture pass. Node's
 `BuiltinModule.getESMFacade` synchronizes every named export, materializing lazy
 exports. Earlier passing probes imported repository modules with a named
 `node:util` import and therefore did not establish a cold-module positive case.
-Their observations remain retained; the cold control corrects their scope.
-Node26 is a diagnostic analogue only, never a plugin build or validation runtime.
+Their observations remain retained in the
+[original import-capture diagnostic record](2026-11-08-main-import-capture-diagnostics.md);
+the cold control corrects their scope. Node26 is a diagnostic analogue only,
+never a plugin build or validation runtime.
 
 The new capture has the fixed source profile
 `private.selected-file-main-sql-capture.v2`. Its outer Array11, fixed commands,
@@ -47,9 +49,11 @@ was edited.
 
 The fresh CJS child regression executes real Inspector requests with
 `throwOnSideEffect:true`: v1 refuses before, v2 capture/reproof succeeds, and v1
-refuses again afterward. That last refusal proves the omitted native lazy exports
-were not materialized by v2. An actual native lazy property under an unknown key
-refuses; a fixed-name ordinary getter remains uninvoked. Separate cases reject
+refuses again afterward. That last result establishes another side-effect
+refusal after v2; it does not establish the initialization state of each omitted
+export. No independent per-export cold-state check was collected. An actual
+native lazy property under an unknown key refuses; a fixed-name ordinary getter
+remains uninvoked. Separate cases reject
 safe-descriptor changes, module/type replacement, prototype changes, extra
 string/symbol keys, reordered keys and a changed profile. The copied request
 proof independently rejects module-scope drift.
@@ -76,3 +80,13 @@ Focused source/Inspector checks, both TypeScript configurations and strict
 changed-file lint are recorded for this sealed payload. Git identifies this
 change's introducing commit; subsequent integration and any native regeneration
 are distinct worktrees and observations.
+
+## 2026-11-08 review correction
+
+The completed PR196 review identified that the final v1 refusal had been
+described as proving all seven omitted exports stayed cold. The retained test
+checks a side-effect refusal, which can stop at one export while another is
+already initialized. The wording above now states only that observation and
+links the earlier engine comparison to its originating diagnostic record.
+Earlier probe results are retained; no probe was rerun and no per-export cold
+state is newly claimed. See the [PR196 correction disposition](2026-11-08-pr196-review-corrections.md).

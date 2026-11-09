@@ -15,10 +15,27 @@ import { CURRENT_PROJECT_LIBRARY_REFRESH_PROGRAMS } from "./current-project-libr
 import { CURRENT_PROJECT_SYNC_QUIESCE_PROGRAMS } from "./current-project-sync-quiesce-programs.ts";
 import { CURRENT_PROJECT_SYNC_QUIESCE_SITES } from "./current-project-sync-quiesce-source.ts";
 import { CURRENT_PROJECT_LIBRARY_REFRESH_SITES } from "./current-project-library-refresh-source.ts";
+import { currentSchematicRelevanceModifyCmControlPoint } from "./current-schematic-relevance-modify-cm-control-protocol.ts";
+import type { CurrentSchematicRelevanceModifyCmControlRole } from "./current-schematic-relevance-modify-cm-control-protocol.ts";
+import { currentSchematicRelevanceModifyCanvasPoint } from "./current-schematic-relevance-modify-canvas-control-protocol.ts";
+import type { CurrentSchematicRelevanceModifyCanvasRole } from "./current-schematic-relevance-modify-canvas-control-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_ECHO_WORKER_ROLES, currentSchematicRelevanceModifyEchoControlPoint } from "./current-schematic-relevance-modify-echo-control-protocol.ts";
+import type { CurrentSchematicRelevanceModifyEchoControlRole } from "./current-schematic-relevance-modify-echo-control-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_SITES } from "./current-schematic-relevance-modify-structure-protocol.ts";
 
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_RELEVANCE_STARTUP_ORIGINAL_CURSOR"); } }
 type LibraryRole = keyof typeof CURRENT_PROJECT_LIBRARY_REFRESH_SITES;
 export class CurrentSchematicRelevanceDisplayWorkerController extends CurrentSchematicDisplayWorkerController {
+  readonly #modifyPoints = new Map<"handler" | "batch" | "batchReturned" | "handlerReturned", CurrentSchematicDisplayStartupEventPoint>();
+  readonly #modifyCanvasPoints = new Map<CurrentSchematicRelevanceModifyCanvasRole, CurrentSchematicDisplayStartupEventPoint>();
+  readonly #modifyCanvasAttempts = new Set<CurrentSchematicRelevanceModifyCanvasRole>();
+  readonly #modifyEchoPoints = new Map<CurrentSchematicRelevanceModifyEchoControlRole, CurrentSchematicDisplayStartupEventPoint>();
+  readonly #modifyEchoAttempts = new Set<CurrentSchematicRelevanceModifyEchoControlRole>();
+  readonly #modifyCmPoints = new Map<CurrentSchematicRelevanceModifyCmControlRole, CurrentSchematicDisplayStartupEventPoint>();
+  readonly #modifyCmAttempts = new Set<CurrentSchematicRelevanceModifyCmControlRole>();
+  readonly #modifyStructurePoints = new Map<"entry" | "returned", CurrentSchematicDisplayStartupEventPoint>();
+  readonly #modifyStructureArms = new Set<"entry" | "returned">();
+  readonly #modifyStructureStartupRetired = new Set<"startupEntry" | "startupReturn">();
   readonly #tailPoints=new Map<CurrentPcbViaSaveTailDeleteRole,CurrentSchematicDisplayStartupEventPoint>();
   readonly #pollingPoints = new Map<"entry" | "returned", CurrentSchematicDisplayStartupEventPoint>();
   readonly #libraryPoints = new Map<LibraryRole, CurrentSchematicDisplayStartupEventPoint>();
@@ -39,7 +56,7 @@ export class CurrentSchematicRelevanceDisplayWorkerController extends CurrentSch
   protected override createEventRouter(bindings: CurrentSchematicDisplayEventRouterBindings): CurrentSchematicRelevanceDisplayEventRouter {
     need(this.#ownRouter === null); const router = new CurrentSchematicRelevanceDisplayEventRouter(bindings); this.#ownRouter = router; return router;
   }
-  protected override originalStartupPoints(): readonly CurrentSchematicDisplayStartupEventPoint[] { return Object.freeze([...this.#pollingPoints.values(), ...this.#libraryPoints.values(),...this.#tailPoints.values()]); }
+  protected override originalStartupPoints(): readonly CurrentSchematicDisplayStartupEventPoint[] { return Object.freeze([...this.#pollingPoints.values(), ...this.#libraryPoints.values(),...this.#tailPoints.values(), ...this.#modifyPoints.values(), ...this.#modifyStructurePoints.values(), ...this.#modifyCmPoints.values(), ...this.#modifyCanvasPoints.values(), ...this.#modifyEchoPoints.values()]); }
   protected originalWorkerRouter(source: CurrentSchematicDisplayProjectSourceHeld): CurrentSchematicRelevanceDisplayEventRouter {
     this.requireHeld(source); const router = this.#ownRouter; need(router !== null && super.originalEventRouter() === router); return router;
   }
@@ -52,6 +69,101 @@ export class CurrentSchematicRelevanceDisplayWorkerController extends CurrentSch
     const child = this.requireHeld(source); need(!this.status().ready && this.status().pumping && /^[A-Za-z\d_.:-]{1,256}$/u.test(breakpointId));
     need(![...this.#pollingPoints.values(), ...this.#libraryPoints.values(),...this.#tailPoints.values()].some(value => value.point.breakpointId === breakpointId));
     return Object.freeze({ lane, point: Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }) });
+  }
+  /** Register an original function guard only after startup has genuinely
+   * completed. The fixed callback controller supplies its exact source point. */
+  public bindModifyBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: "handler" | "batch" | "batchReturned" | "handlerReturned", breakpointId: string, location: Readonly<{scriptId:string;lineNumber:number;columnNumber:number}>): void {
+    const child = this.requireHeld(source); need(this.status().ready && !this.status().failed && !this.#modifyPoints.has(role) && /^[A-Za-z\d_.:-]{1,256}$/u.test(breakpointId) && location.scriptId === source.scriptId);
+    const points = { handler: [0, 11_789], handlerReturned: [0, 11_811], batch: [110, 98_769], batchReturned: [110, 98_916] } as const; const expected = points[role];
+    need(location.lineNumber === expected[0] && location.columnNumber === expected[1]);
+    const point = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, breakpointId, role, lineNumber: location.lineNumber, columnNumber: location.columnNumber });
+    const registration = Object.freeze({ lane: "modify" as const, point }); this.originalWorkerRouter(source).register("modify", point); this.#modifyPoints.set(role, registration);
+  }
+  /** Join the already retained original worker reader; this opens no second
+   * event stream and yields only the dedicated receive/body lane. */
+  public nextModifyEvent(source: CurrentSchematicDisplayProjectSourceHeld): Promise<CurrentSchematicDisplayRoutedEvent> { return this.originalWorkerRouter(source).next("modify"); }
+  /** Consume the exact event issued by that same original router. */
+  public reserveModifyResume(source: CurrentSchematicDisplayProjectSourceHeld, event: CurrentSchematicDisplayRoutedEvent, role: "handler" | "batch" | "batchReturned" | "handlerReturned"): void { this.originalWorkerRouter(source).reserveModifyResume(event, role); }
+  /** Remove one enclosing guard from active routing only after its actual
+   * native removal ACK, preserving the held final handler-return delivery. */
+  public retireModifyBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: "handler" | "batch" | "batchReturned" | "handlerReturned", breakpointId: string, event: CurrentSchematicDisplayRoutedEvent): void {
+    this.requireHeld(source); const original = this.#modifyPoints.get(role); need(this.status().ready && !this.status().failed && original !== undefined && original.point.breakpointId === breakpointId);
+    this.originalWorkerRouter(source).retireModifyParentPoint(breakpointId, role, event); this.#modifyPoints.delete(role);
+  }
+  /** Bind the native acknowledgement to one exact source point, using the
+   * same original worker router after startup. Each role can be armed once. */
+  public bindModifyCmBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: CurrentSchematicRelevanceModifyCmControlRole, breakpointId: string, location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }>): void {
+    const child = this.requireHeld(source), site = currentSchematicRelevanceModifyCmControlPoint(role);
+    need(this.status().ready && !this.status().failed && !this.#modifyCmAttempts.has(role) && /^[A-Za-z\d_.:-]{1,256}$/u.test(breakpointId) && location.scriptId === source.scriptId && location.lineNumber === site.lineNumber && location.columnNumber === site.columnNumber);
+    this.#modifyCmAttempts.add(role);
+    const point = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber });
+    this.originalWorkerRouter(source).register("modify", point); this.#modifyCmPoints.set(role, Object.freeze({ lane: "modify", point }));
+  }
+  /** Consume the exact event from the one retained Modify reader; a copied
+   * packet cannot stand in for the delivered nested CM pause. */
+  public reserveModifyCmResume(source: CurrentSchematicDisplayProjectSourceHeld, event: CurrentSchematicDisplayRoutedEvent, role: CurrentSchematicRelevanceModifyCmControlRole): void { this.originalWorkerRouter(source).reserveModifyCmResume(event, role); }
+  /** Retire only the original acknowledged allocation while the exact final
+   * CM return remains held. Historical arm attempts stay consumed. */
+  public retireModifyCmBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: CurrentSchematicRelevanceModifyCmControlRole, breakpointId: string, event: CurrentSchematicDisplayRoutedEvent): void {
+    this.requireHeld(source); const original = this.#modifyCmPoints.get(role); need(this.status().ready && !this.status().failed && original !== undefined && original.point.breakpointId === breakpointId);
+    this.originalWorkerRouter(source).retireModifyCmPoint(breakpointId, role, event); this.#modifyCmPoints.delete(role);
+  }
+  /** Bind each exact Canvas guard once after genuine startup. Native
+   * acknowledgement, source coordinate and the same original child agree. */
+  public bindModifyCanvasBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: CurrentSchematicRelevanceModifyCanvasRole, breakpointId: string, location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }>): void {
+    const child = this.requireHeld(source), site = currentSchematicRelevanceModifyCanvasPoint(role);
+    need(this.status().ready && !this.status().failed && !this.#modifyCanvasAttempts.has(role) && /^[A-Za-z\d_.:-]{1,256}$/u.test(breakpointId) && location.scriptId === source.scriptId && location.lineNumber === site.lineNumber && location.columnNumber === site.columnNumber);
+    this.#modifyCanvasAttempts.add(role); const point = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber });
+    this.originalWorkerRouter(source).register("modify", point); this.#modifyCanvasPoints.set(role, Object.freeze({ lane: "modify", point }));
+  }
+  /** Consume the exact same-reader Canvas delivery before transport. */
+  public reserveModifyCanvasResume(source: CurrentSchematicDisplayProjectSourceHeld, event: CurrentSchematicDisplayRoutedEvent, role: CurrentSchematicRelevanceModifyCanvasRole): void { this.originalWorkerRouter(source).reserveModifyCanvasResume(event, role); }
+  /** Remove only the original guard whose native empty removal ACK has
+   * arrived, while retaining the same held final-return event identity. */
+  public retireModifyCanvasBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: CurrentSchematicRelevanceModifyCanvasRole, breakpointId: string, event: CurrentSchematicDisplayRoutedEvent): void {
+    this.requireHeld(source); const original = this.#modifyCanvasPoints.get(role); need(this.status().ready && !this.status().failed && original !== undefined && original.point.breakpointId === breakpointId);
+    this.originalWorkerRouter(source).retireModifyCanvasPoint(breakpointId, role, event); this.#modifyCanvasPoints.delete(role);
+  }
+  /** Register only the native-acknowledged fixed worker half of the Echo
+   * vocabulary. UI roles and rounded/source-foreign locations refuse. */
+  public bindModifyEchoBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: CurrentSchematicRelevanceModifyEchoControlRole, breakpointId: string, location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }>): void {
+    const child = this.requireHeld(source), site = currentSchematicRelevanceModifyEchoControlPoint(0, role);
+    need(CURRENT_SCHEMATIC_RELEVANCE_MODIFY_ECHO_WORKER_ROLES.some(value => value === role) && this.status().ready && !this.status().failed && !this.#modifyEchoAttempts.has(role) && /^[A-Za-z\d_.:-]{1,256}$/u.test(breakpointId) && location.scriptId === source.scriptId && location.lineNumber === site.lineNumber && location.columnNumber === site.columnNumber);
+    this.#modifyEchoAttempts.add(role); const point = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, breakpointId, role, lineNumber: site.lineNumber, columnNumber: site.columnNumber }); this.originalWorkerRouter(source).register("modify", point); this.#modifyEchoPoints.set(role, Object.freeze({ lane: "modify", point }));
+  }
+  /** Consume only the same original retained-reader Echo event. */
+  public reserveModifyEchoResume(source: CurrentSchematicDisplayProjectSourceHeld, event: CurrentSchematicDisplayRoutedEvent, role: CurrentSchematicRelevanceModifyEchoControlRole): void { this.originalWorkerRouter(source).reserveModifyEchoResume(event, role); }
+  /** Retire the acknowledged allocation without replenishing its arm attempt
+   * or replacing the genuine held final-return delivery. */
+  public retireModifyEchoBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: CurrentSchematicRelevanceModifyEchoControlRole, breakpointId: string, event: CurrentSchematicDisplayRoutedEvent): void {
+    this.requireHeld(source); const original = this.#modifyEchoPoints.get(role); need(this.status().ready && !this.status().failed && original !== undefined && original.point.breakpointId === breakpointId); this.originalWorkerRouter(source).retireModifyEchoPoint(breakpointId, role, event); this.#modifyEchoPoints.delete(role);
+  }
+  /** Reuse an exact source coordinate only after both original startup
+   * allocations were removed. Even a reused Chrome ID is a fresh epoch. */
+  public bindModifyStructureBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: "entry" | "returned", breakpointId: string): void {
+    const child = this.requireHeld(source), site = CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_SITES[role];
+    need(this.status().ready && !this.status().failed && this.#modifyStructureStartupRetired.size === 2 && !this.#modifyStructureArms.has(role));
+    this.#modifyStructureArms.add(role);
+    const point = Object.freeze({ sessionId: child.sessionId, scriptId: source.scriptId, breakpointId, role: role === "entry" ? "modifyEntry" : "modifyReturned", lineNumber: site.lineNumber, columnNumber: site.columnNumber });
+    this.originalWorkerRouter(source).register("structure", point); this.#modifyStructurePoints.set(role, Object.freeze({ lane: "structure", point }));
+  }
+  /** Called only after Core receives the actual empty native remove ACK.
+   * Birth bookkeeping remains historical; active routing loses this epoch. */
+  public retireModifyStructureBreakpoint(source: CurrentSchematicDisplayProjectSourceHeld, role: "startupEntry" | "startupReturn" | "entry" | "returned", breakpointId: string): void {
+    this.requireHeld(source); need(this.status().ready && !this.status().failed);
+    const router = this.originalWorkerRouter(source);
+    if (role === "startupEntry" || role === "startupReturn") {
+      need(!this.#modifyStructureStartupRetired.has(role) && this.originalStartupStructurePoint(source, role) === breakpointId);
+      router.retireModifyStructurePoint(breakpointId, role); this.#modifyStructureStartupRetired.add(role); return;
+    }
+    const original = this.#modifyStructurePoints.get(role); need(original !== undefined && original.point.breakpointId === breakpointId);
+    router.retireModifyStructurePoint(breakpointId, role === "entry" ? "modifyEntry" : "modifyReturned"); this.#modifyStructurePoints.delete(role);
+  }
+  /** Retain the same original structure-reader delivery through the native
+   * transfer, including its finalizer pause rather than a copied packet. */
+  public reserveModifyStructureResume(source: CurrentSchematicDisplayProjectSourceHeld, event: CurrentSchematicDisplayRoutedEvent, role: "entry" | "returned" | "finalizer"): void {
+    const target = { entry: "modifyEntry", returned: "modifyReturned", finalizer: "initialFinally" } as const;
+    this.originalWorkerRouter(source).reserveModifyStructureResume(event, target[role]);
   }
   public reserveSaveLocalResume(source:CurrentSchematicDisplayProjectSourceHeld,event:CurrentSchematicDisplayRoutedEvent,role:CurrentPcbViaLocalUploadRole):void{this.originalWorkerRouter(source).reserveSaveLocalResume(event,role);}
   public reserveSaveUploadResume(source:CurrentSchematicDisplayProjectSourceHeld,event:CurrentSchematicDisplayRoutedEvent,role:CurrentPcbViaUploadRequestRole):void{this.originalWorkerRouter(source).reserveSaveUploadResume(event,role);}

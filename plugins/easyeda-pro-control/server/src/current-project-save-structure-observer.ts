@@ -1,8 +1,9 @@
 /** One original worker's pristine Nd/QA chain, with its setProfile packet held
  * until original history SQL completion. No transcript or public issuer exists. */
+/* oxlint-disable import/max-dependencies -- One original event reader joins distinct startup/Modify/Save protocols and their exact source/metadata readers; transferring these callbacks through a supplied function table would weaken the shared reader custody. */
 import { types } from "node:util";
 import { z } from "zod";
-// oxlint-disable-next-line import/no-namespace -- Only two fixed original central registry exports are consulted; absent issuers refuse, with no supplied callback fallback.
+// oxlint-disable-next-line import/no-namespace -- Only fixed original central registry exports are consulted; absent issuers refuse, with no supplied callback fallback.
 import * as native from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentPcb209WorkerProducerFunction, decodeCurrentPcb209WorkerProducerScopeList, decodeCurrentPcb209WorkerProducerScopes } from "./current-pcb-string-producer-scope.ts";
@@ -15,11 +16,23 @@ import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STR
   CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as RELEVANCE_REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION, CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS as STARTUP_DRAIN,
   qualifyCurrentProjectSaveStructureSource, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentSchematicRelevanceStartupStructureDrained, CurrentProjectSaveStructureSite as Site } from "./current-project-save-structure-protocol.ts";
+import { captureCurrentSchematicRelevanceUiPublicationMetadata } from "./current-schematic-relevance-ui-publication-metadata.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_REQUESTS as MODIFY_WORKER_REQUESTS } from "./current-schematic-relevance-modify-worker-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_CALLS as MODIFY_CALLS, CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_FLAGS as MODIFY_FLAGS, CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_REQUESTS as MODIFY_REQUESTS, CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_SITES as MODIFY_SITES, validateCurrentSchematicRelevanceModifyStructureCommand as validateModify } from "./current-schematic-relevance-modify-structure-protocol.ts";
+import type { CurrentSchematicRelevanceModifyStructureCommand } from "./current-schematic-relevance-modify-structure-protocol.ts";
+import { requireCurrentSchematicRelevanceModifyStructureCaller } from "./current-schematic-relevance-modify-structure-replies.ts";
+import type { CurrentSchematicRelevanceModifyStructureBindings, CurrentSchematicRelevanceModifyStructureCompleted, CurrentSchematicRelevanceModifyStructureOrigin, CurrentSchematicRelevanceModifyStructureReader } from "./current-schematic-relevance-modify-structure-origin.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_SOURCE as MODIFY_SOURCE, qualifyCurrentSchematicRelevanceModifyStructureSource } from "./current-schematic-relevance-modify-structure-source.ts";
+import { decodeCurrentGeneratedInitialSyncCallee, decodeCurrentGeneratedSyncCallee } from "./current-generated-initial-sync-replies.ts";
+import { decodeCurrentNativeFunctionMetadata } from "./current-native-function-metadata.ts";
+import { currentSchematicRelevancePublicationNativeProperties } from "./current-schematic-relevance-publication-native-replies.ts";
+import { decodeCurrentSchematicRelevanceNotificationPromise } from "./current-schematic-relevance-notification-replies.ts";
 
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const remote = z.looseObject({ type: z.string(), subtype: z.string().optional(), className: z.string().optional(), description: z.string().optional(), objectId: handle.optional(), value: z.unknown().optional() });
 const property = z.looseObject({ name: z.string(), value: remote.optional(), get: z.unknown().optional(), set: z.unknown().optional(), isOwn: z.literal(true) });
 const properties = z.looseObject({ result: z.array(property).max(64) });
+const modifyProperties = z.looseObject({ result: z.array(property).max(MODIFY_WORKER_REQUESTS.objects + 1) });
 const position = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
 const pausedFrame = z.looseObject({ callFrameId: handle, functionName: z.string().optional(), location: position, functionLocation: position, returnValue: remote.optional() });
 const pauseSchema = z.looseObject({ reason: z.literal("other"), hitBreakpoints: z.tuple([handle]), callFrames: z.array(pausedFrame).min(1).max(32) });
@@ -32,6 +45,15 @@ const completionSchema = z.strictObject({ projectUuid: z.string().regex(/^[a-f\d
   bodySha256: z.string().regex(/^[a-f\d]{64}$/u), saveHeadTicket: z.number().int().positive().max(Number.MAX_SAFE_INTEGER), workerClock: z.number().int().positive().max(8_640_000_000_000_000),
   workerEditVersion: z.string().max(128).nullable(), originalHistoryNativeCallbacksCompleted: z.literal(true), selectedSqlStillFenced: z.literal(true) });
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PROJECT_SAVE_STRUCTURE_${code}`); } }
+/** Decode the cumulative original Modify roster up to the worker's256
+ * retained objects. Its one length descriptor is separate from the128-new-
+ * object graph budget, and supplies no owner or continuation permission. */
+export function decodeCurrentSchematicRelevanceModifyStructureArrayFields(input:unknown,length?:number):Map<string,z.infer<typeof remote>>{
+  const list=modifyProperties.parse(captureCurrentSchematicRelevanceUiPublicationMetadata(input)).result;const fields=new Map<string,z.infer<typeof remote>>();
+  for(const field of list){need(field.value!==undefined&&field.get===undefined&&field.set===undefined&&!fields.has(field.name),"MODIFY_ARRAY_DATA");fields.set(field.name,field.value);}
+  const size=fields.get("length")?.value;need(typeof size==="number"&&Number.isSafeInteger(size)&&size>=0&&size<=MODIFY_WORKER_REQUESTS.objects&&(length===undefined||size===length)&&fields.size===size+1,"MODIFY_ARRAY_ROSTER");
+  for(let index=0;index<size;index+=1){need(fields.has(String(index)),"MODIFY_ARRAY_DENSE");}return fields;
+}
 function object(value: z.infer<typeof remote> | undefined): string { need(value?.type === "object" && value.subtype !== "null" && value.objectId !== undefined, "OBJECT"); return value.objectId; }
 function fn(value: z.infer<typeof remote> | undefined): string { need(value?.type === "function" && value.objectId !== undefined, "FUNCTION"); return value.objectId; }
 function remoteResult(raw: unknown): z.infer<typeof remote> { return z.strictObject({ result: remote }).parse(raw).result; }
@@ -80,7 +102,48 @@ export function requireOriginalCurrentProjectPrehistoryStructureCompletion(value
 }
 interface Retained { readonly observer: CurrentProjectSaveStructureObserver; readonly packet: CurrentProjectSaveStructurePacket; readonly completion: CurrentProjectHistorySqlCompletion }
 const completions = new WeakMap<CurrentProjectSaveStructureCompletion, Retained>();
-const startupDrains = new WeakMap<CurrentSchematicRelevanceStartupStructureDrained, Readonly<{ origin: CurrentProjectSaveStructureOrigin; owner: object; operation: object; assertCurrent: () => void; refresh: () => Promise<void> }>>();
+const startupDrains = new WeakMap<CurrentSchematicRelevanceStartupStructureDrained, Readonly<{ observer: CurrentProjectSaveStructureObserver; reader: CurrentSchematicRelevanceModifyStructureReader; origin: CurrentProjectSaveStructureOrigin; owner: object; operation: object; assertCurrent: () => void; refresh: () => Promise<void> }>>();
+/** Join only the same original drained reader. Its stable custody check is
+ * separate from the immutable startup token's original idle-state proof. */
+export function requireOriginalCurrentSchematicRelevanceStartupStructureReader(token: CurrentSchematicRelevanceStartupStructureDrained, observer: CurrentProjectSaveStructureObserver,
+  origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object): CurrentSchematicRelevanceModifyStructureReader {
+  const original = startupDrains.get(token);
+  need(original !== undefined && original.observer === observer && original.origin === origin && original.owner === owner && original.operation === operation, "MODIFY_ORIGINAL_STARTUP_READER");
+  original.reader.assertCurrent(); return original.reader;
+}
+type ModifyRole = "entry" | "returned" | "finalizer";
+interface ModifyState {
+  readonly origin: CurrentSchematicRelevanceModifyStructureOrigin;
+  readonly lookup: (origin: CurrentSchematicRelevanceModifyStructureOrigin, observer: CurrentProjectSaveStructureObserver, sharedOrigin: CurrentProjectSaveStructureOrigin, owner: object, operation: object) => unknown;
+  readonly binding: CurrentSchematicRelevanceModifyStructureBindings;
+  readonly reader: CurrentSchematicRelevanceModifyStructureReader;
+  readonly completed: PromiseWithResolvers<CurrentSchematicRelevanceModifyStructureCompleted>;
+  readonly points: Map<"entry" | "returned", { id: string; removeAttempted: boolean; removed: boolean }>;
+  stage: "arming" | ModifyRole | "draining" | "complete";
+  requests: number; events: number; objects: number; stages: number;
+  qualified: string; snapshot: string; parts: string | null; entry: string | null; args: string | null; promise: string | null;
+  held: Readonly<{ role: ModifyRole; event: CurrentProjectSaveStructureEvent; frameId: string; callerFrameId: string | null; onChangeFrameId: string | null; resumeAttempted: boolean }> | null;
+  token: CurrentSchematicRelevanceModifyStructureCompleted | null;
+}
+const modifyLookup = z.custom<ModifyState["lookup"]>(value => typeof value === "function" && !types.isProxy(value));
+const modifyBindings = z.custom<CurrentSchematicRelevanceModifyStructureBindings>(value => {
+  if (value === null || typeof value !== "object" || types.isProxy(value) || Object.getPrototypeOf(value) !== Object.prototype || !Object.isFrozen(value)) { return false; }
+  const fields = ["sessionId", "scriptId", "nativeObjectId", "projectObjectId", "projectUuid", "worker", "payload", "assertCurrent", "assertModifyPending", "request", "fail"];
+  if (Reflect.ownKeys(value).length !== fields.length) { return false; }
+  return fields.every((key, index) => {
+    const field = Object.getOwnPropertyDescriptor(value, key); if (field === undefined || !Object.hasOwn(field, "value")) { return false; }
+    if (index < 4) { return handle.safeParse(field.value).success; }
+    if (index === 4) { return typeof field.value === "string" && /^[a-f\d]{64}$/u.test(field.value); }
+    if (index < 7) { return field.value !== null && typeof field.value === "object" && !types.isProxy(field.value) && Object.isFrozen(field.value); }
+    return typeof field.value === "function" && !types.isProxy(field.value);
+  });
+});
+const modifyCompletions = new WeakMap<CurrentSchematicRelevanceModifyStructureCompleted, Readonly<{ observer: CurrentProjectSaveStructureObserver; origin: CurrentSchematicRelevanceModifyStructureOrigin; owner: object; operation: object; assertCurrent: () => void }>>();
+/** Historical source completion alone never issues worker/Modify/Save custody. */
+export function requireOriginalCurrentSchematicRelevanceModifyStructureCompleted(token: CurrentSchematicRelevanceModifyStructureCompleted, observer: CurrentProjectSaveStructureObserver,
+  origin: CurrentSchematicRelevanceModifyStructureOrigin, owner: object, operation: object): void {
+  const original = modifyCompletions.get(token); need(original !== undefined && original.observer === observer && original.origin === origin && original.owner === owner && original.operation === operation, "MODIFY_ORIGINAL_COMPLETION"); original.assertCurrent();
+}
 /** Exact private token lookup. A transcript or another observer/origin cannot
  * supply the original startup Promise and scope proof. */
 export function requireOriginalCurrentSchematicRelevanceStartupStructureDrained(token: CurrentSchematicRelevanceStartupStructureDrained, origin: CurrentProjectSaveStructureOrigin, owner: object, operation: object): Readonly<{ assertCurrent: () => void; refresh: () => Promise<void> }> {
@@ -114,6 +177,7 @@ export class CurrentProjectSaveStructureObserver {
   #cleanupUncertain = false; #startupMode = false; #startupCalls = 0; #startupOutstanding = 0; #startupActive: string | null = null;
   readonly #startupPromises: string[] = []; #startupArguments: string | null = null; #startupPass: Promise<true> | null = null;
   #startupDrain: CurrentSchematicRelevanceStartupStructureDrained | null = null; #startupDrainAttempted = false; #startupDrainPasses = 0;
+  #modify: ModifyState | null = null; #modifySetupAttempted = false; #lastRawEvent: CurrentProjectSaveStructureEvent | null = null; #modifyEvent = false; #sourceText: string | null = null;
   #error: unknown = null; #revocationError: unknown = null;
   #pause: Readonly<{ role: Site; frameId: string; callerFrameId: string | null; resumeAttempted: boolean }> | null = null;
   #constructorProject: string | null = null;
@@ -138,7 +202,11 @@ export class CurrentProjectSaveStructureObserver {
   }
   async #current(): Promise<void> { need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "ORIGINAL");
     if (this.#startupMode) { this.#binding.assertStartupPending(); } await this.#binding.assertCurrent(); if (this.#startupMode) { this.#binding.assertStartupPending(); } need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "CHANGED"); }
-  #failure(error: unknown): void { if (!this.#failed) { this.#failed = true; this.#error = error; try { this.#binding.fail(); } catch (revocationError) { this.#revocationError = revocationError; } } }
+  #failure(error: unknown): void {
+    if (this.#failed) { return; } this.#failed = true; this.#error = error; this.#modify?.completed.reject(error);
+    try { this.#modify?.binding.fail(); } catch (revocationError) { this.#revocationError = revocationError; }
+    try { this.#binding.fail(); } catch (revocationError) { this.#revocationError ??= revocationError; }
+  }
   async #send(input: unknown, cleanup = false, retain?: (reply: unknown) => void): Promise<unknown> {
     const command = validateCurrentProjectSaveStructureCommand(input); if (cleanup) { this.#cleanup += 1; need(this.#cleanup <= this.#requests.cleanup, "CLEANUP_CAPACITY"); }
     else { await this.#current(); this.#normal += 1; need(this.#normal <= this.#requests.normal, "NORMAL_CAPACITY"); }
@@ -174,9 +242,25 @@ export class CurrentProjectSaveStructureObserver {
   }
   async #pristine(): Promise<void> { need(this.#project !== null && this.#uploadCallback !== null && this.#debounce !== null && this.#structureCallback !== null, "CONSTRUCTION");
     const scopes = await this.#freshScopes(); await this.#true("pristine", this.#project, [scopes.upload, scopes.structure, scopes.debounce, scopes.parameters, this.#uploadCallback, this.#debounce, this.#structureCallback]); }
-  async #event(): Promise<CurrentProjectSaveStructureEvent> { await this.#current(); this.#events += 1; need(this.#events <= this.#requests.events, "EVENT_CAPACITY"); const event = eventSchema.parse(captureCurrentPcbStringClockReply(await this.#binding.nextEvent()).value); await this.#current();
-    need(event.sessionId === this.#binding.sessionId, "FOREIGN_SESSION"); return event; }
+  async #event(): Promise<CurrentProjectSaveStructureEvent> {
+    await this.#current(); const raw = await this.#binding.nextEvent(); const event = eventSchema.parse(captureCurrentPcbStringClockReply(raw).value); await this.#current();
+    need(event.sessionId === this.#binding.sessionId, "FOREIGN_SESSION"); this.#lastRawEvent = raw; this.#modifyEvent = this.#ownsModifyEvent(event);
+    if (this.#modifyEvent) { const modify = this.#modify; need(modify !== null, "MODIFY_EVENT_STATE"); modify.events += 1; need(modify.events <= MODIFY_REQUESTS.events, "MODIFY_EVENT_CAPACITY"); }
+    else { this.#events += 1; need(this.#events <= this.#requests.events, "EVENT_CAPACITY"); }
+    return event;
+  }
+  /** Charge only the fresh Modify allocation epoch and its pending resume to
+   * the new event budget; startup and Save retain their original capacities. */
+  #ownsModifyEvent(event: CurrentProjectSaveStructureEvent): boolean {
+    const modify = this.#modify; if (modify === null || modify.stage === "complete") { return false; }
+    if (event.method === "Debugger.resumed") { return modify.held?.resumeAttempted === true; }
+    const parsed = pauseSchema.safeParse(event.params); if (!parsed.success) { return false; }
+    const id = parsed.data.hitBreakpoints[0];
+    return [...modify.points.values()].some(point => !point.removed && point.id === id) ||
+      modify.stage === "finalizer" && this.#points.get("initialFinally")?.id === id;
+  }
   async #nextPause(expected?: Site): Promise<Site> { need(this.#pause === null, "PAUSE_RETAINED"); const event = await this.#event(); need(event.method === "Debugger.paused", "PAUSE_EXPECTED");
+    if (this.#modifyEvent) { await this.#serviceModify(event); return this.#nextPause(expected); }
     const paused = pauseSchema.parse(captureCurrentPcbStringClockReply(event.params).value); const selected = [...this.#points].find(([, point]) => point.id === paused.hitBreakpoints[0]);
     need(selected !== undefined && (expected === undefined || selected[0] === expected || expected === "packet" && this.#history === null && ["startupEntry", "startupReturn", "initialFinally", "queuedFinally"].includes(selected[0])), "ORIGINAL_BREAKPOINT"); const [role] = selected; const frame = paused.callFrames[0], site = SITES[role];
     need(frame !== undefined && frame.location.scriptId === this.#binding.scriptId && frame.location.lineNumber === site.lineNumber && frame.location.columnNumber === site.columnNumber, "EXACT_PAUSE");
@@ -211,7 +295,7 @@ export class CurrentProjectSaveStructureObserver {
     const event = await this.#event(); need(event.method === "Debugger.resumed", "RESUME_ACK"); z.strictObject({}).parse(event.params); this.#pause = null;
   }
   public async arm(): Promise<void> { need(!this.#armed && !this.#busy, "ARM_CONSUMED"); this.#armed = true; this.#busy = true;
-    try { sourceReply(await this.#send({ phase: "project-save-structure-source", method: "Debugger.getScriptSource", params: { scriptId: this.#binding.scriptId } }));
+    try { this.#sourceText = sourceReply(await this.#send({ phase: "project-save-structure-source", method: "Debugger.getScriptSource", params: { scriptId: this.#binding.scriptId } })).scriptSource;
       for (const role of [...CONSTRUCTORS, "startupEntry", "startupReturn", "bootstrap", "packet", "response", "callbackReturn", "initialFinally", "queuedFinally"] as const) { const site = SITES[role]; this.#uncertainAllocation = true;
         const retain = (raw: unknown): void => { const result = z.looseObject({ breakpointId: handle }).safeParse(raw); if (result.success && ![...this.#points.values()].some(point => point.id === result.data.breakpointId)) {
           this.#points.set(role, { id: result.data.breakpointId, removeAttempted: false, removed: false }); this.#uncertainAllocation = false; } };
@@ -380,8 +464,184 @@ export class CurrentProjectSaveStructureObserver {
   public async observeOriginalSchematicRelevanceStartupDrain(): Promise<CurrentSchematicRelevanceStartupStructureDrained> {
     need(!this.#startupDrainAttempted, "STARTUP_ORIGINAL_DRAIN_CONSUMED"); this.#startupDrainAttempted = true;
     try { await this.#readStartupDrain(); const token: CurrentSchematicRelevanceStartupStructureDrained = Object.freeze({ profile: "private.current-schematic-relevance-startup-structure-drained.v1" });
-      this.#startupDrain = token; startupDrains.set(token, Object.freeze({ origin: this.#origin, owner: this.#owner, operation: this.#operation, assertCurrent: (): void => { need(this.#startupDrain === token, "STARTUP_ORIGINAL_DRAIN_CHANGED"); this.#startupDrainCurrent(); }, refresh: async (): Promise<void> => { need(this.#startupDrain === token, "STARTUP_ORIGINAL_DRAIN_CHANGED"); try { await this.#readStartupDrain(); } catch (error) { this.#failure(error); throw error; } } })); return token;
+      need(this.#project !== null && this.#uploadWrapper !== null && this.#uploadCallback !== null, "STARTUP_ORIGINAL_READER_REFERENCES");
+      const projectObjectId = this.#project, uploadCallbackObjectId = this.#uploadCallback, uploadWrapperObjectId = this.#uploadWrapper;
+      const reader: CurrentSchematicRelevanceModifyStructureReader = Object.freeze({ projectObjectId, uploadWrapperObjectId, uploadCallbackObjectId,
+        assertCurrent: (): void => { need(this.#startupDrain === token && !this.#failed && !this.#closed && !this.#releaseAttempted &&
+          this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding && this.#project === projectObjectId && this.#uploadWrapper === uploadWrapperObjectId && this.#uploadCallback === uploadCallbackObjectId, "MODIFY_ORIGINAL_READER_CHANGED"); } });
+      this.#startupDrain = token; startupDrains.set(token, Object.freeze({ observer: this, reader, origin: this.#origin, owner: this.#owner, operation: this.#operation, assertCurrent: (): void => { need(this.#startupDrain === token, "STARTUP_ORIGINAL_DRAIN_CHANGED"); this.#startupDrainCurrent(); }, refresh: async (): Promise<void> => { need(this.#startupDrain === token, "STARTUP_ORIGINAL_DRAIN_CHANGED"); try { await this.#readStartupDrain(); } catch (error) { this.#failure(error); throw error; } } })); return token;
     } catch (error) { this.#failure(error); throw error; }
+  }
+  /** Keep the exact Core-issued binding and constructor-retained reader; no
+   * equal-looking origin, replacement lookup or older instance is accepted. */
+  #modifyStable(modify: ModifyState): void {
+    need(this.#modify === modify && !this.#failed && !this.#closed && modify.lookup(modify.origin, this, this.#origin, this.#owner, this.#operation) === modify.binding, "MODIFY_ORIGINAL_BINDING");
+    modify.reader.assertCurrent();
+  }
+  /** Recheck private origin, context and consumed Modify custody on both
+   * sides of the original Core owner's asynchronous verification. */
+  async #modifyCurrent(modify: ModifyState): Promise<void> {
+    this.#modifyStable(modify); modify.binding.assertModifyPending(); await modify.binding.assertCurrent(); this.#modifyStable(modify); modify.binding.assertModifyPending();
+  }
+  /** Resumes carry the actual routed event into Core's atomic reservation.
+   * Passive commands carry null and cannot borrow an old startup allowance. */
+  async #modifySend(modify: ModifyState, input: CurrentSchematicRelevanceModifyStructureCommand, event: CurrentProjectSaveStructureEvent | null = null, retain?: (reply: unknown) => void): Promise<unknown> {
+    const command = validateModify(input); need((command.phase === "modify-structure-resume") === (event !== null), "MODIFY_ORIGINAL_EVENT_ARGUMENT");
+    await this.#modifyCurrent(modify); modify.requests += 1; need(modify.requests <= MODIFY_REQUESTS.reads, "MODIFY_REQUEST_CAPACITY");
+    const raw = await modify.binding.request(command, event, retain); await this.#modifyCurrent(modify); return captureCurrentPcbStringClockReply(raw).value;
+  }
+  #modifyProperties(modify: ModifyState, objectId: string): Promise<unknown> {
+    return this.#modifySend(modify, { phase: "modify-structure-properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
+  }
+  /** Select immutable source/arity/value-mode rows only. The default receiver
+   * is the original worker I11; retained frame/Promise helpers are explicit. */
+  #modifyCall(modify: ModifyState, role: typeof MODIFY_CALLS[number][0], args: readonly string[], objectId = modify.binding.nativeObjectId): Promise<unknown> {
+    const row = MODIFY_CALLS.find(value => value[0] === role); need(row !== undefined && row[2] === args.length, "MODIFY_FIXED_CALL");
+    return this.#modifySend(modify, validateModify({ phase: "modify-structure-call", role, method: "Runtime.callFunctionOn", params: { ...MODIFY_FLAGS,
+      objectId, functionDeclaration: row[1], arguments: args.map(id => ({ objectId: id })), returnByValue: row[3], awaitPromise: false, userGesture: false } }));
+  }
+  async #modifyTrue(modify: ModifyState, role: typeof MODIFY_CALLS[number][0], args: readonly string[], objectId?: string): Promise<void> {
+    z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) }).parse(await this.#modifyCall(modify, role, args, objectId));
+  }
+  /** Retain a fresh fixed recipe tuple and reject sparse, accessor, duplicate
+   * or extra-index replies before selecting any child handle from it. */
+  async #modifyArray(modify: ModifyState, raw: unknown, length?: number): Promise<Readonly<{ id: string; fields: Map<string, z.infer<typeof remote>> }>> {
+    const result = remoteResult(raw); need(result.type === "object" && result.subtype === "array" && result.className === "Array", "MODIFY_ARRAY");
+    const id = object(result);const fields = decodeCurrentSchematicRelevanceModifyStructureArrayFields(await this.#modifyProperties(modify, id), length);
+    return { id, fields };
+  }
+  async #modifyUnchanged(modify: ModifyState): Promise<void> { await this.#modifyTrue(modify, "same", [modify.snapshot, modify.qualified]); }
+  /** Metadata precedes every newly traversed object/prototype. Reprove the
+   * previous full descriptor baseline before adopting each larger snapshot. */
+  async #modifyQualify(modify: ModifyState, objectId: string): Promise<void> {
+    modify.stages += 1; need(modify.stages <= MODIFY_REQUESTS.stages, "MODIFY_GRAPH_STAGES"); let candidate = objectId;
+    for (let wave = 0; wave < MODIFY_REQUESTS.prototypeWaves; wave += 1) {
+      await this.#modifyUnchanged(modify); const fresh = await this.#modifyArray(modify, await this.#modifyCall(modify, "novel", [candidate, modify.qualified]));
+      const size = fresh.fields.get("length")?.value; need(typeof size === "number", "MODIFY_GRAPH_LENGTH"); if (size === 0) { return; }
+      modify.objects += size; need(modify.objects <= MODIFY_REQUESTS.objects, "MODIFY_GRAPH_OBJECTS");
+      for (let index = 0; index < size; index += 1) { const id = object(fresh.fields.get(String(index))); currentSchematicRelevancePublicationNativeProperties(await this.#modifyProperties(modify, id)); }
+      await this.#modifyUnchanged(modify); const merged = await this.#modifyArray(modify, await this.#modifyCall(modify, "merge", [modify.qualified, fresh.id]));
+      const parents = await this.#modifyArray(modify, await this.#modifyCall(modify, "parents", [fresh.id, merged.id])); await this.#modifyUnchanged(modify);
+      const snapshot = object(remoteResult(await this.#modifyCall(modify, "snapshot", [merged.id]))); await this.#modifyUnchanged(modify);
+      modify.qualified = merged.id; modify.snapshot = snapshot; candidate = parents.id;
+    }
+    need(false, "MODIFY_GRAPH_PROTOTYPE_BOUND");
+  }
+  /** Obtain a fresh V8 Closure(Nd) view from the constructor-retained wrapper;
+   * an older scope snapshot cannot stand in for the current serial state. */
+  async #modifyScope(modify: ModifyState): Promise<string> {
+    const list = decodeCurrentPcb209WorkerProducerScopeList(await this.#modifyProperties(modify, modify.reader.uploadWrapperObjectId), modify.binding.scriptId, "serial");
+    const scopes = decodeCurrentPcb209WorkerProducerScopes(await this.#modifyProperties(modify, list), "serial"); need(scopes[0] !== undefined, "MODIFY_ORIGINAL_SCOPE"); return scopes[0];
+  }
+  async #modifyFrame(modify: ModifyState, role: keyof typeof MODIFY_SITES, callFrameId: string): Promise<Readonly<{ id: string; fields: Map<string, z.infer<typeof remote>> }>> {
+    return this.#modifyArray(modify, await this.#modifySend(modify, { phase: "modify-structure-frame", role, method: "Debugger.evaluateOnCallFrame", params: { ...MODIFY_FLAGS,
+      callFrameId, expression: MODIFY_SITES[role].expression, returnByValue: false, includeCommandLineAPI: false } }), MODIFY_SITES[role].length);
+  }
+  /** Arm on the existing waiting packet reader. Original startup points are
+   * removed only after their real ACKs; a reused Chrome ID is a fresh epoch. */
+  public async armOriginalSchematicRelevanceModifyStructure(origin: CurrentSchematicRelevanceModifyStructureOrigin): Promise<void> {
+    need(!this.#modifySetupAttempted && this.#origin.profile === "private.current-schematic-relevance-display-save-structure-origin.v1" && this.#startupDrain !== null &&
+      this.#constructed && this.#packetAttempted && this.#busy && this.#pause === null && this.#history === null && this.#sourceText !== null, "MODIFY_ORIGINAL_READER_REQUIRED"); this.#modifySetupAttempted = true;
+    try {
+      qualifyCurrentSchematicRelevanceModifyStructureSource(this.#sourceText);
+      const reader = requireOriginalCurrentSchematicRelevanceStartupStructureReader(this.#startupDrain, this, this.#origin, this.#owner, this.#operation);
+      const lookup = modifyLookup.parse(Reflect.get(native, "requireOriginalCurrentSchematicRelevanceModifyStructureOrigin"));
+      const binding = modifyBindings.parse(lookup(origin, this, this.#origin, this.#owner, this.#operation));
+      need(binding.sessionId === this.#binding.sessionId && binding.scriptId === this.#binding.scriptId && binding.worker.scriptId === binding.scriptId && binding.nativeObjectId === binding.worker.nativeObjectId, "MODIFY_ORIGINAL_WORKER");
+      const completed = Promise.withResolvers<CurrentSchematicRelevanceModifyStructureCompleted>();
+      void (async (): Promise<void> => {
+        try { await completed.promise; } catch {
+          // The original waiter retains the failure; this avoids an unhandled
+          // Rejection before it joins the same original Promise.
+        }
+      })();
+      const modify: ModifyState = { origin, lookup, binding, reader, completed, points: new Map(), stage: "arming", requests: 0, events: 0, objects: 0, stages: 0,
+        qualified: binding.worker.qualifiedObjectId, snapshot: binding.worker.snapshotObjectId, parts: null, entry: null, args: null, promise: null, held: null, token: null }; this.#modify = modify;
+      await this.#modifyTrue(modify, "reference-same", [binding.projectObjectId], reader.projectObjectId);
+      await this.#modifyTrue(modify, "reprove", []); await this.#modifyUnchanged(modify);
+      const parts = await this.#modifyArray(modify, await this.#modifyCall(modify, "parts", [reader.projectObjectId, modify.qualified]), 5); await this.#modifyQualify(modify, parts.id); modify.parts = parts.id;
+      const getter = parts.fields.get("3"), includes = parts.fields.get("4"), readonly = parts.fields.get("2");
+      need(readonly?.description === MODIFY_SOURCE.readOnly.source && getter?.description === MODIFY_SOURCE.v2.source && includes?.description === "function includes() { [native code] }", "MODIFY_SOURCE_CALLEE_DESCRIPTION");
+      decodeCurrentGeneratedInitialSyncCallee(await this.#modifyProperties(modify, fn(readonly)), 0, binding.scriptId);
+      decodeCurrentGeneratedSyncCallee(await this.#modifyProperties(modify, fn(getter)), MODIFY_SOURCE.v2, binding.scriptId);
+      decodeCurrentNativeFunctionMetadata(await this.#modifyProperties(modify, fn(includes)), { name: "includes", arity: 1, constructor: false });
+      await this.#modifyTrue(modify, "readonly-proof", [reader.projectObjectId, parts.id, modify.qualified]);
+      for (const role of ["startupEntry", "startupReturn"] as const) {
+        const point = this.#points.get(role); need(point !== undefined && !point.removed && !point.removeAttempted, "MODIFY_ORIGINAL_STARTUP_POINT"); point.removeAttempted = true;
+        z.strictObject({}).parse(await this.#modifySend(modify, { phase: "modify-structure-remove", role, method: "Debugger.removeBreakpoint", params: { breakpointId: point.id } })); point.removed = true;
+      }
+      for (const role of ["entry", "returned"] as const) {
+        const site = MODIFY_SITES[role]; const retain = (raw: unknown): void => {
+          const data = z.looseObject({ breakpointId: handle }).safeParse(raw); if (!data.success) { return; }
+          need(![...this.#points.values()].some(point => !point.removed && point.id === data.data.breakpointId) && ![...modify.points.values()].some(point => point.id === data.data.breakpointId), "MODIFY_ACTIVE_POINT_COLLISION");
+          modify.points.set(role, { id: data.data.breakpointId, removeAttempted: false, removed: false });
+        };
+        const reply = z.strictObject({ breakpointId: handle, actualLocation: position }).parse(await this.#modifySend(modify, { phase: "modify-structure-arm", role, method: "Debugger.setBreakpoint",
+          params: { location: { scriptId: binding.scriptId, lineNumber: site.lineNumber, columnNumber: site.columnNumber } } }, null, retain));
+        need(modify.points.get(role)?.id === reply.breakpointId && reply.actualLocation.scriptId === binding.scriptId && reply.actualLocation.lineNumber === site.lineNumber && reply.actualLocation.columnNumber === site.columnNumber, "MODIFY_EXACT_ARM");
+      }
+      await this.#modifyUnchanged(modify); modify.stage = "entry";
+    } catch (error) { this.#failure(error); throw error; }
+  }
+  /** The same packet loop handles this wave. Waiting adds no reader, native
+   * request, timer, callback or fallback source of completion. */
+  public async waitOriginalSchematicRelevanceModifyStructure(): Promise<CurrentSchematicRelevanceModifyStructureCompleted> {
+    const modify = this.#modify; need(modify !== null, "MODIFY_ORIGINAL_SETUP_REQUIRED"); const token = await modify.completed.promise; this.#modifyStable(modify); need(modify.token === token, "MODIFY_ORIGINAL_COMPLETION_CHANGED"); return token;
+  }
+  /** Consume one held original event, then join both the real native ACK and
+   * its resumed event through the same exclusive reader before advancing. */
+  async #modifyResume(modify: ModifyState, role: ModifyRole): Promise<void> {
+    const held = modify.held; need(held !== null && held.role === role && !held.resumeAttempted && modify.stage === role, "MODIFY_RESUME_CONSUMED"); modify.held = { ...held, resumeAttempted: true };
+    z.strictObject({}).parse(await this.#modifySend(modify, { phase: "modify-structure-resume", role, method: "Debugger.resume", params: {} }, held.event));
+    const resumed = await this.#event(); need(this.#modifyEvent && resumed.method === "Debugger.resumed", "MODIFY_ORIGINAL_RESUMED"); z.strictObject({}).parse(resumed.params); modify.held = null;
+  }
+  /** Follow only the original TEXT suppression call through its undefined
+   * return, actual initial serial finalizer and fulfilled idle Promise. */
+  async #serviceModify(event: CurrentProjectSaveStructureEvent): Promise<void> {
+    const modify = this.#modify, raw = this.#lastRawEvent; need(modify !== null && raw !== null && modify.held === null && modify.parts !== null, "MODIFY_ORIGINAL_EVENT");
+    const parsed = pauseSchema.parse(event.params), top = parsed.callFrames[0]; need(top !== undefined, "MODIFY_ORIGINAL_FRAME"); const role = modify.stage;
+    need(role === "entry" || role === "returned" || role === "finalizer", "MODIFY_ORIGINAL_STAGE"); const point = role === "finalizer" ? this.#points.get("initialFinally") : modify.points.get(role), site = MODIFY_SITES[role];
+    need(point !== undefined && !point.removed && point.id === parsed.hitBreakpoints[0] && top.location.scriptId === modify.binding.scriptId && top.location.lineNumber === site.lineNumber && top.location.columnNumber === site.columnNumber, "MODIFY_EXACT_PAUSE");
+    let callerFrameId: string | null = null, onChangeFrameId: string | null = null;
+    if (role === "entry") {
+      const caller = parsed.callFrames[3], initial = parsed.callFrames[1], serial = parsed.callFrames[2];
+      need(initial !== undefined && serial !== undefined && caller !== undefined && initial.functionLocation.scriptId === modify.binding.scriptId && initial.functionLocation.lineNumber === MODIFY_SOURCE.initial.lineNumber && initial.functionLocation.columnNumber === MODIFY_SOURCE.initial.columnNumber &&
+        serial.functionLocation.scriptId === modify.binding.scriptId && serial.functionLocation.lineNumber === MODIFY_SOURCE.serial.lineNumber && serial.functionLocation.columnNumber === MODIFY_SOURCE.serial.columnNumber &&
+        caller.functionLocation.scriptId === modify.binding.scriptId && caller.functionLocation.lineNumber === MODIFY_SOURCE.onChange.lineNumber && caller.functionLocation.columnNumber === MODIFY_SOURCE.onChange.columnNumber, "MODIFY_ORIGINAL_CALL_CHAIN");
+      callerFrameId = initial.callFrameId; onChangeFrameId = caller.callFrameId;
+    }
+    if (role === "returned") { need(z.strictObject({ type: z.literal("undefined") }).safeParse(top.returnValue).success, "MODIFY_UNDEFINED_RETURN"); }
+    modify.held = { role, event: raw, frameId: top.callFrameId, callerFrameId, onChangeFrameId, resumeAttempted: false };
+    const current = await this.#modifyFrame(modify, role, top.callFrameId);
+    if (role === "entry") {
+      need(callerFrameId !== null && onChangeFrameId !== null, "MODIFY_ORIGINAL_CALLER"); await this.#modifyQualify(modify, current.id);
+      const caller = await this.#modifyFrame(modify, "serialCaller", callerFrameId); await this.#modifyQualify(modify, caller.id);
+      const change = await this.#modifyFrame(modify, "onChange", onChangeFrameId); await this.#modifyQualify(modify, change.id);
+      const scope = await this.#modifyScope(modify); await this.#modifyTrue(modify, "entry", [current.id, modify.reader.projectObjectId, modify.reader.uploadCallbackObjectId, caller.id, scope, modify.parts, modify.qualified]);
+      const payload = remoteResult(await this.#modifyCall(modify, "caller", [change.id, modify.reader.projectObjectId, current.id]));
+      requireCurrentSchematicRelevanceModifyStructureCaller(payload.value, modify.binding.payload, modify.binding.projectUuid);
+      modify.entry = current.id; modify.args = object(caller.fields.get("3")); await this.#modifyUnchanged(modify); await this.#modifyResume(modify, role); modify.stage = "returned";
+    } else if (role === "returned") {
+      need(modify.entry !== null, "MODIFY_ORIGINAL_ENTRY"); await this.#modifyUnchanged(modify);
+      await this.#modifyTrue(modify, "returned", [current.id, modify.entry, modify.reader.projectObjectId, modify.parts, modify.qualified]); await this.#modifyResume(modify, role); modify.stage = "finalizer";
+    } else {
+      await this.#modifyUnchanged(modify); const scope = await this.#modifyScope(modify);
+      await this.#modifyTrue(modify, "finalizer", [modify.reader.projectObjectId, modify.reader.uploadCallbackObjectId, scope], current.id);
+      const promise = current.fields.get("0"); need(promise?.type === "object" && promise.subtype === "promise" && promise.className === "Promise", "MODIFY_ORIGINAL_SERIAL_PROMISE");
+      const promiseId = object(promise); modify.promise = object(remoteResult(await this.#modifyCall(modify, "retain", [], promiseId)));
+      for (const selected of ["entry", "returned"] as const) {
+        const owned = modify.points.get(selected); need(owned !== undefined && !owned.removeAttempted && !owned.removed, "MODIFY_ORIGINAL_POINT_RETIRE"); owned.removeAttempted = true;
+        z.strictObject({}).parse(await this.#modifySend(modify, { phase: "modify-structure-remove", role: selected, method: "Debugger.removeBreakpoint", params: { breakpointId: owned.id } })); owned.removed = true;
+      }
+      await this.#modifyResume(modify, role); modify.stage = "draining";
+      const metadata = decodeCurrentSchematicRelevanceNotificationPromise(await this.#modifyProperties(modify, modify.promise), { type: "object", subtype: "promise", className: "Promise", description: "Promise", objectId: modify.promise });
+      need(metadata.state === "fulfilled" && modify.args !== null, "MODIFY_ORIGINAL_SERIAL_FULFILLED");
+      const idle = await this.#modifyScope(modify); await this.#modifyTrue(modify, "idle", [modify.reader.projectObjectId, modify.reader.uploadCallbackObjectId, idle, modify.args, modify.parts, modify.qualified]); await this.#modifyUnchanged(modify);
+      const token: CurrentSchematicRelevanceModifyStructureCompleted = Object.freeze({ profile: "private.current-schematic-relevance-modify-structure-completed.v1", originalReaderJoined: true,
+        originalSingleTextNoPublicationObserved: true, originalSerialPromiseFulfilledUndefined: true, originalSerialIdleObserved: true, workerCompleted: false, modifyCompleted: false, saveAuthorized: false });
+      modify.token = token; modify.stage = "complete"; modifyCompletions.set(token, Object.freeze({ observer: this, origin: modify.origin, owner: this.#owner, operation: this.#operation,
+        assertCurrent: (): void => { this.#modifyStable(modify); need(modify.token === token && modify.stage === "complete", "MODIFY_ORIGINAL_COMPLETION_CHANGED"); } })); modify.completed.resolve(token);
+    }
   }
   async #queues(): Promise<void> { need(this.#uploadCallback !== null && this.#debounce !== null && this.#structureCallback !== null, "QUEUES"); const scopes = await this.#freshScopes();
     const debounce = await this.#array(await this.#call("debounce", scopes.debounce, [scopes.parameters, this.#structureCallback], false), 2); const resolver = fn(debounce.get("1")), timer = debounce.get("0")?.value;
@@ -456,10 +716,12 @@ export class CurrentProjectSaveStructureObserver {
       prehistoryCompletions.set(result, { observer: this, packet: this.#held, reservation: this.#bodyReservation, publication }); return result;
     } catch (error) { this.#failure(error); throw error; } finally { this.#busy = false; }
   }
-  /** An incomplete held publication is never resumed as cleanup. The original
-   * generation must actually exit before its observational handles can end. */
+  /** An incomplete publication is never resumed as cleanup. A reader that
+   * also owns the separate Modify capture group retains both groups until
+   * the original generation exits; successful old readers keep their exact
+   * bounded remove/release path. */
   public async cleanup(): Promise<void> { need(!this.#busy && !this.#closed, "CLEANUP_STATE"); this.#busy = true;
-    try { if (!this.#complete || this.#failed || this.#uncertainAllocation || this.#cleanupUncertain) { await this.#binding.assertOriginalGenerationExited(); this.#closed = true; return; }
+    try { if (this.#modify !== null || !this.#complete || this.#failed || this.#uncertainAllocation || this.#cleanupUncertain) { await this.#binding.assertOriginalGenerationExited(); this.#closed = true; return; }
       this.#cleanupUncertain = true;
       need(this.#pause === null, "PAUSE_RETAINED"); for (const point of this.#points.values()) { if (!point.removed) { need(!point.removeAttempted, "REMOVE_CONSUMED"); point.removeAttempted = true;
         z.strictObject({}).parse(await this.#send({ phase: "project-save-structure-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: point.id } }, true)); point.removed = true; } }

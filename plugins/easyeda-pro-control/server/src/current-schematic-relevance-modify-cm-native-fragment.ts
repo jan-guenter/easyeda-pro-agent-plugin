@@ -1,0 +1,41 @@
+/** Original worker CM entry lane. It may release the held batch and the
+ * source-qualified remoteChange only into the already-armed onChange entry.
+ * Sheet/canvas, ticket and all later continuations require separate proofs. */
+import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
+import { currentSchematicRelevanceModifyCmNativeSource } from "./current-schematic-relevance-modify-cm-native.ts";
+import { currentSchematicRelevanceModifyCmControlNativeSource } from "./current-schematic-relevance-modify-cm-control-native.ts";
+import { currentSchematicRelevanceModifyCmDeltaNativeSource } from "./current-schematic-relevance-modify-cm-delta-native.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CM_REQUESTS as GRAPH } from "./current-schematic-relevance-modify-cm-protocol.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_CM_DELTA_REQUESTS as DELTA } from "./current-schematic-relevance-modify-cm-delta-protocol.ts";
+
+const begin = "// BEGIN ORIGINAL SCHEMATIC MODIFY CM", end = "// END ORIGINAL SCHEMATIC MODIFY CM";
+const dispatch = String.raw`        'schematic-relevance-modify-cm-control' {
+          if(-not $SchematicRelevanceDisplayWrite209 -or -not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])){throw 'schematic-modify-cm-fields'}
+          $base=@('action','id','helperInstance','jobId','rootPid','rootCreated','requestId','phase','method');foreach($field in $base){if(@($request.PSObject.Properties.Name) -cnotcontains $field){throw 'schematic-modify-cm-field'}}
+          $fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal);foreach($property in $request.PSObject.Properties){if($base -cnotcontains $property.Name){$fields.Add($property.Name,$property.Value)}}
+          if($request.method -ceq 'control'){if($request.requestId -ne 0 -or $fields.Count -ne 0){throw 'schematic-modify-cm-control'};$owner.ControlSchematicRelevanceModifyCm($request.phase)}else{$owner.StepSchematicRelevanceModifyCm([int]$request.requestId,$request.phase,$request.method,$fields)}
+          $result=@{written=$true}
+        }
+`;
+/** Mount finite preparation and exact entry controls in the own7 helper.
+ * The remaining five nested resumes and cancellation are deliberately refused
+ * until their original Sheet, timer and completion proofs are implemented. */
+export function applyCurrentSchematicRelevanceModifyCmNativeFragment(input: string): string {
+ const block = `${begin}
+${currentSchematicRelevanceModifyCmNativeSource()}
+${currentSchematicRelevanceModifyCmControlNativeSource()}
+${currentSchematicRelevanceModifyCmDeltaNativeSource()}
+public sealed partial class EasyedaDiagnosticOwner{
+public static void VerifySchematicRelevanceModifyCmCodecSmoke(){EasyedaSchematicRelevanceModifyCmProtocol.VerifySmoke();EasyedaSchematicRelevanceModifyCmControlProtocol.VerifySmoke();EasyedaSchematicRelevanceModifyCmDeltaProtocol.VerifySmoke();}
+bool relevanceModifyCmBound,relevanceModifyCmBefore,relevanceModifyCmArmed,relevanceModifyCmEntry,relevanceModifyCmDelta;int relevanceModifyCmReads,relevanceModifyCmEntryReads,relevanceModifyCmDeltaReads,relevanceModifyCmArms,relevanceModifyCmParentResumes,relevanceModifyCmResumes;
+void AssertSchematicRelevanceModifyCm(){AssertSchematicRelevanceModifyContinuation();AssertSchematicRelevanceModifyStructure();if(!relevanceModifyBatchHeld||!relevanceModifyStructureBound||relevanceModifyStructureCompleted)throw Error("schematic-modify-cm-original");}
+public void ControlSchematicRelevanceModifyCm(string phase){AssertSchematicRelevanceModifyCm();if(phase=="bind"){if(relevanceModifyCmBound)throw Error("schematic-modify-cm-bind-once");relevanceModifyCmBound=true;return;}if(!relevanceModifyCmBound||relevanceModifyCmDelta)throw Error("schematic-modify-cm-state");if(phase=="before-ready"&&!relevanceModifyCmBefore&&relevanceModifyCmReads>0&&relevanceModifyCmParentResumes==0){relevanceModifyCmBefore=true;return;}if(phase=="guards-armed"&&relevanceModifyCmBefore&&!relevanceModifyCmArmed&&relevanceModifyCmArms==10&&relevanceModifyCmParentResumes==0){relevanceModifyCmArmed=true;return;}if(phase=="entry-ready"&&relevanceModifyCmParentResumes==1&&relevanceModifyCmResumes==0&&!relevanceModifyCmEntry&&relevanceModifyCmEntryReads>0){relevanceModifyCmEntry=true;return;}if(phase=="delta-held"&&relevanceModifyCmResumes==1&&!relevanceModifyCmDelta&&relevanceModifyCmDeltaReads>0){relevanceModifyCmDelta=true;return;}throw Error("schematic-modify-cm-control-order");}
+public void StepSchematicRelevanceModifyCm(int id,string phase,string method,System.Collections.IDictionary fields){AssertSchematicRelevanceModifyCm();if(!relevanceModifyCmBound||relevanceModifyCmDelta||phase==null)throw Error("schematic-modify-cm-unavailable");string text;if(phase.StartsWith("modify-cm-delta-",StringComparison.Ordinal)){if(relevanceModifyCmResumes!=1||relevanceModifyCmDeltaReads>=${String(DELTA.reads)})throw Error("schematic-modify-cm-delta-bound");text=EasyedaSchematicRelevanceModifyCmDeltaProtocol.Encode(id,schematicWorkerSession,phase,method,fields);relevanceModifyCmDeltaReads++;}else if(phase=="modify-cm-control-batch-resume-batch"){if(!relevanceModifyCmBefore||!relevanceModifyCmArmed||relevanceModifyCmParentResumes!=0||relevanceModifyCmResumes!=0)throw Error("schematic-modify-cm-parent-once");text=EasyedaSchematicRelevanceModifyCmControlProtocol.Encode(id,schematicWorkerSession,phase,method,fields);relevanceModifyCmParentResumes++;}else if(phase.StartsWith("modify-cm-control-",StringComparison.Ordinal)){bool resume=phase=="modify-cm-control-resume-remote";if(resume){if(!relevanceModifyCmEntry||relevanceModifyCmResumes!=0||relevanceModifyCmParentResumes!=1)throw Error("schematic-modify-cm-later-body-held");}else{string[] expected={"modify-cm-control-possible-remote","modify-cm-control-return-remote","modify-cm-control-possible-ticket","modify-cm-control-return-ticket","modify-cm-control-possible-canWs","modify-cm-control-return-canWs","modify-cm-control-function-remote","modify-cm-control-function-onChange","modify-cm-control-function-ticket","modify-cm-control-function-canWs"};if(!relevanceModifyCmBefore||relevanceModifyCmArmed||relevanceModifyCmParentResumes!=0||relevanceModifyCmArms>=expected.Length||phase!=expected[relevanceModifyCmArms])throw Error("schematic-modify-cm-arm-order");relevanceModifyCmArms++;}text=EasyedaSchematicRelevanceModifyCmControlProtocol.Encode(id,schematicWorkerSession,phase,method,fields);if(resume)relevanceModifyCmResumes++;}else{if(!phase.StartsWith("modify-cm-",StringComparison.Ordinal)||relevanceModifyCmResumes!=0)throw Error("schematic-modify-cm-passive-phase");if(relevanceModifyCmParentResumes==0){if(relevanceModifyCmBefore||relevanceModifyCmReads>=${String(GRAPH.beforeReads)})throw Error("schematic-modify-cm-before-bound");relevanceModifyCmReads++;}else{if(relevanceModifyCmEntry||relevanceModifyCmEntryReads>=${String(GRAPH.entryReads)})throw Error("schematic-modify-cm-entry-bound");relevanceModifyCmEntryReads++;}text=EasyedaSchematicRelevanceModifyCmProtocol.Encode(id,schematicWorkerSession,phase,method,fields);}SendMessage(id,text);}
+}
+${end}`;
+ let source = input; const admission = 'case "schematic-relevance-modify-structure":';
+ if (!source.includes('case "schematic-relevance-modify-cm-control":')) { if (source.split(admission).length !== 2) { throw new Error("SCH_MODIFY_CM_ADMISSION"); } source = source.replace(admission, `case "schematic-relevance-modify-cm-control":${admission}`); }
+ source = installOwnedNativeDispatch(source, dispatch, "        'schematic-relevance-modify-structure' {"); const from = source.indexOf(begin), through = source.indexOf(end);
+ if (from !== -1 || through !== -1) { if (from === -1 || through < from || source.includes(begin, from + begin.length) || source.includes(end, through + end.length)) { throw new Error("SCH_MODIFY_CM_MARKERS"); } return source.slice(0, from) + block + source.slice(through + end.length); }
+ const anchor = "// BEGIN ORIGINAL SCHEMATIC MODIFY TEXT STRUCTURE"; if (source.split(anchor).length !== 2) { throw new Error("SCH_MODIFY_CM_ANCHOR"); } return source.replace(anchor, `${block}\n${anchor}`);
+}

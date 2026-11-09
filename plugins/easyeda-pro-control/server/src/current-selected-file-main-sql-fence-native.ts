@@ -1,13 +1,20 @@
+import { CURRENT_MAIN_STARTUP_LIBRARY_READ_OWNER_PROGRAM as STARTUP_READ_OWNER } from "./current-main-startup-library-interleave.ts";
+/* oxlint-disable import/max-dependencies -- This fixed SQL codec pins separate capture, source, request and registration programs; combining their modules would obscure the independently checked contracts. */
 /** Fixed generic selected-file main codebook. A native birth, never a caller
  * string, selects this codec and its original inspector connection. */
+import { currentMainStartupLibraryV2NativeRows } from "./current-main-startup-library-v2-native.ts";
+import { currentMainStartupLibraryNativeRows } from "./current-main-startup-library-native.ts";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_APP_URL_PATTERN as URL } from "./current-footprint-copy-main-backend-contract.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SOURCE } from "./current-selected-file-main-sql-fence-source.ts";
-import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONDITIONS as CONDITIONS, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONFIGURATION_PROGRAM as CONFIGURATION,
-  CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as REQUIRE, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SELECT_PROGRAM as SELECT } from "./current-selected-file-main-sql-fence-programs.ts";
+import { CURRENT_MAIN_CAPTURED_SCOPE_FRAMES as SCOPE_FRAMES } from "./current-main-captured-scope-frames.ts";
+import { CURRENT_MAIN_CAPTURED_REQUEST_BIND_PROGRAM as CAPTURED_REQUEST_BIND, CURRENT_MAIN_CAPTURED_SCOPE_JOINS as SCOPE_JOINS } from "./current-main-captured-scope-joins.ts";
+import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE,
+  CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_EXPRESSIONS as CAPTURED_EXPRESSIONS,CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_PROGRAM as CAPTURED_FRAME,CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONDITIONS as CONDITIONS,CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONFIGURATION_PROGRAM as CONFIGURATION,
+  CURRENT_SELECTED_FILE_MAIN_SQL_PREDICATE_DIAGNOSTIC_PROGRAM as PREDICATE_DIAGNOSTIC,CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as REQUIRE,CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SELECT_PROGRAM as SELECT } from "./current-selected-file-main-sql-fence-programs.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as CALL, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_FRAME_FLAGS as FRAME,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_NATIVE_EXPRESSION as NATIVE_EXPRESSION, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES as SITES,
   currentSavedProjectRegistrationConfigNativeCases, validateCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
@@ -19,6 +26,8 @@ import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as REQUEST, CURRENT_SELECTED_F
 
 const smoke = (name: string): string => name === "path" ? String.raw`C:\Synthetic\fixture.eprj2` : "main_handle";
 const marker = (name: string): string => `__selectedsql_${name}__`;
+/** Validate one fixed SQL-fence command and correlate its bounded native
+ * operands with the original positive request ID. No caller SQL is encoded. */
 export function currentSelectedFileMainSqlFenceWire(input: unknown, id: number): Readonly<{ command: Command & Readonly<{ id: number }>; request: Readonly<Record<string, string | number>> }> {
   if (!Number.isSafeInteger(id) || id < 1 || id > 2_147_483_647) { throw new Error("SELECTED_FILE_MAIN_SQL_FENCE_WIRE_ID"); }
   const command = validateCurrentSelectedFileMainSqlFenceCommand(input);
@@ -31,33 +40,50 @@ export function currentSelectedFileMainSqlFenceWire(input: unknown, id: number):
     request["objectId"] = command.params.objectId;
     if (command.phase === "sql-fence-capture") { request["path"] = command.params.arguments[0].value; }
     else if (command.phase === "sql-fence-registration-bind") { request["argument0"] = command.params.arguments[0].objectId; request["path"] = command.params.arguments[1].value; }
+    else if (command.phase === "sql-fence-registration-rebase-bind") {
+      request["argument0"] = command.params.arguments[0].objectId; request["argument1"] = command.params.arguments[1].objectId; request["path"] = command.params.arguments[2].value;
+    }
+    else if (command.phase === "sql-fence-registration-rebase-after-exec" || command.phase === "sql-fence-registration-rebase-opened") {
+      request["argument0"] = command.params.arguments[0].objectId; request["argument1"] = command.params.arguments[1].objectId;
+    }
     else if (command.phase === "sql-fence-registration-run" || command.phase === "sql-fence-registration-after-exec" || command.phase === "sql-fence-registration-opened") { request["argument0"] = command.params.arguments[0].objectId; }
-    else if (command.phase === "sql-fence-request-capture" || command.phase === "sql-fence-request-bind" || command.phase === "sql-fence-request-rebind") {
+    else if (command.phase === "sql-fence-request-capture" || command.phase === "sql-fence-request-bind" || command.phase === "sql-fence-request-rebind" || command.phase === "sql-fence-request-private-bind" || command.phase === "sql-fence-request-private-rebind") {
       for (const [index, argument] of command.params.arguments.entries()) { request[`argument${String(index)}`] = argument.objectId; }
     }
-    else if (command.phase === "sql-fence-select" || command.phase === "sql-fence-configure" || command.phase === "sql-fence-startup-version" || command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc" || command.phase === "sql-fence-startup-select") { request["argument0"] = command.params.arguments[0].objectId; }
+    else if (command.phase === "sql-fence-startup-read-owner" || command.phase === "sql-fence-select" || command.phase === "sql-fence-configure" || command.phase === "sql-fence-startup-version" || command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc" || command.phase === "sql-fence-startup-select" || command.phase === "sql-fence-captured-frame" || command.phase === "sql-fence-driver-rebase-capture") { request["argument0"] = command.params.arguments[0].objectId; }
   }
   return freezeDeep({ command: { ...command, id }, request });
 }
+/** Enumerate the closed native codec cases using synthetic placeholder
+ * handles. These data fixtures neither send requests nor issue ownership. */
 export function currentSelectedFileMainSqlFenceNativeCases(): readonly Command[] {
   const callFrameId = marker("callFrameId"), objectId = marker("objectId"), scriptId = marker("scriptId");
   const rows: Command[] = [
     ...currentSavedProjectRegistrationConfigNativeCases(),
+    { phase: "sql-fence-startup-read-owner", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: STARTUP_READ_OWNER, arguments: [{ objectId: marker("argument0") }], returnByValue: true } },
+    { phase: "sql-fence-startup-config-resume", method: "Debugger.resume", params: {} },
     { phase: "sql-fence-early-arm", method: "Debugger.setBreakpointByUrl", params: { urlRegex: URL,
       lineNumber: SOURCE.sites.import.lineNumber, columnNumber: SOURCE.sites.import.breakpointColumnNumber } },
     { phase: "sql-fence-after-imports-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId,
       lineNumber: SOURCE.sites.afterImports.lineNumber, columnNumber: SOURCE.sites.afterImports.breakpointColumnNumber } } },
     { phase: "sql-fence-frame", site: "afterImports", method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, callFrameId, expression: SOURCE.sites.afterImports.expression } },
     { phase: "sql-fence-native-frame", method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, callFrameId, expression: NATIVE_EXPRESSION } },
+    { phase: "sql-fence-predicate-diagnostic", method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, throwOnSideEffect: false, returnByValue: true, callFrameId, expression: PREDICATE_DIAGNOSTIC } },
     { phase: "sql-fence-properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } },
     { phase: "sql-fence-capture", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: CAPTURE, arguments: [{ value: marker("path") }], returnByValue: false } },
     { phase: "sql-fence-require", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: REQUIRE, arguments: [], returnByValue: true } },
     { phase: "sql-fence-select", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: SELECT, arguments: [{ objectId: marker("argument0") }], returnByValue: false } },
     { phase: "sql-fence-driver-frame", method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, callFrameId, expression: REQUEST_FRAME } },
+    { phase: "sql-fence-driver-raw-frame", method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, callFrameId, expression: SCOPE_FRAMES.driver.rawExpression } },
+    { phase: "sql-fence-driver-rebase-capture", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId, functionDeclaration: SCOPE_JOINS.driver,
+      arguments: [{ objectId: marker("argument0") }], returnByValue: false } },
     { phase: "sql-fence-request-capture", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: REQUEST.capture, arguments: [{ objectId: marker("argument0") }], returnByValue: false } },
     { phase: "sql-fence-request-bind", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: REQUEST.bind, arguments: [{ objectId: marker("argument0") }, { objectId: marker("argument1") }, { objectId: marker("argument2") }, { objectId: marker("argument3") }], returnByValue: false } },
     { phase: "sql-fence-request-rebind", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: REQUEST.rebind, arguments: [{ objectId: marker("argument0") }], returnByValue: false } },
+    { phase: "sql-fence-request-private-bind", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId, functionDeclaration: CAPTURED_REQUEST_BIND, arguments: [{ objectId: marker("argument0") }, { objectId: marker("argument1") }, { objectId: marker("argument2") }, { objectId: marker("argument3") }], returnByValue: false } },
+    { phase: "sql-fence-request-private-rebind", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId, functionDeclaration: REQUEST.rebind, arguments: [{ objectId: marker("argument0") }], returnByValue: false } },
     { phase: "sql-fence-request-read", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: REQUEST.read, arguments: [], returnByValue: true } },
+    { phase: "sql-fence-request-private-read", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId, functionDeclaration: REQUEST.read, arguments: [], returnByValue: true } },
     { phase: "sql-fence-fetch-source", method: "Debugger.getScriptSource", params: { scriptId } },
     { phase: "sql-fence-resume", method: "Debugger.resume", params: {} },
   ];
@@ -71,7 +97,12 @@ export function currentSelectedFileMainSqlFenceNativeCases(): readonly Command[]
     rows.push({ phase: "sql-fence-startup-select", site, method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId, functionDeclaration: STARTUP.select, arguments: [{ objectId: marker("argument0") }, { value: site }], returnByValue: true } });
   }
   for (const site of SITES) {
-    rows.push({ phase: "sql-fence-arm", site, method: "Debugger.setBreakpoint", params: { location: { scriptId,
+    rows.push({ phase: "sql-fence-held-arm", site, method: "Debugger.setBreakpoint", params: { location: { scriptId,
+      lineNumber: SOURCE.sites[site].lineNumber, columnNumber: SOURCE.sites[site].breakpointColumnNumber }, condition: "true" } },
+      { phase: "sql-fence-raw-frame", site, method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, callFrameId, expression: CAPTURED_EXPRESSIONS[site] } },
+      { phase: "sql-fence-captured-frame", site, method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId,
+        functionDeclaration: CAPTURED_FRAME, arguments: [{ objectId: marker("argument0") }, { value: site }], returnByValue: false } },
+      { phase: "sql-fence-arm", site, method: "Debugger.setBreakpoint", params: { location: { scriptId,
       lineNumber: SOURCE.sites[site].lineNumber, columnNumber: SOURCE.sites[site].breakpointColumnNumber }, condition: CONDITIONS[site] } }, { phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, callFrameId, expression: SOURCE.sites[site].expression } });
   }
   return freezeDeep(rows);
@@ -90,6 +121,7 @@ export function currentSelectedFileMainSqlFenceNativeSource(): string {
     }
     return [wire.request["phase"], command.method, fields.join(","), template].join("\t");
   });
+  rows.push(...currentMainStartupLibraryNativeRows(), ...currentMainStartupLibraryV2NativeRows());
   const groups: string[][] = [[]];
   for (const row of rows) {
     let selected = groups.at(-1); if (selected === undefined || Buffer.byteLength(row) > 60_000) { throw new Error("SELECTED_SQL_TABLE_BOUND"); }

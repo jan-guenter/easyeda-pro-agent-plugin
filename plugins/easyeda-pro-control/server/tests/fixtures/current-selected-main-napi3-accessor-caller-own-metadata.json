@@ -1,0 +1,460 @@
+{
+  "Database": {
+    "result": [
+      {
+        "name": "length",
+        "value": {
+          "type": "number",
+          "value": 0,
+          "description": "0"
+        },
+        "writable": false,
+        "configurable": true,
+        "enumerable": false,
+        "isOwn": true
+      },
+      {
+        "name": "name",
+        "value": {
+          "type": "string",
+          "value": "Database"
+        },
+        "writable": false,
+        "configurable": true,
+        "enumerable": false,
+        "isOwn": true
+      },
+      {
+        "name": "arguments",
+        "value": {
+          "type": "object",
+          "subtype": "null",
+          "value": null
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true
+      },
+      {
+        "name": "caller",
+        "value": {
+          "type": "object",
+          "subtype": "null",
+          "value": null
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true
+      },
+      {
+        "name": "prototype",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_0"
+        },
+        "writable": true,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_1"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_2"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_3"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_4"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_5"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_6"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_7"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_8"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_9"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_10"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_11"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_12"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_13"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_14"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_15"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_16"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_17"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_18"
+        }
+      }
+    ],
+    "internalProperties": [
+      {
+        "name": "[[Prototype]]",
+        "value": {
+          "type": "function",
+          "className": "Function",
+          "description": "function () { [native code] }",
+          "objectId": "napi_accessor_19"
+        }
+      },
+      {
+        "name": "[[Scopes]]",
+        "value": {
+          "type": "object",
+          "subtype": "internal#scopeList",
+          "className": "Array",
+          "description": "Scopes[0]",
+          "objectId": "napi_accessor_20"
+        }
+      }
+    ]
+  },
+  "Statement": {
+    "result": [
+      {
+        "name": "length",
+        "value": {
+          "type": "number",
+          "value": 0,
+          "description": "0"
+        },
+        "writable": false,
+        "configurable": true,
+        "enumerable": false,
+        "isOwn": true
+      },
+      {
+        "name": "name",
+        "value": {
+          "type": "string",
+          "value": "Statement"
+        },
+        "writable": false,
+        "configurable": true,
+        "enumerable": false,
+        "isOwn": true
+      },
+      {
+        "name": "arguments",
+        "value": {
+          "type": "object",
+          "subtype": "null",
+          "value": null
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true
+      },
+      {
+        "name": "caller",
+        "value": {
+          "type": "object",
+          "subtype": "null",
+          "value": null
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true
+      },
+      {
+        "name": "prototype",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_21"
+        },
+        "writable": true,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_22"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_23"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_24"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_25"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_26"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_27"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_28"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_29"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_30"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_31"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_32"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_33"
+        }
+      },
+      {
+        "name": "Symbol()",
+        "value": {
+          "type": "object",
+          "className": "Object",
+          "description": "Object",
+          "objectId": "napi_accessor_34"
+        },
+        "writable": false,
+        "configurable": false,
+        "enumerable": false,
+        "isOwn": true,
+        "symbol": {
+          "type": "symbol",
+          "description": "Symbol()",
+          "objectId": "napi_accessor_35"
+        }
+      }
+    ],
+    "internalProperties": [
+      {
+        "name": "[[Prototype]]",
+        "value": {
+          "type": "function",
+          "className": "Function",
+          "description": "function () { [native code] }",
+          "objectId": "napi_accessor_36"
+        }
+      },
+      {
+        "name": "[[Scopes]]",
+        "value": {
+          "type": "object",
+          "subtype": "internal#scopeList",
+          "className": "Array",
+          "description": "Scopes[0]",
+          "objectId": "napi_accessor_37"
+        }
+      }
+    ]
+  }
+}

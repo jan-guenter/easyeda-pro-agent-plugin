@@ -27,7 +27,13 @@ void test("inverse finite frames retain the original pair and refuse final proje
   }
   assert.throws(() => currentFootprintInverseWorkerWire({ phase: "saved-load-resume", role: "project", method: "Debugger.resume", params: {} }, 40, pair));
   assert.equal(PROFILE.renderer.sourceHeldPrefix, 64); assert.equal(PROFILE.renderer.generic, 39);
-  assert.equal(PROFILE.controls, Object.values(ACTIONS).reduce((sum, count) => sum + count, 0));
+  // Complete public/native qualification and GET-preparation groups exclude
+  // Each other in both the original Core/native bind and worker queue guards.
+  const publicQualification = ACTIONS["footprint-inverse-ui-own-data"] + ACTIONS["footprint-inverse-lookup-preentry"] + ACTIONS["footprint-inverse-get-rpc-entry"] + ACTIONS["footprint-inverse-get-forwarding"] + ACTIONS["footprint-inverse-get-manager"];
+  const nativeQualification = ACTIONS["footprint-inverse-native-delete-bootstrap"] + ACTIONS["footprint-inverse-native-delete-sender"] + ACTIONS["footprint-inverse-native-delete-registration"] + ACTIONS["footprint-inverse-native-get-lookup"];
+  const alternate = Math.min(publicQualification, nativeQualification) + Math.min(ACTIONS["footprint-inverse-get-worker"], ACTIONS["footprint-inverse-native-get-worker"]);
+  assert.equal(PROFILE.controls, Object.values(ACTIONS).reduce((sum, count) => sum + count, 0) - alternate);
+  assert.equal(PROFILE.renderer.nativeDeleteBootstrap.cdpRequests, PROFILE.renderer.uiOwnData.cdpRequests);
   assert.equal(ACTIONS["main-reprove"], 2 * PROFILE.main.total + 2 * PROFILE.main.fenceNormal + 2 * PROFILE.main.polls + PROFILE.renderer.polls + PROFILE.renderer.total + 7);
   assert.equal(PROFILE.deleteInvocationAuthorized, false);
 });

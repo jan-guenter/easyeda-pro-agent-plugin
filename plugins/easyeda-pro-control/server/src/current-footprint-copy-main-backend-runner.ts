@@ -1,3 +1,5 @@
+import { createCurrentMainStartupLibraryRefusalContext } from "./current-main-startup-library-refusal-context.ts";
+import type { CurrentMainStartupLibraryRefusalContext } from "./current-main-startup-library-refusal-context.ts";
 import type { CurrentSelectedProjectMainOrigin } from "./current-selected-project-main-origin.ts";
 import type { CurrentSchematicRelevanceDisplaySaveMainBackendBindings, CurrentSchematicRelevanceDisplaySaveMainOrigin } from "./current-schematic-relevance-display-save-main-origin.ts";
 import { CurrentFootprintInverseMainHistoryCustody } from "./current-footprint-inverse-main-history-custody.ts";
@@ -89,18 +91,27 @@ import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureM
 import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
 // oxlint-disable-next-line import/no-cycle -- The actual selected-file native factory creates this runner; no capability issues during module initialization.
-import { originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentSchematicRelevanceDisplayMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+import { enrollOriginalCurrentMainStartupLibrary, originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentMainStartupLibrary, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentSchematicRelevanceDisplayMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SQL_SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "./current-selected-file-main-sql-fence-source.ts";
+import { currentSelectedMainRawFrameFailure } from "./current-selected-main-raw-frame-failure.ts";
+import { CURRENT_SAVED_PROJECT_REGISTRATION_CAPTURED_FRAMES as SAVED_CAPTURED_FRAMES, CURRENT_MAIN_CAPTURED_SCOPE_JOINS as SCOPE_JOINS } from "./current-main-captured-scope-joins.ts";
 import type { CurrentSelectedFileMainSqlFenceSite } from "./current-selected-file-main-sql-fence-source.ts";
-import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as SQL_CAPTURE, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONDITIONS as SQL_CONDITIONS, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONFIGURATION_PROGRAM as SQL_CONFIGURATION,
-  CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as SQL_REQUIRE } from "./current-selected-file-main-sql-fence-programs.ts";
+import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as SQL_CAPTURE,
+  CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_EXPRESSIONS as SQL_CAPTURED_EXPRESSIONS,CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_PROGRAM as SQL_CAPTURED_FRAME,CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CONFIGURATION_PROGRAM as SQL_CONFIGURATION,
+  CURRENT_SELECTED_FILE_MAIN_SQL_PREDICATE_DIAGNOSTIC_PROGRAM as SQL_PREDICATE_DIAGNOSTIC,CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as SQL_REQUIRE } from "./current-selected-file-main-sql-fence-programs.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as SQL_CALL, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_EARLY_ID as SQL_EARLY_ID,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_FRAME_FLAGS as SQL_FRAME, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_NATIVE_EXPRESSION as SQL_NATIVE_EXPRESSION,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUESTS as SQL_REQUESTS, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SITES as SQL_SITES,
   validateCurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand } from "./current-selected-file-main-sql-fence-protocol.ts";
 import { currentSelectedFileMainSqlFenceImportsError, currentSelectedFileMainSqlFenceNativeFailure, decodeCurrentSelectedFileMainSqlFenceNative, decodeCurrentSelectedFileMainSqlFenceNativeArray } from "./current-selected-file-main-sql-fence-replies.ts";
+import { currentSelectedFileMainSqlStartupRefusal, decodeCurrentSelectedFileMainSqlStartupFrame } from "./current-selected-file-main-sql-startup-diagnostic.ts";
+import type { CurrentSelectedFileMainSqlStartupDiagnosticV2 } from "./current-selected-file-main-sql-startup-diagnostic-v2.ts";
+import { captureCurrentSelectedFileMainSqlStartupPauseLocations, createCurrentSelectedFileMainSqlStartupRefusalContext } from "./current-selected-file-main-sql-startup-refusal-context.ts";
+import type { CurrentSelectedFileMainSqlStartupRefusalContext } from "./current-selected-file-main-sql-startup-refusal-context.ts";
+import { decodeCurrentSelectedFileMainSqlPredicateDiagnostic } from "./current-selected-file-main-sql-predicate-diagnostic.ts";
+import type { CurrentSelectedFileMainSqlPredicateDiagnostic } from "./current-selected-file-main-sql-predicate-diagnostic.ts";
 import type { CurrentPcbViaMainBeginPause } from "./current-pcb-via-main-begin-custody.ts";
 import { currentGeneratedProjectHistorySqlBaselineSchema } from "./current-generated-project-history-sql-baseline.ts";
 import type { CurrentPcbViaMainHistoryHandoff } from "./current-pcb-via-main-history-custody.ts";
@@ -131,49 +142,69 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_EXPRESSIONS as VIA_FRAMES } from ".
 import { currentFootprintCopyMainRequestPlanSchema, decodeCurrentFootprintCopyMainRequestPromise as decodeViaPromise, decodeCurrentFootprintCopyMainRequestValue as decodeViaValue } from "./current-footprint-copy-main-request-contract.ts";
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP_CALLS } from "./current-main-startup-config-programs.ts";
 import { qualifyCurrentMainStartupConfigSource } from "./current-main-startup-config-sql.ts";
+import { currentMainStartupLibraryAppDirectory } from "./current-main-startup-library-live-profile.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_READ_OWNER_PROGRAM as STOCK_READ_OWNER } from "./current-main-startup-library-interleave.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_V2 as STOCK, isCurrentMainStartupLibraryV2Phase as isCurrentMainStartupLibraryPhase } from "./current-main-startup-library-v2-profile.ts";
+import type { CurrentMainStartupLibraryV2Origin as CurrentMainStartupLibraryOrigin } from "./current-main-startup-library-v2-profile.ts";
+import { qualifyCurrentMainStartupLibrarySource } from "./current-main-startup-library-source.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_FRAME_EXPRESSION as STOCK_FRAME } from "./current-main-startup-library-programs.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_V2_CALLER_EXPRESSION as STOCK_CALLER, CURRENT_MAIN_STARTUP_LIBRARY_V2_CALLS as STOCK_CALLS } from "./current-main-startup-library-v2-programs.ts";
+import { captureCurrentMainStartupLibraryReturnReply } from "./current-main-startup-library-return-reply.ts";
+import { CurrentMainStartupLibraryProgress, currentMainStartupLibrarySelectionSchema } from "./current-main-startup-library-progress.ts";
+import { validateCurrentMainStartupLibraryV2Command as validateCurrentMainStartupLibraryCommand } from "./current-main-startup-library-v2-protocol.ts";
+import type { CurrentMainStartupLibraryV2Command as CurrentMainStartupLibraryCommand } from "./current-main-startup-library-v2-protocol.ts";
 import { CurrentMainStartupConfigProgress, currentMainStartupConfigSelectionSchema } from "./current-main-startup-config-progress.ts";
 import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegistrationIntent } from "./current-saved-project-registration-origin.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITES as SAVED_CONFIG_SITES, qualifyCurrentSavedProjectRegistrationConfigSource } from "./current-saved-project-registration-config-source.ts";
 import { currentSelectedFileMainSqlCaptureError } from "./current-selected-file-main-sql-capture-error.ts";
 
 type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
+/** Reprove the original runner against its distinct structure, forward or combined capability. */
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   if (isCurrentProjectStructureMainCapability(capability)) { requireCurrentProjectStructureMainCapability(capability, runner); }
   else if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCapability(capability, runner); }
   else { requireCurrentFootprintCombinedMainCapability(capability, runner); }
 }
+/** Require cleanup authority from the original capability's own lifecycle. */
 function mainCleanup(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   if (isCurrentProjectStructureMainCapability(capability)) { requireCurrentProjectStructureMainCleanup(capability, runner); }
   else if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCleanup(capability, runner); }
   else { requireCurrentFootprintCombinedMainCleanup(capability, runner); }
 }
+/** Read original-generation exit proof through the matching capability family. */
 function mainExited(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): boolean {
   if (isCurrentProjectStructureMainCapability(capability)) { return currentProjectStructureMainGenerationExited(capability, runner); }
   return isCurrentFootprintForwardExecutionMainCapability(capability) ? currentFootprintForwardExecutionMainGenerationExited(capability, runner) : currentFootprintCombinedMainGenerationExited(capability, runner);
 }
+/** Route a validated request through its original capability without interchanging authority families. */
 async function mainCommand(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner,
   command: CurrentFootprintCopyMainRequestCollectCommand | CurrentProjectStructureMainCommand, id: number): Promise<void> {
   if (isCurrentProjectStructureMainCapability(capability)) { await sendCurrentProjectStructureMainCommand(capability, runner, validateCurrentProjectStructureMainCommand(command), id); return; }
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? sendCurrentFootprintForwardExecutionMainCommand(capability, runner, validateCurrentFootprintCopyMainRequestCollectCommand(command), id) : sendCurrentFootprintCombinedMainCommand(capability, runner, command, id));
 }
+/** Reserve completion capacity for forward or combined work; structure authority refuses. */
 function mainCompletionCapacity(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner, first: number): void {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   if (isCurrentFootprintForwardExecutionMainCapability(capability)) { assertCurrentFootprintForwardExecutionMainCompletionCapacity(capability, runner, first); }
   else { assertCurrentFootprintCombinedMainCompletionCapacity(capability, runner, first); }
 }
+/** Begin the original forward or combined completion once, excluding structure-only authority. */
 async function mainCompletionBegin(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner, first: number): Promise<void> {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? beginCurrentFootprintForwardExecutionMainCompletion(capability, runner, first) : beginCurrentFootprintCombinedMainCompletion(capability, runner, first));
 }
+/** Send completion through the original forward or combined owner, excluding structure-only authority. */
 async function mainCompletionCommand(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner,
   command: CurrentFootprintCopyMainCompletionCommand, id: number): Promise<void> {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? sendCurrentFootprintForwardExecutionMainCompletion(capability, runner, command, id) : sendCurrentFootprintCombinedMainCompletion(capability, runner, command, id));
 }
+/** Join retirement of the original forward or combined completion through its own owner. */
 async function mainCompletionRetire(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? retireCurrentFootprintForwardExecutionMainCompletion(capability, runner) : retireCurrentFootprintCombinedMainCompletion(capability, runner));
 }
+/** Preserve failure on the owning completion lane; structure-only work has no completion to fail. */
 function mainCompletionFail(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   if (isCurrentProjectStructureMainCapability(capability)) { return; }
   if (isCurrentFootprintForwardExecutionMainCapability(capability)) { failCurrentFootprintForwardExecutionMainCompletion(capability, runner); }
@@ -225,6 +256,7 @@ type MainRequestOrigin = CurrentFootprintCopyMainRequestOrigin | CurrentFootprin
 type MainCompletionOrigin = CurrentFootprintCopyMainCompletionOrigin | CurrentFootprintForwardMainCompletionOrigin;
 interface OriginEntry { readonly kind: "combined" | "forward"; readonly assertOriginalEntry: () => void; readonly bindings: CurrentFootprintForwardMainRequestOriginBindings;
   readonly capability: MainCapability; readonly runner: CurrentFootprintCopyMainBackendRunner }
+const STOCK_RETURN = STOCK_CALLS.returned;
 const requestOrigins = new WeakMap<object, OriginEntry>();
 const completionOrigins = new WeakMap<object, Readonly<{
   kind: "combined" | "forward"; assertOriginalEntry: () => void; bindings: CurrentFootprintForwardMainCompletionOriginBindings;
@@ -257,10 +289,12 @@ export function requireCurrentProjectStructureMainLease(token: CurrentProjectStr
   const entry = structureLeases.get(token); need(entry !== undefined, "STRUCTURE_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.binding;
 }
+/** Resolve only a retained combined completion origin and reprove its original entry. */
 export function requireCurrentFootprintCopyMainCompletionOrigin(token: CurrentFootprintCopyMainCompletionOrigin): CurrentFootprintCopyMainCompletionOriginBindings {
   const entry = completionOrigins.get(token); need(entry !== undefined && entry.kind === "combined", "COMPLETION_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
 }
+/** Resolve only a retained combined request origin and reprove its original entry. */
 export function requireCurrentFootprintCopyMainRequestOrigin(token: CurrentFootprintCopyMainRequestOrigin): CurrentFootprintCopyMainRequestOriginBindings {
   const entry = requestOrigins.get(token); need(entry !== undefined && entry.kind === "combined", "REQUEST_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
@@ -274,9 +308,11 @@ export function requireCurrentFootprintCopyMainRequestClockOrigin(token: Current
   requireCurrentFootprintCombinedPairedSchedule(entry.capability, entry.runner, clock);
 }
 
+/** Recognize registry-issued forward request origins without reflecting through a proxy. */
 export function isCurrentFootprintForwardMainRequestOrigin(value: unknown): value is CurrentFootprintForwardMainRequestOrigin {
   return value !== null && typeof value === "object" && !types.isProxy(value) && requestOrigins.get(value)?.kind === "forward";
 }
+/** Recognize registry-issued forward completion origins without reflecting through a proxy. */
 export function isCurrentFootprintForwardMainCompletionOrigin(value: unknown): value is CurrentFootprintForwardMainCompletionOrigin {
   return value !== null && typeof value === "object" && !types.isProxy(value) && completionOrigins.get(value)?.kind === "forward";
 }
@@ -285,6 +321,7 @@ export function requireCurrentFootprintForwardMainRequestOrigin(token: CurrentFo
   const entry = requestOrigins.get(token); need(entry !== undefined && entry.kind === "forward", "FORWARD_REQUEST_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
 }
+/** Resolve a retained forward completion origin after rechecking its original entry. */
 export function requireCurrentFootprintForwardMainCompletionOrigin(token: CurrentFootprintForwardMainCompletionOrigin): CurrentFootprintForwardMainCompletionOriginBindings {
   const entry = completionOrigins.get(token); need(entry !== undefined && entry.kind === "forward", "FORWARD_COMPLETION_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
@@ -304,6 +341,10 @@ const sqlConfigurationRemote = z.object({ type: z.literal("object"), value: sqlC
 const sqlConfigurationReply = z.object({ result: sqlConfigurationRemote }).strict();
 const objectReply = z.object({ result: z.object({ type: z.literal("object"), subtype: z.literal("array"), className: z.literal("Array"),
   description: z.string().max(32), objectId: handle }).strict() }).strict();
+const capturedSqlGuardValue = z.strictObject({ type: z.literal("string"), value: z.literal("guard-refused") });
+const capturedSqlGuardReply = z.strictObject({ result: capturedSqlGuardValue });
+const capturedSqlFrameReply = z.union([sqlTrueReply, objectReply, capturedSqlGuardReply]);
+type CapturedSqlSite = Exclude<CurrentSelectedFileMainSqlFenceSite, "import" | "afterImports">;
 const savedRegistrationEpoch = z.number().int().min(-8_640_000_000_000_000).max(8_640_000_000_000_000);
 const savedRegistrationRunValue = z.strictObject({ schema: z.literal("private.current-saved-project-registration-run.v1"), path: z.string().max(4096),
   insertEpochMilliseconds: savedRegistrationEpoch, updateEpochMilliseconds: savedRegistrationEpoch,
@@ -311,7 +352,7 @@ const savedRegistrationRunValue = z.strictObject({ schema: z.literal("private.cu
 const savedRegistrationRunRemote = z.strictObject({ type: z.literal("object"), value: savedRegistrationRunValue });
 const savedRegistrationRunReply = z.strictObject({ result: savedRegistrationRunRemote });
 type SavedRegistrationSite = typeof CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES[number];
-interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; readonly savedRegistrationSite?: SavedRegistrationSite; resumeAttempted: boolean; resumed: boolean }
+interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly stockReturn?: true; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; readonly savedRegistrationSite?: SavedRegistrationSite; resumeAttempted: boolean; resumed: boolean }
 interface SavedProjectRegistrationEnrollment {
   readonly kind: "saved";
   readonly intent: CurrentSavedProjectRegistrationIntent; readonly bindings: CurrentSavedProjectRegistrationBindings;
@@ -360,18 +401,22 @@ const schemaIssueCodes = new Set(["custom", "invalid_element", "invalid_format",
   "not_multiple_of", "too_big", "too_small", "unrecognized_keys"]);
 const issuedFailures = new WeakMap<Error, string>();
 const methodNames = ["assertCurrent", "send", "poll"] as const;
+/** Retain the original Main construction error and its private stage code before refusing. */
 function need(value: boolean, detail: string): asserts value {
   if (!value) { const error = createOriginalSourceError("FOOTPRINT_MAIN_CONSTRUCTION", detail); issuedFailures.set(error, detail); throw error; }
 }
+/** Bound diagnostic issue counts and paths while replacing unreviewed keys and codes. */
 function schemaIssues(error: z.ZodError): readonly SchemaIssue[] {
   return Object.freeze(error.issues.slice(0, 6).map(issue => Object.freeze({ code: schemaIssueCodes.has(issue.code) ? issue.code : "other",
     path: Object.freeze(issue.path.slice(0, 8).map(segment => schemaPathSegment(segment))) })));
 }
+/** Preserve only bounded numeric indexes or reviewed diagnostic keys; redact every other segment. */
 function schemaPathSegment(segment: PropertyKey): string | number {
   if (typeof segment === "number" && Number.isSafeInteger(segment) && segment >= 0 && segment <= 256) { return segment; }
   if (typeof segment === "string" && schemaPathKeys.has(segment)) { return segment; }
   return "$unknown";
 }
+/** Seal the frozen transport's exact own data-method roster and original function references. */
 function methods(transport: CurrentFootprintCopyMainBackendTransport): readonly unknown[] {
   need(!types.isProxy(transport) && Object.isFrozen(transport) && Object.getPrototypeOf(transport) === Object.prototype && Reflect.ownKeys(transport).length === methodNames.length, "TRANSPORT");
   return methodNames.map(name => { const entry = Object.getOwnPropertyDescriptor(transport, name); need(entry !== undefined && Object.hasOwn(entry, "value") && typeof entry.value === "function", "TRANSPORT"); return entry.value as unknown; });
@@ -379,6 +424,7 @@ function methods(transport: CurrentFootprintCopyMainBackendTransport): readonly 
 const issued = new WeakMap<CurrentFootprintCopyMainBackendObservation, CurrentFootprintCopyMainBackendRunner>();
 const forwardPollRetainers = new WeakMap<(chunk: string) => void, Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; requireOriginal: () => void }>>();
 const selectedRequestPackets = new WeakMap<CurrentSelectedFileMainRequestObservation, Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; pause: Pause; text: string }>>();
+/** Require the packet's issuing runner and its still-original selected request state. */
 export function requireOriginalCurrentSelectedFileMainRequest(packet: CurrentSelectedFileMainRequestObservation, runner: CurrentFootprintCopyMainBackendRunner): void {
   const original = selectedRequestPackets.get(packet); need(original !== undefined && original.runner === runner, "SELECTED_REQUEST_ORIGINAL"); runner.requireOriginalSelectedMainRequest(packet);
 }
@@ -388,6 +434,31 @@ export class CurrentFootprintCopyMainBackendRunner {
   readonly #decoder = new TextDecoder("utf-8", { fatal: true });
   #decoderPendingContinuations = 0;
   readonly #scripts = new Map<string, number>();
+  #stockAppDirectory: string | null = null;
+  #stockAppUrl: string | null = null;
+  #stockOrigin: CurrentMainStartupLibraryOrigin | null = null;
+  #stockTracker: string | null = null;
+  #stockCommandPause: Pause | null = null;
+  #stockEnrollmentPause: Pause | null = null;
+  #stockRequests = 0;
+  #stockCompleted = false;
+  #stockReturnPoint: string | null = null;
+  #stockRefusalContext: CurrentMainStartupLibraryRefusalContext | null = null; #stockRefusalContextAttempted = false;
+  #stockArming = false;
+  #stockResolution: Resolved | null = null;
+  readonly #stockProgress = new CurrentMainStartupLibraryProgress();
+  readonly #stockFrames = new WeakMap<Pause, z.infer<typeof frame>[]>();
+  readonly #stockNativeReturns = new WeakMap<Pause, string>();
+  readonly #stockCallerFrames = new WeakMap<Pause, string>();
+  readonly #stockRawFrames = new WeakMap<Pause, string>();
+  readonly #sqlRawFrames = new WeakMap<Pause, string>();
+  readonly #stockInterleaveReadOwners = new WeakSet<Pause>();
+  readonly #stockInterleaveConfigurations = new WeakSet<Pause>();
+  readonly #stockInterleaveResumeCommands = new WeakMap<Pause, Readonly<{ command: CurrentSelectedFileMainSqlFenceCommand; requestId: number }>>();
+  readonly #stockInterleaves = new WeakMap<Pause, Readonly<{ origin: CurrentMainStartupLibraryOrigin; tracker: string; enrollment: Pause; command: Pause; point: string; requests: number; progress: string }>>();
+  #stockSourceFrame: string | null = null;
+  readonly #stockReturnFrames = new WeakMap<Pause, string>();
+  readonly #stockPromiseResults = new WeakMap<Pause, Readonly<{ resultObjectId: string; raw: unknown }>>();
   #selectedRequestReader: CurrentSelectedFileMainRequestReader | null = null;
   #selectedRequestPause: Pause | null = null;
   #selectedFetchScript: Readonly<{ scriptId: string; executionContextId: number }> | null = null;
@@ -402,6 +473,14 @@ export class CurrentFootprintCopyMainBackendRunner {
   #sqlCapture: string | null = null;
   #sqlReady = false;
   #startupConfigTracker: string | null = null;
+  #sqlStartupDiagnostic: CurrentSelectedFileMainSqlStartupDiagnosticV2 | null = null;
+  readonly #sqlStartupPauseLocations = new WeakMap<Pause, readonly Readonly<z.infer<typeof location>>[]>();
+  #sqlStartupRefusalContext: CurrentSelectedFileMainSqlStartupRefusalContext | null = null;
+  #sqlStartupRefusalContextAttempted = false;
+  #sqlPredicateDiagnostic: CurrentSelectedFileMainSqlPredicateDiagnostic | null = null;
+  readonly #sqlClassificationAttempts = new WeakSet<Pause>();
+  readonly #sqlGuardApprovals = new WeakSet<Pause>();
+  readonly #sqlCapturedFrames = new WeakMap<Pause, z.infer<typeof objectReply>>();
   #startupSqlContinuations = 0;
   #startupMetadataContinuations = 0;
   readonly #startupConfigProgress = new CurrentMainStartupConfigProgress();
@@ -573,7 +652,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(token === this.#forwardMainCursor && this.#packet !== null && issued.get(this.#packet) === this && this.#source !== null &&
       methods(this.#transport).every((value, index) => value === this.#methods[index]), "FORWARD_CURSOR_ORIGINAL");
     requireCurrentFootprintCopyMainBackendSource(this.#source);
-    need(this.#requests === this.#normalRequests + this.#cleanupRequests &&
+    need(this.#requests === this.#normalRequests + this.#cleanupRequests + this.#stockRequests &&
       !(this.#structureAttempted && this.#originAttempted) && (!this.#completionAttempted || this.#originAttempted), "FORWARD_CURSOR_TRANSITION");
     // Admission may retain an exact v2 allocation before its original send.
     // Observed, stopped or detached uncertainty cannot use this in-flight
@@ -619,6 +698,11 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(matches, "REGISTRATION_LOCATION");
   }
   #resolve(record: Resolved): void {
+    if (this.#stockArming || record.breakpointId === this.#stockReturnPoint) {
+      need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === STOCK.returnPoint.lineNumber && record.location.columnNumber === STOCK.returnPoint.columnNumber &&
+        (this.#stockResolution === null || this.#stockResolution.breakpointId === record.breakpointId), "STOCK_RETURN_RESOLUTION");
+      this.#stockResolution = record; return;
+    }
     if (this.#inverseMainHistoryArming || this.#inverseMainHistoryPoint?.id === record.breakpointId) {
       const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
       need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === site.lineNumber && record.location.columnNumber === site.columnNumber &&
@@ -658,7 +742,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         else { this.#sqlLocation(sqlSite, first.location); }
         this.#pause = { frameId: first.callFrameId, location: first.location, registration: false, ...(sqlSite === undefined ? {} : { sqlSite }), resumeAttempted: false, resumed: false };
         this.#viaMainFrames.clear(); for (const call of event.callFrames) { this.#viaMainFrames.add(call.callFrameId); }
-        if (sqlSite !== undefined) { this.#sqlHeld = this.#pause; }
+        if (sqlSite !== undefined) { this.#captureSqlStartupPauseLocations(this.#pause, event.callFrames); this.#sqlHeld = this.#pause; }
       } else { empty.parse(input); need(this.#pause?.resumeAttempted === true && !this.#pause.resumed, "VIA_MAIN_UNRESERVED_RESUME"); this.#pause.resumed = true; }
       this.#viaMainEvents.push(Object.freeze({ method, params: freezeDeep(input) })); return;
     }
@@ -686,7 +770,7 @@ export class CurrentFootprintCopyMainBackendRunner {
           isLiveEdit: z.literal(false), hasSourceURL: z.literal(false), isModule: z.literal(false), scriptLanguage: z.literal("JavaScript") }).parse(input);
         need(this.#selectedFetchScript === null, "SELECTED_FETCH_SCRIPT_REPLACED"); this.#selectedFetchScript = Object.freeze({ scriptId: builtin.scriptId, executionContextId: builtin.executionContextId });
       }
-      if (new RegExp(URL_PATTERN, "u").test(script.url)) { need(!this.#scripts.has(script.scriptId) && this.#scripts.size === 0, "APP_SCRIPT_CHANGED"); this.#scripts.set(script.scriptId, script.executionContextId); }
+      if (new RegExp(URL_PATTERN, "u").test(script.url)) { need(!this.#scripts.has(script.scriptId) && this.#scripts.size === 0, "APP_SCRIPT_CHANGED"); this.#scripts.set(script.scriptId, script.executionContextId); this.#stockAppUrl = script.url; }
       return;
     }
     if (method === "Runtime.executionContextCreated") { z.looseObject({ context: z.looseObject({ id: z.number().int().positive() }) }).parse(input); return; }
@@ -698,6 +782,13 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (method === "Debugger.paused") {
       need(this.#pause === null || this.#pause.resumed, "DUPLICATE_PAUSE"); const event = pauseSchema.parse(input), first = event.callFrames[0]; need(first !== undefined, "PAUSE_FRAME");
       const points = event.hitBreakpoints ?? [], sqlSite = points.length === 1 ? this.#sqlBreakpoints.get(points[0] ?? "") : undefined;
+      if (points.length === 1 && points[0] === this.#stockReturnPoint) {
+        need(this.#stockOrigin !== null && !this.#stockCompleted && event.reason === "other" && first.location.scriptId === this.#appScriptId &&
+          first.location.lineNumber === STOCK.returnPoint.lineNumber && first.location.columnNumber === STOCK.returnPoint.columnNumber, "STOCK_ORIGINAL_RETURN_PAUSE");
+        const returned = z.strictObject({ type: z.literal("object"), subtype: z.literal("promise"), className: z.literal("Promise"), description: z.literal("Promise"), objectId: handle }).parse(first["returnValue"]);
+        const pause: Pause = { frameId: first.callFrameId, location: first.location, registration: false, stockReturn: true, resumeAttempted: false, resumed: false };
+        this.#pause = pause; this.#stockNativeReturns.set(pause, returned.objectId); return;
+      }
       if (points.length === 1 && points[0] === this.#inverseMainHistoryPoint?.id) {
         const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
         need(event.reason === "other" && first.location.scriptId === this.#appScriptId && first.location.lineNumber === site.lineNumber && first.location.columnNumber === site.columnNumber && this.#inverseMainHistoryPause === null, "INVERSE_HISTORY_ORIGINAL_PAUSE");
@@ -712,7 +803,8 @@ export class CurrentFootprintCopyMainBackendRunner {
       }
       if (sqlSite !== undefined) {
         need(this.#selectedSqlBootstrap !== null && event.reason === "other", "SELECTED_SQL_PAUSE"); this.#sqlLocation(sqlSite, first.location);
-        this.#pause = { frameId: first.callFrameId, location: first.location, registration: false, sqlSite, resumeAttempted: false, resumed: false }; return;
+        this.#pause = { frameId: first.callFrameId, location: first.location, registration: false, sqlSite, resumeAttempted: false, resumed: false };
+        this.#captureSqlStartupPauseLocations(this.#pause, event.callFrames); return;
       }
       const registration = points.length === 1;
       if (registration) {
@@ -725,6 +817,32 @@ export class CurrentFootprintCopyMainBackendRunner {
     // Preserve the original process on exceptions, context replacement and
     // Unknown events. They never cause a retry or another resume.
     need(false, "UNEXPECTED_EVENT");
+  }
+  /** Copy only bounded locations from the already parsed original SQL pause.
+   * Full-source bounds are checked once only if startup actually refuses. */
+  #captureSqlStartupPauseLocations(pause: Pause, frames: z.infer<typeof pauseSchema>["callFrames"]): void {
+    if (this.#source === null || this.#appScriptId === null || this.#appSource === null) { return; }
+    this.#stockFrames.set(pause, [...frames]);
+    try { this.#sqlStartupPauseLocations.set(pause, Object.freeze(frames.map(call => Object.freeze({
+      scriptId: call.location.scriptId, lineNumber: call.location.lineNumber, columnNumber: call.location.columnNumber })))); }
+    catch {
+      // No raw frame or projection error is retained as diagnostic data.
+    }
+  }
+  /** First-attempt-only passive capture before any old diagnostic await. The
+   * original semantic failure or exact thrown error remains its owner's data. */
+  #captureStartupRefusalContext(pause: Pause, reason: CurrentSelectedFileMainSqlStartupRefusalContext["reason"], selection: unknown = null): void {
+    if (this.#packet !== null || this.#sqlStartupRefusalContextAttempted) { return; } this.#sqlStartupRefusalContextAttempted = true;
+    try {
+      const locations = this.#sqlStartupPauseLocations.get(pause), site = pause.sqlSite;
+      need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#source !== null && this.#appSource !== null && this.#appScriptId !== null &&
+        site !== undefined && site !== "import" && site !== "afterImports" && locations !== undefined, "SELECTED_SQL_STARTUP_CONTEXT_ORIGINAL_PAUSE");
+      const projected = captureCurrentSelectedFileMainSqlStartupPauseLocations(locations, this.#appScriptId, this.#appSource);
+      this.#sqlStartupRefusalContext = createCurrentSelectedFileMainSqlStartupRefusalContext(site, reason, selection, this.#startupConfigProgress.snapshot(), projected);
+    } catch {
+      // Keep context null. Optional data cannot replace the first failure,
+      // Inspect an Error, retry a request or continue the original paused call.
+    }
   }
   #message(text: string): void {
     const value: unknown = JSON.parse(text);
@@ -826,13 +944,14 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Consume one fixed request number and retain its sole pending reply.
    * Head-age exceptions are captured before success decoding; cleanup keeps
    * its own counter and cannot repeat a consumed normal request. */
-  async #request(input: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand | CurrentFootprintInverseMainHistoryCommand,
+  async #request(input: Command | CurrentMainStartupLibraryCommand | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand | CurrentFootprintInverseMainHistoryCommand,
     cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
     if (this.#viaMainOrigin !== null && this.#viaMainPoll !== null) { await this.#viaMainPoll; await this.#current(cleanup); }
     const inverseHistory = input.phase.startsWith("inverse-main-history-");
     const via = input.phase.startsWith("via-main-");
     const sqlFence = input.phase.startsWith("sql-fence-");
+    const stock = isCurrentMainStartupLibraryPhase(input.phase);
     const collection = input.phase.startsWith("request-");
     const completion = input.phase.startsWith("completion-");
     const structure = input.phase.startsWith("structure-main-");
@@ -844,25 +963,30 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (via || inverseHistory) { cleanupCommand = cleanup; }
     else if (completion || structure) { cleanupCommand = ["Debugger.resume", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"].includes(input.method); }
     else if (collection) { cleanupCommand = (CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES as readonly string[]).includes(input.phase); }
-    else { cleanupCommand = !sqlFence && ["resume", "remove", "release"].includes(input.phase); }
+    else { cleanupCommand = !sqlFence && !stock && ["resume", "remove", "release"].includes(input.phase); }
     const normalMaximum = this.#structureAttempted ? CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeNormal + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.originIssueNormal + CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.normal : CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeNormal + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.originIssueNormal + CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS.normal +
       (this.#completionToken === null ? 0 : CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.normal);
     const cleanupMaximum = this.#structureAttempted ? CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeCleanup + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.releaseCleanup + CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.cleanup : CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeCleanup + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.releaseCleanup + CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS.cleanup +
       (this.#completionToken === null ? 0 : CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.cleanup - 2);
     const initialMaximum = this.#selectedSqlBootstrap === null ? 64 : 72 + SQL_REQUESTS.normal + (this.#savedRegistrationEnrollment === null ? 0 : SAVED_CONFIG_REQUESTS);
     const requestMaximum = cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum + (this.#inverseMainHistoryIntent === null ? 0 : INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total);
+    const ordinaryRequests = this.#requests - this.#stockRequests;
     let withinBound: boolean;
-    if (inverseHistory) { withinBound = this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null && this.#requests < initialMaximum + INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total; }
-    else if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && this.#requests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + VIA_STRUCTURE.total + VIA_LIVE_HISTORY.total; }
-    else if (this.#originAttempted || this.#structureAttempted) { withinBound = this.#requests < normalMaximum + cleanupMaximum && (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum); }
-    else { withinBound = this.#requests < requestMaximum; }
+    if (stock) { withinBound = !cleanup && this.#stockOrigin !== null && this.#stockRequests < STOCK.requests; }
+    else if (inverseHistory) { withinBound = this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null && ordinaryRequests < initialMaximum + INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total; }
+    else if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && ordinaryRequests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + VIA_STRUCTURE.total + VIA_LIVE_HISTORY.total; }
+    else if (this.#originAttempted || this.#structureAttempted) { withinBound = ordinaryRequests < normalMaximum + cleanupMaximum && (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum); }
+    else { withinBound = ordinaryRequests < requestMaximum; }
     need(this.#pendingId === null && withinBound, "REQUEST_BOUND");
-    this.#requests += 1; if (cleanupCommand) { this.#cleanupRequests += 1; } else { this.#normalRequests += 1; }
+    this.#requests += 1; if (stock) { this.#stockRequests += 1; } else if (cleanupCommand) { this.#cleanupRequests += 1; } else { this.#normalRequests += 1; }
     const id = this.#requests; this.#pendingId = id; this.#replySeen = false; this.#reply = null;
     const allocation = retainAllocationReply === undefined ? null : { id, retain: retainAllocationReply, seen: false, stopped: false };
     if (allocation !== null) { need(this.#structureAllocation === null, "STRUCTURE_ALLOCATION_PENDING"); this.#structureAllocation = allocation; }
     try {
-    if (inverseHistory) {
+    if (stock) {
+      need(this.#selectedSqlBootstrap !== null && this.#stockOrigin !== null, "STOCK_ORIGINAL_BOOTSTRAP");
+      await sendOriginalCurrentMainStartupLibrary(this.#selectedSqlBootstrap, this, this.#stockOrigin, validateCurrentMainStartupLibraryCommand(input), id);
+    } else if (inverseHistory) {
       need(this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null, "INVERSE_HISTORY_ORIGINAL_BOOTSTRAP");
       await sendOriginalCurrentFootprintInverseMainHistory(this.#selectedSqlBootstrap, this, validateCurrentFootprintInverseMainHistoryCommand(input), id);
     } else if (via) {
@@ -925,10 +1049,12 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(this.#breakpoint !== null && !this.#removeAttempted, "REMOVE_CONSUMED"); this.#removeAttempted = true;
     empty.parse(await this.#request({ phase: "remove", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#breakpoint } }, cleanup)); this.#removed = true;
   }
+  /** Preserve the first cause and its bounded schema issues. Only privately
+   * issued labels refine a schema failure; cleanup cannot replace that cause. */
   #fail(error: unknown): void {
     this.#failed = true; this.failFootprintInverseInitialHistory();
     if (this.#lastFailure !== null) { return; }
-    if (error instanceof z.ZodError) { this.#lastFailure = "REPLY_SCHEMA"; this.#schemaIssues = schemaIssues(error); }
+    if (error instanceof z.ZodError) { this.#lastFailure = issuedFailures.get(error) ?? "REPLY_SCHEMA"; this.#schemaIssues = schemaIssues(error); }
     else {
       const nativeFailure = currentSelectedFileMainSqlFenceNativeFailure(error);
       this.#lastFailure = nativeFailure ?? (error instanceof Error ? issuedFailures.get(error) ?? "ORIGINAL_TRANSPORT_OR_CAPTURE" : "ORIGINAL_TRANSPORT_OR_CAPTURE");
@@ -1004,20 +1130,59 @@ export class CurrentFootprintCopyMainBackendRunner {
     const point = SQL_SOURCE.sites[site];
     const actualLocation = { scriptId: this.#appScriptId, lineNumber: point.lineNumber, columnNumber: point.breakpointColumnNumber };
     const command: CurrentSelectedFileMainSqlFenceCommand = site === "afterImports" ? { phase: "sql-fence-after-imports-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#appScriptId, lineNumber: SQL_SOURCE.sites.afterImports.lineNumber, columnNumber: SQL_SOURCE.sites.afterImports.breakpointColumnNumber } } } :
-      { phase: "sql-fence-arm", site, method: "Debugger.setBreakpoint", params: { location: actualLocation, condition: SQL_CONDITIONS[site] } };
+      { phase: "sql-fence-held-arm", site, method: "Debugger.setBreakpoint", params: { location: actualLocation, condition: "true" } };
     const reply = z.object({ breakpointId: handle, actualLocation: location }).strict().parse(await this.#request(command));
     need(!this.#sqlBreakpoints.has(reply.breakpointId), "SELECTED_SQL_BREAKPOINT_REUSED"); this.#sqlLocation(site, reply.actualLocation);
     for (const record of this.#sqlResolutions.filter(item => item.breakpointId === reply.breakpointId)) { this.#sqlLocation(site, record.location); }
     this.#sqlBreakpoints.set(reply.breakpointId, site); this.#sqlArming = null;
   }
+  /** Continue this once-approved original pause. Pending stock keeps its own
+   * cursor and uses only the distinct ordinary startup-config resume phase. */
   async #sqlResume(pause: Pause): Promise<void> {
-    need(this.#selectedSqlBootstrap !== null && this.#pause === pause && (pause.sqlSite === "import" || pause.sqlSite === "afterImports" || this.#sqlApprovedConfigurations.has(pause) || this.#sqlApprovedReadRequests.has(pause)) &&
+    need(this.#selectedSqlBootstrap !== null && this.#pause === pause && (pause.sqlSite === "import" || pause.sqlSite === "afterImports" || this.#sqlApprovedConfigurations.has(pause) || this.#sqlApprovedReadRequests.has(pause) || this.#sqlGuardApprovals.has(pause)) &&
       !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_NO_MUTATION_GRANT"); pause.resumeAttempted = true;
-    empty.parse(await this.#request({ phase: "sql-fence-resume", method: "Debugger.resume", params: {} })); await this.#wait(() => pause.resumed);
+    const phase = this.#stockOrigin !== null && !this.#stockCompleted ? "sql-fence-startup-config-resume" : "sql-fence-resume";
+    if (phase === "sql-fence-startup-config-resume") { this.#requireStockInterleave(pause); need(this.#stockInterleaveConfigurations.has(pause) || this.#stockInterleaveReadOwners.has(pause) && this.#sqlGuardApprovals.has(pause), "STOCK_INTERLEAVE_APPROVAL"); }
+    empty.parse(await this.#request({ phase, method: "Debugger.resume", params: {} })); await this.#wait(() => pause.resumed);
+  }
+  /** Classify one original held SQL pause with its retained module bindings.
+   * Only the unchanged predicate's false result permits its guarded continuation.
+   * This includes constructor and close sites; it is not SQL-write completion.
+   * A true condition supplies its tuple to the existing strict source lane;
+   * a guard failure stays stopped. Every request spends the existing ceiling. */
+  async #classifyCapturedSqlPause(pause: Pause): Promise<"guard-passed" | "held"> {
+    const site = pause.sqlSite;
+    need(this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#sqlCapture !== null && this.#pause === pause &&
+      site !== undefined && site !== "import" && site !== "afterImports" && !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_CAPTURED_FRAME_ORIGINAL_PAUSE");
+    if (this.#sqlCapturedFrames.has(pause)) { return "held"; }
+    if (this.#sqlGuardApprovals.has(pause)) { return "guard-passed"; }
+    need(!this.#sqlClassificationAttempts.has(pause), "SELECTED_SQL_CAPTURED_FRAME_CONSUMED"); this.#sqlClassificationAttempts.add(pause);
+    const rawReply = await this.#request({ phase: "sql-fence-raw-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
+      ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_CAPTURED_EXPRESSIONS[site] } });
+    const parsed = objectReply.safeParse(rawReply);
+    if (!parsed.success) { issuedFailures.set(parsed.error, currentSelectedMainRawFrameFailure(site, rawReply)); throw parsed.error; }
+    const raw = parsed.data; this.#sqlRawFrames.set(pause, raw.result.objectId);
+    need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && raw.result.description ===
+      `Array(${String(SQL_CAPTURED_EXPRESSIONS[site].slice(1, -1).split(",").length)})`, "SELECTED_SQL_CAPTURED_FRAME_RAW_TUPLE");
+    const reply = capturedSqlFrameReply.parse(captureCurrentPcbStringClockReply(await this.#request({ phase: "sql-fence-captured-frame", site,
+      method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false, objectId: raw.result.objectId,
+        functionDeclaration: SQL_CAPTURED_FRAME, arguments: [{ objectId: this.#sqlCapture }, { value: site }], returnByValue: false } })).value);
+    need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && reply.result.type !== "string", "SELECTED_SQL_CAPTURED_FRAME_GUARD");
+    if (reply.result.type === "boolean") {
+      this.#sqlGuardApprovals.add(pause); return "guard-passed";
+    }
+    need(reply.result.description === `Array(${String(SQL_SOURCE.sites[site].expression.slice(1, -1).split(",").length)})`, "SELECTED_SQL_CAPTURED_FRAME_LEGACY_TUPLE");
+    this.#sqlCapturedFrames.set(pause, Object.freeze({ result: Object.freeze({ ...reply.result }) })); return "held";
+  }
+  /** Use only this held pause's privately reconstructed tuple. This never
+   * re-evaluates a spent frame or grants another operation its capture. */
+  #capturedSqlFrame(pause: Pause, site: CapturedSqlSite): z.infer<typeof objectReply> {
+    need(this.#pause === pause && pause.sqlSite === site && !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_CAPTURED_FRAME_ORIGINAL_PAUSE");
+    const selected = this.#sqlCapturedFrames.get(pause); need(selected !== undefined, "SELECTED_SQL_CAPTURED_FRAME_REQUIRED"); return selected;
   }
   async #startSelectedSqlFence(): Promise<void> {
     const initial = this.#pause; need(initial?.sqlSite === "import" && this.#selectedSqlPath !== null, "SELECTED_SQL_BEFORE_IMPORT_REQUIRED");
-    await this.#qualify(initial.location.scriptId); need(this.#appSource !== null, "SELECTED_SQL_FULL_SOURCE"); qualifyCurrentSelectedFileMainSqlFenceSource(this.#appSource); qualifyCurrentMainStartupConfigSource(this.#appSource);
+    await this.#qualify(initial.location.scriptId); need(this.#appSource !== null, "SELECTED_SQL_FULL_SOURCE"); qualifyCurrentSelectedFileMainSqlFenceSource(this.#appSource); qualifyCurrentMainStartupConfigSource(this.#appSource); qualifyCurrentMainStartupLibrarySource(this.#appSource);
     await this.#armSelectedSql("afterImports"); for (const site of SQL_SITES) { await this.#armSelectedSql(site); }
     await this.#sqlResume(initial); await this.#wait(() => this.#pause !== initial);
     const after = this.#pause; need(after?.sqlSite === "afterImports", "SELECTED_SQL_AFTER_IMPORTS_REQUIRED");
@@ -1047,13 +1212,85 @@ export class CurrentFootprintCopyMainBackendRunner {
     await this.#requireSelectedSqlCapture(); this.#sqlReady = true; await this.#sqlResume(after);
     await this.#wait(() => this.#pause !== after);
     while (this.#pause !== null && !this.#pause.registration) {
-      const configuration = this.#pause; need(await this.#configureStartupSql(configuration), "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION");
+      const configuration = this.#pause;
+      if (configuration.stockReturn === true) { await this.#finishStartupLibrary(configuration); }
+      else if (!await this.#configureStartupSql(configuration)) {
+        await this.#captureStartupRefusal(configuration);
+        if (configuration.sqlSite === "initializerBirth") { await this.#captureStartupPredicate(configuration); }
+        need(false, "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION");
+      }
       await this.#wait(() => this.#pause !== configuration);
     }
     this.#startupConfigProgress.complete();
+    need(this.#stockOrigin === null || this.#stockCompleted, "STOCK_REGISTRATION_BEFORE_NORMAL_RETURN");
     // Every mutation stays paused until a distinct original request/SQL issuer
     // Proves that exact current call. This bootstrap publishes no such grant.
     need(this.#pause?.registration === true, "SELECTED_SQL_MUTATION_BEFORE_REGISTRATION");
+  }
+  /** Retain one refusal before any diagnostic await. The original captured
+   * tuple supplies operand kinds through at most one property read. A missing
+   * tuple or refused read cannot replace the first error or resume this call. */
+  async #captureStartupRefusal(pause: Pause): Promise<void> {
+    const site = pause.sqlSite;
+    need(this.#sqlStartupDiagnostic === null && this.#pause === pause && !pause.resumeAttempted && !pause.resumed &&
+      site !== undefined && site !== "import" && site !== "afterImports" && this.#selectedSqlPath !== null, "SELECTED_SQL_STARTUP_DIAGNOSTIC_ORIGINAL_PAUSE");
+    this.#captureStartupRefusalContext(pause, currentSelectedFileMainSqlStartupRefusal(site, this.#startupConfigTracker !== null));
+    const originalPhase = this.#phase, requests = this.#requests;
+    const base = Object.freeze({ profile: "private.selected-file-main-sql-startup-diagnostic.v2" as const, frameOrigin: "captured-original-tuple" as const, site,
+      refusal: currentSelectedFileMainSqlStartupRefusal(site, this.#startupConfigTracker !== null), originalPhase,
+      sourceQualified: true as const, originalFailureRetained: true as const, predicateBranchVerified: false as const,
+      resumeAuthorized: false as const, executionAuthorized: false as const, saveAuthorized: false as const });
+    this.#sqlStartupDiagnostic = Object.freeze({ ...base, frameState: "not-read", summary: null, diagnosticRequests: 0 });
+    // The scheduler has already refused this call. Retain that first failure
+    // Before passive transport/parser errors can be observed during capture.
+    this.#lastFailure ??= "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION";
+    let frameState: CurrentSelectedFileMainSqlStartupDiagnosticV2["frameState"] = "tuple-refused";
+    let summary: CurrentSelectedFileMainSqlStartupDiagnosticV2["summary"] = null;
+    try {
+      const selectedFrame = this.#capturedSqlFrame(pause, site);
+      need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && selectedFrame.result.description ===
+        `Array(${String(SQL_SOURCE.sites[site].expression.slice(1, -1).split(",").length)})`, "SELECTED_SQL_STARTUP_DIAGNOSTIC_FRAME");
+      frameState = "properties-refused";
+      const properties = await this.#request({ phase: "sql-fence-properties", method: "Runtime.getProperties", params: {
+        objectId: selectedFrame.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
+      need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_STARTUP_DIAGNOSTIC_FRAME");
+      summary = decodeCurrentSelectedFileMainSqlStartupFrame(properties, site, this.#selectedSqlPath); frameState = "captured";
+    } catch {
+      // Diagnostic refusal is data, never a fallback continuation or a new
+      // Error inspection path. Original pending requests retain their custody.
+    } finally {
+      this.#phase = originalPhase;
+      this.#sqlStartupDiagnostic = Object.freeze({ ...base, frameState, summary, diagnosticRequests: this.#requests - requests });
+    }
+  }
+  /** Repeat only the original initializer's fixed prechecks after its first
+   * refusal is retained. Reserve the packet before the single request; never
+   * expose the probe to normal continuation or replace the original error. */
+  async #captureStartupPredicate(pause: Pause): Promise<void> {
+    need(this.#sqlPredicateDiagnostic === null && this.#sqlStartupDiagnostic !== null && this.#pause === pause &&
+      pause.sqlSite === "initializerBirth" && !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_PREDICATE_DIAGNOSTIC_ORIGINAL_PAUSE");
+    const originalPhase = this.#phase, requests = this.#requests;
+    const base = Object.freeze({ profile: "private.selected-file-main-sql-predicate-diagnostic.v1" as const, site: "initializerBirth" as const,
+      sourceQualified: true as const, originalFailureRetained: true as const, originalPredicateBranchVerified: false as const,
+      resumeAuthorized: false as const, executionAuthorized: false as const, saveAuthorized: false as const });
+    this.#sqlPredicateDiagnostic = Object.freeze({ ...base, probeState: "not-read", stage: null, diagnosticRequests: 0 });
+    let stage: CurrentSelectedFileMainSqlPredicateDiagnostic["stage"] = null;
+    try {
+      const result = await this.#request({ phase: "sql-fence-predicate-diagnostic", method: "Debugger.evaluateOnCallFrame", params: {
+        ...SQL_FRAME, throwOnSideEffect: false, returnByValue: true, callFrameId: pause.frameId, expression: SQL_PREDICATE_DIAGNOSTIC } });
+      need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_PREDICATE_DIAGNOSTIC_ORIGINAL_PAUSE");
+      stage = decodeCurrentSelectedFileMainSqlPredicateDiagnostic(result);
+    } catch {
+      // Failure remains a closed data state. Do not inspect the error object,
+      // Retry the probe or change original native cleanup obligations.
+    } finally {
+      this.#phase = originalPhase;
+      const diagnosticRequests = this.#requests - requests;
+      let probeState: CurrentSelectedFileMainSqlPredicateDiagnostic["probeState"] = "captured";
+      if (diagnosticRequests === 0) { probeState = "not-read"; }
+      else if (stage === null) { probeState = "evaluation-refused"; }
+      this.#sqlPredicateDiagnostic = Object.freeze({ ...base, probeState, stage, diagnosticRequests });
+    }
   }
   async #requireSelectedSqlCapture(): Promise<void> {
     need(this.#sqlCapture !== null, "SELECTED_SQL_CAPTURE_REQUIRED");
@@ -1063,8 +1300,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #configureSelectedSqlInitializer(pause: Pause): Promise<void> {
     const site = pause.sqlSite; need((site === "initializerSerialize" || site === "initializerPragma") && this.#sqlCapture !== null && this.#sqlReady &&
       this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#sqlConfigurationRecords.length < 64, "SELECTED_SQL_INITIALIZER_REQUIRED");
-    const selectedFrame = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
-      ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites[site].expression } })); need(selectedFrame.result.description === "Array(5)", "SELECTED_SQL_INITIALIZER_FRAME");
+    const selectedFrame = this.#capturedSqlFrame(pause, site); need(selectedFrame.result.description === "Array(5)", "SELECTED_SQL_INITIALIZER_FRAME");
     const stage = site === "initializerSerialize" ? "serialize" : "pragma";
     const reply = sqlConfigurationReply.parse(
       await this.#request({ phase: "sql-fence-configure", site, method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
@@ -1258,21 +1494,20 @@ export class CurrentFootprintCopyMainBackendRunner {
     const site = pause.savedRegistrationSite; let selected: z.infer<typeof objectReply>;
     if (site === undefined) {
       need(pause.sqlSite === "run" && this.#savedRegistrationStage === "bound", "SAVED_REGISTRATION_SINGLE_RUN_REQUIRED");
-      selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site: "run", method: "Debugger.evaluateOnCallFrame", params: {
-        ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites.run.expression } }));
+      selected = this.#capturedSqlFrame(pause, "run");
       need(selected.result.description === "Array(5)", "SAVED_REGISTRATION_NATIVE_RUN_FRAME");
     } else {
-      selected = objectReply.parse(await this.#request({ phase: "sql-fence-registration-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
-        ...SQL_FRAME, callFrameId: pause.frameId, expression: SAVED_CONFIG_SITES[site].expression } }));
-      let size = 7; if (site === "bind") { size = 17; } else if (site === "afterExec") { size = 8; }
+      selected = objectReply.parse(await this.#request({ phase: "sql-fence-registration-raw-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
+        ...SQL_FRAME, callFrameId: pause.frameId, expression: SAVED_CAPTURED_FRAMES[site].rawExpression } }));
+      let size = 6; if (site === "bind") { size = 16; } else if (site === "afterExec") { size = 7; }
       need(selected.result.description === `Array(${String(size)})`, "SAVED_REGISTRATION_FRAME");
     }
     const frameId = selected.result.objectId;
     if (site === "bind") {
       need(this.#savedRegistrationStage === "unused" && this.#savedRegistrationTracker === null, "SAVED_REGISTRATION_BIND_CONSUMED");
-      const reply = objectReply.parse(await this.#request({ phase: "sql-fence-registration-bind", method: "Runtime.callFunctionOn", params: { ...SQL_CALL,
-        throwOnSideEffect: false, objectId: frameId, functionDeclaration: SAVED_CONFIG_CALLS.bind,
-        arguments: [{ objectId: this.#startupConfigTracker }, { value: this.#selectedSqlPath }], returnByValue: false } }));
+      const reply = objectReply.parse(await this.#request({ phase: "sql-fence-registration-rebase-bind", method: "Runtime.callFunctionOn", params: { ...SQL_CALL,
+        throwOnSideEffect: false, objectId: frameId, functionDeclaration: SCOPE_JOINS.registrationBind,
+        arguments: [{ objectId: this.#sqlCapture }, { objectId: this.#startupConfigTracker }, { value: this.#selectedSqlPath }], returnByValue: false } }));
       need(reply.result.description === "Array(8)", "SAVED_REGISTRATION_TRACKER"); this.#savedRegistrationTracker = reply.result.objectId; this.#savedRegistrationStage = "bound";
     } else {
       need(this.#savedRegistrationTracker !== null, "SAVED_REGISTRATION_BIND_REQUIRED");
@@ -1285,23 +1520,40 @@ export class CurrentFootprintCopyMainBackendRunner {
         need(value.result.value.path === this.#selectedSqlPath, "SAVED_REGISTRATION_RUN_TARGET"); this.#savedRegistrationStage = "run-consumed";
       } else if (site === "afterExec") {
         need(this.#savedRegistrationStage === "run-consumed", "SAVED_REGISTRATION_UPSERT_AWAIT_REQUIRED");
-        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-after-exec", method: "Runtime.callFunctionOn", params: { ...params, functionDeclaration: SAVED_CONFIG_CALLS.afterExec } })); this.#savedRegistrationStage = "upsert-awaited";
+        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-rebase-after-exec", method: "Runtime.callFunctionOn", params: { ...params,
+          arguments: [{ objectId: this.#sqlCapture }, { objectId: this.#savedRegistrationTracker }], functionDeclaration: SCOPE_JOINS.registrationAfterExec } })); this.#savedRegistrationStage = "upsert-awaited";
       } else {
         need(this.#savedRegistrationStage === "upsert-awaited", "SAVED_REGISTRATION_QUERY_AWAIT_REQUIRED");
-        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-opened", method: "Runtime.callFunctionOn", params: { ...params, functionDeclaration: SAVED_CONFIG_CALLS.opened } })); this.#savedRegistrationStage = "registration-awaited";
+        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-registration-rebase-opened", method: "Runtime.callFunctionOn", params: { ...params,
+          arguments: [{ objectId: this.#sqlCapture }, { objectId: this.#savedRegistrationTracker }], functionDeclaration: SCOPE_JOINS.registrationOpened } })); this.#savedRegistrationStage = "registration-awaited";
       }
     }
     await this.#assertOriginalProjectRegistrationPending(); await this.#requireSelectedSqlCapture();
     this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
     if (site === "opened") { need(this.#savedRegistrationOpenedPause === null, "SAVED_REGISTRATION_OPENED_ALREADY_RETAINED"); this.#savedRegistrationOpenedPause = pause; }
   }
+  /** Dispatch exact stock frames to their original array cursor; classify
+   * separate startup-config calls without spending or replacing that cursor. */
   async #configureStartupSql(pause: Pause): Promise<boolean> {
     const site = pause.sqlSite;
     need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#sqlCapture !== null && this.#sqlReady, "STARTUP_CONFIG_ORIGINAL_PAUSE");
+    const stockPending = this.#stockOrigin !== null && !this.#stockCompleted;
+    if (stockPending && (this.#originalStockContinuationLineage(pause) || this.#originalStockLineage(pause))) { await this.#continueStartupLibrary(pause, false); return true; }
+    if (this.#stockOrigin === null && this.#startupConfigTracker !== null && this.#originalStockLineage(pause)) { await this.#continueStartupLibrary(pause, true); return true; }
+    if (stockPending) { this.#beginStockInterleave(pause); }
+    const classification = await this.#classifyCapturedSqlPause(pause);
+    if (stockPending) { this.#requireStockInterleave(pause); }
+    if (classification === "guard-passed") {
+      if (stockPending) {
+        need(site === "queryAll" || site === "queryOne", "STOCK_INTERLEAVE_READ_SITE"); const rawFrame = this.#sqlRawFrames.get(pause); need(rawFrame !== undefined && this.#startupConfigTracker !== null, "STOCK_INTERLEAVE_READ_FRAME");
+        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-startup-read-owner", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, objectId: rawFrame, functionDeclaration: STOCK_READ_OWNER, arguments: [{ objectId: this.#startupConfigTracker }], returnByValue: true } }));
+        this.#requireStockInterleave(pause); this.#stockInterleaveReadOwners.add(pause);
+      }
+      await this.#sqlResume(pause); return true;
+    }
     if (site === "initializerSerialize" || site === "initializerPragma") { await this.#configureSelectedSqlInitializer(pause); return true; }
     if (site === "startupVersion" || site === "startupJB" || site === "startupDC") {
-      const selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
-        ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites[site].expression } }));
+      const selected = this.#capturedSqlFrame(pause, site);
       let size = 11; if (site === "startupVersion") { size = 13; } else if (site === "startupJB") { size = 12; }
       need(selected.result.description === `Array(${String(size)})`, "STARTUP_CONFIG_SOURCE_FRAME");
       if (site === "startupVersion") {
@@ -1323,18 +1575,176 @@ export class CurrentFootprintCopyMainBackendRunner {
       }
     } else if (site === "run" || site === "prepare" || site === "prepared" || site === "statementRun" || site === "finalize") {
       if (this.#startupConfigTracker === null || site === "statementRun" || site === "finalize") { return false; }
-      const selected = objectReply.parse(await this.#request({ phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: {
-        ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_SOURCE.sites[site].expression } }));
+      const selected = this.#capturedSqlFrame(pause, site);
       let size = 5; if (site === "prepare") { size = 6; } else if (site === "prepared") { size = 7; }
       need(selected.result.description === `Array(${String(size)})`, "STARTUP_CONFIG_NATIVE_FRAME");
-      const reply = z.object({ result: z.object({ type: z.literal("object"), value: currentMainStartupConfigSelectionSchema }).strict() }).strict().parse(
-        await this.#request({ phase: "sql-fence-startup-select", site, method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
-          objectId: selected.result.objectId, functionDeclaration: STARTUP_CALLS.select, arguments: [{ objectId: this.#startupConfigTracker }, { value: site }], returnByValue: true } }));
-      if (!this.#startupConfigProgress.consume(reply.result.value)) { return false; }
+      const rawReply = await this.#request({ phase: "sql-fence-startup-select", site, method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
+        objectId: selected.result.objectId, functionDeclaration: STARTUP_CALLS.select, arguments: [{ objectId: this.#startupConfigTracker }, { value: site }], returnByValue: true } });
+      let selection: z.infer<typeof currentMainStartupConfigSelectionSchema>;
+      try { selection = z.object({ result: z.object({ type: z.literal("object"), value: currentMainStartupConfigSelectionSchema }).strict() }).strict().parse(rawReply).result.value; }
+      catch (caughtError) { this.#captureStartupRefusalContext(pause, "selection-reply-refused"); throw caughtError; }
+      let consumed: boolean;
+      try { consumed = this.#startupConfigProgress.consume(selection); }
+      catch (caughtError) { this.#captureStartupRefusalContext(pause, "selection-sequence-refused", selection); throw caughtError; }
+      if (!consumed) {
+        this.#captureStartupRefusalContext(pause, "selection-unrecognized", selection); return false;
+      }
     } else { return false; }
-    await this.#requireSelectedSqlCapture(); this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
+    await this.#requireSelectedSqlCapture();
+    if (stockPending) { this.#requireStockInterleave(pause); this.#stockInterleaveConfigurations.add(pause); }
+    this.#sqlApprovedConfigurations.add(pause); await this.#sqlResume(pause);
     if (site === "startupVersion" || site === "startupJB" || site === "startupDC") { this.#startupMetadataContinuations += 1; } else { this.#startupSqlContinuations += 1; }
     return true;
+  }
+  /** Retain the exact still-pending stock receiver/cursor while a separate
+   * original startup-config call is classified on the ordinary SQL budget. */
+  #beginStockInterleave(pause: Pause): void {
+    need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#stockOrigin !== null && this.#stockTracker !== null && this.#stockEnrollmentPause !== null && this.#stockReturnPoint !== null && this.#stockCommandPause !== null && this.#stockCommandPause !== pause && this.#stockCommandPause.resumeAttempted && this.#stockCommandPause.resumed && !this.#stockCompleted && !this.#stockInterleaves.has(pause), "STOCK_INTERLEAVE_PENDING");
+    const progress = canonicalJson(this.#stockProgress.snapshot());
+    const held = Object.freeze({ origin: this.#stockOrigin, tracker: this.#stockTracker, enrollment: this.#stockEnrollmentPause, command: this.#stockCommandPause, point: this.#stockReturnPoint, requests: this.#stockRequests, progress });
+    this.#stockInterleaves.set(pause, held);
+  }
+  /** No ordinary await may change or spend the pending original stock lane. */
+  #requireStockInterleave(pause: Pause): void {
+    this.#same(false); const held = this.#stockInterleaves.get(pause);
+    need(held !== undefined && this.#pause === pause && this.#stockOrigin === held.origin && this.#stockTracker === held.tracker && this.#stockEnrollmentPause === held.enrollment && this.#stockCommandPause === held.command && held.command.resumed && this.#stockReturnPoint === held.point && this.#stockRequests === held.requests && canonicalJson(this.#stockProgress.snapshot()) === held.progress && !this.#stockCompleted, "STOCK_INTERLEAVE_CHANGED");
+  }
+  /** Reprove the original approved config/read pause at every Core await and
+   * actual submission. The consumed resume alone may observe its own resumed
+   * transition; other commands and replaced pending requests remain refused. */
+  public requireOriginalStartupInterleaveCommand(capability: CurrentSelectedFileMainSqlFenceBootstrap, command: CurrentSelectedFileMainSqlFenceCommand): void {
+    need(this.#selectedSqlBootstrap === capability, "STOCK_INTERLEAVE_ORIGINAL_BOOTSTRAP");
+    const pause = this.#pause;
+    if (pause === null || !this.#stockInterleaves.has(pause)) { need(command.phase !== "sql-fence-startup-read-owner" && command.phase !== "sql-fence-startup-config-resume", "STOCK_INTERLEAVE_REQUIRED"); return; }
+    need(this.#busy && this.#sqlReady && this.#packet === null && this.#startupConfigTracker !== null && this.#pendingId !== null, "STOCK_INTERLEAVE_ORIGINAL_PAUSE"); this.#requireStockInterleave(pause);
+    if (command.phase === "sql-fence-startup-config-resume") {
+      let retained = this.#stockInterleaveResumeCommands.get(pause);
+      if (retained === undefined) { need(!pause.resumed && pause.resumeAttempted, "STOCK_INTERLEAVE_FIRST_RESUME"); retained = Object.freeze({ command, requestId: this.#pendingId }); this.#stockInterleaveResumeCommands.set(pause, retained); }
+      need(retained.command === command && retained.requestId === this.#pendingId, "STOCK_INTERLEAVE_RESUME_REQUEST_CHANGED");
+    } else { need(!pause.resumed, "STOCK_INTERLEAVE_READ_AFTER_RESUME"); }
+    if (command.phase === "sql-fence-startup-read-owner") { need(!pause.resumeAttempted && this.#sqlGuardApprovals.has(pause) && (pause.sqlSite === "queryAll" || pause.sqlSite === "queryOne") && command.params.objectId === this.#sqlRawFrames.get(pause) && command.params.arguments[0].objectId === this.#startupConfigTracker, "STOCK_INTERLEAVE_READ_OWNER"); }
+    else if (command.phase === "sql-fence-startup-config-resume") { need(pause.resumeAttempted && (this.#stockInterleaveConfigurations.has(pause) || this.#sqlGuardApprovals.has(pause) && this.#stockInterleaveReadOwners.has(pause)), "STOCK_INTERLEAVE_APPROVED_RESUME"); }
+  }
+  #originalStockLineage(pause: Pause): boolean {
+    const frames = this.#stockFrames.get(pause);
+    return this.#pause === pause && pause.sqlSite === "run" && frames?.length === STOCK.initialLineage.length && frames.every((call, index) => {
+      const point = STOCK.initialLineage[index]; return point !== undefined && call.location.scriptId === this.#appScriptId && call.location.lineNumber === point.lineNumber && call.location.columnNumber === point.columnNumber;
+    });
+  }
+  #originalStockContinuationLineage(pause: Pause): boolean {
+    const frames = this.#stockFrames.get(pause);
+    return this.#pause === pause && pause.sqlSite === "run" && frames?.length === STOCK.continuationLineage.length && frames.every((call, index) => {
+      const point = STOCK.continuationLineage[index]; return point !== undefined && call.location.scriptId === this.#appScriptId && call.location.lineNumber === point.lineNumber && call.location.columnNumber === point.columnNumber;
+    });
+  }
+  public requireOriginalStartupLibraryEnrollment(capability: CurrentSelectedFileMainSqlFenceBootstrap): void {
+    this.#same(false); need(this.#selectedSqlBootstrap === capability && this.#busy && this.#sqlReady && this.#packet === null && this.#stockOrigin === null &&
+      this.#stockEnrollmentPause !== null && this.#originalStockLineage(this.#stockEnrollmentPause) && !this.#sqlClassificationAttempts.has(this.#stockEnrollmentPause) &&
+      !this.#stockEnrollmentPause.resumeAttempted && !this.#stockEnrollmentPause.resumed, "STOCK_ORIGINAL_ENROLLMENT");
+  }
+  public requireOriginalStartupLibraryCommand(capability: CurrentSelectedFileMainSqlFenceBootstrap, origin: CurrentMainStartupLibraryOrigin, command: CurrentMainStartupLibraryCommand): void {
+    this.#same(false); need(this.#selectedSqlBootstrap === capability && this.#stockOrigin === origin && this.#busy && this.#sqlReady && this.#packet === null &&
+      this.#stockCommandPause !== null && this.#pause === this.#stockCommandPause && this.#sqlCapture !== null && this.#startupConfigTracker !== null &&
+      (this.#stockCommandPause.stockReturn === true || (this.#stockCommandPause === this.#stockEnrollmentPause ? this.#originalStockLineage(this.#stockCommandPause) : this.#originalStockContinuationLineage(this.#stockCommandPause))), "STOCK_ORIGINAL_COMMAND");
+    const pause = this.#stockCommandPause; need(pause !== null, "STOCK_COMMAND_PAUSE");
+    switch (command.phase) {
+      case "sql-stock-v2-raw": { need(command.params.callFrameId === pause.frameId, "STOCK_RAW_FRAME"); break; }
+      case "sql-stock-v2-captured": { need(command.params.objectId === this.#stockRawFrames.get(pause) && command.params.arguments[0].objectId === this.#sqlCapture, "STOCK_CAPTURED_FRAME"); break; }
+      case "sql-stock-v2-caller": { need(command.params.callFrameId === this.#stockFrames.get(pause)?.[2]?.callFrameId, "STOCK_RUN_SCRIPTS_FRAME"); break; }
+      case "sql-stock-v2-frame": { need(command.params.callFrameId === this.#stockFrames.get(pause)?.[3]?.callFrameId, "STOCK_JL_FRAME"); break; }
+      case "sql-stock-v2-bind": { need(command.params.objectId === this.#stockSourceFrame && command.params.arguments[0].objectId === this.#startupConfigTracker && command.params.arguments[1].value === this.#stockAppDirectory && command.params.arguments[2].objectId === this.#stockCallerFrames.get(pause), "STOCK_BIND_FRAME"); break; }
+      case "sql-stock-v2-points": { need(command.params.start.scriptId === this.#appScriptId && command.params.end.scriptId === this.#appScriptId, "STOCK_POINTS_SCRIPT"); break; }
+      case "sql-stock-v2-arm": { need(command.params.location.scriptId === this.#appScriptId, "STOCK_ARM_SCRIPT"); break; }
+      case "sql-stock-v2-select": { need(command.params.objectId === this.#sqlCapturedFrames.get(pause)?.result.objectId && command.params.arguments[0].objectId === this.#startupConfigTracker && command.params.arguments[1].objectId === this.#stockTracker && command.params.arguments[2].objectId === this.#stockCallerFrames.get(pause), "STOCK_SELECT_FRAME"); break; }
+      case "sql-stock-v2-require": { need(command.params.objectId === this.#sqlCapture, "STOCK_REQUIRE_CAPTURE"); break; }
+      case "sql-stock-v2-return-frame": { need(command.params.callFrameId === pause.frameId, "STOCK_RETURN_FRAME"); break; }
+      case "sql-stock-v2-return-properties": { need(command.params.objectId === this.#stockNativeReturns.get(pause), "STOCK_RETURN_PROMISE"); break; }
+      case "sql-stock-v2-return": { need(command.params.objectId === this.#stockReturnFrames.get(pause) && command.params.arguments[0].objectId === this.#startupConfigTracker && command.params.arguments[1].objectId === this.#stockTracker &&
+        command.params.arguments[2].objectId === this.#stockNativeReturns.get(pause) && command.params.arguments[3].objectId === this.#stockPromiseResults.get(pause)?.resultObjectId, "STOCK_RETURN_ORIGINAL_REFERENCES"); break; }
+      case "sql-stock-v2-remove": { need(command.params.breakpointId === this.#stockReturnPoint, "STOCK_REMOVE_POINT"); break; }
+      case "sql-stock-v2-resume": { need(pause.resumeAttempted && !pause.resumed, "STOCK_RESERVED_RESUME"); break; }
+      default: { throw new Error("MAIN_STARTUP_LIBRARY_COMMAND_PHASE"); }
+    }
+  }
+  async #stockRequireCapture(): Promise<void> {
+    need(this.#sqlCapture !== null, "STOCK_SQL_CAPTURE_REQUIRED");
+    sqlTrueReply.parse(await this.#request({ phase: "sql-stock-v2-require", method: "Runtime.callFunctionOn", params: { ...SQL_CALL,
+      objectId: this.#sqlCapture, functionDeclaration: SQL_REQUIRE, arguments: [], returnByValue: true } }));
+  }
+  async #stockResume(pause: Pause): Promise<void> {
+    need(this.#pause === pause && this.#stockCommandPause === pause && !pause.resumeAttempted && !pause.resumed, "STOCK_RESUME_ONCE");
+    pause.resumeAttempted = true; empty.parse(await this.#request({ phase: "sql-stock-v2-resume", method: "Debugger.resume", params: {} })); await this.#wait(() => pause.resumed);
+  }
+  #captureStockRefusalContext(pause: Pause, first: boolean): void {
+    if (this.#stockRefusalContextAttempted || this.#packet !== null) { return; } this.#stockRefusalContextAttempted = true;
+    try {
+      const locations = this.#sqlStartupPauseLocations.get(pause), site = pause.sqlSite;
+      need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#source !== null && this.#appSource !== null && this.#appScriptId !== null &&
+        locations !== undefined && site !== undefined && site !== "import" && site !== "afterImports", "STOCK_REFUSAL_ORIGINAL_PAUSE");
+      const projected = captureCurrentSelectedFileMainSqlStartupPauseLocations(locations, this.#appScriptId, this.#appSource);
+      this.#stockRefusalContext = createCurrentMainStartupLibraryRefusalContext(site, first, this.#stockOrigin !== null, this.#stockRequests, this.#stockProgress.snapshot(), projected);
+    } catch {
+      // Optional context cannot replace the first failure, inspect an Error,
+      // Read a frame, retry a command or resume the original held call.
+    }
+  }
+  async #continueStartupLibrary(pause: Pause, first: boolean): Promise<void> {
+    const lineage = first ? this.#originalStockLineage(pause) : this.#originalStockContinuationLineage(pause); if (!lineage) { this.#captureStockRefusalContext(pause, first); }
+    need(lineage && !pause.resumeAttempted && !pause.resumed && this.#startupConfigTracker !== null && this.#sqlCapture !== null &&
+      this.#selectedSqlBootstrap !== null && this.#appScriptId !== null && this.#stockAppUrl !== null && !this.#stockCompleted, "STOCK_ORIGINAL_LINEAGE");
+    this.#stockAppDirectory ??= currentMainStartupLibraryAppDirectory(this.#stockAppUrl);
+    this.#stockCommandPause = pause;
+    if (first) {
+      need(this.#stockOrigin === null && this.#stockTracker === null && this.#stockEnrollmentPause === null, "STOCK_ENROLL_CONSUMED");
+      this.#stockEnrollmentPause = pause; this.#stockOrigin = enrollOriginalCurrentMainStartupLibrary(this.#selectedSqlBootstrap, this);
+    }
+    need(this.#stockOrigin !== null && !this.#sqlClassificationAttempts.has(pause), "STOCK_CALL_CONSUMED"); this.#sqlClassificationAttempts.add(pause);
+    const raw = objectReply.parse(await this.#request({ phase: "sql-stock-v2-raw", method: "Debugger.evaluateOnCallFrame", params: { ...SQL_FRAME, callFrameId: pause.frameId, expression: SQL_CAPTURED_EXPRESSIONS.run } }));
+    need(raw.result.description === "Array(4)", "STOCK_RAW_RUN_FRAME"); this.#stockRawFrames.set(pause, raw.result.objectId);
+    const captured = objectReply.parse(await this.#request({ phase: "sql-stock-v2-captured", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
+      objectId: raw.result.objectId, functionDeclaration: SQL_CAPTURED_FRAME, arguments: [{ objectId: this.#sqlCapture }, { value: "run" }], returnByValue: false } }));
+    need(captured.result.description === "Array(5)", "STOCK_ORIGINAL_RUN_TUPLE"); this.#sqlCapturedFrames.set(pause, captured);
+    const callerFrameId = this.#stockFrames.get(pause)?.[2]?.callFrameId; need(callerFrameId !== undefined, "STOCK_RUN_SCRIPTS_FRAME_REQUIRED");
+    const caller = objectReply.parse(await this.#request({ phase: "sql-stock-v2-caller", method: "Debugger.evaluateOnCallFrame", params: { ...SQL_FRAME, callFrameId: callerFrameId, expression: STOCK_CALLER } }));
+    need(caller.result.description === "Array(3)", "STOCK_RUN_SCRIPTS_CAPTURE"); this.#stockCallerFrames.set(pause, caller.result.objectId);
+    if (first) {
+      const frameId = this.#stockFrames.get(pause)?.[3]?.callFrameId; need(frameId !== undefined, "STOCK_JL_FRAME_REQUIRED");
+      const source = objectReply.parse(await this.#request({ phase: "sql-stock-v2-frame", method: "Debugger.evaluateOnCallFrame", params: { ...SQL_FRAME, callFrameId: frameId, expression: STOCK_FRAME } }));
+      need(source.result.description === "Array(3)", "STOCK_JL_CAPTURE"); this.#stockSourceFrame = source.result.objectId;
+      const tracker = objectReply.parse(await this.#request({ phase: "sql-stock-v2-bind", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false,
+        objectId: source.result.objectId, functionDeclaration: STOCK_CALLS.bind, arguments: [{ objectId: this.#startupConfigTracker }, { value: this.#stockAppDirectory }, { objectId: caller.result.objectId }], returnByValue: false } }));
+      need(tracker.result.description === "Array(4)", "STOCK_TRACKER"); this.#stockTracker = tracker.result.objectId; this.#stockProgress.bind();
+      const breakpoint = z.strictObject({ ...location.shape, type: z.enum(["return", "call", "debuggerStatement"]).optional() });
+      const pointReply = z.strictObject({ locations: z.array(breakpoint).max(16) });
+      const points = pointReply.parse(
+        await this.#request({ phase: "sql-stock-v2-points", method: "Debugger.getPossibleBreakpoints", params: { start: { scriptId: this.#appScriptId, ...STOCK.functionStart }, end: { scriptId: this.#appScriptId, ...STOCK.functionEnd }, restrictToFunction: true } }));
+      const returned = points.locations.filter(point => point.type === "return"); need(returned.length === 1 && returned[0]?.scriptId === this.#appScriptId &&
+        returned[0].lineNumber === STOCK.returnPoint.lineNumber && returned[0].columnNumber === STOCK.returnPoint.columnNumber, "STOCK_NATIVE_RETURN_LOCATION");
+      this.#stockArming = true;
+      const armed = z.strictObject({ breakpointId: handle, actualLocation: location }).parse(await this.#request({ phase: "sql-stock-v2-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#appScriptId, ...STOCK.returnPoint }, condition: "true" } }));
+      need(armed.actualLocation.scriptId === this.#appScriptId && armed.actualLocation.lineNumber === STOCK.returnPoint.lineNumber && armed.actualLocation.columnNumber === STOCK.returnPoint.columnNumber &&
+        !this.#sqlBreakpoints.has(armed.breakpointId) && (this.#stockResolution === null || this.#stockResolution.breakpointId === armed.breakpointId), "STOCK_RETURN_ARM");
+      this.#stockReturnPoint = armed.breakpointId; this.#stockArming = false;
+    }
+    need(this.#stockTracker !== null && lineage, "STOCK_TRACKER_REQUIRED");
+    const selected = this.#capturedSqlFrame(pause, "run");
+    const reply = z.strictObject({ result: z.strictObject({ type: z.literal("object"), value: currentMainStartupLibrarySelectionSchema }) }).parse(
+      await this.#request({ phase: "sql-stock-v2-select", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false, objectId: selected.result.objectId,
+        functionDeclaration: STOCK_CALLS.select, arguments: [{ objectId: this.#startupConfigTracker }, { objectId: this.#stockTracker }, { objectId: caller.result.objectId }], returnByValue: true } }));
+    need(this.#stockProgress.consume(reply.result.value), "STOCK_EXACT_SQL_REQUIRED"); await this.#stockRequireCapture(); await this.#stockResume(pause);
+  }
+  async #finishStartupLibrary(pause: Pause): Promise<void> {
+    need(this.#pause === pause && pause.stockReturn === true && !pause.resumeAttempted && !pause.resumed && this.#stockOrigin !== null && this.#stockTracker !== null &&
+      this.#startupConfigTracker !== null && this.#stockReturnPoint !== null && !this.#stockCompleted, "STOCK_ORIGINAL_RETURN_REQUIRED");
+    this.#stockProgress.requireAllCallsConsumed(); this.#stockCommandPause = pause; const returned = this.#stockNativeReturns.get(pause); need(returned !== undefined, "STOCK_NATIVE_RETURN_VALUE_REQUIRED");
+    const returnedFrame = objectReply.parse(await this.#request({ phase: "sql-stock-v2-return-frame", method: "Debugger.evaluateOnCallFrame", params: { ...SQL_FRAME, callFrameId: pause.frameId, expression: "[t]" } }));
+    need(returnedFrame.result.description === "Array(1)", "STOCK_RETURN_FRAME"); this.#stockReturnFrames.set(pause, returnedFrame.result.objectId);
+    const nativePromise = captureCurrentMainStartupLibraryReturnReply(await this.#request({ phase: "sql-stock-v2-return-properties", method: "Runtime.getProperties", params: {
+      objectId: returned, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } })); this.#stockPromiseResults.set(pause, nativePromise);
+    sqlTrueReply.parse(await this.#request({ phase: "sql-stock-v2-return", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false, objectId: returnedFrame.result.objectId,
+      functionDeclaration: STOCK_RETURN, arguments: [{ objectId: this.#startupConfigTracker }, { objectId: this.#stockTracker }, { objectId: returned }, { objectId: nativePromise.resultObjectId }], returnByValue: true } }));
+    empty.parse(await this.#request({ phase: "sql-stock-v2-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#stockReturnPoint } }));
+    await this.#stockRequireCapture(); await this.#stockResume(pause); this.#stockCompleted = true;
   }
   #requireSelectedRequestPause(pause: Pause): void {
     this.#same(false); need(this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#packet !== null && issued.get(this.#packet) === this && this.#sqlCapture !== null &&
@@ -1439,7 +1849,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (this.#viaMainOrigin !== null) {
       if (!this.#busy) { await this.#pump();
         if (!this.#busy) { const service = (async (): Promise<void> => { this.#busy = true;
-          try { await this.#serveUndeliveredViaReadonly(); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; this.#viaMainReadonlyService = null; }
+          try { await this.#serveUndeliveredViaPauses(); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; this.#viaMainReadonlyService = null; }
         })(); this.#viaMainReadonlyService = service; await service; }
       } return;
     }
@@ -1454,13 +1864,30 @@ export class CurrentFootprintCopyMainBackendRunner {
       }
       else if (pause !== null && !pause.resumed && pause.savedRegistrationSite !== undefined) { await this.#continueSavedRegistration(pause); }
       else if (pause !== null && !pause.resumed && pause.sqlSite !== undefined) {
-        if (pause.sqlSite === "run" && this.#savedRegistrationTracker !== null) { await this.#continueSavedRegistration(pause); }
+        if (await this.#classifyCapturedSqlPause(pause) === "guard-passed") { await this.#sqlResume(pause); }
+        else if (pause.sqlSite === "run" && this.#savedRegistrationTracker !== null) { await this.#continueSavedRegistration(pause); }
         else if (pause.sqlSite === "driver") { const request = await this.#observeSelectedMainRequest(pause); if (this.#selectedReadonlyRequest(request)) { await this.#continueSelectedReadonlyRequest(request); } else { this.#sqlHeld = pause; } }
         else if (!await this.#configureStartupSql(pause)) { this.#sqlMutationPauses += 1; need(this.#sqlMutationPauses <= 64, "SELECTED_SQL_MUTATION_BOUND"); this.#sqlHeld = pause; await this.#requireSelectedSqlCapture(); }
       }
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
-  async #serveUndeliveredViaReadonly(): Promise<void> {
+  /** Consume only a guard-passed original SQL pause and its resumed event.
+   * A held pause stays queued for its observer; classification is cached on
+   * that original pause, so repeated custody checks issue no second probe. */
+  async #serveGuardPassedViaPause(): Promise<boolean> {
+    const pause = this.#pause;
+    if (pause === null || pause.sqlSite === undefined || pause.resumeAttempted || pause.resumed || this.#viaMainDeliveredPause !== null || this.#viaMainDriverStep !== null) { return false; }
+    if (await this.#classifyCapturedSqlPause(pause) === "guard-passed") {
+      const event = this.#viaMainEvents.shift(); need(event?.method === "Debugger.paused" && pauseSchema.parse(event.params).callFrames[0]?.callFrameId === pause.frameId, "VIA_MAIN_READONLY_ORIGINAL_PAUSE");
+      await this.#sqlResume(pause); const resumed = this.#viaMainEvents.shift();
+      need(pause.resumed && resumed?.method === "Debugger.resumed", "VIA_MAIN_READONLY_ORIGINAL_RESUMED"); empty.parse(resumed.params);
+      if (this.#sqlHeld === pause) { this.#sqlHeld = null; } return true;
+    }
+    return false;
+  }
+  /** Service readonly requests only while no Via observer owns their pause. */
+  async #serveUndeliveredViaPauses(): Promise<void> {
+    if (await this.#serveGuardPassedViaPause()) { return; }
     const pause = this.#pause;
     if (pause === null || pause.sqlSite !== "driver" || pause.resumeAttempted || pause.resumed || this.#viaMainDeliveredPause !== null || this.#viaMainDriverStep !== null) { return; }
     const context = CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES.context;
@@ -1472,6 +1899,11 @@ export class CurrentFootprintCopyMainBackendRunner {
       need(pause.resumed && resumed?.method === "Debugger.resumed", "VIA_MAIN_READONLY_ORIGINAL_RESUMED"); empty.parse(resumed.params);
     }
   }
+  public startupLibraryState(): Readonly<Record<string, unknown>> {
+    return Object.freeze({ schema: "private.current-main-startup-library-state.v2", originEnrolled: this.#stockOrigin !== null,
+      dataProgress: this.#stockProgress.snapshot(), originalNormalReturnProven: this.#stockCompleted, requests: this.#stockRequests,
+      selectedProjectWriteGrant: false, executionAuthorized: false });
+  }
   public selectedSqlFenceState(): Readonly<Record<string, unknown>> {
     return Object.freeze({ profile: "private.selected-file-main-sql-fence.v1", originalBootstrapRetained: this.#selectedSqlBootstrap !== null,
       ready: this.#sqlReady, conditionalBreakpoints: Math.max(0, this.#sqlBreakpoints.size - 2), nativePrimitivesReplaced: false,
@@ -1479,6 +1911,16 @@ export class CurrentFootprintCopyMainBackendRunner {
       profileSqlContinuationsAcknowledged: this.#startupSqlContinuations, profileMetadataContinuationsAcknowledged: this.#startupMetadataContinuations,
       startupProfileBookkeeping: this.#startupConfigProgress.snapshot(), initializerConfigurations: Object.freeze([...this.#sqlConfigurationRecords]), initializerConfigurationAutomaticallyAdmitted: true, completeSqlEffectProven: false, executionAuthorized: false, saveAuthorized: false });
   }
+  /** Historical private data for the original workflow's separate diagnostic
+   * artifact. This getter performs no reads and leaves retained()/v1 unchanged. */
+  public retainedSelectedSqlStartupDiagnostic(): CurrentSelectedFileMainSqlStartupDiagnosticV2 | null { return this.#sqlStartupDiagnostic; }
+  /** Original stock locations and scalar progress only; no reads or grant. */
+  public retainedStartupLibraryRefusalContext(): CurrentMainStartupLibraryRefusalContext | null { return this.#stockRefusalContext; }
+  /** Original paused-event locations and first selection/progress data only.
+   * No getter request, reevaluation or historical packet can issue a grant. */
+  public retainedSelectedSqlStartupRefusalContext(): CurrentSelectedFileMainSqlStartupRefusalContext | null { return this.#sqlStartupRefusalContext; }
+  /** Private optional data from this runner's one failure-only guard probe. */
+  public retainedSelectedSqlPredicateDiagnostic(): CurrentSelectedFileMainSqlPredicateDiagnostic | null { return this.#sqlPredicateDiagnostic; }
 
   /** Transfer this original selected-file cursor into a Via-only observer.
    * The persistent SQL fence remains installed, and this vocabulary has no
@@ -1679,7 +2121,12 @@ export class CurrentFootprintCopyMainBackendRunner {
           } catch (error) { this.#fail(error); throw error; } finally { this.#viaMainArming = null; this.#busy = false; }
         }, nextEvent: async (): Promise<CurrentPcbViaMainEvent> => {
           same(); if (this.#viaMainReadonlyService !== null) { await this.#viaMainReadonlyService; same(); } need(!this.#busy, "VIA_MAIN_EVENT_BUSY"); this.#busy = true; const started = performance.now();
-          try { while (this.#viaMainEvents.length === 0) { need(performance.now() - started < 20_000, "VIA_MAIN_EVENT_DEADLINE"); await this.#pump(); same(); }
+          try { let guardPassed: boolean; do {
+              need(performance.now() - started < 20_000, "VIA_MAIN_EVENT_DEADLINE");
+              while (this.#viaMainEvents.length === 0) { need(performance.now() - started < 20_000, "VIA_MAIN_EVENT_DEADLINE"); await this.#pump(); same(); }
+              guardPassed = this.#viaMainEvents[0]?.method === "Debugger.paused" && await this.#serveGuardPassedViaPause(); same();
+            } while (guardPassed);
+            need(performance.now() - started < 20_000, "VIA_MAIN_EVENT_DEADLINE");
             const event = this.#viaMainEvents.shift(); need(event !== undefined, "VIA_MAIN_EVENT");
             if (event.method === "Debugger.paused") { need(this.#pause !== null && !this.#pause.resumed && this.#viaMainDeliveredPause === null, "VIA_MAIN_DELIVERY_OVERLAP"); this.#viaMainDeliveredPause = this.#pause; this.#viaMainDeliveredEvent = event.params; }
             return event;

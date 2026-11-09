@@ -43,6 +43,7 @@ interface Point { readonly id: string; removed: boolean }
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB_VIA_STRUCTURE_CUSTODY_${code}`); } }
 function isSite(role: FrameRole): role is Role { return Object.hasOwn(SITES, role); }
 export class CurrentPcbViaMainStructureCustody {
+  readonly #rawFrames = new Set<string>(); readonly #frameAttempts = new Set<string>();
   readonly #host: CurrentPcbViaMainStructureHost; readonly #points = new Map<Role, Point>(); readonly #frames = new Map<string, string>(); readonly #packets = new Map<ProgramRole, string>(); readonly #values = new Set<string>();
   #normal = 0; #cleanup = 0; #step = 0; #failed = false; #started = false; #callbackReturned = false; #loan: CurrentPcbViaMainCallbackLoan | null = null;
   #queryPromise: string | null = null; #queryResult: string | null = null; #finalFunction: string | null = null; #finalQualified = false;
@@ -84,6 +85,9 @@ export class CurrentPcbViaMainStructureCustody {
     const values: Partial<Record<ProgramRole, readonly [number, ProgramRole]>> = { selectedValue: [4, "selected"], rowsValue: [5, "update"], runValue: [7, "run"], callbackValue: [8, "callback"], responseValue: [12, "response"], finalSelect: [12, "response"], finalValue: [14, "finalReturned"] };
     const value = values[role]; need(value !== undefined && this.#step === value[0], "VALUE_STAGE"); return { receiver: this.#packet(value[1]), args: [] };
   }
+  /** Consume each frame attempt before awaiting transport, retain its exact
+   * version, and bind the matching join to original capture/packet handles.
+   * Existing source, step, callback, clock and native-grant checks still apply. */
   public async request(input: Command, cleanup: boolean): Promise<unknown> {
     this.#same(); const command = validateCurrentPcbViaMainStructureCommand(input);
     try { if (cleanup) { this.#cleanup += 1; need(this.#cleanup <= LIMITS.cleanup && (command.phase === "via-main-structure-remove" || command.phase === "via-main-structure-release"), "CLEANUP_BOUND"); }
@@ -91,8 +95,8 @@ export class CurrentPcbViaMainStructureCustody {
       if (command.phase === "via-main-structure-step") { return await this.#advance(command); }
       if (command.phase === "via-main-structure-arm") { need(!this.#points.has(command.role) && command.params.location.scriptId === this.#host.scriptId, "ARM_CONSUMED"); if (command.role === "context") { need(this.#started && this.#step === 0, "HELD_POST_CONTEXT_ARM"); this.#top("driver"); } else if (command.role === "finalReturned" || command.role === "finalFailed") { need(this.#step === 13, "HELD_ORIGINAL_FINAL_ARM"); this.#top("finalEntry"); } else { need(!this.#started, "PRE_ACTION_ARM"); } }
       else if (command.phase === "via-main-structure-final-arm") { need(this.#step === 12 && this.#finalQualified && command.params.objectId === this.#finalFunction && !this.#points.has("finalEntry"), "ORIGINAL_FINAL_ARM"); this.#top("response"); }
-      else if (command.phase === "via-main-structure-frame") { need(this.#started && command.params.callFrameId === this.#frameId(command.role) && !this.#frames.has(this.#frameKey(command.role)), "ORIGINAL_FRAME"); }
-      else if (command.phase === "via-main-structure-join") { const expected = this.#expectedJoin(command.role); const key = `${String(this.#step)}:${command.role}`; need(!this.#values.has(key) && command.params.objectId === expected.receiver && canonicalJson(command.params.arguments) === canonicalJson(expected.args), "ORIGINAL_JOIN_ARGUMENTS"); this.#values.add(key); }
+      else if (command.phase === "via-main-structure-frame" || command.phase === "via-main-structure-raw-frame") { const key = this.#frameKey(command.role); need(this.#started && command.params.callFrameId === this.#frameId(command.role) && !this.#frameAttempts.has(key), "ORIGINAL_FRAME"); this.#frameAttempts.add(key); if (command.phase === "via-main-structure-raw-frame") { this.#rawFrames.add(key); } }
+      else if (command.phase === "via-main-structure-join" || command.phase === "via-main-structure-rebase" || command.phase === "via-main-structure-bookkeeping") { const expected = this.#expectedJoin(command.role); const key = `${String(this.#step)}:${command.role}`; if (command.role === "run" || command.role === "callback") { need((command.phase === "via-main-structure-rebase") === this.#rawFrames.has(this.#frameKey(command.role)), "FRAME_VERSION"); } const args = command.phase === "via-main-structure-rebase" && command.role === "callback" ? [{ objectId: this.#host.sqlCaptureObjectId }, ...expected.args] : expected.args; need(!this.#values.has(key) && command.params.objectId === expected.receiver && canonicalJson(command.params.arguments) === canonicalJson(args), "ORIGINAL_JOIN_ARGUMENTS"); this.#values.add(key); }
       else if (command.phase === "via-main-structure-properties") {
         if (command.role === "query") { need(this.#step === 3 && this.#queryPromise === null && command.params.objectId === this.#packet("query"), "QUERY_PROMISE_ONCE"); }
         else if (command.role === "promise") { need(this.#step === 3 && this.#queryPromise !== null && this.#queryResult === null && command.params.objectId === this.#queryPromise, "ORIGINAL_DB_PROMISE"); }
@@ -104,9 +108,9 @@ export class CurrentPcbViaMainStructureCustody {
       const reply = captureCurrentPcbStringClockReply(await this.#host.send(command, cleanup)).value; this.#same();
       if (command.phase === "via-main-structure-arm") { const allocated = z.strictObject({ breakpointId: handle, actualLocation: point }).parse(reply); need(canonicalJson(allocated.actualLocation) === canonicalJson(command.params.location) && ![...this.#points.values()].some(row => row.id === allocated.breakpointId), "ARM_REPLY"); this.#host.registerPoint(allocated.breakpointId, allocated.actualLocation); this.#points.set(command.role, { id: allocated.breakpointId, removed: false }); }
       else if (command.phase === "via-main-structure-final-arm") { const allocated = z.strictObject({ breakpointId: handle }).parse(reply); need(![...this.#points.values()].some(row => row.id === allocated.breakpointId), "FINAL_POINT_ALIAS"); this.#host.registerPoint(allocated.breakpointId, { scriptId: this.#host.scriptId, lineNumber: SITES.finalEntry.lineNumber, columnNumber: SITES.finalEntry.columnNumber }); this.#points.set("finalEntry", { id: allocated.breakpointId, removed: false }); }
-      else if (command.phase === "via-main-structure-frame") { this.#frames.set(this.#frameKey(command.role), decodeArray(reply, currentPcbViaMainStructureFrame(command.role).length)); }
+      else if (command.phase === "via-main-structure-frame" || command.phase === "via-main-structure-raw-frame") { this.#frames.set(this.#frameKey(command.role), decodeArray(reply, currentPcbViaMainStructureFrame(command.role).length - (command.phase === "via-main-structure-raw-frame" ? 1 : 0))); }
       else if (command.phase === "via-main-structure-properties") { if (command.role === "query") { this.#queryPromise = decodeMember(reply, 7, 6, "promise"); } else if (command.role === "promise") { this.#queryResult = decodePromise(reply); } else if (command.role === "final") { this.#finalFunction = decodeCurrentPcbViaMainStructureFinalFunction(reply); } else { decodeCurrentPcbViaMainStructureFinalMetadata(reply, this.#host.scriptId); this.#finalQualified = true; } }
-      else if (command.phase === "via-main-structure-join") { this.#retain(command.role, reply); }
+      else if (command.phase === "via-main-structure-join" || command.phase === "via-main-structure-rebase" || command.phase === "via-main-structure-bookkeeping") { this.#retain(command.role, reply); }
       else { z.strictObject({}).parse(reply); if (command.phase === "via-main-structure-remove") { const row = this.#points.get(command.role); need(row !== undefined, "ORIGINAL_POINT"); row.removed = true; this.#host.removePoint(row.id); } }
       return reply;
     } catch (error) { this.#failed = true; throw error; }
