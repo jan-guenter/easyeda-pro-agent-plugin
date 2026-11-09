@@ -196,7 +196,7 @@ jobs:
               if (-not $child.Start()) {throw 'Schematic compilation helper did not start.'}
               $stdout = $child.StandardOutput.ReadToEndAsync()
               $stderr = $child.StandardError.ReadToEndAsync()
-              if (-not $child.WaitForExit(120000)) {throw ('Schematic compilation/self-check timed out: ' + $purpose)}
+              if (-not $child.WaitForExit(30000)) {throw ('Schematic compilation/self-check timed out: ' + $purpose)}
               if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($stdout, $stderr), 5000)) {throw 'Schematic compilation output did not close.'}
               if ($child.ExitCode -ne 0 -or $stderr.Result.Length -ne 0) {throw ('Schematic compilation failed: ' + $stderr.Result)}
               if ($stdout.Result.Length -gt 4096 -or $stdout.Result -cnotmatch '\A[^\r\n]+\r?\n\z') {throw 'Schematic compilation output shape refused.'}

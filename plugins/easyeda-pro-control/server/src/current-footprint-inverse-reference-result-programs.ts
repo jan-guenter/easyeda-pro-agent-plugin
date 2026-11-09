@@ -13,6 +13,7 @@ export const CURRENT_FOOTPRINT_INVERSE_REFERENCE_RESULT_TOPICS = freezeDeep({
   "device-all": { outer: "/PrjDB/device/getAllArrDatas", inner: "/mgr/projectWorker/device/getAllArrData" },
 } as const);
 const common = `"use strict";${CURRENT_NATIVE_OWN_DATA_CHECK}const guard=f=>{if(typeof f!=="function"||f()!==true)bad();};const data=(o,k)=>{const d=get(o,k);if(!d||!has(d,"value")||!d.writable||!d.enumerable||!d.configurable)bad();return d.value;};const absent=(o,k)=>{if(get(o,k)!==undefined||get(objectProto,k)!==undefined)bad();};`;
+/** Replace only recognized single topic literals; reject duplicates or an inner-topic replacement forbidden for the selected query. */
 function topic(source: string, outer: string, inner: string | null): string {
   let result = source;
   for (const [old, replacement] of [["/PrjDB/footprint/getData", outer], ["/mgr/projectWorker/footprint/get", inner]] as const) {

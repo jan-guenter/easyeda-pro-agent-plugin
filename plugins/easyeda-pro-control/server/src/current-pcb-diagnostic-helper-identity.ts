@@ -1,4 +1,4 @@
 /** Generated complete fixed shared helper identity. Rebuild through
  * startup:protocol:update. Windows synthetic-launch pins repeat both values. */
-export const CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 = "92c167b077538b238451b13c41ca0a2fb57231efaaa4d101f591a4f4d3b80350";
-export const CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES = 1_589_068;
+export const CURRENT_PCB_DIAGNOSTIC_HELPER_SHA256 = "f52b8e12f4354d1179f097750aa177a288c3e15afbd4eb11f7af3c629fc4479c";
+export const CURRENT_PCB_DIAGNOSTIC_HELPER_BYTES = 1_589_072;

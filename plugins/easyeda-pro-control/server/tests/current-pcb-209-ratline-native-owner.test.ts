@@ -1,4 +1,4 @@
-import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
+import { CURRENT_PCB_DIAGNOSTIC_CSHARP_REVIEW_MAX_BYTES, currentPcbDiagnosticCSharpReviewSource, currentPcbDiagnosticCSharpRuntimeCompilerInput, expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -8,7 +8,7 @@ import { CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES } from "../src/current-p
 
 const sourcePath = new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url);
 void test("native ratline purpose embeds exact finite runtime and fixed cumulative resource limits", async () => {
-  const source = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(sourcePath, "utf8"));
+  const helper = await readFile(sourcePath, "utf8"), source = expandCurrentPcbDiagnosticCSharpReviewSource(helper);
   assert.ok(source.includes(currentPcb209RatlineNativeSource()));
   const values = { RequestLimit: profile.requestLimit, NormalRequestLimit: profile.normalRequestLimit, CleanupRequestLimit: profile.cleanupRequests,
     NormalByteLimit: profile.bytes.normal, TotalByteLimit: profile.bytes.total, NormalPollLimit: profile.polling.normalLimit, PollLimit: profile.polling.limit,
@@ -17,7 +17,11 @@ void test("native ratline purpose embeds exact finite runtime and fixed cumulati
   const end = source.indexOf("// END GENERATED WORKER STARTUP RATLINE209 PROTOCOL"), start = source.indexOf("public static class EasyedaRatline209Limits {");
   assert.ok(start > 0 && end > start);
   assert.deepEqual(Object.fromEntries([...source.slice(start, end).matchAll(/public const long (\w+)=(\d+)L;/gu)].map(match => [match[1], Number(match[2])])), values);
-  assert.ok(Buffer.byteLength(source) <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
+  // The packaged helper and compiler input keep the runtime bound. Restored
+  // Review text has its separate bound and never enters the native compiler.
+  assert.ok(Buffer.byteLength(helper) <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
+  assert.ok(Buffer.byteLength(currentPcbDiagnosticCSharpRuntimeCompilerInput(helper)) <= CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES);
+  assert.ok(Buffer.byteLength(currentPcbDiagnosticCSharpReviewSource(helper)) <= CURRENT_PCB_DIAGNOSTIC_CSHARP_REVIEW_MAX_BYTES);
   assert.ok(source.includes("workerStartupRatline209=true;emptyElapsed=Stopwatch.StartNew();"));
   assert.ok(source.includes("readonly bool workerStartupRatlineContinuation209;"));
   assert.ok(source.includes('workerStartupRatlineContinuation209=purpose=="worker-startup-ratline-continuation209";'));

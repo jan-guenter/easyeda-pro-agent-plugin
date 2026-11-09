@@ -9,6 +9,7 @@ import {CURRENT_FOOTPRINT_INVERSE_REFERENCE_RESULT_REQUESTS as REQUESTS,currentF
 
 const quote=(text:string):string=>`@"${text.replaceAll('"','""')}"`;
 const digest=(value:Uint8Array):string=>createHash("sha256").update(value).digest("hex");
+/** Emit deduplicated result tables with exact legacy-program reuse and reversible native-checker substitution before packing. */
 export function currentFootprintInverseReferenceResultNativeSource():string {
  const samples=cases();const checkerPrefix="const packet=this,";const marker="/*__INVERSE_REFERENCE_RESULT_I11__*/";
  if(!CURRENT_NATIVE_OWN_DATA_CHECK.startsWith(checkerPrefix)){throw new Error("INVERSE_REFERENCE_RESULT_CHECKER_PREFIX");}
