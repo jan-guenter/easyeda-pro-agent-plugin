@@ -231,6 +231,13 @@ after generator changes. Each runtime helper and compiler input remains within
 the existing 2 MiB bound. Native compilation and an empty Job prove neither an
 application launch nor a writer lifecycle.
 
+Compile each exact C#5 runtime input with warnings treated as errors, matching
+the PowerShell helper checks. Retain original compiler diagnostics; a timeout
+alone identifies no root cause. Initialize retained otherwise-unassigned fields
+to their CLR defaults and reprove every cloned declaration and source anchor
+before regenerating hashes. Managed budget checks remain separate from live
+writer evidence.
+
 Compatibility can be capability-specific. The supplied-coordinate math profile
 admits its reviewed API 0.3.50 closure without changing the older design tuple.
 The local environment/unit profile shares exact identity checks but fixes its

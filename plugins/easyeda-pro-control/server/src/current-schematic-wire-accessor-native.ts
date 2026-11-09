@@ -14,6 +14,8 @@ int schematicWireAccessorNormal,schematicWireAccessorCleanup;
 public void SendSchematicWireAccessor(int id,string phase,string method,System.Collections.IDictionary fields){if(!schematicWireEdit209||schematicDisplayAbort||schematicDisplayTuple==null||schematicDisplayTarget==null||schematicDisplayOperation==null||!schematicDisplayStages[3]||schematicDisplayStages[4]||schematicDisplayStages[5])throw Error("schematic-wire-accessor-original-holder");bool cleanup=phase=="wire-accessor-release";if(cleanup?schematicWireAccessorCleanup>=${String(REQUESTS.cleanup)}:schematicWireAccessorNormal>=${String(REQUESTS.normal)})throw Error("schematic-wire-accessor-budget");string encoded=EasyedaSchematicWireAccessorProtocol.Encode(id,schematicDisplaySession,schematicDisplayTuple,schematicDisplayTarget,schematicDisplayOperation,phase,method,fields);if(cleanup)schematicWireAccessorCleanup++;else schematicWireAccessorNormal++;SendMessage(id,encoded);}
 // END GENERATED SCHEMATIC WIRE ACCESSOR FIELDS`;
 }
+/** Emit the finite accessor codec with a 64 KiB decoded-table bound and both
+ * content hashes. Smoke rows verify bound-holder encoding and reject caller code. */
 export function currentSchematicWireAccessorNativeSource(): string {
   const cases = currentSchematicWireAccessorCases().map(command => currentSchematicWireAccessorTemplate(command));
   const rows = cases.map(row => [row.phase, row.method, Object.entries(row.fields).map(([name, kind]) => `${name}:${kind}`).join(","), row.template].join("\t"));

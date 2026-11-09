@@ -17,6 +17,7 @@ const prototype = z.strictObject({ name: z.literal("[[Prototype]]"), value: z.st
 const state = z.strictObject({ name: z.literal("[[PromiseState]]"), value: z.strictObject({ type: z.literal("string"), value: z.enum(["pending", "fulfilled"]) }) });
 const promiseResult = z.strictObject({ name: z.literal("[[PromiseResult]]"), value: z.strictObject({ type: z.literal("undefined") }) });
 const promisePacket = z.strictObject({ result: z.tuple([]), internalProperties: z.tuple([prototype, state, promiseResult]) });
+/** Reject a failed inverse delete forward io predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_DELETE_FORWARD_IO"); } }
 export class CurrentFootprintInverseDeleteForwardIo {
   readonly #b: CurrentFootprintInverseDeleteForwardIoBindings; #state = { requests: 0 };

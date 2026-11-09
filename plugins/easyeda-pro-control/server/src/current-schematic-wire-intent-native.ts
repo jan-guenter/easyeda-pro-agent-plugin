@@ -6,6 +6,8 @@ import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-f
 import { currentSchematicWireIntentCases, currentSchematicWireIntentTemplate } from "./current-schematic-wire-intent-protocol.ts";
 
 const quote = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
+/** Emit the finite intent codec with original holder/JSON binding, a 64 KiB
+ * table bound and raw/packed hashes. Smoke rows reject extra caller programs. */
 export function currentSchematicWireIntentNativeSource(): string {
   const cases = currentSchematicWireIntentCases().map(command => currentSchematicWireIntentTemplate(command));
   const rows = cases.map(row => [row.phase, row.method, Object.entries(row.fields).map(([name, kind]) => `${name}:${kind}`).join(","), row.template].join("\t"));

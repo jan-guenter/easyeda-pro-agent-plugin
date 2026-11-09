@@ -27,6 +27,7 @@ export interface CurrentFootprintInverseNativeDeleteRegistrationPrepared {
   readonly callbackScope: string; readonly handlerScope: string; readonly bodyScope: string; readonly lookupScope: string; readonly registrySelfScope: string; readonly methodScope: string;
   readonly calls: number; readonly properties: number; readonly applicationMethodInvoked: false; readonly liveLexicalsProved: false; readonly referenceResultsVerified: false; readonly collateralVerified: false; readonly runtimeCallIssued: false; readonly runtimeJobIssued: false; readonly dispatchAuthorized: false;
 }
+/** Reject a failed inverse native delete registration predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_NATIVE_DELETE_REGISTRATION"); } }
 
 /** Follow the actual registered UI callback to V, its original DEL body,

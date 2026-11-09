@@ -99,3 +99,99 @@ after its protected merge as requested.
 All application validation in this batch used disposable generated fixtures.
 Original application, helper and controller closure completed before release
 work. User designs were untouched; raw logs and process evidence remain private.
+
+## PR206 native budget correction
+
+The lexical and intent senders now have independent normal and cleanup counters:
+58 normal plus one cleanup for lexical, 81 normal plus one cleanup for intent.
+The aggregate profile and ownership checks are unchanged. Encoding still occurs
+before consumption, and a transport failure retains the consumed reservation.
+Only the four Wire counter rows and their exact source-region proof change;
+the original 155-row catalogue, accessor rows and shared reference hashes remain
+unchanged.
+
+A small committed managed C# fixture includes the actual sender methods and
+inert encoder/transport doubles. The previous source fails intent-first cleanup.
+The corrected source passes both cleanup orders, independent exhaustion and
+no-borrowing checks, encoding-failure and sending-failure consumption cases.
+Node verifies the fixture against its TypeScript producer; the Windows workflow
+executes it with C#5 warnings treated as errors. Its Linux managed proof passes;
+the new Windows step and final release suites remain pending.
+
+### 2026-11-09 completed PR206 review and non-native corrections
+
+PR206 subsequently completed review `5825428192` at 11:49:57 UTC on exact head
+`cfba60719dcd366dd84309a662305301acef50f1`. Its earlier quota refusals remain
+historical evidence. This review reported four actionable comments and two
+nits. The shared lexical/intent native-counter finding has a separate source
+correction and native field proof; it is outside the non-native leaf below.
+
+Commit `10cfa3c4ef482dde6faf70a3ebd7f6276a0c4837`, tree
+`f18a83321dcb1a6ab23b4f5d4ca72bde5b7844c3`, prevents controller retirement while
+either requested lexical or intent origin is unsettled, before any observer
+retirement starts. Two deferred-origin cases reproduced the original missing
+rejection. After correction they preserve the exact pending Promise, prove no
+premature observer retirement, and allow the original reverse-order retirement
+after settlement. The test runs the unchanged controller body with synthetic
+provenance and observer dependencies; it starts no native actor or application.
+
+The same leaf appends exact corrected Wire source identities to both reported
+history records, preserving earlier observations and the unbound initial
+nine-case limitation. It corrects the roster-capture comment and names the
+per-string limit `stringUnits`; the UTF-16 length behavior and total UTF-8 JSON
+byte limit remain unchanged.
+
+The service reported 64.00% documentation coverage for 50 functions in 47 files,
+with an 80% threshold. It skipped 17 unsupported files, three large files and
+60 files beyond its limit, and exposed no named function roster. Eight useful
+codec, source-binding and dispatch contracts were added in seven supported
+files; all seven emit byte-identical JavaScript. An independent approximation
+identifies those functions but does not exactly reproduce the service cohort.
+Reaching 40 documented functions would give 80% if the same cohort is used;
+the next external gate result is still required.
+
+The sealed non-native leaf passed nine focused cases with no skips, both
+TypeScript configurations, changed-file type-aware lint with zero warnings,
+and all three repository, plugin/MCP-contract and packaged-skill validators.
+The validators individually returned zero with parsed `ok: true`. Initial test
+style diagnostics and an initial missing local lint-binary path remain retained
+alongside their corrected commands. The before-change test command printed
+two failed cases; a trailing log-print command masked its aggregate shell
+status, so only its explicit test failure result is credited.
+
+Of the 136 effective PR206 paths, two bundles were filtered by the service and
+134 were selected. Seven selected paths had unavailable changes:
+
+- `scripts/schematic-edit-native.cs`.
+- `scripts/pcb-diagnostic-owner.ps1`.
+- `scripts/footprint-inverse-native.ps1`.
+- `scripts/schematic-saved-readback-native.ps1`.
+- `scripts/schematic-edit-native.ps1`.
+- `server/src/current-pcb-diagnostic-pipe.ts`.
+- `server/src/current-pcb-diagnostic-owner.ts`.
+
+These paths are relative to the plugin. The review therefore supplies 127
+available selected paths, not 134 or 136. Its unavailable files, filtered
+bundles and documentation skips are distinct scopes. Deterministic generated
+byte/compilation proofs and source peer checks retain their own attribution;
+none is described as CodeRabbit coverage.
+
+### 2026-11-09 retirement-start peer correction
+
+The root peer identified a second timing window in the controller correction:
+after its pending-task check, a new intent task could start while lexical
+retirement awaited. A third synthetic dependency-seam case reproduced that
+missing rejection on `10cfa3c4`, with an actual failing test exit. Retirement
+now seals new observation-task issuance synchronously before its first await.
+Existing accessor, lexical and intent task Promises retain their return path;
+the ongoing retirement can complete in the original order.
+
+Production correction `5e5c7768f33e2813dced2286757dea1002267933` and its shared
+test-fixture follow-up `d51633e858bcc003aab340e945ec76a2b52a4ace` yield final
+source tree `1e710333d26ece0133447dff196759df2ab82543`. On that sealed checkpoint,
+ten focused cases passed with no skips, both TypeScript configurations passed,
+changed-file strict lint reported zero warnings, and each of the three
+mandatory validators returned zero with parsed `ok: true`. The first race-test
+lint run rejected two fixture classes in one file; the shared fixture resolves
+that diagnostic without relaxing a rule. Earlier nine-case results remain
+attributed to their earlier source, and no connected lifecycle result is added.

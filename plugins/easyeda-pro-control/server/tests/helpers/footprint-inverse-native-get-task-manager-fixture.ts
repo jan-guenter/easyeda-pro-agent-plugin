@@ -1,0 +1,26 @@
+/** Compose the checked original prefix fixture with the actual three manager
+ * entries. Stand-in constructor tuples remain explicit inert comparison data. */
+import { footprintInverseNativeGetTaskManagerFixture } from "./footprint-inverse-native-get-task-dependencies-fixture.ts";
+import { FOOTPRINT_INVERSE_NATIVE_GET_TASK_CALLBACK_INSPECTOR as CALLBACK } from "./footprint-inverse-native-get-task-callback-fixture.ts";
+
+/** Refuse fixture drift instead of applying an approximate source rewrite. */
+function replace(source: string, before: string, after: string): string { if (source.split(before).length !== 2) { throw new Error("INERT_NATIVE_GET_TASK_MANAGER_FIXTURE_DRIFT"); } return source.replace(before, after); }
+let source = replace(CALLBACK, "let caller=null,controller=null,helper=null", "let caller=null,controller=null,managerController=null,helper=null");
+source = replace(source, "if(controller){try{controller.observe(event)}catch{}}else if(caller)", "if(managerController){try{managerController.observe(event)}catch{}}else if(controller){try{controller.observe(event)}catch{}}else if(caller)");
+source = replace(source, "(controller??caller).observe(event)", "(managerController??controller??caller).observe(event)");
+source = replace(source, "  helper={scriptId:null};let effectsWhileHeld;", String.raw`
+  const {CurrentFootprintInverseNativeGetTaskManagerController:Manager}=await import(workerData.managerController);
+  helper={scriptId:null};const asyncPrototypeRaw=await s.post('Runtime.evaluate',{expression:'Object.getPrototypeOf(async function(){})',returnByValue:false});helper=null;
+  const managerNative={...nativeData,asyncPrototype:asyncPrototypeRaw.result.objectId},managerOrder=[];let managerTransferred=false,managerResumes=0,managerToken=null,managerRefused=false;
+  const managerCurrent=()=>{if(!policy||settled)throw Error('original manager custody changed');if(!managerTransferred)controller.requireOriginalHold(token)};
+  managerController=new Manager({receipt,callback:original,sender,dependencies:graph,registration,native:managerNative,scripts:{...transition.scripts,manager:managerScriptId},sessionId:'native-task-callback-ui',contextId:1,current:managerCurrent,assertOriginalEvent:e=>{if(!originals.has(e))throw Error('copied manager event')},assertOriginalExit:()=>{if(!exited)throw Error('manager original exit missing')},poll:()=>new Promise(resolve=>setImmediate(resolve)),send:async c=>{managerOrder.push(c.phase.slice('inverse-native-get-task-manager-'.length)+(c.role?':'+c.role:''));return ordinary(c)},control:async()=>{managerCurrent()},resume:async(c,first,before)=>{if(workerData.mode==='managerLate'&&first){await new Promise(resolve=>setImmediate(resolve));policy=false;managerCurrent()}managerCurrent();if(first){controller.consumeOriginalHold(original);managerTransferred=true}before();managerCurrent();managerResumes++;managerOrder.push('resume');return ordinary(c)}});
+  const managerFirst=managerController.start();if(managerFirst!==managerController.start())throw Error('manager promise replaced');try{managerToken=await managerFirst}catch(error){if(workerData.mode!=='managerLate')throw error;managerRefused=true}
+  let managerOriginal=null,callbackSpent=false,managerForged=false;if(managerToken){managerOriginal=managerController.requireOriginalHold(managerToken);try{controller.requireOriginalHold(token)}catch{callbackSpent=true}try{managerController.requireOriginalHold({...managerToken})}catch{managerForged=true}if(!callbackSpent||!managerForged)throw Error('manager copied/spent hold admitted')}
+  helper={scriptId:null};let effectsWhileHeld;`);
+source = replace(source, "await submitted;exited=true;await controller.settleAfterOriginalExit();", "await submitted;exited=true;await managerController.settleAfterOriginalExit();await controller.settleAfterOriginalExit();");
+source = replace(source, "parentPort.postMessage({held:!!token,refused,oldSpent,forged,resumes,effectsWhileHeld,exitRefused,authority:original?[original.rpcPrefixExecuted,original.callbackBodyAuthorized,original.runtimeJobIssued]:null,order});", "parentPort.postMessage({held:!!managerToken,managerRefused,callbackSpent,managerForged,managerResumes,effectsWhileHeld,exitRefused,authority:managerOriginal?[managerOriginal.wrapperAndBodyExecuted,managerOriginal.getDataBodyAuthorized,managerOriginal.runtimeJobIssued]:null,order:managerOrder});");
+export const FOOTPRINT_INVERSE_NATIVE_GET_TASK_MANAGER_INSPECTOR = source;
+
+/** Supply the real fixed GET topic in the inert surrounding module without
+ * changing any retained original function coordinate. */
+export function footprintInverseNativeGetTaskManagerEntryFixture(input: string): string { const original = footprintInverseNativeGetTaskManagerFixture(input); const at = original.indexOf(";};") + 3; if (at < 3) { throw new Error("INERT_NATIVE_GET_TASK_MANAGER_SETUP"); } const setup = "J.footprint.get='/mgr/projectWorker/footprint/get';"; const padding = original.slice(at, at + setup.length); if (padding.trim() !== "" || padding.includes("\n") || padding.includes("\r")) { throw new Error("INERT_NATIVE_GET_TASK_MANAGER_PADDING"); } return original.slice(0, at) + setup + original.slice(at + setup.length); }

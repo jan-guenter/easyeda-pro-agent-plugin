@@ -10,6 +10,7 @@ import { currentNativeOwnDataCallable as callable, qualifyCurrentNativeOwnDataFu
 
 interface Bindings { readonly uniqueContextId: string; readonly current: () => void; readonly request: (command: Command) => Promise<unknown> }
 export interface CurrentFootprintInverseNativeDeleteBootstrapReceipt { readonly tuple: string; readonly root: string; readonly packets: readonly unknown[]; readonly senderInvoked: false; readonly runtimeJobIssued: false }
+/** Reject a failed inverse native delete bootstrap sequence predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_NATIVE_DELETE_BOOTSTRAP_SEQUENCE"); } }
 
 /** Execute the exact nineteen readonly primitive requests. Native function

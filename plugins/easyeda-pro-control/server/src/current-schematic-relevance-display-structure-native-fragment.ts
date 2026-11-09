@@ -10,6 +10,8 @@ function one(source: string, before: string, after: string): string {
   if (source.includes(after)) { if (source.split(after).length !== 2) { throw new Error("RELEVANCE_STRUCTURE_NATIVE_DUPLICATE"); } return source; }
   if (source.split(before).length !== 2) { throw new Error(`RELEVANCE_STRUCTURE_NATIVE_ANCHOR:${before.slice(0, 60)}`); } return source.replace(before, after);
 }
+/** Derive the Relevance sender from fixed Via syntax while replacing owner
+ * state and enrollment gates. Any residual Via state or missing boundary refuses. */
 export function currentSchematicRelevanceDisplayStructureNativeSource(): string {
   const source = currentPcbViaMainStructureNativeSource(); const owner = "public sealed partial class EasyedaDiagnosticOwner {"; const stop = "public static void VerifyPcbViaMainStructureSmoke()";
   if (source.split(owner).length !== 2 || source.split(stop).length !== 2) { throw new Error("RELEVANCE_STRUCTURE_FIXED_SOURCE_BOUNDARY"); }

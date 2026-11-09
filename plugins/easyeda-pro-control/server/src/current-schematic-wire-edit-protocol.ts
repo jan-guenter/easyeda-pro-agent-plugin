@@ -8,6 +8,8 @@ import { currentSchematicWireAccessorWire } from "./current-schematic-wire-acces
 import { currentSchematicWireIntentWire } from "./current-schematic-wire-intent-protocol.ts";
 import { currentSchematicWireLexicalWire } from "./current-schematic-wire-lexical-protocol.ts";
 
+/** Decode one canonical NUL-terminated Wire request within its original ID cap.
+ * Reject foreign mutation markers before selecting a fixed metadata or stage codec. */
 export function currentSchematicWireEditNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
   if (chunk.length > 65_536 || chunk.at(-1) !== 0) { throw new Error("SCHEMATIC_WIRE_EDIT_WIRE"); }
   const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));

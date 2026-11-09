@@ -26,6 +26,7 @@ export class CurrentSchematicWireProofController {
   readonly #owner: CurrentSchematicWireEditOwner; readonly #plan: CurrentSchematicWireEditPlan;
   readonly #original: ReturnType<typeof requireOriginalCurrentSchematicWireEditPlan>;
   #effectAttempted = false; #effect: GeneratedSchematicWireNativeEffect | null = null;
+  #retirementStarted = false;
   #saveProjection: ReturnType<typeof compareGeneratedSchematicWirePendingSaveDelta> | null = null;
   #accessorTask: Promise<CurrentSchematicWireAccessorObservation> | null = null;
   #accessorOrigin: CurrentSchematicWireAccessorOrigin | null = null; #accessor: CurrentSchematicWireAccessorObserver | null = null;
@@ -50,6 +51,7 @@ export class CurrentSchematicWireProofController {
    * failure. This cannot generate a Modify entry or issue callback authority. */
   public observeOriginalAccessors(): Promise<CurrentSchematicWireAccessorObservation> {
     this.#current(); if (this.#accessorTask !== null) { return this.#accessorTask; }
+    need(!this.#retirementStarted);
     const pending = (async (): Promise<CurrentSchematicWireAccessorObservation> => {
       try {
         const origin = await this.#owner.createSchematicWireAccessorOrigin(this.#original.argumentsValue); this.#current(); this.#accessorOrigin = origin;
@@ -67,6 +69,7 @@ export class CurrentSchematicWireProofController {
    * scope selectors. Failure remains attached to this same original Promise. */
   public observeOriginalLexicalOperands(): Promise<CurrentSchematicWireLexicalObservation> {
     this.#current(); if (this.#lexicalTask !== null) { return this.#lexicalTask; }
+    need(!this.#retirementStarted);
     const pending = (async (): Promise<CurrentSchematicWireLexicalObservation> => {
       try {
         const packet = await this.observeOriginalAccessors(); this.#current(); need(this.#accessorOrigin !== null && packet === this.#accessorObservation);
@@ -83,6 +86,7 @@ export class CurrentSchematicWireProofController {
   }
   public observeOriginalIntent(): Promise<CurrentSchematicWireIntentObservation> {
     this.#current(); if (this.#intentTask !== null) { return this.#intentTask; }
+    need(!this.#retirementStarted);
     const pending = (async (): Promise<CurrentSchematicWireIntentObservation> => {
       try {
         const packet = await this.observeOriginalLexicalOperands(); this.#current(); need(this.#lexicalOrigin !== null && packet === this.#lexicalObservation);
@@ -101,6 +105,8 @@ export class CurrentSchematicWireProofController {
    * metadata holder cannot transfer to another native generation. */
   public async retireAccessorsAfterOriginalExit(): Promise<void> {
     this.#current(); need(this.#accessor !== null && this.#accessorSettled && !this.#accessorRetired);
+    need((this.#intentTask === null || this.#intentSettled) && (this.#lexicalTask === null || this.#lexicalSettled));
+    this.#retirementStarted = true;
     if (this.#intent !== null && !this.#intentRetired) { need(this.#intentSettled); await this.#intent.retireAfterOriginalExit(); this.#current(); this.#intentRetired = true; }
     if (this.#lexical !== null && !this.#lexicalRetired) { need(this.#lexicalSettled); await this.#lexical.retireAfterOriginalExit(); this.#current(); this.#lexicalRetired = true; }
     await this.#accessor.retireAfterOriginalExit(); this.#current(); this.#accessorRetired = true;

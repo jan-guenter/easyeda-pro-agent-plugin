@@ -18,6 +18,7 @@ const schema = z.discriminatedUnion("phase", [z.strictObject({ phase: z.literal(
 export type CurrentFootprintInverseNativeDeleteSenderCommand = Readonly<z.infer<typeof schema>>;
 /** Readonly Core qualification stops before invocation, frame arms or resume. */
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SENDER_READ_REQUESTS = Object.freeze({ sources: 2, calls: 10, properties: 39, helpers: 10, cdpRequests: 61, controls: 63 } as const);
+/** Reject a failed inverse native delete sender command predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_NATIVE_DELETE_SENDER_COMMAND"); } }
 /** Require the fixed program, flags and complete reference/value arity for
  * each phase. Matching packets still acquire no original native intent. */

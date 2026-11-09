@@ -27,7 +27,9 @@ export interface CurrentFootprintInverseGetChannelGraph{
  readonly taskPrototype:string;readonly taskMethods:string;readonly nativePrototype:string;readonly eventTargetPrototype:string;readonly nativeMembers:string;readonly channel:string;
  readonly rpc:string;readonly bus:string;readonly broadcastChannel:string;readonly callback:string;readonly uuid:string;readonly rpcTicket:number;readonly pushCnt:number;
 }
+/** Reject a failed inverse get channel graph predicate with its fixed refusal code. */
 function need(condition:boolean):asserts condition{if(!condition){throw new Error("INVERSE_GET_CHANNEL_GRAPH");}}
+/** Qualify the original channel's modules, handles and native dependencies through bounded fixed reads. */
 export async function collectCurrentFootprintInverseGetChannel(b:Bindings):Promise<Readonly<CurrentFootprintInverseGetChannelGraph>>{
  const props=async(id:string):Promise<unknown>=>{b.current();const raw=await b.properties(id);b.current();return raw;};
  const tuple=async(role:keyof typeof CURRENT_FOOTPRINT_INVERSE_GET_CHANNEL_PROGRAMS,refs:readonly string[],size:number,target=false):Promise<Tuple>=>{b.current();const id=result(await b.call(role,refs,target),size);b.current();const values=array(await props(id),size);const packets:unknown[]=[];for(const value of values){if(value.type==="function"||value.type==="object"&&value.subtype!=="null"){const raw=await props(object(value));properties(raw);packets.push(raw);}else{packets.push(null);}}return{id,values,packets};};

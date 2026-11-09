@@ -144,6 +144,8 @@ const intentDispatch = String.raw`        'schematic-wire-edit-intent' {
           $owner.SendSchematicWireIntent([int]$request.requestId,$request.phase,$request.method,$fields);$result=@{written=$true}
         }
 `;
+/** Install Wire's exclusive purpose, fixed dispatch and existing finite budget
+ * into the shared helper. Ambiguous anchors or duplicate purpose guards refuse. */
 export function applyCurrentSchematicWireEditNativeFragment(input: string): string {
   let source = normalizeCurrentSchematicWireEditNativeFamily(input);
   const extra = native(source);

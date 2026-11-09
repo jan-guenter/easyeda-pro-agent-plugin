@@ -24,6 +24,7 @@ export type CurrentFootprintInverseDeleteUiRunRole = keyof typeof EXPRESSIONS;
 /** Fixed collectors reserve these bounds separately from correlated helper
  * source receipts. This module is not mounted on a native pipe. */
 export const CURRENT_FOOTPRINT_INVERSE_DELETE_UI_RUN_REQUESTS = freezeDeep({ preparation: { calls: 3, propertiesMaximum: 18, normalMaximum: 21, helpers: 3 }, ja: { calls: 1, frames: 1, propertiesMaximum: 8, normalMaximum: 10, helpers: 2 }, p4: { calls: 1, frames: 1, propertiesMaximum: 2, normalMaximum: 4, helpers: 2 }, yy: { calls: 1, frames: 1, propertiesMaximum: 3, normalMaximum: 5, helpers: 2 } } as const);
+/** Reject a failed inverse delete ui run command predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_DELETE_UI_RUN_COMMAND"); } }
 /** Reject any changed expression, program, argument count or side-effect flag
  * before handing a request to the original finite host. */

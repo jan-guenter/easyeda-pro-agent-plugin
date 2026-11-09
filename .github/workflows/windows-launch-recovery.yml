@@ -135,6 +135,20 @@ jobs:
           }
           Write-Output 'Fixture helpers compiled without directory/watch allocation, application launch or SQL.'
 
+      - name: Check independent Wire request budgets using managed doubles
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          $source = Get-Content -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\schematic-wire-budget-regression.cs') -Raw
+          $parameters = New-Object System.CodeDom.Compiler.CompilerParameters
+          $parameters.GenerateInMemory = $true
+          $parameters.WarningLevel = 4
+          $parameters.TreatWarningsAsErrors = $true
+          $parameters.CompilerOptions = '/langversion:5'
+          Add-Type -TypeDefinition $source -CompilerParameters $parameters
+          [EasyedaWireNativeBudgetRegression]::Main()
+
       - name: Compile each fixed owner purpose and check empty Job and pipe inheritance
         shell: powershell
         run: |

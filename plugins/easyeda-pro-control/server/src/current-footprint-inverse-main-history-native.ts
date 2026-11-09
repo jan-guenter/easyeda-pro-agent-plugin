@@ -9,6 +9,7 @@ import { CURRENT_FOOTPRINT_INVERSE_MAIN_HISTORY_REQUESTS as LIMITS } from "./cur
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE as PROFILE } from "./current-footprint-inverse-native-profile.ts";
 
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
+/** Compose the fixed native history implementation from its pinned programs and protocol templates. */
 export function currentFootprintInverseMainHistoryNativeSource(): string {
   const cases = currentFootprintInverseMainHistoryTemplates(), rows = cases.map(row => [row.phase, row.method, row.fields.join(","), row.template].join("\t"));
   if (new Set(cases.map(row => row.phase)).size !== cases.length) { throw new Error("FOOTPRINT_INVERSE_HISTORY_NATIVE_DUPLICATE"); }

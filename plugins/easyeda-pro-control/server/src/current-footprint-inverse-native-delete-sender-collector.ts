@@ -14,6 +14,7 @@ import { requireCurrentFootprintInversePublicServiceTrue as truth } from "./curr
 interface Tuple { readonly id: string; readonly values: readonly Remote[]; readonly packets: readonly unknown[] }
 export interface CurrentFootprintInverseNativeDeleteSenderBindings { readonly receipt: string; readonly uiScriptId: string; readonly current: () => void; readonly request: (command: Command) => Promise<unknown>; readonly target: Readonly<{ projectUuid: string; branchUuid: string; documentUuid: string }> }
 export interface CurrentFootprintInverseNativeDeleteSenderPrepared { readonly roots: string; readonly context: string; readonly bus: string; readonly methods: string; readonly queue: string; readonly task: string; readonly members: string; readonly taskMethods: string; readonly prepared: string; readonly originalRpc: string; readonly callback: string; readonly replyTopic: string; readonly publicCallConsumed: false; readonly applicationMethodInvoked: false; readonly runtimeJobIssued: false; readonly dispatchAuthorized: false }
+/** Reject a failed inverse native delete sender preparation predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_NATIVE_DELETE_SENDER_PREPARATION"); } }
 const BUS_ROLES = ["uiBusUniqueRpcTopic", "uiBusPublish", "uiBusSubscribe", "uiBusPush", "uiBusPull", "uiBusPullA", "uiBusRpcService", "uiBusRpcCall", "uiBusRpcReply"] as const;
 

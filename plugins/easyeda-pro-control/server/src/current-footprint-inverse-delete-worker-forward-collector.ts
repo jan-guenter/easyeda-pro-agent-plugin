@@ -13,6 +13,7 @@ import type { CurrentFootprintInverseDeleteForwardIo as Io } from "./current-foo
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), location = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
 const frame = z.looseObject({ callFrameId: handle, functionName: z.string(), functionLocation: location, location, returnValue: z.never().optional() });
 const packet = z.looseObject({ params: z.looseObject({ callFrames: z.array(frame).length(8) }) });
+/** Reject a failed inverse delete worker forward observation predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_DELETE_WORKER_FORWARD_OBSERVATION"); } }
 /** Core supplies its original event and the prospective reply only from its
  * accepted original IGIVE sender, retaining both independent source receipts. */

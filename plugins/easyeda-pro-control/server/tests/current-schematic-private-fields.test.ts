@@ -28,14 +28,14 @@ void test("complete schematic emission changes only the fixed private FIELD toke
   const restored = original(emitted);
   context.diagnostic(JSON.stringify({ compilerBytes: Buffer.byteLength(compiler), compilerSha256: hash(compiler), prehashBytes: Buffer.byteLength(emitted), prehashSha256: hash(emitted), sourceSaving: Buffer.byteLength(restored) - Buffer.byteLength(emitted) }));
   // The full payload pins the composed registration/SQL source and both separate Wire regions.
-  assert.equal(Buffer.byteLength(restored), 2_252_534); assert.equal(hash(restored), "f2f6c3337781aaa21ec604243ea6464b0272c1535dc7ae64bc58c1b8318ba346");
-  assert.equal(Buffer.byteLength(restored) - Buffer.byteLength(emitted), 36_144);
-  assert.equal(2_228_224 - Buffer.byteLength(emitted), 11_834); assert.equal(2_097_152 - Buffer.byteLength(compiler), 26_178);
+  assert.equal(Buffer.byteLength(restored), 2_252_592); assert.equal(hash(restored), "eceb933e615a5daa8d01ea7c004331a71d52f1b2c67bc9c232544f8b5c361379");
+  assert.equal(Buffer.byteLength(restored) - Buffer.byteLength(emitted), 36_179);
+  assert.equal(2_228_224 - Buffer.byteLength(emitted), 11_811); assert.equal(2_097_152 - Buffer.byteLength(compiler), 26_155);
   assert.equal(compact(restored), emitted); assert.equal(FIELDS.length, 155); assert.equal(FIELDS.reduce((sum, row) => sum + row.uses, 0), 1718);
   assert.equal(WIRE_FIELDS.length, 2); assert.equal(WIRE_FIELDS.reduce((sum, row) => sum + row.uses, 0), 6);
-  assert.equal(LEXICAL_FIELDS.length, 2); assert.equal(LEXICAL_FIELDS.reduce((sum, row) => sum + row.uses, 0), 10);
+  assert.equal(LEXICAL_FIELDS.length, 4); assert.equal(LEXICAL_FIELDS.reduce((sum, row) => sum + row.uses, 0), 12);
   assert.equal(FIELDS.reduce((sum, row) => sum + (row.field.length - row.emitted.length) * row.uses, 0), 35_414);
-  assert.equal(Buffer.byteLength(restored) - Buffer.byteLength(emitted) - 35_414, 261 + 469);
+  assert.equal(Buffer.byteLength(restored) - Buffer.byteLength(emitted) - 35_414, 261 + 504);
   assert.equal(hash(JSON.stringify(FIELDS)), "5a06e467ef7cf91f7197021c6df811a4e1b723a275c1721a42785d39bd6ae45d");
   const after = tokenize(emitted), before = tokenize(restored); const names = new Map<string, string>([...FIELDS, ...WIRE_FIELDS, ...LEXICAL_FIELDS].map(row => [row.field, row.emitted])); assert.equal(before.length, after.length);
   for (const [index, token] of before.entries()) { const changed = after[index]; assert.ok(changed !== undefined); assert.equal(changed.kind, token.kind); assert.equal(changed.text, token.kind === "identifier" ? names.get(token.text) ?? token.text : token.text); }
@@ -74,7 +74,8 @@ void test("complete schematic emission changes only the fixed private FIELD toke
   for (const changed of [nestedLexical, namespaceLexical, restored.replace(lexicalRegion, "") + lexicalRegion,
     restored.replace(lexicalRegion, lexicalRegion.replace("schematicDisplayAbort", "false")),
     restored.replace(lexicalRegion, lexicalRegion.replace("int schematicWireLexicalNormal", "int unknownCounter;int schematicWireLexicalNormal")),
-    `${restored}\npublic sealed partial class EasyedaDiagnosticOwner{void ExtraLexical(){schematicWireLexicalNormal++;}}\n`]) {
+    `${restored}\npublic sealed partial class EasyedaDiagnosticOwner{void ExtraLexical(){schematicWireLexicalNormal++;}}\n`,
+    `${restored}\npublic sealed partial class EasyedaDiagnosticOwner{void ExtraIntent(){schematicWireIntentNormal++;}}\n`]) {
     assert.notEqual(changed, restored); assert.throws(() => compact(changed), /SCHEMATIC_PRIVATE_FIELD/u);
   }
 });

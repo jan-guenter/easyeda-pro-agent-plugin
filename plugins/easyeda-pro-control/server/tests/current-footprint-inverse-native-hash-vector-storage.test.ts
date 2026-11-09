@@ -1,0 +1,13 @@
+/** Pure inverse-specific reversible storage. No C# compilation or native
+ * owner is created; shared schematic V1 source and decoder remain unchanged. */
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { test } from "node:test";
+import { currentPcbDiagnosticNativeHashVector as vector } from "../src/current-pcb-diagnostic-fixed-table-native.ts";
+import { expandCurrentFootprintInverseNativeHashVectors as expand, hasCurrentFootprintInverseNativeHashVectorStorage as has, projectCurrentFootprintInverseNativeHashVectors as project } from "../src/current-footprint-inverse-native-hash-vector-storage.ts";
+import { expandCurrentSchematicNativeHashVectors as sharedExpand, projectCurrentSchematicNativeHashVectors as sharedProject } from "../src/current-schematic-native-hash-vector-storage.ts";
+
+const hashes = Object.freeze(Array.from({ length: 256 }, (_value, index) => createHash("sha256").update(String(index)).digest("hex")));
+const source = `internal static class Owner{static string[][] Value(){return new string[][]{${Array.from({ length: 9 }, (_value, index) => vector(hashes.slice(index, 256))).join(",")}};}const string Literal="EasyedaSchematicHashVectorsV1 EasyedaInverseHashVectorsV1";}\n`;
+void test("inverse hash banks restore exact original bytes and preserve literal helper spellings", () => { const packed = project(source); assert.equal(has(packed), true); assert.ok(packed.length < source.length); assert.equal(expand(packed), source); assert.equal(project(packed), packed); assert.equal(packed.includes('Literal="EasyedaSchematicHashVectorsV1 EasyedaInverseHashVectorsV1"'), true); assert.equal(sharedExpand(sharedProject(source)), source); assert.equal(sharedProject(source).includes("FIXED INVERSE HASH VECTORS V1"), false); assert.equal(sharedExpand(packed), packed); assert.throws(() => expand(sharedProject(source))); });
+void test("inverse hash banks refuse malformed metadata, bank/index/order and helper collisions", () => { const packed = project(source); for (const changed of [packed.replace("fixed-inverse-hash-vector-source ", "fixed-inverse-hash-vector-source 0"), packed.replace("Get(1)", "Get(0)"), packed.replace("index>=", "index>=0+"), `${packed}\n`, packed.replace("// END FIXED INVERSE HASH VECTORS V1", "// END FIXED INVERSE HASH VECTORS V2")]) { assert.notEqual(changed, packed); assert.throws(() => expand(changed)); } assert.throws(() => project(`${source}internal class EasyedaInverseHashVectorsV1{}`)); assert.throws(() => project(`${source}internal class @EasyedaSchematicHashVectorsV1{}`)); assert.throws(() => project(source.replace('EasyedaDiagnosticFixedTable.Hashes(@"', 'root.EasyedaDiagnosticFixedTable.Hashes(@"'))); });

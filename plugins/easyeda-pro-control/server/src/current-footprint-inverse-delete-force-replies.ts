@@ -13,6 +13,7 @@ interface Site { readonly file: "ui" | "manager"; readonly name: string; readonl
 const rpc: Site = { file: "ui", name: "rpcCall", line: 1033, fn: 30_110, pc: 30_128 }; const caller: Site = { file: "ui", name: "c", line: 1935, fn: 400, pc: 1845 }; const yw: Site = { file: "ui", name: "yw", line: 1933, fn: 28_667, pc: 4472, pcLine: 1935 };
 const executor: Site = { file: "ui", name: "", line: 1033, fn: 30_140, pc: 30_178 }; const task: Site = { file: "ui", name: "execute", line: 1033, fn: 28_690, pc: 28_722 }; const publish: Site = { file: "ui", name: "publish", line: 1033, fn: 29_000, pc: 29_076 };
 const callback: Site = { file: "ui", name: "", line: 1033, fn: 29_836, pc: 29_881 }, wrapper: Site = { file: "manager", name: "", line: 108, fn: 25_065, pc: 25_079 };
+/** Reject a failed inverse delete force pause predicate with its fixed refusal code. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_DELETE_FORCE_PAUSE"); } }
 /** Fixed full synchronous stacks, including the original caller's exact force
  * or history call site. A foreign event fails before any frame request. */
