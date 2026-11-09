@@ -176,3 +176,22 @@ for (const field of ["pid", "ino", "dev", "mode", "directory", "temporaryDirecto
     await assertAmbientUnchanged(options);
   });
 }
+
+void test("spatial lifecycle fixture refuses an omitted preload before any default journal creation", async context => {
+  const options = await fixture(context); const fakeHome = await mkdtemp(join(options.root, "synthetic-home-"));
+  const source = fileURLToPath(new URL("current-pcb-spatial-lifecycle.test.ts", import.meta.url));
+  // This child deliberately has no EasyEDA overrides/preload and only its NEW fake HOME.
+  // oxlint-disable-next-line node/no-sync -- Fixed bounded negative child; no native owner can be constructed before the asserted guard.
+  const result = spawnSync(process.execPath, ["--test", "--test-name-pattern=the real journal retains failed inspector data privately", source], {
+    env: { HOME: fakeHome, TMPDIR: options.temporaryDirectory, NODE_NO_WARNINGS: "1" }, encoding: "utf8", timeout: 10_000, maxBuffer: 65_536,
+  });
+  assert.equal(result.error, undefined); assert.equal(result.signal, null); assert.equal(result.status, 1);
+  const output = result.stdout + result.stderr; assert.match(output, /directory/u); assert.match(output, /root !== undefined/u);
+  await assert.rejects(lstat(join(fakeHome, ".easyeda-pro-control")), { code: "ENOENT" });
+  assert.deepEqual(await readdir(fakeHome), []); await assertAmbientUnchanged(options);
+});
+
+void test("ordinary tracked-cleanup fixture refuses omitted preload before any default journal creation",async context=>{const options=await fixture(context);const fakeHome=await mkdtemp(join(options.root,"synthetic-home-"));const source=fileURLToPath(new URL("ordinary-tracked-open-cleanup.test.ts",import.meta.url));
+  // This child has only a NEW fake HOME, never the operator's default control namespace.
+  // oxlint-disable-next-line node/no-sync -- Deliberately omit preload in one bounded child and observe the early fixture guard.
+  const result=spawnSync(process.execPath,["--test","--test-name-pattern=original tracked cleanup closes once",source],{env:{HOME:fakeHome,TMPDIR:options.temporaryDirectory,NODE_NO_WARNINGS:"1"},encoding:"utf8",timeout:10_000,maxBuffer:65_536});assert.equal(result.error,undefined);assert.equal(result.signal,null);assert.equal(result.status,1);assert.match(result.stdout+result.stderr,/root !== undefined/u);await assert.rejects(lstat(join(fakeHome,".easyeda-pro-control")),{code:"ENOENT"});assert.deepEqual(await readdir(fakeHome),[]);await assertAmbientUnchanged(options);});

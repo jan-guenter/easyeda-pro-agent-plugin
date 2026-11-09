@@ -1,5 +1,6 @@
 /* oxlint-disable max-classes-per-file -- Actual index callbacks use distinct inert coordinator, runtime and diagnostic collaborators. */
 import assert from "node:assert/strict";
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
@@ -17,12 +18,13 @@ const release = { action: "release-closed", operationId: launch.operationId, exp
 
 /** Select the actual startup dispatcher and its original retained state by
  * AST shape, with separate finite bounds for the dispatcher and retained state. */
+/** Extract the actual startup declarations used by registration tests, refusing a missing or ambiguous source boundary. */
 function startupDeclarations(source: string): string {
   const blocks = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.flatMap(statement =>
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
       node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
-  const selected = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runStartup"].map(name => {
+  const selected = ["viaPreopeningHistoricalOriginal", "startupOriginal", "startupCalls", "combinedHistoricalOriginal", "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runStartup"].map(name => {
     const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
       node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
     assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
@@ -52,6 +54,7 @@ function startupDeclarations(source: string): string {
 
 /** Join the real ordinary allocation guard, launch registration and startup
  * dispatcher with inert peers whose helper release can remain pending or fail. */
+/** Register the actual launch and release handlers in an inert VM with explicit dependency controls and retained cleanup. */
 async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unknown>; scope: vm.Context; finish: () => void;
   state: { releaseCalls: number; released: boolean; failRelease: boolean; runtimeCount: number; diagnosticAllocations: number } }> {
   const barrier = Promise.withResolvers<null>();
@@ -131,7 +134,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     // Stable inert authority owner.
   },
     assertBridgeDispatchAllowed: (): Promise<void> => Promise.resolve(), assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
-  const scope = vm.createContext({ z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
     CurrentPcbDiagnosticLifecycle: Diagnostic, CurrentPcbWorkerStartupLifecycle: Diagnostic, CurrentPcb209WorkerStartupLifecycle: Diagnostic,
     CurrentPcb209EmptyStartupLifecycle: Diagnostic, CurrentPcb209RatlineStartupLifecycle: Diagnostic,
     CurrentPcb209RatlineContinuationLifecycle: Diagnostic, CurrentFootprintCopyPreparationLifecycle: Diagnostic,
@@ -141,7 +144,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     resolve: (): string => "/synthetic/plugin", controlDataDirectory: (): string => "/synthetic/control", retainedControlRoot: { path: "/synthetic/control" },
     CURRENT_PCB_DIAGNOSTIC_PROFILE: { powershell: { sha256: "a".repeat(64), bytes: 1 } },
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false, hasFixtureImportCustody: (): boolean => false, fixtureImportCoordinator: undefined,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     serializedGuarded: (handler: Invoke): Invoke => handler,
@@ -156,8 +159,10 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
   const registrationEnd = source.indexOf('registerFacadeTool(\n  "easyeda_control_project_open",', registrationStart);
   for (const [begin, end] of [[helperStart, helperEnd], [allocationStart, allocationEnd], [registrationStart, registrationEnd]] as const) {
     assert.ok(begin > 0 && end > begin && end - begin < 24_000);
+    installIndexFixtureDependencies(scope,source);
     vm.runInContext(source.slice(begin, end).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   }
+  installIndexFixtureDependencies(scope,source);
   vm.runInContext(startupDeclarations(source).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   return { invoke, scope, state, finish: (): void => { barrier.resolve(null); }, startup: (): Promise<unknown> =>
@@ -195,6 +200,21 @@ void test("actual release callback allows a preflight-refused never-allocated di
   assert.equal(value.scope["windowsRuntime"], undefined); assert.equal(value.scope["ordinaryLaunchRuntime"], undefined);
   await value.startup(); assert.equal(value.state.diagnosticAllocations, 1);
   assert.equal(value.scope["currentPcbWorkerStartupLifecycle"], diagnostic);
+});
+
+void test("fixture import custody blocks ordinary allocation and original runtime release before helper I/O", async () => {
+  const value = await fixture();
+  value.scope["hasFixtureImportCustody"] = (): boolean => true;
+  await assert.rejects(value.invoke({ request: launch }), /fixture import owner reserves/u);
+  assert.equal(value.state.runtimeCount, 0);
+  value.scope["hasFixtureImportCustody"] = (): boolean => false;
+  await value.invoke({ request: launch });
+  value.scope["hasFixtureImportCustody"] = (): boolean => true;
+  await assert.rejects(value.invoke({ request: release }), /reserved by another owner/u);
+  assert.equal(value.state.releaseCalls, 0);
+  value.scope["hasFixtureImportCustody"] = (): boolean => false;
+  const pending = value.invoke({ request: release }); value.finish(); await pending;
+  assert.equal(value.state.releaseCalls, 1);
 });
 
 void test("actual release allocation callback rejects other owners and preserves allocations on helper failure", async () => {

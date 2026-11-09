@@ -18,6 +18,31 @@ cases without revealing the intended answer.
 
 ## Failure and recovery cases
 
+### Cold-start Inspector captures
+
+When a capture includes Node builtins, control their initialization state as
+well as source bytes. An ESM `node:util` import can initialize its lazy named
+exports before the probe. A fresh CommonJS child can reproduce an application's
+still-cold builtin state without importing the facade or test module graph.
+Record the actual imports and runtime used; matching source files alone do not
+establish matching initialization state.
+
+Even `Object.getOwnPropertyDescriptor` can enter a native lazy data-property
+getter. Keep `throwOnSideEffect:true` on readonly captures and use an original
+side-effect trace to identify a refusal. Warming unrelated exports merely to
+make capture pass changes the state being tested. A getter-blind replacement
+needs a fixed source-derived opaque-field contract, complete module identity,
+prototype and ordered-key checks, and unchanged critical descriptor checks.
+Report opaque descriptor invariance as unproved; unknown lazy fields still
+refuse. Where relevant, compare the historical capture's refusal before and
+after the replacement and report the specific access that refused. That
+comparison does not establish every unused export's initialization state; a
+broader cold-state claim needs an independent check for each export.
+
+Engine-version comparisons also need this cold/warm control. A newer engine
+is a diagnostic analogue, not evidence that the admitted application or its
+custom runtime bytes match that engine.
+
 Test missing methods, stub returns, lossy public fields, native empty-net
 defaults, child order changes, ignored properties, auto-persistence and delayed
 disk writes. Include slow compilation, synchronous navigation followed by
@@ -184,11 +209,34 @@ new helper separately in CI. Passing schema/compiler tests does not establish
 that its process can start on the installed application version.
 
 When changing `pcb-diagnostic-owner.ps1`, synchronize its reviewed size/hash
-in both `current-pcb-diagnostic-owner.ts` and the separate
+in both `current-pcb-diagnostic-helper-identity.ts` and the separate
 `pcb-diagnostic-launch-smoke.ps1`. Include the existing
 `current-pcb-diagnostic-native.test.ts` in focused verification; it checks both
 consumers against actual helper bytes. CompileOnly alone does not exercise the
 synthetic launch script's independent source pin.
+`startup:protocol:update` emits the shared helper, readable C# and both pin
+copies together. Review those generated changes before freezing the payload.
+`startup:protocol:check` and `native:helper:check` perform no updates.
+
+The seven-record display and wire purposes use their separate generated
+`schematic-edit-native.ps1`. Rebuild and check it with `schematic:native:update`
+and `schematic:native:check`; its generated identity covers complete helper,
+readable review and actual compiler bytes. Saved seven-record schematic readers
+use only the fixed `schematic-saved-readback-native.ps1` helper and its separate
+identity, generated with `schematic:saved:native:update` and verified with
+`schematic:saved:native:check`. The readonly helper retains its own birth and
+SQL installation leases. Keep the shared published baseline
+immutable. Verify all four build layouts and all six released forward artifacts
+after generator changes. Each runtime helper and compiler input remains within
+the existing 2 MiB bound. Native compilation and an empty Job prove neither an
+application launch nor a writer lifecycle.
+
+Compile each exact C#5 runtime input with warnings treated as errors, matching
+the PowerShell helper checks. Retain original compiler diagnostics; a timeout
+alone identifies no root cause. Initialize retained otherwise-unassigned fields
+to their CLR defaults and reprove every cloned declaration and source anchor
+before regenerating hashes. Managed budget checks remain separate from live
+writer evidence.
 
 Compatibility can be capability-specific. The supplied-coordinate math profile
 admits its reviewed API 0.3.50 closure without changing the older design tuple.

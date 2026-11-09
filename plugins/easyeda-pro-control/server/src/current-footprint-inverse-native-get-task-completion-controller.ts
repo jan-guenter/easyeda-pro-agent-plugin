@@ -1,0 +1,107 @@
+/** Original native GET completion custody. Public GET ledgers and supplied
+ * observations cannot enroll this continuation or replace its accepted event. */
+import { z } from "zod";
+import { types } from "node:util";
+import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_GET_COMPLETION_ORDER as ORDER, CURRENT_FOOTPRINT_INVERSE_GET_COMPLETION_SITES as SITES } from "./current-footprint-inverse-get-completion-source.ts";
+import type { CurrentFootprintInverseGetCompletionRole as TailRole } from "./current-footprint-inverse-get-completion-source.ts";
+import { currentFootprintInverseNativeGetTaskCompletionBudgetWithLive as budget, currentFootprintInverseNativeGetTaskCompletionProgram as program, qualifyCurrentFootprintInverseNativeGetTaskCompletionHelper as qualify, validateCurrentFootprintInverseNativeGetTaskCompletionCommand as validate } from "./current-footprint-inverse-native-get-task-completion-protocol.ts";
+import type { CurrentFootprintInverseNativeGetTaskCompletionCommand as Command } from "./current-footprint-inverse-native-get-task-completion-protocol.ts";
+import { currentFootprintInverseNativeGetTaskCompletionCounts as counts, observeCurrentFootprintInverseNativeGetTaskCompletion as observe } from "./current-footprint-inverse-native-get-task-completion-observer.ts";
+import type { CurrentFootprintInverseNativeGetTaskCompletionBindings as ObserverBindings } from "./current-footprint-inverse-native-get-task-completion-observer.ts";
+import { collectCurrentFootprintInverseNativeGetTaskCompletionLive as collectLive } from "./current-footprint-inverse-native-get-task-completion-live-collector.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_COMPLETION_LIVE_STACKS as LIVE_STACKS, currentFootprintInverseNativeGetTaskCompletionLiveFrame as liveFrame } from "./current-footprint-inverse-native-get-task-completion-live-replies.ts";
+import type { CurrentFootprintInverseNativeGetTaskCompletionLiveRole as LiveRole } from "./current-footprint-inverse-native-get-task-completion-live-replies.ts";
+import { captureCurrentFootprintInverseDeleteBindingReply as capture } from "./current-footprint-inverse-delete-binding-capture.ts";
+
+type Receipt = Awaited<ReturnType<typeof observe>>;
+type Control = "bind" | "point" | "held" | "permit" | "complete" | "live-functions" | "live-point" | "live-permit" | "live-held" | "live-proof" | "live-complete";
+export interface CurrentFootprintInverseNativeGetTaskCompletionBindings extends Pick<ObserverBindings, "source" | "scriptId" | "sessionId" | "intrinsics" | "delivery" | "eventTuple" | "channelBound" | "modelInput" | "rowData" | "current" | "assertOriginalEntryHeld"> {
+  readonly contextId: number; readonly originalEvent: DiagnosticEvent;
+  readonly assertOriginalEvent: (event: DiagnosticEvent) => void; readonly assertOriginalExit: () => void;
+  readonly send: (command: Command) => Promise<unknown>;
+  /** Original Core spends the accepted hold only in this actual submission
+   * callback, after its own verification awaits and immediately before send. */
+  readonly resume: (command: Command, beforeTransfer: () => void) => Promise<unknown>;
+  readonly poll: () => Promise<void>;
+  readonly control: (phase: Control, fields?: Readonly<Record<string, string | number>>) => Promise<void>;
+}
+interface Helper { readonly command: Command; readonly source: string; scriptId: string | null; reply: unknown; attempted: boolean }
+const originals = new WeakSet<object>();
+const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
+const functionFields = z.strictObject({ data: handle, row: handle, title: handle });
+const liveRoles = Object.freeze(["data", "row", "title"] as const);
+function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_NATIVE_GET_TASK_COMPLETION_CUSTODY"); } }
+/** Reject arrays and Proxy envelopes before reading event fields. This shallow
+ * shape check does not replace the later role-specific property validation. */
+function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !types.isProxy(value) && !Array.isArray(value); }
+/** Retain each original helper, pause, transfer and outer Promise. Three live
+ * prefix entries are proved before the remaining GET body is permitted. */
+export class CurrentFootprintInverseNativeGetTaskCompletionController {
+  readonly #b: CurrentFootprintInverseNativeGetTaskCompletionBindings;
+  readonly #limit: ReturnType<typeof budget>;
+  readonly #tail = new Map<TailRole, string>(); readonly #live = new Map<LiveRole, string>();
+  readonly #removed = new Set<string>(); readonly #liveProofs = new Set<LiveRole>();
+  #functions: Readonly<Record<string, string>> | null = null;
+  #pending: Promise<Receipt> | null = null; #receipt: Receipt | null = null; #helper: Helper | null = null;
+  #held: DiagnosticEvent | null; #queued: DiagnosticEvent | null = null;
+  #arming: Readonly<{ live: true; role: LiveRole }> | Readonly<{ live: false; role: TailRole }> | null = null; #resolved: string | null = null;
+  #normal = 0; #helpers = 0; #liveRequests = 0; #liveHelpers = 0; #liveResumes = 0; #tailResumes = 0; #tailHolds = 0;
+  #failed = false; #reading = false; #awaitResume = false; #resumed = false; #reserved = false;
+  #livePermit = false; #liveComplete = false; #bodyPermit = false;
+  /** Compute the full dynamic reservation before any request or hold spend. */
+  public constructor(bindings: CurrentFootprintInverseNativeGetTaskCompletionBindings) { const selected = counts(bindings.modelInput, bindings.rowData); this.#limit = budget(selected.inputNodes, selected.rowNodes); this.#b = Object.freeze({ ...bindings }); this.#held = bindings.originalEvent; originals.add(this); }
+  /** Keep failure sticky around all original owner reproofs. */
+  #current(): void { try { this.#b.current(); need(!this.#failed); } catch (caughtError) { this.#failed = true; throw caughtError; } }
+  /** Route only the same owner's actual helper/point/resume/pause events.
+   * Original source/frame validation precedes later operand traversal. */
+  public observe(event: DiagnosticEvent): boolean { if (event.sessionId !== this.#b.sessionId || this.#receipt !== null) { return false; } try { this.#current(); this.#b.assertOriginalEvent(event);
+    if (event.method === "Debugger.scriptParsed" && event.params["url"] === "") { const helper = this.#helper; need(helper !== null && helper.scriptId === null && event.params["executionContextId"] === this.#b.contextId && typeof event.params["scriptId"] === "string"); helper.scriptId = event.params["scriptId"]; return true; }
+    if (event.method === "Debugger.breakpointResolved") { const arming = this.#arming; const location = event.params["location"]; need(arming !== null && this.#resolved === null && typeof event.params["breakpointId"] === "string" && record(location) && location["scriptId"] === this.#b.scriptId); let site: Readonly<{ lineNumber: number; columnNumber: number }>; if (arming.live) { const entry = LIVE_STACKS[arming.role][0]; site = { lineNumber: entry.line, columnNumber: entry.pc }; } else { site = { lineNumber: 0, columnNumber: SITES[arming.role].columnNumber }; } need(location["lineNumber"] === site.lineNumber && location["columnNumber"] === site.columnNumber); this.#resolved = event.params["breakpointId"]; return true; }
+    if (event.method === "Debugger.resumed") { need(this.#awaitResume && !this.#resumed && Reflect.ownKeys(event.params).length === 0); this.#awaitResume = false; this.#resumed = true; this.#held = null; return true; }
+    if (event.method === "Debugger.paused") { need(this.#resumed && !this.#awaitResume && this.#held === null && this.#queued === null); if (this.#liveComplete) { this.#tailFrame(event); } else { const role = liveRoles[this.#liveResumes - 1]; const point = role === undefined ? undefined : this.#live.get(role); need(role !== undefined && point !== undefined); liveFrame(event, role, this.#b.sessionId, this.#b.scriptId, point); } this.#queued = event; return true; } return false;
+  } catch (caughtError) { this.#failed = true; throw caughtError; } }
+  /** Validate the unchanged tail source sites without interpreting arbitrary
+   * frames or accepting a foreign breakpoint from this same process. */
+  #tailFrame(event: DiagnosticEvent): Readonly<{ role: TailRole; callFrameId: string; breakpointId: string }> { const hits = event.params["hitBreakpoints"]; const frames = event.params["callFrames"]; need(event.method === "Debugger.paused" && event.sessionId === this.#b.sessionId && Array.isArray(hits) && hits.length === 1 && Array.isArray(frames) && frames.length > 0 && frames.length <= 16 && record(frames[0])); const found = [...this.#tail].find(([, point]) => point === hits[0]); need(found !== undefined); const role = found[0]; const site = SITES[role]; const frame = frames[0]; const fn = frame["functionLocation"]; const location = frame["location"]; need(record(fn) && record(location) && frame["functionName"] === site.functionName && fn["scriptId"] === this.#b.scriptId && fn["lineNumber"] === 0 && fn["columnNumber"] === site.functionColumn && location["scriptId"] === this.#b.scriptId && location["lineNumber"] === 0 && location["columnNumber"] === site.columnNumber && typeof frame["callFrameId"] === "string"); return Object.freeze({ role, callFrameId: frame["callFrameId"], breakpointId: found[1] }); }
+  /** Burn the only start synchronously and keep that exact original Promise
+   * through input, prefix, body and final raw-row completion. */
+  public start(): Promise<Receipt> { if (this.#pending !== null) { return this.#pending; } const pending = Promise.withResolvers<Receipt>(); this.#pending = pending.promise; void (async (): Promise<void> => { try { this.#current(); this.#b.assertOriginalEntryHeld(); const selected = counts(this.#b.modelInput, this.#b.rowData); await this.#control("bind", { inputNodes: selected.inputNodes, rowNodes: selected.rowNodes }); const receipt = await observe({ ...this.#b, request: input => this.#read(input), assertOriginalHelperReceipt: (command, raw) => this.#qualify(command, raw), retainOriginalPoint: (role, point) => this.#retainTail(role, point), prepareOriginalLiveBody: async hints => { await collectLive({ ...this.#b, hints, request: input => this.#read(input), qualifyHelper: (command, raw) => this.#qualify(command, raw), requireOriginalResumed: () => this.#waitResumed(), nextOriginalPause: (role, point) => this.#waitLive(role, point), control: (phase, fields) => this.#control(phase, fields) }); }, permitOriginalBody: () => this.#control("permit"),
+        /** Reserve one held body resume after its permit and helper drain;
+         * the actual transfer callback separately consumes this reservation. */
+        reserveOriginalResume: (): void => { this.#current(); need(this.#bodyPermit && this.#held !== null && !this.#reserved && this.#helper === null); this.#reserved = true; }, requireOriginalResumed: () => this.#waitResumed(), nextOriginalPause: () => this.#waitTail(), complete: () => this.#complete(), fail: (): void => { this.#failed = true; } }); this.#current(); need(this.#receipt === null); this.#receipt = receipt; pending.resolve(receipt); } catch (caughtError) { this.#failed = true; pending.reject(caughtError); } })(); return pending.promise; }
+  /** Send one exact closed request. A helper must be qualified before another
+   * command; only the actual transport callback records a resume attempt. */
+  async #read(input: Command): Promise<unknown> { try { this.#current(); need(!this.#reading && this.#helper === null && this.#receipt === null); this.#reading = true; const command = validate(input), live = command.phase.includes("-live-"); if (live) { need((this.#liveRequests += 1) <= this.#limit.live.cdpRequests); } else { need((this.#normal += 1) <= this.#limit.legacy.normal); } const source = program(command); const helper: Helper | null = source === null ? null : { command: input, source, scriptId: null, reply: undefined, attempted: false }; this.#helper = helper;
+    if (command.method === "Debugger.setBreakpoint" || command.method === "Debugger.setBreakpointOnFunctionCall") { need(this.#arming === null && "role" in command); if (live) { need(this.#functions !== null && command.method === "Debugger.setBreakpointOnFunctionCall" && this.#functions[command.role] === command.params.objectId); } this.#arming = command.method === "Debugger.setBreakpoint" ? { live: false, role: command.role } : { live: true, role: command.role }; this.#resolved = null; }
+    let raw: unknown; if (command.method === "Debugger.resume") { need(this.#held !== null && this.#queued === null && !this.#awaitResume && this.#helper === null); if (live) { need(this.#livePermit && !this.#liveComplete && "role" in command && command.role === liveRoles[this.#liveResumes] && this.#liveResumes < 3); } else { need(this.#bodyPermit && this.#reserved && this.#tailResumes < 17); } raw = await this.#b.resume(command, (): void => { this.#current(); need(this.#held !== null && !this.#awaitResume); if (live) { this.#liveResumes += 1; } else { this.#tailResumes += 1; this.#reserved = false; } this.#awaitResume = true; this.#resumed = false; }); } else { raw = await this.#b.send(command); } this.#current(); if (helper !== null) { need(this.#helper === helper); helper.reply = raw; }
+    if (command.method === "Debugger.removeBreakpoint") { need(JSON.stringify(capture(raw)) === "{}" && !this.#removed.has(command.params.breakpointId) && [...this.#tail.values(), ...this.#live.values()].includes(command.params.breakpointId)); this.#removed.add(command.params.breakpointId); } return raw;
+  } catch (caughtError) { this.#failed = true; throw caughtError; } finally { this.#reading = false; } }
+  /** Read the actual original helper script once; a copy of its command or
+   * result cannot replace the pending command/reply identities. */
+  async #qualify(command: Command, raw: unknown): Promise<void> { try { this.#current(); const helper = this.#helper; need(!this.#reading && helper !== null && helper.command === command && helper.reply === raw && !helper.attempted && helper.scriptId !== null); helper.attempted = true; this.#reading = true; const live = command.phase.includes("-live-"); if (live) { need((this.#liveHelpers += 1) <= 8 && (this.#liveRequests += 1) <= 33); } else { need((this.#helpers += 1) <= this.#limit.legacy.helpers); } const actual = await this.#b.send(validate({ phase: live ? "inverse-native-get-task-completion-live-helper" : "inverse-native-get-task-completion-helper", method: "Debugger.getScriptSource", params: { scriptId: helper.scriptId } })); this.#current(); need(record(actual) && Reflect.ownKeys(actual).length === 1 && this.#helper === helper); qualify(Object.getOwnPropertyDescriptor(actual, "scriptSource")?.value, command); this.#helper = null; } catch (caughtError) { this.#failed = true; throw caughtError; } finally { this.#reading = false; } }
+  /** Retain only the actual owned arm reply and matching optional resolution. */
+  async #retainTail(role: TailRole, point: string): Promise<void> { this.#current(); need(this.#arming?.live === false && this.#arming.role === role && !this.#tail.has(role) && ![...this.#tail.values(), ...this.#live.values()].includes(point) && (this.#resolved === null || this.#resolved === point)); this.#tail.set(role, point); this.#arming = null; this.#resolved = null; await this.#control("point", { role, breakpointId: point }); }
+  /** Enforce causal control steps before sending their finite native ACK. */
+  async #control(phase: Control, fields: Readonly<Record<string, string | number>> = {}): Promise<void> { this.#current(); if (phase === "live-functions") { need(this.#functions === null && liveRoles.every(role => typeof fields[role] === "string")); this.#functions = Object.freeze(functionFields.parse(fields)); } else if (phase === "live-point") { const role = z.enum(liveRoles).parse(fields["role"]); const point = fields["breakpointId"]; need(liveRoles.includes(role) && typeof point === "string" && this.#arming?.live === true && this.#arming.role === role && !this.#live.has(role) && ![...this.#tail.values(), ...this.#live.values()].includes(point) && (this.#resolved === null || this.#resolved === point)); this.#live.set(role, point); this.#arming = null; this.#resolved = null; } else if (phase === "live-permit") { this.#b.assertOriginalEntryHeld(); need(!this.#livePermit && this.#tail.size === Object.keys(SITES).length && this.#live.size === 3 && this.#functions !== null && this.#helper === null); this.#livePermit = true; } else if (phase === "live-proof") { const role = z.enum(liveRoles).parse(fields["role"]); need(role === liveRoles[this.#liveResumes - 1] && !this.#liveProofs.has(role) && this.#held !== null && this.#helper === null); this.#liveProofs.add(role); } else if (phase === "live-complete") { need(!this.#liveComplete && this.#liveProofs.size === 3 && this.#liveResumes === 3 && this.#liveRequests === 33 && this.#liveHelpers === 8 && [...this.#live.values()].every(point => this.#removed.has(point)) && this.#held !== null); this.#liveComplete = true; } else if (phase === "permit") { need(this.#liveComplete && !this.#bodyPermit && this.#held !== null); this.#bodyPermit = true; } await this.#b.control(phase, fields); this.#current(); }
+  /** Poll the original stream until its actual resumed notification arrives. */
+  async #waitResumed(): Promise<void> { const started = performance.now(); while (!this.#resumed) { this.#current(); need(performance.now() - started < 30_000); await this.#b.poll(); this.#current(); } }
+  /** Deliver one original pause once after its paired actual resume. */
+  async #waitPause(): Promise<DiagnosticEvent> { const started = performance.now(); while (this.#queued === null) { this.#current(); need(performance.now() - started < 30_000); await this.#b.poll(); this.#current(); } const actual = this.#queued; this.#queued = null; this.#held = actual; this.#b.assertOriginalEvent(actual); return actual; }
+  /** Rejoin the expected fresh prefix entry before any live projection. */
+  async #waitLive(role: LiveRole, point: string): Promise<DiagnosticEvent> { const event = await this.#waitPause(); liveFrame(event, role, this.#b.sessionId, this.#b.scriptId, point); return event; }
+  /** Keep the immutable sixteen-step return/post/loopback order. */
+  async #waitTail(): Promise<Readonly<{ role: TailRole; callFrameId: string }>> { const event = await this.#waitPause(), selected = this.#tailFrame(event); need(selected.role === ORDER[this.#tailHolds]?.split("-")[0] && this.#tailHolds < 16 && this.#tailResumes === this.#tailHolds + 1); this.#tailHolds += 1; await this.#control("held", { role: selected.role, breakpointId: selected.breakpointId }); return selected; }
+  /** Seal only after actual final resume, every original helper and the full
+   * input/raw-row proof. No UI return, reference or delete result is inferred. */
+  async #complete(): Promise<void> { this.#current(); need(this.#bodyPermit && this.#liveComplete && this.#tailResumes === 17 && this.#tailHolds === 16 && this.#held === null && this.#queued === null && this.#helper === null && !this.#awaitResume && this.#normal === this.#limit.legacy.normal && this.#helpers === this.#limit.legacy.helpers && [...this.#tail.values()].every(point => this.#removed.has(point))); await this.#control("complete"); }
+  /** Require this exact completed receipt while the same original owner and
+   * invocation remain current; supplied matching row data grants nothing. */
+  public requireOriginalCompletion(receipt: Receipt): Receipt { this.#current(); need(this.#receipt === receipt && this.#pending !== null && this.#held === null && this.#helper === null && !this.#reading); return receipt; }
+  /** Join the retained original proof after actual root/Job exit, without
+   * replacing its Promise or starting a late read while cleanup runs. */
+  public async settleAfterOriginalExit(): Promise<void> { this.#b.assertOriginalExit(); this.#failed = true; await Promise.allSettled([this.#pending]); this.#b.assertOriginalExit(); }
+}
+const methods = Object.getOwnPropertyDescriptors(CurrentFootprintInverseNativeGetTaskCompletionController.prototype);
+/** Reject copied controllers, Proxy traps and substituted prototype members. */
+export function assertOriginalCurrentFootprintInverseNativeGetTaskCompletionController(value: CurrentFootprintInverseNativeGetTaskCompletionController): void { need(value !== null && typeof value === "object" && !types.isProxy(value) && originals.has(value) && Object.getPrototypeOf(value) === CurrentFootprintInverseNativeGetTaskCompletionController.prototype && Reflect.ownKeys(value).length === 0); const observed = Object.getOwnPropertyDescriptors(CurrentFootprintInverseNativeGetTaskCompletionController.prototype); need(Reflect.ownKeys(observed).length === Reflect.ownKeys(methods).length && Object.entries(methods).every(([name, descriptor]) => { const now = observed[name]; return now !== undefined && now.value === descriptor.value && now.get === descriptor.get && now.set === descriptor.set && now.writable === descriptor.writable && now.enumerable === descriptor.enumerable && now.configurable === descriptor.configurable; })); }

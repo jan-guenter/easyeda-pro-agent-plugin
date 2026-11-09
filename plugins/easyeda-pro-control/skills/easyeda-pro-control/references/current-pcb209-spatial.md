@@ -1,8 +1,8 @@
 # Disposable PCB point and region identities
 
 Use this reference for the separate `spatial` development/validation purpose on
-the reviewed EasyEDA 3.2.209 installation. It supports a restricted Via scene,
-not point picking on an ordinary populated user board. For general object
+the reviewed EasyEDA 3.2.209 installation. It supports restricted Via, Line/Via,
+Arc/Line/Via and standalone circular SMT Pad-only scenes. For general object
 observations, use [the opening reader](current-pcb209-opening.md).
 
 Discover `easyeda_control_api` action `pcb209-spatial` with
@@ -54,6 +54,63 @@ qualification is shared. A failed or lost observation consumes that stage.
 Inspect its retained result and finish cleanup; do not submit it again under
 the same operation or infer that an absent response means no dispatch.
 
+After a refusal, inspect the original operation with the inner request
+`{action:"inspect",operationId,observation:"spatial209"}`. This inspection takes
+no binding digest and does not collect another native sample. The usual outer
+tool wrapper remains `{request:{action:"spatial",request:innerRequest}}`.
+A metadata decode failure can retain `spatialDecodeFailure` with its fixed
+failed step, private record locator and content digest. The bounded normalized
+inspector packet stays private because it contains original remote handles.
+Its labels or handles cannot recreate an owner, qualify a function or authorize
+another query. An earlier payload may have retained no packet; preserve that
+unknown outcome instead of inferring its cause from a later case.
+
+When fixing the adapter, develop in a separate checkout while the selected
+payload stays frozen. Finish original normal close, observed root/empty-Job
+exit, closed capture and helper release before retiring its facade. Then use
+the retained manager to select and admit a verified replacement. A new consumed
+case still needs fresh fixture-data qualification. Neither an in-place package
+edit nor switching query variants completes the failed case.
+
+For a scene containing native Tracks and Vias, choose `observe-spatial-lines`
+instead, with the same scratch-effect acceptance and one to fifteen queries.
+Native Track identities are returned with family `Line`, matching the SDK's
+Line meaning. This is a separate mixed-family result contract. It consumes the
+same observation slot as the Via batch; a failure never permits switching to
+the other action. The256-callee qualification and fifteen-query limit fit the
+existing384-request purpose, including original group release.
+
+For circular ArcTrack models, choose `observe-spatial-arcs` with one to six
+queries. It admits the same Line/Via subset and projects native ArcTrack as SDK
+family `Arc`. It qualifies265 original application functions, keeping the same
+384-request cap and original release reserve. It uses a third immutable result
+schema and consumes the same observation slot; no variant can follow another
+variant's completed or failed attempt.
+
+The [frozen4500 connected case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-06-generated-pcb-spatial-live-case.md#frozen4500-positive-arc-line-and-via-case)
+passed one six-query Arc/Line/Via batch on its generated fixture. It checked Arc,
+Line and Via point hits, a negative point and both containing region modes with
+two matching samples, native ordering and unchanged selection. Original closure
+and full closed raw/SQL/history invariance passed. This historical case grants
+no later runtime admission, separate query-variant acceptance or writer authority.
+
+For a scene containing only ready standalone circular SMT Pads, choose
+`observe-spatial-pads` with one to sixteen point queries. Its distinct immutable
+result shares that same consumed observation slot. It qualifies 215 original
+callees and uses 344 of the unchanged 384 request IDs, including group release.
+Pads must use the supported Mi view and tE model, copper layer 1 or 2, rotation
+zero and padType zero, with no parent or smart Pad state. Mixed families,
+placed or polygon Pads and every region query refuse before native hits.
+A matching generated Pad fixture has separate maintained archive, import,
+closed-data and staging routes. Frozen4500 accepted four positive points and
+one negative point with two matching samples, exact identities and unchanged
+empty selection. Complete closed raw, all35-table SQL and raw-history invariance
+also passed. The [retained Pad case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-06-generated-pad-spatial-live-case.md)
+then exposed an old closed-capture report-schema defect. The report was published,
+but that payload refused original helper release before dispatch. The missing
+release acknowledgment remains unknown. Keep this partial historical result
+separate from complete lifecycle acceptance and later-runtime admission.
+
 ## Supported scene and effects
 
 The initial scene contains only standalone, unlocked, visible through vias in
@@ -63,7 +120,23 @@ empty/stale tree leaves, other primitive families and contradictory ownership
 refuse. A region query refuses any Via box crossing its boundary. This avoids
 claiming unsupported boundary-intersection semantics.
 
-Each query returns bounded ordered Via identities from two matching native
+The mixed action additionally admits standalone unlocked nondegenerate Tracks
+on copper layer1 or2 with width at least0.05 native units. Their complete ready
+octagon indexes, original model bounds, reciprocal model/view and shared
+layer/width/lock/net fields must agree. Lazy geometry, maintenance queues and
+region border crossings refuse before the native hit. The256-object ceiling
+applies across admitted families and layers. The Arc action additionally
+requires a finite positive circular radius, bounded start/end angles, an exact
+clockwise/counterclockwise enum, arcType1, width at least0.05 native units and
+copper layer1 or2. It requires the original ready model/view/index and cached
+bounds. Graphical native Arc/Line models and components remain unsupported in
+these mixed-family actions.
+The Pad-only alternative does not extend those mixed-family scenes. Component
+point prefiltering needs qualified footprint-cache lineage, the yqe/Ae transform
+chain and its iE._modify scratch effect; region filtering also needs Gs.
+These actions do not accept an ordinary populated board.
+
+Each query returns bounded ordered supported identities from two matching native
 samples, together with the ordered selected IDs and retained-descriptor checks.
 It executes neither the lossy public point mapper nor the selection-changing
 public region handler. It does not select a later supported hit after an
@@ -82,6 +155,70 @@ existing-object mutation or claim complete native/SQL source membership,
 connectivity, a continuous snapshot, full SDK instance parity or persistence.
 Source and synthetic tests do not establish connected validation.
 
+## Separate generated Component point birth
+
+Query `pcb209-component-spatial` and `pcb209-component-spatial-validate`.
+The public opening wrapper is `component-spatial`, with
+`pcb209-spatial-component-*` IDs. This is a separate original native birth with
+419 requests (418 normal and one cleanup reserve); every older spatial purpose
+keeps its384 ceiling. It accepts only this facade's genuinely issued staged
+`component-circular-smt-pad` data. Existing owners cannot upgrade, and callers
+cannot supply paths, target DTOs or geometry.
+
+After original import cleanup/full initial SQL qualification, release the
+original destination and fixture owner, call `stage-component-for-fresh-opening`
+with the base import operation ID and `confirmStageClosedFixture:true`, then
+complete original ordinary helper release. The independent data token survives
+that release and is consumed by the new Component lifecycle before allocation.
+Use its fixed browser/frame/UI-source stages, `open-generated-fixture`,
+`open-pcb`, `observe-pcb-opening`, then one `observe-components` batch of1–16
+points with `acceptNativeScratchEffects:true`. Missing replies consume their
+original attempts; record settlement never repeats native work.
+
+The ready scene must contain exactly the generated top-layer, origin-zero,
+rotation-zero Component, its original local circular SMT Pad footprint and two
+hidden indexed attributes. The290-callee graph retains the real footprint cache,
+transforms, stored bounds, parent chains and attribute refusal path. Every region,
+other family, transformed/unready object or changed cache/index refuses before
+hits. Two matching samples preserve native Component/Pad ordering and empty
+selection. Source membership, persistence, writer and connected acceptance stay
+false. The old `capture-generated-closed` and historical reuse profiles do not
+accept this new Component target; close and release the original reader normally.
+
+### Alternate cloned Pad representation
+
+The same Component-only birth also has the distinct
+`observe-components-cloned-pads` action. Select one representation for a fresh
+reader. Either action consumes its sole point batch, including failures. Never
+try the other action after a refusal on that reader.
+
+The cloned-Pad action qualifies295 original callees and accepts1–11 points.
+Five extra Pad getters consume the five request slots saved by the smaller
+batch, preserving the419 request ceiling and64KiB physical message ceiling.
+Its current result schema is `easyeda-pro-control.pcb209-component-cloned-point.v2`.
+It requires the exact generated footprint geometry and reciprocal parent/index
+relations but reports `templateReferenceLinked:false`. The older reference-linked
+result remains separate. V2 accepts the source-derived0,64or5202 model bitmap,
+including the independently modeled normalized64 state, while its fixed point
+getters leave model state and descriptors unchanged. Historical cloned v1 keeps
+its immutable0or5202 contract; parsing it grants no current ownership. These
+source and offline checks do not establish a connected match.
+
+Frozen build `20261108135950` subsequently passed one three-point cloned-Pad v2 case: the centre
+returned its owned Pad, two outside points returned no identities, and both
+samples preserved selection and retained descriptors. Its model state was64.
+The original root/Job closed and helper release was acknowledged. Complete closed
+raw bytes and all 35 SQL tables matched the initial capture. Fresh initial
+qualification separately refused WSL birth time zero and retained its false
+acceptance flags. This
+[scoped case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/5e42f5817360f830a7b8d2e53e5870e208519bca/docs/history/2026-11-08-generated-component-import-qualification.md#original-cloned-pad-point-reader-and-closure)
+does not validate another payload, reference-linked representation or ordinary
+populated board. It supplies no writer or persistent-registration authority.
+
+No caller chooses classes, supplies alternate source or relaxes guards. Normal
+close, complete closed capture, original process/Job termination and helper
+release are required after either representation's attempt.
+
 ## Closure
 
 Finish with the original observed window's one normal close, separately observed
@@ -89,3 +226,31 @@ original root and empty-Job termination, acknowledged helper release and record
 settlement. Do not answer Save/Discard prompts or substitute process-presence
 samples for original termination proof. Report read results separately from
 closed-file invariance, installation and connected evidence.
+
+## Original Component Job cleanup
+
+Only the distinct `component-spatial` wrapper accepts this explicit cleanup:
+
+```json
+{"action":"component-spatial","request":{"action":"abort-component","operationId":"pcb209-spatial-component-...","expectedBindingSha256":"<original binding digest>","confirmAbortOriginalComponentJob":true}}
+```
+
+It dispatches at most one termination request to that owner's original retained
+Job, without accepting a PID, path or HWND. It remains callable while that
+original reader is pending. Afterward, use the original `observe-termination`
+and `release-closed` actions. Do not navigate, replay a read, Save, answer a dialog
+or send normal-close after abort. The acknowledgment proves neither termination
+nor discard. Lost publication or acknowledgment consumes the attempt and supplies
+no automatic retry. The older `spatial` purpose has no new abort action.
+
+
+After this original Component reader reports root/empty-Job termination and
+before helper release, use the distinct nested
+`capture-component-generated-closed` action with its operation/binding digest
+and `confirmReadClosedFixture:true`. It retains complete closed bytes, SQL and
+raw history through the same genuine Component source/checkpoint. It issues no
+new target or writer grant. Fresh Linux file clocks can refuse initial
+qualification even when raw bytes and complete SQL are unchanged; zero birth
+time never borrows the old import clock. The existing PCB/standalone Pad action
+remains `capture-generated-closed`. A published valid report now retains its
+correct profile through the scanner and original helper release.

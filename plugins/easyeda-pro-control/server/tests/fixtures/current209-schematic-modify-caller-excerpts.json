@@ -1,0 +1,62 @@
+{
+  "profile": "source-only.current209-schematic-modify-caller-excerpts.v1",
+  "sourceSha256": "0e7a474385029ac4f69dac08abdfd8beec7346aea8c2a4f71d5afb78bb454046",
+  "segments": [
+    {
+      "role": "compare",
+      "start": 254436,
+      "end": 254516,
+      "bytes": 80,
+      "sha256": "2a5df3ce89bef23f3e7ac860f67c4468dfc72550a8690a29d074f21b1324506d",
+      "text": "function EE(e,t){return e.ticket===t.ticket?e.client<t.client:e.ticket<t.ticket}"
+    },
+    {
+      "role": "list",
+      "start": 254523,
+      "end": 256180,
+      "bytes": 1657,
+      "sha256": "a4edd5321a0ce2303a0812a725c5edaf326aff29ed97567db95e71f5834e95c4",
+      "text": "class dT{static find(t,s){return t.last&&s(t.last)?t.last:t.list?t.list.find(s):null}static getPreLastNode(t){var s;return(s=t.list)!=null&&s.length?t.list[t.list.length-1]:null}static getFirstTicket(t){var s,r;if(!t)return 0;if(t.last.dataType===\"META\"){if(t.last.firstTicket!==void 0)return t.last.firstTicket;let i=t.last.ticket;if(t.list)for(let n=t.list.length-1;n>=0;--n){let a=t.list[n];if(a.firstTicket)return a.firstTicket;i=a.ticket}return i}else{let i=dT.getHead(t);return(r=(s=i==null?void 0:i.firstTicket)!=null?s:i==null?void 0:i.ticket)!=null?r:0}}static getHead(t){var s;return((s=t==null?void 0:t.list)==null?void 0:s[0])||t.last}static getPreNode(t,s){if(t.last===s)return t.list?t.list[t.list.length-1]:null;let r=t.list.findIndex(i=>i===s);return t.list[r-1]}static remove(t,s){var r;if(t.last===s)t.last=((r=t.list)==null?void 0:r.pop())||null;else if(t.list){let i=t.list.findIndex(n=>n===s);i>-1&&t.list.slice(i,1)}}static getLength(t){let s=0;return t&&(t.last&&(s+=1),t.list&&(s+=t.list.length)),s}static insert(t,s){if(!t.last){t.last=s;return}if(EE(t.last,s)){let n=t.last;t.last=s,s=n}if(!t.list){t.list=[s];return}let r=0,i=t.list.length;for(;r<i;){let n=Math.floor((r+i)/2);EE(t.list[n],s)?r=n+1:i=n}t.list.splice(r,0,s)}static preForEach(t,s){var r;if(!(!t.last||s(t.last,(r=t.list)!=null&&r.length?t.list[t.list.length-1]:void 0))&&t.list)for(let i=t.list.length-1;i>=0&&!s(t.list[i],i-1>=0?t.list[i-1]:void 0);--i);}static async awaitPreForEach(t,s){if(!t.last)return;let r,i=s(t.last,n=>r=n);if(r===void 0&&await i,!r&&t.list)for(let n=t.list.length-1;n>=0;--n){let a,o=s(t.list[n],c=>a=c);if(a===void 0&&await o,a)break}}}"
+    },
+    {
+      "role": "remoteChange",
+      "start": 295994,
+      "end": 298668,
+      "bytes": 2674,
+      "sha256": "f11159ef785df5c8474c957458af4e69140ece319c74f266e8ac09041b95a527",
+      "text": "remoteChange(e,t,s,r,i,n,a,o,c,l,u,h,p,d,m){var f,g,y,b,E,T;this.setMaxTicket(e),a&&this.setDoctype(s,a),a=this.getDoctype(s),o=o||h===this.getUnique();let w=this.caseInsensitiveTypes.has(n),S=w?r.toUpperCase():r,v=r,_=(b=(y=(g=(f=this.wDocData)==null?void 0:f.get)==null?void 0:g.call(f,s))==null?void 0:y.get(S))==null?void 0:b.last;h&&(this.uniqueIds[h]||(this.uniqueIds[h]={}),this.uniqueIds[h][s]||(this.uniqueIds[h][s]=new Set),this.uniqueIds[h][s].add(S)),this.wDocData.get(s)||this.wDocData.set(s,new Map),this.wDocData.get(s).has(S)||this.wDocData.get(s).set(S,{last:null});let I=this.wDocData.get(s).get(S),A=_?At.getFirstTicket(I):null,x=_&&_.ticket===e&&_.client===t&&!!_.pend!=!!l,C=n!==\"ELE_PLACEHOLDER\"&&n!==\"META_PLACEHOLDER\"&&(!o||o&&this.getIsLocalChange())&&(!x||x&&this.getIsPendChange()),L=At.find(I,P=>P.client===t&&P.ticket===e);if(L){this.setDocMaxTicket(s,e,l),m&&(L.hId&&L.hId!==m.uuid&&(L.hIds||(L.hIds=[]),L.hIds.includes(L.hId)||L.hIds.push(L.hId)),L.hId=m.uuid,L.hNum=m.num,L.start=m.start,m.size&&(L.size=m.size),m.hClient&&(L.hClient=m.hClient),m.dNum&&(L.dNum=m.dNum)),this.getCache&&!this.cacheType.includes(n)&&(E=L.data)!=null&&E.length&&L!=null&&L.hId&&delete L.data,L.pend&&!l&&(delete L.pend,C&&L===I.last&&this.publishChange(s,v,i,n,t,e,At.getFirstTicket(I),l,void 0,x,h,void 0,(T=At.getPreLastNode(I))==null?void 0:T.dataType)),n===\"PAD_NET\"&&this.syncPadNet(s,S);return}let z=e;if(l){let P=[];At.preForEach(I,R=>R.client===t&&R.pend&&R.ticket<e?(P.push(R),!0):!1),P.length&&P.length===At.getLength(I)&&(z=A||e),P.forEach(R=>{At.remove(I,R)})}let H={client:t,ticket:z,dataType:n};w&&(H.actualId=v),m&&(H.hId=m.uuid,H.hNum=m.num,H.start=m.start,m.size&&(H.size=m.size),m.hClient&&(H.hClient=m.hClient),m.dNum&&(H.dNum=m.dNum)),(!this.getCache||!H.hId||!i||this.cacheType.includes(n)||l)&&(H.data=l?i:this.safeString(i)),c!==void 0&&(H.firstTicket=c),l!==void 0&&(H.pend=l),h!==void 0&&(H.unique=h);let k=!_||_.ticket<e||_.ticket===e&&_.client<t;At.insert(I,H);let B=At.getFirstTicket(I);if(this.orderTree.has(s)&&(!_||A>B))try{this.orderTree.setOrderNum(s,this.getDoctype(s),S,I,!0,A&&A>B)}catch(P){console.error(P)}if(this.needDocIdDoctype.includes(a)&&i)if(a===\"SCH_PAGE\"&&n===\"META_PLACEHOLDER\"){let P=JSON.parse(i),R=S.split(\"_\"),O=S.split(\"_\")[0],j=R[1]?R[1]:O;this.docIds.setOrderNum(j,O,B,t,P.max)}else if(a===\"SCH_PAGE\"&&n===\"META\"){let P=JSON.parse(i);this.docIds.setOrderNum(s,P.schematic,B,t)}else n===\"META\"&&this.docIds.setOrderNum(s,a,B,t);if(this.setDocMaxTicket(s,z,l),k){let P=At.getFirstTicket(I);C&&this.publishChange(s,v,i,n,t,e,P,l,void 0,x,h,void 0,_==null?void 0:_.dataType)}n===\"PAD_NET\"&&this.syncPadNet(s,S)}"
+    },
+    {
+      "role": "getDoctype",
+      "start": 276517,
+      "end": 276607,
+      "bytes": 90,
+      "sha256": "d714abd071114989218f99fe4a7232f9aec8d03a9291bbd7ae2346339611df8d",
+      "text": "getDoctype(e){var t,s;return(s=(t=this.docHead)==null?void 0:t[e])==null?void 0:s.docType}"
+    },
+    {
+      "role": "setDoctype",
+      "start": 276431,
+      "end": 276517,
+      "bytes": 86,
+      "sha256": "4f6225761c5db83104b08188553e43a3590a807272eaf84dc4550206e1e5331a",
+      "text": "setDoctype(e,t){this.docHead[e]?this.docHead[e].docType=t:this.docHead[e]={docType:t}}"
+    },
+    {
+      "role": "publishChange",
+      "start": 243107,
+      "end": 243200,
+      "bytes": 93,
+      "sha256": "aa8e7d3b416f74314dd922d620f1f3728ec386e9f503d28987f9498bd9636877",
+      "text": "publishChange(e,t,s,r,i,n,a,o,c,l,u,h,p){this.cbArr.forEach(d=>d(e,t,s,r,i,n,a,o,c,l,u,h,p))}"
+    },
+    {
+      "role": "onChange",
+      "start": 2105542,
+      "end": 2107140,
+      "bytes": 1598,
+      "sha256": "44bfca1afed5a3f24c30767ac3b7a0235fc8fd92808eb604564f98cee1424c9e",
+      "text": "(n,a,o,c,l,u,h,p,d,m,f,g,y)=>{var E,T,w;let b=this.consistencyManager.getDoctype(n);switch(b){case ve.BLOB:{this.blob.onDataChange(n,a,o,c,u,l,p,d,f,m);break}case ve.BOARD:{this.board.onDataChange(n,o,c,p,l,u,m);break}case ve.CONFIG:{this.config.onDataChange(n,a,o,c,l,u,m);break}case ve.DEVICE:{this.device.onDataChange(n,o,c,l,u,m);break}case ve.FONT:{this.font.onDataChange(n,a,o,c,u,l,p,d,f,m);break}case ve.FOOTPRINT:{this.footprint.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.INSTANCE:{this.instance.onDataChange(n,a,o,c,l,u,p,d);break}case ve.PANEL:{this.panel.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.PCB:{this.pcb.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.SCH:{this.schematic.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.SCH_PAGE:{if(this.sheet.onDataChange(n,a,o,c,l,u,p,d,f,m,y),c===De.META){let S=(E=this.sheet.data[n])==null?void 0:E.schematic,v=(T=this.sheet.data[n])==null?void 0:T.updateTime,_=(w=this.sheet.data[n])==null?void 0:w.version;S&&this.schematic.setEditData(S,void 0,v,_)}break}case ve.SIMULATION:{this.simulation.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.SYMBOL:{this.symbol.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.VARIANT:{!m&&this.variant.onVariantChange(n,o,c);break}case ve.COMPONENT_GROUP:{!m&&this.variant.onGroupChange(n,a,o,c);break}case ve.COMPONENT_GROUP_DATA:{!m&&this.variant.onGroupDataChange(n,a,o,c);break}}if(this.uploadStructure(b,c,p),this.localPublishTicket(),this.canWsPublish()&&!d){if([ve.SYMBOL,ve.FOOTPRINT].includes(b)&&p&&c!==De.META)return;let S=[n,a,l,u,o,c,b,p];this.bufferedPendDataStream(S)}}"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
+import { indexFixtureToolRegistrationSource, installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
-import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
@@ -35,15 +35,14 @@ interface Fixture {
 }
 async function registration(retainedOpener: boolean): Promise<Fixture> {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
-  const start = source.indexOf(`if (facadeToolRegistered(facadeMode, "${disposableTool}")) {`);
-  const end = source.indexOf("\nconst transport =", start); assert.ok(start > 0 && end > start);
+  const selected = indexFixtureToolRegistrationSource(source,[disposableTool,ordinaryTool]);
   const allocations: object[] = [], calls: Observation[] = [], history: unknown[] = [], openerAllocations: object[] = [];
   const engine = {}, gate = new SerializedGate(), opener = {}, ownedRuntime = { status: (): { state: string } => ({ state: "owned" }) };
   const registered = new Map<string, Registered>(); let fail = false;
   function CurrentDisposableOpenCoordinator(this: object, options: { engine: unknown; assertOwner: () => void; runtime: () => unknown }): void {
     assert.equal(options.engine, engine); options.assertOwner(); assert.equal(options.runtime(), ownedRuntime); openerAllocations.push(this);
   }
-  const scope = vm.createContext({ z, currentSchematicOperationRequestSchema, currentSchematicRenameOperationRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentSchematicOperationRequestSchema, currentSchematicRenameOperationRequestSchema,
     CURRENT_SCHEMATIC_OPERATION_PURPOSE, currentSymbolOperationToolOutputSchema: z.unknown(), privateFingerprintSchema: z.unknown(),
     currentSchematicRenameOperationCoordinator: undefined, currentDisposableOpenCoordinator: retainedOpener ? opener : undefined,
     engine, facadeMode: "calculation-only", facadeToolRegistered: (): boolean => true,
@@ -77,7 +76,8 @@ async function registration(retainedOpener: boolean): Promise<Fixture> {
   });
   // Exercise actual registration and callbacks with synthetic owners. Lifecycle
   // And authenticated runtime behavior have separate coordinator tests.
-  vm.runInContext(stripTypeScriptTypes(source.slice(start, end)), scope);
+  installIndexFixtureDependencies(scope,source);
+  vm.runInContext(selected, scope);
   const ordinary = registered.get(ordinaryTool); assert.ok(ordinary);
   return { allocations, openerAllocations, history, calls, gate, invokeRaw: ordinary.handler, failNext: (): void => { fail = true; },
     invoke: async (input, tool = ordinaryTool) => {

@@ -1,3 +1,4 @@
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 /* oxlint-disable import/max-dependencies -- Exercise the actual public callback with its real controller, strict schemas, gate and cross-family journal guard; refuse before any checkpoint or native allocation. */
 /** Mounted routing tests use actual index source and only synthetic facade
  * admission. They dispatch no native helper, application or cache request. */
@@ -40,7 +41,7 @@ async function fixture(blocked = true): Promise<Readonly<{ invoke: Invoke; schem
       checks += 1; return blocked ? Promise.reject(new Error("synthetic unresolved engine operation")) : Promise.resolve();
     } };
   let registration: { invoke: Invoke; schema: z.ZodType } | undefined;
-  const scope = vm.createContext({ z, currentPcb209WorkerStartupToolRequestSchema,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, currentPcb209WorkerStartupToolRequestSchema,
     CurrentFootprintHeadAgeValidation: Selected, CURRENT_PCB_DIAGNOSTIC_PROFILE, engine, upstream,
     bridgeGate: new SerializedGate(), diagnostic209: true, facadeMode: "public-utilities-only", facadeToolRegistered: (): boolean => true,
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },
@@ -59,6 +60,7 @@ async function fixture(blocked = true): Promise<Readonly<{ invoke: Invoke; schem
     } },
   });
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  installIndexFixtureDependencies(scope, source);
   const helper = source.indexOf("function disposableOwnData("), helperEnd = source.indexOf("function disposableIndexMethods(", helper);
   const owner = source.indexOf("  let headAgeOriginal:"), ownerEnd = source.indexOf("  const runMain =", owner);
   const callback = source.indexOf('  if (facadeToolRegistered(facadeMode, "easyeda_control_pcb209_worker_startup"))'),

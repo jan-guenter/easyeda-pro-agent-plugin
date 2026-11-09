@@ -1,0 +1,35 @@
+/** Actual original UI RPC under an inert Inspector. All write/event custody
+ * belongs to this isolated fixture, never an application, Core Call or Job. */
+export const FOOTPRINT_INVERSE_NATIVE_CALL_INSPECTOR = String.raw`
+const {Session}=require('node:inspector/promises'),{parentPort,workerData}=require('node:worker_threads');
+parentPort.on('message',()=>{});
+(async()=>{
+ const {collectCurrentFootprintInverseNativeDeleteSender:prepare}=await import(workerData.collector),{CurrentFootprintInverseNativeDeleteCallController:Controller}=await import(workerData.controller),{resumeInspectorBeforeReject}=await import(workerData.failureHelper);
+ const s=new Session;const deadline=setTimeout(()=>{s.disconnect();parentPort.postMessage({error:'original Inspector fixture deadline '+workerData.mode});parentPort.close()},20000);let controller=null,preparedScriptId=null,preparing=null,submitted=null,exited=false;const originals=new WeakSet;
+ try{
+  s.connectToMainThread();await s.post('Runtime.enable');await s.post('Debugger.enable');
+  s.on('Debugger.scriptParsed',e=>{if(controller){const event={method:e.method,params:e.params,sessionId:'native-call-ui'};originals.add(event);try{controller.observe(event)}catch{}}else if(preparing==='prepare'&&e.params.url===''){if(preparedScriptId!==null)throw Error('duplicate prepare helper');preparedScriptId=e.params.scriptId}});
+  s.on('Debugger.paused',e=>{try{const event={method:e.method,params:e.params,sessionId:'native-call-ui'};originals.add(event);controller.observe(event)}catch{}});
+  const compiled=await s.post('Runtime.compileScript',{expression:workerData.ui,sourceURL:'inert-native-call-ui.js',persistScript:true});if(!compiled.scriptId)throw Error(JSON.stringify(compiled));const run=await s.post('Runtime.runScript',{scriptId:compiled.scriptId});if(run.exceptionDetails)throw Error(JSON.stringify(run));
+  const initial=await s.post('Runtime.evaluate',{expression:'globalThis._MSG_BUS_=gVars.messageBus;gVars.currentProject.branchUuid="b".repeat(32);gVars.currentProject.isV2Format=false;gVars.isHistoryMode=false;inertUiRunState[0]',returnByValue:false});if(initial.exceptionDetails)throw Error(JSON.stringify(initial));const receipt=initial.result.objectId;
+  const request=async c=>{preparing=c.role;try{const raw=await s.post(c.method,c.params);if(raw.exceptionDetails)throw Error(c.phase+'/'+c.role+' '+JSON.stringify(raw));return raw}finally{preparing=null}};
+  const prepared=await prepare({receipt,uiScriptId:compiled.scriptId,current:()=>{},request,target:{projectUuid:'a'.repeat(64),branchUuid:'b'.repeat(32),documentUuid:'c'.repeat(16)}});if(!preparedScriptId)throw Error('missing prepare source');
+  let invokes=0,requests=0,before=0,exitChecks=0,readGate=null;const requestIds=[],readStarted=Promise.withResolvers();
+  controller=new Controller({receipt,prepared,sessionId:'native-call-ui',contextId:1,uiScriptId:compiled.scriptId,preparedScriptId,current:()=>{},beforeInvoke:()=>{before++;if(workerData.mode==='lateGuard'&&before>1)throw Error('fresh original collateral changed')},assertOriginalEvent:event=>{if(!originals.has(event))throw Error('event was not delivered by original Inspector')},assertOriginalExit:()=>{exitChecks++;if(!exited)throw Error('original exit missing')},poll:()=>new Promise(resolve=>setImmediate(resolve)),send:async c=>{requests++;requestIds.push(c.phase);const raw=await s.post(c.method,c.params);if(raw.exceptionDetails)throw Error(c.phase+' '+JSON.stringify(raw));if(workerData.mode==='badSource'&&c.method==='Debugger.getScriptSource'&&c.params.scriptId===preparedScriptId)return{scriptSource:raw.scriptSource+' '};if(workerData.mode==='pendingReadExit'&&c.method==='Runtime.getProperties'&&readGate===null){readGate=Promise.withResolvers();readStarted.resolve();await readGate.promise}return raw},submit:c=>{invokes++;submitted=s.post(c.method,c.params);return{request:submitted,written:Promise.resolve(),assertOriginalWritten:()=>{if(invokes!==1||submitted===null)throw Error('original write missing')}}}});
+  const first=controller.start(),second=controller.start();if(first!==second)throw Error('concurrent start replaced original Promise');
+  if(workerData.mode==='pendingReadExit'){
+   const earlyFailure=first.catch(()=>{});await readStarted.promise;await s.post('Debugger.disable');await submitted;exited=true;let closed=false;const closing=controller.settleAfterOriginalExit().then(()=>{closed=true});await new Promise(resolve=>setImmediate(resolve));if(closed)throw Error('cleanup skipped pending original read');const beforeRelease=requests;readGate.resolve();await closing;await earlyFailure;if(requests!==beforeRelease)throw Error('cleanup issued another read');parentPort.postMessage({pendingReadJoined:true,noCleanupRead:true,invokes});parentPort.close();return;
+  }
+  if(workerData.mode==='lateGuard'||workerData.mode==='badSource'){
+   let refused=false;try{await first}catch{refused=true}if(!refused)throw Error('invalid attempt admitted');const count=requests;if(controller.start()!==first)throw Error('failed attempt refunded');await controller.start().catch(()=>{});if(requests!==count)throw Error('failed attempt sent new requests');await s.post('Debugger.disable');if(submitted)await submitted;exited=true;await controller.settleAfterOriginalExit();parentPort.postMessage({refused:true,invokes,attemptRetained:true,requestsUnchanged:true});parentPort.close();return;
+  }
+  const token=await first,held=controller.requireOriginalHold(token);if(held.request!==submitted)throw Error('original request replaced');let forged=false;try{controller.requireOriginalHold({...token})}catch{forged=true}if(!forged)throw Error('forged hold admitted');
+  let exitRefused=false;try{await controller.settleAfterOriginalExit()}catch{exitRefused=true}if(!exitRefused)throw Error('unobserved exit admitted');
+  let sticky=false;
+  if(workerData.mode==='copiedEvent'||workerData.mode==='duplicatePause'||workerData.mode==='unexpectedResume'){
+   const event=workerData.mode==='unexpectedResume'?{method:'Debugger.resumed',sessionId:'native-call-ui',params:{}}:{...held.event};if(workerData.mode!=='copiedEvent')originals.add(event);try{controller.observe(event)}catch{}try{controller.requireOriginalHold(token)}catch{sticky=true}if(!sticky)throw Error('lost custody remained usable');
+  }
+  const counts={requests,invokes};await s.post('Debugger.disable');await submitted;exited=true;await controller.settleAfterOriginalExit();parentPort.postMessage({held:true,forgedHoldRefused:forged,originalRequestRetained:true,concurrentStartRetained:true,unobservedExitRefused:exitRefused,stickyFailure:sticky,runtimeCallIssued:held.runtimeCallIssued,runtimeJobIssued:held.runtimeJobIssued,dispatchAuthorized:held.dispatchAuthorized,...counts,exitChecks});parentPort.close();
+ }finally{clearTimeout(deadline);try{await s.post('Debugger.disable')}catch{}s.disconnect();}
+})().catch(error=>{parentPort.postMessage({error:error.stack||String(error)});parentPort.close();});
+`;

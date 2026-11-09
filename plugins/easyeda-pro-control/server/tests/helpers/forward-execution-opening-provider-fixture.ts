@@ -8,6 +8,8 @@ import { createRequire } from "node:module";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { loadOperation } from "../../src/artifacts.ts";
+import { readerCompletion as readCompletion } from "../../src/sqlite-inventory.ts";
+import type { Inventory } from "../../src/closed-sql-equality.ts";
 import { sha256Json } from "../../src/core.ts";
 import { CurrentFootprintForwardExecutionOpeningJournal } from "../../src/current-footprint-forward-execution-opening-journal.ts";
 import type { CurrentFootprintForwardExecutionOpeningProvider } from "../../src/current-footprint-forward-execution-opening.ts";
@@ -19,10 +21,11 @@ import { combinedReadyFactoryFixture } from "./current-footprint-combined-ready-
 export async function forwardExecutionOpeningProviderFixture(request: CurrentFootprintForwardExecutionOpeningRequest,
   mode?: "prepared-publication" | "prelaunch-cleanup-ack" | "no-allocation-cleanup-ack" | "no-process-cleanup-ack" | "no-process-preflight" | "launched" | "allocation-current" | "launch-intent-ack" | "launch-intent-cleanup-ack" | "launch-current" | "launch-current-cleanup-ack" | "ensure-storage" | "held-storage" | "create-ack" | "create-conflict",
   supplied: Readonly<{ verifyNativeGraph?: () => Promise<void>; childProgram?: string; launchTarget?: Readonly<{ windowsPath: string; sha256: string }>;
+    baseline?: Readonly<{ before: Inventory; after: Inventory; capture?: () => Promise<Inventory> }>;
     openingForRelease?: Readonly<{ Constructor: typeof CurrentPcb209WorkerStartupOpening; opening: CurrentPcb209WorkerStartupOpening }> }> = {}): Promise<Readonly<{
   provider: CurrentFootprintForwardExecutionOpeningProvider;
   factory: Awaited<ReturnType<typeof combinedReadyFactoryFixture>>;
-  state: { allocations: number; checkpointReads: number; sqlReads: number; preparedWasPublished: boolean; producerWasPublished: boolean; installationChecks: number; currentFailures: number };
+  state: { allocations: number; checkpointReads: number; sqlReads: number; preparedWasPublished: boolean; producerWasPublished: boolean; installationChecks: number; currentFailures: number; baselineCaptures: number };
   journalFixture: Awaited<ReturnType<typeof forwardExecutionOpeningJournalFixture>> | null;
 }>> {
   const noProcess = mode === "no-process-cleanup-ack" || mode === "no-process-preflight";
@@ -30,7 +33,7 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
   const modules: Record<string, unknown> = {};
   if (supplied.verifyNativeGraph !== undefined) {
     const verify = supplied.verifyNativeGraph;
-    modules["./current-footprint-forward-native-graph.ts"] = { captureCurrentFootprintForwardNativeGraph: (distribution: unknown, challenge: unknown): Promise<object> => {
+    modules["./current-footprint-forward-cold-native-graph.ts"] = { captureCurrentFootprintForwardColdNativeGraph: (distribution: unknown, challenge: unknown): Promise<object> => {
       assert.equal(distribution, "Synthetic"); assert.equal(typeof challenge, "string"); assert.match(String(challenge), /^[a-f\d]{32}$/u);
       return Promise.resolve(Object.freeze({ verify,
         bootstrap: `$ErrorActionPreference='Stop';# synthetic fixed graph, never executed\n& {} -WorkerStartupFootprintForwardExecution209 -CombinedReadyChallenge '${String(challenge)}'` }));
@@ -52,15 +55,39 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
     // Native owner allocation, termination and release stay original.
     providerSource = providerSource.replace("  public async release(): Promise<void> {", "  public syntheticOpeningForReleaseForTest(opening: CurrentFootprintCopyStartupOpening): void { need(this.#opening === null && opening.status().settled, 'SYNTHETIC_SETTLED_OPENING'); this.#opening = opening; this.#openingInvoked = true; }\n  public async release(): Promise<void> {");
   }
+  let baselineSource: object | null = null;
+  if (supplied.baseline !== undefined) {
+    // Only sealed-source and closed-checkpoint collection are synthetic. The
+    // Actual v2 factory, normal close, original exit, journal and SQL equality run.
+    providerSource = `import { baselineSourceForTest, retainBaselineSourceForTest } from "synthetic-baseline";\n${providerSource}`
+      .replaceAll("owner.originalFootprintForwardExecutionSource()", "baselineSourceForTest(owner)")
+      .replace("  public async proveClosedBaseline(): Promise<BaselineResult> {", `  public async syntheticSealBaselineForTest(): Promise<void> {
+        need(this.#owner !== null && this.#prepared !== null && this.#request !== null && this.#bindingSha256 !== null, 'SYNTHETIC_BASELINE_PREPARED');
+        const prepared = this.#prepared, request = this.#request;
+        const result = currentFootprintForwardExecutionOpeningResultSchema.parse({ schema: 'easyeda-pro-control.footprint-forward-execution-source-input.v2',
+          purpose: CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE, operationId: request.operationId, bindingSha256: this.#bindingSha256,
+          checkpointSha256: prepared.before.checkpointSha256, beforeSqlSha256: prepared.before.logicalSha256, sourcePlanSha256: '1'.repeat(64),
+          sourcePacketSha256: '2'.repeat(64), preparationSha256: '3'.repeat(64), originalOpeningRetained: true, sameWriterSourceSealed: true,
+          wholeWriterReserved: false, routeAndClocksQualified: false, executionReady: false, executionAuthorized: false, saveAuthorized: false });
+        for (const stage of ['main','browser','frames','ui-source','handoff','opening','assignments','ui','state','source','preparation','seal']) {
+          await this.#journalRequired().append(stage+'-intent', {}); await this.#journalRequired().append(stage+'-result', {});
+        }
+        this.#result = result; this.#stage = 'sealed';
+        retainBaselineSourceForTest({ opening: this.#opening, result: this.#openingResult, preparation: {}, owned: { before: prepared.before, copyPlan: {} },
+          source: { operationId: request.operationId, before: prepared.before, checkpoint: prepared.checkpoint.checkpoint }, main: null,
+          mainRetained: null, resources: {}, binding: {} });
+      }
+      public async proveClosedBaseline(): Promise<BaselineResult> {`);
+  }
   const output = await transform(providerSource, { loader: "ts", format: "cjs", target: "node24" });
-  const loaded = { exports: {} }, state = { allocations: 0, checkpointReads: 0, sqlReads: 0, preparedWasPublished: false, producerWasPublished: false, installationChecks: 0, currentFailures: 0 };
+  const loaded = { exports: {} }, state = { allocations: 0, checkpointReads: 0, sqlReads: 0, preparedWasPublished: false, producerWasPublished: false, installationChecks: 0, currentFailures: 0, baselineCaptures: 0 };
   const installationFile = Object.freeze({ windowsPath: "C:\\Synthetic\\easyeda-pro.exe", bytes: 1, sha256: "e".repeat(64) });
   const installationPlan = Object.freeze({ schema: "easyeda-pro-control.pcb-diagnostic-installation.v1", files: Object.freeze([installationFile]) });
   const installation = Object.freeze({ paths: Object.freeze({ syntheticVerifiedPaths: true }), facadeSha256: "f".repeat(64), plan: installationPlan });
-  const checkpoint = Object.freeze({ profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1", checkpoint: Object.freeze({ checkpointSha256: "a".repeat(64) }),
+  const checkpoint = Object.freeze({ profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1", checkpoint: Object.freeze({ checkpointSha256: supplied.baseline?.before.checkpointSha256 ?? "a".repeat(64) }),
     targetEvidence: Object.freeze({ projectUuid: request.target.projectUuid, documentUuid: request.target.documentUuid, branchUuid: "b".repeat(32), docType: "PCB", sourceSha256: request.target.expectedSourceSha256 }) });
-  const before = Object.freeze({ checkpointSha256: "a".repeat(64), logicalSha256: "c".repeat(64) });
-  const completion = Object.freeze({ observedChildClose: true, exitCode: 0, exitSignal: null, elapsedMs: 1 });
+  const before = supplied.baseline?.before ?? Object.freeze({ checkpointSha256: "a".repeat(64), logicalSha256: "c".repeat(64) });
+  const completion: unknown = supplied.baseline === undefined ? Object.freeze({ observedChildClose: true, exitCode: 0, exitSignal: null, elapsedMs: 1 }) : readCompletion(supplied.baseline.before);
   const journalMode = mode === "prelaunch-cleanup-ack" || mode === "no-allocation-cleanup-ack" || mode === "no-process-cleanup-ack" || mode === "launch-current-cleanup-ack" ? "cleanup-ack" : mode;
   const journalFixture = journalMode !== undefined && journalMode !== "prepared-publication" && journalMode !== "launch-current" && journalMode !== "allocation-current" && journalMode !== "launched" && journalMode !== "no-process-preflight" ? await forwardExecutionOpeningJournalFixture(journalMode) : null;
   const BaseJournal = journalFixture?.Journal ?? CurrentFootprintForwardExecutionOpeningJournal;
@@ -75,8 +102,22 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
       if (args[0] === "launch-intent" && (mode === "launch-current" || mode === "launch-current-cleanup-ack")) { failCurrent = true; }
     }
   }
+  const snapshot = Object.freeze({ checkpoint: { checkpointSha256: supplied.baseline?.after.checkpointSha256 } });
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
+    if (name === "synthetic-baseline") { return {
+      baselineSourceForTest: (): object => { assert.ok(baselineSource !== null); return baselineSource; },
+      retainBaselineSourceForTest: (value: object): void => { assert.equal(baselineSource, null); baselineSource = Object.freeze(value); },
+    }; }
+    if (name === "./current-footprint-copy-closed-snapshot.ts" && supplied.baseline !== undefined) {
+      const baseline = supplied.baseline;
+      return {
+        captureCurrentFootprintForwardExecutionClosedSnapshot: async (): Promise<Inventory> => { state.baselineCaptures += 1; const after = await (baseline.capture?.() ?? Promise.resolve(baseline.after)); return after; },
+        requireCurrentFootprintForwardExecutionClosedSnapshot: (_owner: unknown, value: unknown): object => {
+          assert.equal(value, baseline.after); return snapshot;
+        },
+      };
+    }
     if (name === "./current-pcb-209-worker-startup-opening.ts" && supplied.openingForRelease !== undefined) {
       return { CurrentFootprintCopyStartupOpening: supplied.openingForRelease.Constructor };
     }
@@ -107,7 +148,9 @@ export async function forwardExecutionOpeningProviderFixture(request: CurrentFoo
     }; }
     if (name === "./sqlite-inventory.ts") { return {
       readExactSqlInventory: (): Promise<object> => { state.sqlReads += 1; return Promise.resolve(before); },
-      readerCompletion: (value: unknown): object => { assert.equal(value, before); return completion; },
+      readerCompletion: (value: unknown): unknown => { if (supplied.baseline !== undefined) {
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Deliberately pass the collector input to the actual private reader issuer, which rejects JSON and foreign objects.
+        return readCompletion(value as Inventory); } assert.equal(value, before); return completion; },
     }; }
     if (name === "./machine-profile.ts") { return { loadRuntimeMachineProfile: (): Promise<object> => Promise.resolve({ profile: { runtime: { nodeExecutable: "/synthetic-unused/node", nodeVersion: "24.18.0", nodeSha256: "d".repeat(64) } } }) }; }
     if (name === "./current-pcb-diagnostic-installation.ts") { return { verifyCurrentPcb209DiagnosticInstallation: (): Promise<object> => {

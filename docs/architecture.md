@@ -58,6 +58,109 @@ all descriptors `11` and above with `close_range(2)`, and enters Bubblewrap from
 descriptor `10` with `execveat(2)`. Bubblewrap receives only descriptors `0`–`9`;
 an arbitrary descriptor inherited by the facade's shell cannot reach it.
 
+## Fixed native compiler input
+
+Native builds start from the exact published first-party shared helper retained
+under `scripts/native-baseline/`. `native-baseline-source.ts` fixes its originating
+commit, full length and hash. It is a build input, never a runtime path or an
+application snapshot. Forward and cold-forward generators use that same seed
+and must reproduce all six released artifacts exactly.
+
+The shared helper's runtime size/hash literals live in
+`current-pcb-diagnostic-helper-identity.ts`. The independent Windows synthetic
+launch script repeats them. The static checker reads the small identity module
+and actual helper, so growing process-owner source does not require enlarging
+its ordinary source-read limit. TypeScript imports these literals into the
+owner; no runtime request can update them.
+The explicit `startup:protocol:update` build command emits both pin copies
+with the helper and readable C# file. Its check mode compares every output
+without writing. `native:helper:check` remains a separate read-only byte check.
+
+The default startup generator emits the shared legacy/PCB/footprint build.
+`schematic:native:update` emits a separate `schematic-edit-native.ps1` and readable
+C# review copy for the seven-record display and wire purposes. Its PowerShell
+entry accepts exactly one of those two purposes. The runtime chooses the fixed
+artifact from its already qualified purpose, checks its generated identity, and
+retains the Windows read handle through execution. No request chooses a build
+layout, source fragment, helper path or compiler option. Run both
+`startup:protocol:check` and `schematic:native:check` after changing native
+protocols. Windows CI compiles both schematic purposes without launching an app.
+
+`inverse:native:update` emits the separate `footprint-inverse-native.ps1`, C#
+review copy and exact identity for the original Footprint inverse purpose. Its
+factory binds the readiness challenge before selecting the retained helper.
+The general diagnostic layout includes the complete spatial and Component
+codebooks. Run `inverse:native:check` with the other helper generation checks.
+Both layouts retain the existing source/compiler bounds; runtime callers cannot
+select a layout or supply a helper path.
+
+The inverse four-query result retains its actual final frame and reproof wrapper.
+Its active hold is consumed once before the first original continuation. The
+following empty-check and DEL-entry ledger transfers the same UI event reader,
+checks the original caller chain and keeps the DEL RPC body paused. A held entry
+packet cannot stand in for a native send, worker success, dropped-Promise
+completion, collateral restoration or saved absence. Those boundaries need
+separate original observations and private owner joins.
+
+Before that DEL RPC can continue, its own readonly collateral preparation checks
+the original row, project, source callees and complete bounded UI tab census.
+The supported profile requires the actual `uuid@project` tab to be absent. It
+qualifies the original tab method and native `some`/`includes`, binds both class
+and module scopes, and retains a fresh reproof. A present tab refuses before
+dispatch. The preparation proves neither the original `yy` early return nor the
+dropped log Promise settlement; both still require their original execution
+receipts. It cannot grant preference removal, restoration or tab closure.
+
+The combined diagnostic helper stores its fixed C# compiler body as gzip/base64
+in the final PowerShell output. The stored helper and actual runtime compiler
+input each retain the 2 MiB ceiling. Storage introduces no native purpose,
+control phase, request allowance, debugger program or application permission.
+
+Historical v1 storage restores and compiles the original ASCII body, including
+all line breaks, within its original 2 MiB bound. Its decoder and public
+restoration contracts remain unchanged. V2 is a separate format: it replaces
+only outside-literal comment/whitespace sequences with one separator space.
+It retains a canonical, independently bounded 128 KiB spacing sidecar, original
+and compact byte hashes, and an ordered token/literal hash. The original
+build-only review body may be at most 2 MiB plus 128 KiB, and no larger than the
+compact body plus the spacing allowance. Runtime never restores or compiles
+that larger view. Unsupported preprocessing, newer lexical forms, non-ASCII
+source, escaped identifiers and line-sensitive caller attributes refuse.
+String, verbatim-string and character literal bytes remain exact.
+
+V3 is an explicit inverse-build option. It removes a trivia separator only when
+relexing the adjacent tokens preserves both exact token kinds and bytes; its
+separate versioned decoder retains the same compiler, helper and spacing limits.
+V1 and V2 compaction and restoration keep their historical contracts.
+
+The inverse layout also shares immutable smoke hash vectors in bounded fixed
+tables. Every call retains its original vector and order through the existing
+`Hashes` decoder. The build projection restores the exact original expressions
+before maintained marker readers run; other layouts do not use this projection.
+The shared table and token-fusion formats do not add a runtime selector or grant.
+
+Builds use pinned Node 24.18.0 with core dumps disabled.
+`expandCurrentPcbDiagnosticCSharpReviewSource` restores exact original bytes
+and markers before generators and released forward/cold migration. Their six
+released artifacts remain byte-identical. `currentPcbDiagnosticCSharpReviewSource`
+returns that original body for the readable generated
+`scripts/pcb-diagnostic-native.cs`; startup `--write`/`--check` compare those
+original review bytes. `currentPcbDiagnosticCSharpRuntimeCompilerInput` returns
+only the actual compiler bytes, compact for v2. Compiler harnesses must use
+that API and keep any original review copy outside their compilation roster.
+Runtime never loads the readable review copy.
+
+The unchanged emitted decoder takes metadata only from embedded fixed literals.
+It checks canonical base64, compressed length/hash, the gzip envelope, bounded
+stream length/end, decoded length/hash and strict ASCII/UTF-8 before `Add-Type`.
+For v2 those checks apply to the compact body. Build-only spacing data is a
+comment covered by the admitted complete helper identity; review restoration
+checks both sidecar identities, canonical records, exact original hash and
+token/literal equality. Canonical pinned gzip checks refuse extra members and
+ignored tails. No control request supplies source, hashes, lengths or options.
+The synthetic launch/CompileOnly reader uses the same bounded decoder for the
+actual compiler body before its original in-memory test hooks.
+
 ## Runtime isolation
 
 Live context, read, capture, export, checkpoint, mutation, and recovery calls are bound to one exact authenticated renderer session through final evidence publication. A reconnect cannot substitute a new renderer with matching logical IDs. Status alone retains a disconnected read-only bootstrap mode so it can report why no authenticated session exists.

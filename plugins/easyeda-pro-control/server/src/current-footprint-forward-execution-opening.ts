@@ -34,6 +34,10 @@ import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_PURPOSE } from "./current-footprint
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_BUDGET, currentFootprintForwardExecutionOpeningProducerEvidenceSchema, currentFootprintForwardExecutionOpeningRequestSchema, currentFootprintForwardExecutionOpeningResultSchema } from "./current-footprint-forward-execution-opening-contract.ts";
 import type { CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_NORMAL_STAGES, CurrentFootprintForwardExecutionOpeningRequest as Request,
   CurrentFootprintForwardExecutionOpeningResult as Result } from "./current-footprint-forward-execution-opening-contract.ts";
+import { compareCompleteClosedSql } from "./closed-sql-equality.ts";
+import { captureCurrentFootprintForwardExecutionClosedSnapshot, requireCurrentFootprintForwardExecutionClosedSnapshot } from "./current-footprint-copy-closed-snapshot.ts";
+import { CurrentFootprintForwardExecutionBaselineJournal, currentFootprintForwardExecutionBaselineIntentSchema, currentFootprintForwardExecutionBaselineResultSchema } from "./current-footprint-forward-execution-baseline.ts";
+import type { CurrentFootprintForwardExecutionBaselineResult as BaselineResult } from "./current-footprint-forward-execution-baseline.ts";
 import { CurrentFootprintForwardExecutionOpeningJournal } from "./current-footprint-forward-execution-opening-journal.ts";
 import { captureCurrentFootprintForwardExecutionPrototypes, captureCurrentFootprintForwardExecutionReceiver,
   requireCurrentFootprintForwardExecutionPrototypes } from "./current-footprint-forward-execution-opening-identity.ts";
@@ -44,12 +48,13 @@ const journalPrototypes = captureCurrentFootprintForwardExecutionPrototypes(Curr
 const openingMethods = ["open", "requireOriginal", "proveCurrentAssignments", "observeFootprintState", "observeFootprintSource", "requireFootprintSource", "releaseAfterTermination", "status"] as const satisfies readonly (keyof CurrentFootprintCopyStartupOpening)[];
 const nativeMethods = ["launch", "status", "observeFootprintMainConstruction", "browserObservation", "inspectFrames", "inspectScript", "handoffWorkerStartup",
   "observeFootprintCopyUi", "requireFootprintCopyUi", "assertFootprintForwardExecutionSourceCapacity", "sealFootprintForwardExecutionSource", "originalFootprintForwardExecutionSource", "requestNormalClose",
-  "observeApplicationWindow",
+  "observeApplicationWindow", "originalFootprintForwardExecutionTermination", "requireFootprintForwardExecutionTermination",
   "observeTermination", "releaseClosed", "releaseUnlaunched", "releaseNoProcess", "consumeFootprintForwardExecutionReleasePreflightFailure", "reserveFootprintCombinedAbort", "dispatchFootprintCombinedAbort", "observeFootprintForwardExecutionRelease"] as const satisfies readonly (keyof CurrentFootprintForwardExecutionNativeOwner)[];
 function need(condition: boolean, code: string): asserts condition { if (!condition) { throw new Error(`FORWARD_EXECUTION_OPENING_${code}`); } }
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 type Stage = Exclude<typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_OPENING_NORMAL_STAGES[number], "prepare" | "allocation" | "launch" | "seal">;
 type Lease = ReturnType<typeof acquireCurrentPcbDiagnosticLaunchExclusion>;
+export interface CurrentFootprintForwardClockPreparationReservation { readonly profile: "private.current-footprint-forward-clock-preparation-reservation.v1" }
 interface Prepared {
   readonly checkpoint: CurrentDisposableOpenCheckpoint;
   readonly before: Inventory;
@@ -90,8 +95,17 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
   #openingInvoked = false;
   #result: Result | null = null;
   #bindingSha256: string | null = null;
+  #baselineAttempted = false;
+  #baselineJournal: CurrentFootprintForwardExecutionBaselineJournal | null = null;
+  #baselineResult: BaselineResult | null = null;
+  #baselineFailure: unknown = null;
+  #baselineFailed = false;
+  #baselineInventory: Inventory | null = null;
+  #baselineTermination: object | null = null;
   #stage: "new" | "launched" | "main" | "browser" | "frames" | "ui-source" | "sealed" = "new";
   #busy = false;
+  #clockPreparationAttempted = false;
+  #clockPreparationReservation: CurrentFootprintForwardClockPreparationReservation | null = null;
   #cleanupBusy = false;
   #failed: unknown = null;
   #factoryInvoked = false;
@@ -424,6 +438,79 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
       const terminated = pending.result; this.#terminationPending = null; return terminated;
     } finally { this.#cleanupBusy = false; }
   }
+  /** Capture the original v2 closed database once, after this provider's
+   * acknowledged normal close and actual root/whole-Job exit. Compare every
+   * logical SQL field against its original complete pre-open reader. */
+  public async proveClosedBaseline(): Promise<BaselineResult> {
+    this.#current(true);
+    need(!this.#busy && !this.#cleanupBusy && !this.#baselineAttempted && this.#failed === null && this.#stage === "sealed" &&
+      this.#result !== null && this.#prepared !== null && this.#cleanupKind === "close" && this.#closeDispatched &&
+      this.#cleanupAcknowledged === "close" && !this.#abortDispatched && this.#terminated && this.#terminationPending === null &&
+      !this.#releaseAttempted && !this.#noProcessRelease, "CLOSED_BASELINE_UNAVAILABLE");
+    this.#baselineAttempted = true; this.#cleanupBusy = true;
+    const owner = this.#ownerRequired(), prepared = this.#prepared, result = this.#result;
+    try {
+      const journal = this.#journalRequired(); await journal.settle(); this.#current(true); await journal.assertCurrent(); this.#current(true);
+      const records = journal.retained().records;
+      const close = records.find(record => record.kind === "close-result"), terminationRecord = records.at(-1);
+      need(close !== undefined && terminationRecord?.kind === "termination-result" && terminationRecord.evidence["terminated"] === true,
+        "CLOSED_BASELINE_ORIGINAL_CLOSURE");
+      const source = owner.originalFootprintForwardExecutionSource(), termination = owner.originalFootprintForwardExecutionTermination();
+      need(source.opening === this.#opening && source.result === this.#openingResult && source.source.before === prepared.before &&
+        source.owned.before === prepared.before && source.source.checkpoint === prepared.checkpoint.checkpoint &&
+        source.source.operationId === result.operationId && source.source.checkpoint.checkpointSha256 === result.checkpointSha256 &&
+        prepared.before.logicalSha256 === result.beforeSqlSha256 && readerCompletion(prepared.before) === prepared.completion &&
+        prepared.completion.observedChildClose && prepared.completion.exitCode === 0 && prepared.completion.exitSignal === null,
+      "CLOSED_BASELINE_ORIGINAL_SOURCE");
+      this.#baselineTermination = termination;
+      /** Reprove the same closed owner, source, completed reader and journal
+       * around each capture/publication await; equal replacement objects refuse. */
+      const current = async (): Promise<void> => {
+        this.#current(true); owner.requireFootprintForwardExecutionTermination(termination);
+        const fresh = owner.originalFootprintForwardExecutionSource();
+        need(this.#owner === owner && this.#prepared === prepared && this.#result === result && fresh.source === source.source &&
+          fresh.opening === source.opening && fresh.result === source.result && fresh.preparation === source.preparation &&
+          fresh.owned.before === prepared.before && fresh.owned.copyPlan === source.owned.copyPlan &&
+          fresh.main === source.main && fresh.mainRetained === source.mainRetained && fresh.resources === source.resources && fresh.binding === source.binding &&
+          this.#baselineTermination === termination && readerCompletion(prepared.before) === prepared.completion, "CLOSED_BASELINE_CUSTODY_CHANGED");
+        await journal.assertCurrent(); this.#current(true);
+        need(sha256Json(journal.retained().records) === sha256Json(records), "CLOSED_BASELINE_RECORDS_CHANGED");
+      };
+      const intent = Object.freeze(currentFootprintForwardExecutionBaselineIntentSchema.parse({
+        schema: "easyeda-pro-control.footprint-forward-execution-baseline-intent.v1", operationId: result.operationId,
+        sourceInputSha256: sha256Json(result), openingRecordsSha256: sha256Json(records), normalCloseResultSha256: sha256Json(close),
+        terminationResultSha256: sha256Json(terminationRecord), beforeCheckpointSha256: result.checkpointSha256, beforeSqlSha256: result.beforeSqlSha256,
+        originalNormalCloseAcknowledged: true, originalRootExited: true, originalJobEmpty: true, executionAuthorized: false, saveAuthorized: false,
+      }));
+      const baseline = new CurrentFootprintForwardExecutionBaselineJournal(intent); this.#baselineJournal = baseline;
+      await current(); await baseline.publishIntent(); await current();
+      const after = await captureCurrentFootprintForwardExecutionClosedSnapshot(owner, termination); this.#baselineInventory = after; await current();
+      const completion = readerCompletion(after), snapshot = requireCurrentFootprintForwardExecutionClosedSnapshot(owner, after);
+      need(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null, "CLOSED_BASELINE_COMPLETE_READER");
+      await compareCompleteClosedSql(prepared.before, after); await current();
+      need(requireCurrentFootprintForwardExecutionClosedSnapshot(owner, after) === snapshot && readerCompletion(after) === completion &&
+        after.checkpointSha256 === snapshot.checkpoint.checkpointSha256 && after.logicalSha256 === prepared.before.logicalSha256,
+      "CLOSED_BASELINE_ORIGINAL_SNAPSHOT");
+      const closed = Object.freeze(currentFootprintForwardExecutionBaselineResultSchema.parse({ ...intent,
+        schema: "easyeda-pro-control.footprint-forward-execution-closed-baseline.v1", baselineIntentSha256: sha256Json(intent),
+        closedCheckpointSha256: snapshot.checkpoint.checkpointSha256, closedSqlSha256: after.logicalSha256,
+        exactLogicalSqlUnchanged: true, originalCompletedReadersRetained: true, helperReleaseProved: false, savedCopyVerified: false,
+        currentHeadVerified: false, continuousProducerExclusionVerified: false, executionReady: false,
+      }));
+      await baseline.assertCurrent(); await current(); await baseline.publishResult(closed); await current();
+      this.#baselineResult = closed; return closed;
+    } catch (error) {
+      this.#baselineFailed = true; this.#baselineFailure = error;
+      if (this.#baselineJournal !== null) {
+        try { await this.#baselineJournal.publishFailure(); }
+        catch (publicationError) {
+          // oxlint-disable-next-line eslint/preserve-caught-error -- The exact original baseline failure is the cause; retain the separate publication refusal as well.
+          throw new AggregateError([error, publicationError], "FORWARD_EXECUTION_BASELINE_FAILURE_PUBLICATION", { cause: error });
+        }
+      }
+      throw error;
+    } finally { this.#cleanupBusy = false; }
+  }
   /** Release original construction resources only after actual root/empty-Job
    * termination, then issue the helper release once and retain its outcome. */
   public async release(): Promise<void> {
@@ -568,6 +655,34 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
     need(source.opening === this.#opening && source.result === this.#openingResult && source.owned.before === this.#prepared?.before, "ORIGINAL_SOURCE_INPUTS");
     return Object.freeze({ result: this.#result, owner, source });
   }
+  /** Resolve only this provider's original published baseline. Historical
+   * records and an equal result cannot supply native or reader custody. */
+  public async requireClosedBaseline(result: BaselineResult): Promise<void> {
+    this.#current(true);
+    if (this.#baselineFailed) {
+      throw this.#baselineFailure;
+    }
+    need(result === this.#baselineResult && !this.#baselineFailed && this.#baselineJournal !== null &&
+      this.#baselineInventory !== null && this.#baselineTermination !== null && this.#owner !== null, "ORIGINAL_CLOSED_BASELINE_REQUIRED");
+    this.#owner.requireFootprintForwardExecutionTermination(this.#baselineTermination);
+    requireCurrentFootprintForwardExecutionClosedSnapshot(this.#owner, this.#baselineInventory);
+    await this.#baselineJournal.assertCurrent(); this.#current(true);
+  }
+  /** Same-provider custody before the first metadata await. This reservation
+   * adds no writer authority and cannot be reused after partial preparation. */
+  public reserveClockPreparation(): CurrentFootprintForwardClockPreparationReservation {
+    this.#current(); need(this.#stage === "sealed" && !this.#busy && !this.#cleanupBusy && !this.#clockPreparationAttempted, "CLOCK_PREPARATION_CONSUMED");
+    this.#clockPreparationAttempted = true; this.#busy = true;
+    const reservation = Object.freeze({ profile: "private.current-footprint-forward-clock-preparation-reservation.v1" as const });
+    this.#clockPreparationReservation = reservation; return reservation;
+  }
+  /** Called only after that original metadata promise has settled. Failure
+   * ends normal work while retaining all original native cleanup custody. */
+  public finishClockPreparation(reservation: CurrentFootprintForwardClockPreparationReservation, failure: unknown): void {
+    this.#current(true); need(reservation === this.#clockPreparationReservation && this.#busy, "CLOCK_PREPARATION_ORIGINAL_RESERVATION");
+    if (failure !== null) { this.#failed ??= failure; }
+    this.#clockPreparationReservation = null; this.#busy = false;
+  }
   /** Describe this instance's retained progress without returning native
    * handles, current-source proof or any execution/Save authority. */
   public retained(): Readonly<{ stage: string; failed: boolean; busy: boolean; publicationPending: boolean; result: Result | null; originalOwner: boolean; executionAuthorized: false; saveAuthorized: false }> {
@@ -632,6 +747,17 @@ const providerPrototypes = captureCurrentFootprintForwardExecutionPrototypes(Cur
 
 // oxlint-disable-next-line typescript/unbound-method -- The captured method is called only with its exact original private-field provider receiver.
 const originalPublishedSourceInput = CurrentFootprintForwardExecutionOpeningProvider.prototype.requireSourceInput;
+// oxlint-disable typescript/unbound-method -- Captured methods are invoked only on the exact original private-field provider.
+const originalReserveClockPreparation = CurrentFootprintForwardExecutionOpeningProvider.prototype.reserveClockPreparation;
+const originalFinishClockPreparation = CurrentFootprintForwardExecutionOpeningProvider.prototype.finishClockPreparation;
+// oxlint-enable typescript/unbound-method
+export function reserveOriginalCurrentFootprintForwardClockPreparation(provider: CurrentFootprintForwardExecutionOpeningProvider): CurrentFootprintForwardClockPreparationReservation {
+  return originalReserveClockPreparation.call(provider);
+}
+export function finishOriginalCurrentFootprintForwardClockPreparation(provider: CurrentFootprintForwardExecutionOpeningProvider,
+  reservation: CurrentFootprintForwardClockPreparationReservation, failure: unknown): void {
+  originalFinishClockPreparation.call(provider, reservation, failure);
+}
 /** The later main issuer resolves the original settled provider through this
  * captured method. Replacing receiver/prototype lookup cannot mint admission. */
 export function requireCurrentFootprintForwardExecutionOpeningInput(provider: CurrentFootprintForwardExecutionOpeningProvider): ReturnType<CurrentFootprintForwardExecutionOpeningProvider["requireSourceInput"]> {

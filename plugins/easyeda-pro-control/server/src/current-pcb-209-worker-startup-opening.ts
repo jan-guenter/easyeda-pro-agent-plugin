@@ -12,6 +12,8 @@ import type { CurrentFootprintParentWorkerObservation, CurrentFootprintParentWor
 import type { CurrentFootprintCopyDestinationObservation } from "./current-footprint-copy-destination-runner.ts";
 import type { CurrentFootprintCopyRegisteredAsyncObservation } from "./current-footprint-copy-async-runner.ts";
 import type { CurrentFootprintCopyTransactionClockEvents } from "./current-footprint-copy-transaction-clock-events.ts";
+import type { CurrentFootprintCopyClockRpcConstructionLease } from "./current-footprint-copy-clock-rpc-leases.ts";
+import type { CurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
@@ -29,7 +31,7 @@ import { CurrentPcb209WorkerConstructionRunner } from "./current-pcb-worker-cons
 import type { CurrentPcbWorkerConstructionOwner, CurrentPcbWorkerConstructionPacketFor, CurrentPcbWorkerConstructionProjectIdentity } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
-import { CurrentFootprintCopyHeldSavedWorkerStartupTransport, CurrentFootprintCopySavedWorkerStartupTransport, CurrentFootprintCopyWorkerStartupTransport, CurrentPcb209WorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
+import { CurrentFootprintCopyHeldSavedWorkerStartupTransport, CurrentFootprintCopySavedWorkerStartupTransport, CurrentFootprintCopyWorkerStartupTransport, CurrentPcb209WorkerStartupTransport, requireOriginalForwardClockPreparationTransport } from "./current-pcb-worker-startup-transport.ts";
 import type { CurrentPcbWorkerStartupTransportOwner } from "./current-pcb-worker-startup-transport.ts";
 import { currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
 import { CurrentPcb209WorkerStartupActorRunner } from "./current-pcb-209-worker-startup-actor.ts";
@@ -58,6 +60,10 @@ const footprintDependencyMethods = Object.freeze({
   observe: CurrentPcb209WorkerConstructionRunner.prototype.observeFootprintDependencies,
   require: CurrentPcb209WorkerConstructionRunner.prototype.requireFootprintDependencies,
   retained: CurrentPcb209WorkerConstructionRunner.prototype.retainedFootprintDependencies,
+});
+const forwardClockLeaseMethods = Object.freeze({
+  clock: CurrentPcb209WorkerConstructionRunner.prototype.issueClockRpcObservationLease,
+  invocation: CurrentPcb209WorkerConstructionRunner.prototype.issueCreateInvocationLease,
 });
 // oxlint-enable typescript/unbound-method
 function producerMethods(runner?: CurrentPcbWorkerConstructionOwner<OpeningProfile>): void {
@@ -597,6 +603,35 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
     const clocks = await runner.createFootprintTransactionClocks(result.construction, assignments, state, producers, dependencies, callbacks, destinations);
     await this.#current(); return clocks;
   }
+  /** Retain exact worker/invocation leases only on the original cold-v2
+   * dependency. Event ownership remains with construction until an admitted
+   * native clock handoff; no clock is armed, invoked or released here. */
+  protected async prepareForwardClockLeases(result: OpeningResult<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation,
+    dependencies: CurrentFootprintCopyDependencyObservation, callbacks: CurrentFootprintCopyRegisteredAsyncObservation,
+    destinations: CurrentFootprintCopyDestinationObservation): Promise<Readonly<{ workerLease: CurrentFootprintCopyClockRpcConstructionLease; invocationLease: CurrentFootprintCopyCreateInvocationLease }>> {
+    requireOriginalForwardClockPreparationTransport(this.#transport, this.#dependency);
+    if (result !== this.#completed || result.construction.profile !== "private.current-footprint-copy-construction.v1" ||
+        assignments !== this.#assignments || state !== this.#footprintPacket || producers !== this.#footprintProducers ||
+        dependencies !== this.#footprintDependencies || callbacks !== this.#registeredAsync || destinations !== this.#destinations ||
+        this.#footprintRunner === null || this.#clocksAttempted || this.#routeFinalAttempted) { throw fail("FORWARD_CLOCK_LEASE_STATE"); }
+    this.#clocksAttempted = true; const runner = this.#footprintRunner;
+    const same = (): void => {
+      if (this.#footprintRunner !== runner || runner.issueClockRpcObservationLease !== forwardClockLeaseMethods.clock ||
+          runner.issueCreateInvocationLease !== forwardClockLeaseMethods.invocation ||
+          CurrentPcb209WorkerConstructionRunner.prototype.issueClockRpcObservationLease !== forwardClockLeaseMethods.clock ||
+          CurrentPcb209WorkerConstructionRunner.prototype.issueCreateInvocationLease !== forwardClockLeaseMethods.invocation) { throw fail("FORWARD_CLOCK_LEASE_OWNER_CHANGED"); }
+      requireOriginalForwardClockPreparationTransport(this.#transport, this.#dependency);
+    };
+    same(); await this.#current(); same();
+    await runner.requireFootprintDependencies(result.construction, assignments, state, producers, dependencies); same();
+    await runner.requireFootprintRegisteredAsync(result.construction, assignments, state, callbacks); same();
+    await runner.requireFootprintDestinations(result.construction, assignments, state, destinations); same();
+    await runner.requireCurrentAssignments(result.construction, assignments); same(); await this.#current(); same();
+    const workerLease = runner.issueClockRpcObservationLease(result.construction, assignments, state, producers, dependencies);
+    const invocationLease = runner.issueCreateInvocationLease(workerLease); same();
+    return Object.freeze({ workerLease, invocationLease });
+  }
   public retainedFootprintRouteObservations(): Readonly<Record<string, unknown>> {
     const runner = this.#footprintRunner;
     return Object.freeze({ cacheConstruction: this.#cacheConstructionPacket, state: runner?.retainedFootprintState() ?? null,
@@ -742,6 +777,12 @@ export class CurrentFootprintCopyStartupOpening extends CurrentPcb209WorkerStart
     dependencies: CurrentFootprintCopyDependencyObservation, callbacks: CurrentFootprintCopyRegisteredAsyncObservation,
     destinations: CurrentFootprintCopyDestinationObservation): Promise<CurrentFootprintCopyTransactionClockEvents> {
     return this.createTransactionClocksForExecution(result, assignments, state, producers, dependencies, callbacks, destinations);
+  }
+  public prepareFootprintForwardExecutionClockLeases(result: CurrentFootprintCopyStartupOpeningResult, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation,
+    dependencies: CurrentFootprintCopyDependencyObservation, callbacks: CurrentFootprintCopyRegisteredAsyncObservation,
+    destinations: CurrentFootprintCopyDestinationObservation): Promise<Readonly<{ workerLease: CurrentFootprintCopyClockRpcConstructionLease; invocationLease: CurrentFootprintCopyCreateInvocationLease }>> {
+    return this.prepareForwardClockLeases(result, assignments, state, producers, dependencies, callbacks, destinations);
   }
 }
 // oxlint-disable-next-line typescript/unbound-method -- Called only with the original private-field opening owner and exact retained result below.

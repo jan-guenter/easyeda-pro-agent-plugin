@@ -1,0 +1,23 @@
+/** Independently restore the added fixed dictionary and native CDP envelopes.
+ * No C# compiler, owner, target or runtime Job is started by these checks. */
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { gunzipSync } from "node:zlib";
+import { test } from "node:test";
+import { currentFootprintInverseNativeGetTaskCompletionNativeSource as source } from "../src/current-footprint-inverse-native-get-task-completion-native.ts";
+import { currentFootprintInverseNativeGetTaskCompletionLiveCases as cases, currentFootprintInverseNativeGetTaskCompletionFrame as frame, currentFootprintInverseNativeGetTaskCompletionLiveTemplate as template, currentFootprintInverseNativeGetTaskCompletionWire as wire } from "../src/current-footprint-inverse-native-get-task-completion-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE as PROFILE } from "../src/current-footprint-inverse-native-profile.ts";
+
+/** Read the actual emitted smoke's finite fixture choices independently of
+ * host case data. A hardcoded all-reference smoke cannot mask frame/script/
+ * breakpoint fixture drift while the runtime decoder remains correct. */
+function smokeFixtures(text: string): Readonly<{ fields: ReadonlyMap<string, string>; fallback: string }> { const matched = /string fixture=([^;]+);fields\.Add\(name,fixture\);/u.exec(text); assert.ok(matched?.[1] !== undefined); const expression = matched[1]; const fields = new Map<string, string>(); for (const row of expression.matchAll(/name=="([A-Za-z]+)"\?"([A-Za-z_]+)":/gu)) { assert.ok(row[1] !== undefined && row[2] !== undefined && !fields.has(row[1])); fields.set(row[1], row[2]); } assert.equal(fields.size, 3); const fallback = expression.replaceAll(/name=="[A-Za-z]+"\?"[A-Za-z_]+":/gu, ""); assert.match(fallback, /^"[A-Za-z_]+"$/u); return { fields, fallback: fallback.slice(1, -1) }; }
+
+void test("all nineteen native live rows restore exact bytes through the unchanged bounded fixed loader", () => {
+  const text = source(); const fixtures = smokeFixtures(text); const match = /EasyedaDiagnosticFixedTable\.Load\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})",(\d+),4\)/u.exec(text); assert.ok(match !== null); const packed = Buffer.from(match[1] ?? "", "base64"); assert.equal(createHash("sha256").update(packed).digest("hex"), match[4]);
+  // oxlint-disable-next-line node/no-sync -- The immutable catalogue is decoded independently below the unchanged fixed-table ceiling.
+  const raw = gunzipSync(packed, { maxOutputLength: 60_000 }); assert.equal(raw.length, Number(match[2])); assert.equal(createHash("sha256").update(raw).digest("hex"), match[3]); const rows = raw.toString("utf8").split("\0").map(row => row.split("\t")); assert.equal(rows.length, Number(match[5])); assert.equal(rows.length, 24); const shared = rows[0]?.[3]; assert.ok(shared !== undefined);
+  for (const command of cases()) { const selected = rows.find(row => row[0] === template(command).key); assert.ok(selected?.[2] !== undefined && selected[3] !== undefined); const bytes = Buffer.from(`${JSON.stringify(wire(command, 79, "original_worker"))}\0`); const fields = frame(bytes, command, "original_worker"); for (const name of selected[2].split(",").filter(Boolean)) { assert.equal(fixtures.fields.get(name) ?? fixtures.fallback, fields[name], `${command.phase}:${name}`); } assert.equal(fields["action"], "footprint-inverse-native-get-task-completion"); let restored = selected[3]; for (const name of selected[2].split(",").filter(Boolean)) { restored = restored.replaceAll(JSON.stringify(`__native_get_complete_${name}__`), JSON.stringify(fixtures.fields.get(name) ?? fixtures.fallback)); } for (const row of rows.filter(item => item[0] === "program")) { assert.ok(row[1] !== undefined && row[3] !== undefined); restored = restored.replaceAll(JSON.stringify(`__native_get_complete_program_${row[1]}__`), row[3].replaceAll("__ngc_shared__", shared)); } assert.deepEqual(Buffer.from(`{"id":79,${restored.slice(1, -1)},"sessionId":"original_worker"}\0`), Buffer.from(`${JSON.stringify({ id: 79, method: command.method, params: command.params, sessionId: "original_worker" })}\0`)); }
+  const historical = text.replace(/string fixture=[^;]+;fields\.Add\(name,fixture\);/u, 'fields.Add(name,"original_ref");'); assert.notEqual(historical, text); assert.throws(() => smokeFixtures(historical));
+  assert.equal(PROFILE.renderer.total, 27_705); assert.equal(PROFILE.controls, 182_736); assert.equal(PROFILE.main.reproofs, 103_376); assert.equal(PROFILE.executionAuthorized, false); assert.equal(PROFILE.completeInverseReserved, false);
+});

@@ -124,7 +124,7 @@ async function assertNoLiveStartup(options: BundledFixture, pid: number): Promis
 }
 
 void describe("self-contained packaged machine startup", () => {
-  void test("209 configuration registers seventeen scoped tools and refuses design routes before upstream startup", async (context) => {
+  void test("209 configuration registers twenty-two scoped tools and refuses design routes before upstream startup", async (context) => {
     const options = await fixture(context, "public-utilities");
     const transport = new StdioClientTransport({ command: options.bootstrapNode,
       args: [options.bundle, "--machine-launch"], cwd: options.root, env: options.environment, stderr: "pipe" });
@@ -134,8 +134,8 @@ void describe("self-contained packaged machine startup", () => {
     const pid = transport.pid; assert.ok(pid !== null);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), ["easyeda_control_api", "easyeda_control_calculate",
-      "easyeda_control_catalog_components", "easyeda_control_catalog_footprint", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell",
-      "easyeda_control_launch", "easyeda_control_library_files", "easyeda_control_native_release", "easyeda_control_netlist_files", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup", "easyeda_control_public_readers", "easyeda_control_session", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system"]);
+      "easyeda_control_catalog_components", "easyeda_control_catalog_footprint", "easyeda_control_current_pcb_via_write", "easyeda_control_current_schematic_relevance_display_write", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell",
+      "easyeda_control_fixture_data", "easyeda_control_fixture_import", "easyeda_control_launch", "easyeda_control_library_files", "easyeda_control_native_release", "easyeda_control_netlist_files", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup", "easyeda_control_public_readers", "easyeda_control_session", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system"]);
     const startup = await api(client, { action: "pcb209-worker-startup", query: { includeSchemas: true } });
     assert.equal(startup["executionAuthorized"], false); assert.equal(startup["saveAuthorized"], false);
     const startupRequest = await api(client, { action: "pcb209-worker-startup-validate", query: { request: {
@@ -233,7 +233,7 @@ void describe("self-contained packaged machine startup", () => {
     } } });
     assert.equal(identityRequest["valid"], true); assert.equal(identityRequest["executionAuthorized"], false);
     const geometry = await api(client, { action: "pcb-geometry", query: { includeSchemas: true } });
-    assert.equal(geometry["total"], 20); assert.equal(geometry["invocationEnabledByDiscovery"], false);
+    assert.equal(geometry["total"], 22); assert.equal(geometry["invocationEnabledByDiscovery"], false);
     const geometryRequest = await api(client, { action: "pcb-geometry-validate", query: { request: {
       method: "eda.pcb_PrimitiveLine.getAll", arguments: {}, target: {
         projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16), tabId: `${"c".repeat(16)}@${"a".repeat(64)}`,
@@ -409,7 +409,7 @@ void describe("self-contained packaged machine startup", () => {
         [options.pinnedNode, options.bundle]);
       assert.equal(await readlink(`/proc/${pid}/cwd`), options.pluginRoot);
       const tools = await client.listTools();
-      assert.equal(tools.tools.length, 54);
+      assert.equal(tools.tools.length, 56);
       assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, tools.tools.length);
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_api"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_sdk_read"));
@@ -424,7 +424,7 @@ void describe("self-contained packaged machine startup", () => {
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_pcb_rename"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_schematic_rename"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_pcb_string_precreate_validation"));
-      for (const [reference, methods] of [["reviewed-installed", 749], ["official-latest", 806], ["installed-209", 844]] as const) {
+      for (const [reference, methods] of [["reviewed-installed", 749], ["official-latest", 806], ["installed-209", 844], ["packaged-4197", 862]] as const) {
         const sdk = await api(client, { action: "sdk", query: { reference, namespace: "sys_WebSocket", limit: 1, detail: true } });
         assert.equal(sdk["invocationEnabled"], false);
         assert.equal(record(sdk["totals"])["methods"], methods);
@@ -435,7 +435,7 @@ void describe("self-contained packaged machine startup", () => {
         assert.equal(operations["executionAuthorized"], false);
       }
       const coverage = await api(client, { action: "coverage", query: { search: "pcb_PrimitivePad.get", detail: true } });
-      assert.equal(record(coverage["summary"])["totalDistinctMethods"], 835);
+      assert.equal(record(coverage["summary"])["totalDistinctMethods"], 855);
       assert.equal(coverage["invocationEnabled"], false);
       const sdkReads = await api(client, { action: "sdk-reads", query: { method: "eda.pcb_PrimitivePad.get", includeSchemas: true } });
       assert.equal(sdkReads["matched"], 1);

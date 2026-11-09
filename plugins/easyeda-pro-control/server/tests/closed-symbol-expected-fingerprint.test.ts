@@ -81,6 +81,23 @@ async function fixture(t: TestContext, mode: "source-tree" | "bundle" = "source-
 function offline(calls: string[]): void { assert.ok(calls.every((name) => name === "launcherFingerprint" || name === "installedEasyedaBundles"), calls.join(",")); }
 async function refused(f: Awaited<ReturnType<typeof fixture>>): Promise<void> { await assert.rejects(build(f.engine, f.upstream)); offline(f.calls); }
 
+void test("the complete reviewed source roster has a separate internal seal without enlarging bundled fingerprint artifacts", async t => {
+  const f = await fixture(t, "bundle");
+  const projection = f.manifest.facadeImplementation["source-tree"];
+  projection.files = Array.from({ length: 2000 }, (_, index) => ({ relativePath: `server/src/retained-manifest-inventory-long-name-${String(index).padStart(4, "0")}.ts`, bytes: 12, sha256: "2".repeat(64) }));
+  projection.fileCount = projection.files.length;
+  manifestState.bytes = Buffer.from(JSON.stringify(f.manifest));
+  assert.ok(manifestState.bytes.length > 262_144);
+  const expected = await build(f.engine, f.upstream); offline(f.calls);
+  assert.ok(Buffer.byteLength(JSON.stringify(expected.fingerprint)) + 1 < 262_144);
+  assert.equal(expected.fingerprint.facadeImplementation.mode, "bundle");
+  f.behavior.launcher = (): void => {
+    const file = projection.files[1000]; assert.ok(file); file.sha256 = "f".repeat(64);
+    manifestState.bytes = Buffer.from(JSON.stringify(f.manifest));
+  };
+  await refused(f);
+});
+
 for (const mode of ["source-tree", "bundle"] as const) {
   for (const bridgeVersion of [false, true]) {
     // oxlint-disable-next-line eslint/no-loop-func -- Module references are initialized once by the awaited before hook, never by loop iterations.

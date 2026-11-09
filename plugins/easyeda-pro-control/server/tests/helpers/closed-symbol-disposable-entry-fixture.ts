@@ -19,7 +19,7 @@ type HandlerFixture = Awaited<ReturnType<typeof agedCoordinatorFixture>> & {
   localReads: string[]; launches: () => number;
 };
 export async function handlerFixture(context: TestContext, kind: "locked" | "aged" = "locked"): Promise<HandlerFixture> {
-  const reviewedExecutionScopeSha256 = loadReviewedCompatibilityManifest().facadeImplementation["source-tree"].sha256;
+  const reviewedExecutionScopeSha256 = loadReviewedCompatibilityManifest().facadeImplementation.bundle.sha256;
   const f = await agedCoordinatorFixture(context, false, reviewedExecutionScopeSha256);
   assert.equal(f.stage.constructor, ClosedSymbolCoordinator, "The fixture and entry must share one maintained coordinator registry");
   if (kind === "locked") { mutate(f.source, `UPDATE "${HISTORY_TABLE}" SET is_lock=1,created_at='2020-01-01 00:00:00' WHERE uuid='${IDS.oldHead}'`); }

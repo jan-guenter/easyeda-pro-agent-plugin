@@ -1,6 +1,7 @@
 /** Source generation and real descriptor reads only. No C#/PowerShell compiler,
  * application, native helper or Windows owner runs in these focused cases. */
 /* oxlint-disable import/max-dependencies -- Verify the fixed graph against its legacy predecessor, independent codebooks and actual descriptor reader in one bounded source-only fixture. */
+import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import assert from "node:assert/strict";
 import { constants } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -12,16 +13,19 @@ import { sha256Text } from "../src/core.ts";
 import { currentFootprintForwardNativeOutputs, currentFootprintForwardNativePins, currentFootprintForwardNativeSmoke } from "../src/current-footprint-forward-native-graph-source.ts";
 import { CURRENT_FOOTPRINT_FORWARD_NATIVE_GRAPH as GRAPH } from "../src/current-footprint-forward-native-graph-pins.ts";
 import { CURRENT_FOOTPRINT_FORWARD_NATIVE_GRAPH_LIMITS as LIMITS } from "../src/current-footprint-forward-native-limits.ts";
-import { FORWARD_NATIVE_LEGACY, FORWARD_NATIVE_PREDECESSOR, FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER,
+import { FORWARD_NATIVE_LEGACY, FORWARD_NATIVE_PREDECESSOR,
   migrateForwardNativePredecessor, normalizeForwardNativeLegacySource } from "../src/current-footprint-forward-native-migration.ts";
+import { CURRENT_NATIVE_BASELINE, assertCurrentNativeBaseline } from "../../scripts/native-baseline-source.ts";
 import { captureCurrentFootprintForwardNativeGraph } from "../src/current-footprint-forward-native-graph.ts";
 import { currentFootprintCopyClockRegistrationV2NativeCases } from "../src/current-footprint-copy-clock-registration-v2-native.ts";
 import { currentFootprintCopyClockRegistrationV2Wire } from "../src/current-footprint-copy-clock-registration-v2-wire.ts";
 import { currentFootprintCopyClockRpcV2NativeCases } from "../src/current-footprint-copy-clock-rpc-v2-native.ts";
 
-void test("the exact current helper preserves all released forward graph bytes through a separately pinned spatial projection", async () => {
-  const shared = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
-  assert.equal(Buffer.byteLength(shared), FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER.bytes); assert.equal(sha256Text(shared), FORWARD_NATIVE_UNLOCKED_SPATIAL_SHARED_HELPER.sha256);
+void test("the immutable build baseline preserves all released forward graph bytes through separately pinned diagnostic projections", async () => {
+  const shared = await readFile(new URL(`../../${CURRENT_NATIVE_BASELINE.relativePath}`, import.meta.url), "utf8");
+  assertCurrentNativeBaseline(shared);
+  const literal = expandCurrentPcbDiagnosticCSharpReviewSource(shared);
+  assert.equal(Buffer.byteLength(literal), CURRENT_NATIVE_BASELINE.bytes); assert.equal(sha256Text(literal), CURRENT_NATIVE_BASELINE.sha256);
   const legacy = normalizeForwardNativeLegacySource(shared);
   assert.equal(Buffer.byteLength(legacy), FORWARD_NATIVE_LEGACY.bytes); assert.equal(sha256Text(legacy), FORWARD_NATIVE_LEGACY.sha256);
   assert.equal(normalizeForwardNativeLegacySource(legacy), legacy);
@@ -63,7 +67,7 @@ void test("the exact current helper preserves all released forward graph bytes t
 });
 
 void test("altered spatial additions and unknown same-size or extended shared source refuse before released migration", async () => {
-  const shared = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const shared = expandCurrentPcbDiagnosticCSharpReviewSource(await readFile(new URL(`../../${CURRENT_NATIVE_BASELINE.relativePath}`, import.meta.url), "utf8"));
   const changedLimit = shared.replace("spatial209?384:", "spatial209?385:");
   const changedPurpose = shared.replace("Spatial209Birth.SourceQualified", "Spatial209Birth.SourceQualifieX");
   assert.ok(changedLimit !== shared, "The fixed-limit mutation must change the fixture.");

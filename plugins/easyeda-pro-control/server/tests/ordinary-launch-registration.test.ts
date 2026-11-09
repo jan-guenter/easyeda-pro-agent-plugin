@@ -1,4 +1,5 @@
 /* oxlint-disable max-classes-per-file -- The registration constructs two distinct production owners; both constructors need independent inert doubles. */
+import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
@@ -29,14 +30,14 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
     public hasAttemptedNativeOwnerAllocation(): boolean { return this.unused; }
   }
   const environment = { EASYEDA_ASSETS_ROOT: "/mnt/d/Apps/EasyEDA/resources/app/assets" };
-  const scope = vm.createContext({ z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
+  const scope = vm.createContext({ stagedComponentOpeningSource: undefined, z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
     CurrentPcbDiagnosticLifecycle: Diagnostic,
     disposableOwnerMethod: (owner: object, key: string): unknown => Reflect.get(owner, key) as unknown,
     process: { env: environment }, resolve: (): string => "/synthetic/plugin", upstream: {},
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
     closedSymbolIndexReservation: undefined, scheduledShutdown: undefined,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, currentFootprintForwardSourceValidation: undefined, hasForwardSourceCustody: (): boolean => false, hasFixtureImportCustody: (): boolean => false, fixtureImportCoordinator: undefined,
     closedSymbolUnreservedFailure: { observed: false },
     assertOrdinaryRuntimeAllocationAllowed: (): void => { checks += 1; },
     engine: { assertBridgeDispatchAllowed: async (): Promise<void> => {
@@ -65,6 +66,7 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
   });
   // Actual registration and coordinator with an isolated journal root and inert
   // Runtime. No facade, helper, bridge or application is started.
+  installIndexFixtureDependencies(scope, source);
   vm.runInContext(stripTypeScriptTypes(source.slice(start, end)).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   quarantine = true;

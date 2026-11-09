@@ -1,0 +1,27 @@
+# Original Via drain native lanes and shared fixed storage
+
+This source increment mounts the already maintained same-observer Via drain and changed-head sync programs in distinct finite native lanes. It does not establish connected writer success, saved persistence, a reopened result or a production design change.
+
+The new native lanes admit 63 changed-head command forms with 67 CDP requests, 68 drain forms with 69 CDP requests (the existing four-command delete lane remains separate), and the exact after-bootstrap source reader with its conservative 2,601-source-read ceiling. The drain retains three independent cache-job stages, original source continuations and the completed changed-head proof. Final native completion requires all of them, the original Main history/publication state, the original delete return and all nine original Promise metadata slots. The Node cursor still proves the actual Promise states and source relationships before it requests completion.
+
+The fixed replay wire carries no caller code or receiver selectors. Native custody retains the actual Save Array13 entry, Array6 body and currently held merged-sync receiver, substitutes those originals into the fixed replay program and preserves its full emitted message hash. The separate source reader sends only the finite getScriptSource command for an original worker script; the controller independently correlates exact submitted helpers or originally armed fixed conditions and qualifies their complete source.
+
+The shared pending storage factors the exact JSON-escaped pending capture, Via retained guards and distinct schematic retained guards into one existing FixedTable with three rows and one column. Both compressed and expanded hashes, row/column counts, canonical base64, strict UTF-8 and the existing 64 KiB decoder remain enforced. Supplied markers and repeated source snippets refuse during generation. Expansion restores the original program bytes before native field substitution. All 13 affected Via/SCH/replay declarations are independently compared byte for byte. The new post-sync stage phase rosters use the same bounded table codec; their required stages and exact original continuations are retained.
+
+**Measurement correction:** the byte sizes in the following original paragraph used ambient Node 26 compression. They are storage diagnostics only and do not establish pinned build reproducibility. The pinned Node 24 replacement is recorded in [fixed C# storage](2026-11-07-fixed-native-csharp-storage.md). Expanded debugger command bytes and their parity checks are unchanged.
+
+Two private generation passes were identical. On the checked source base with the joint saved-metadata and registration packing, the complete helper was 2,094,847 bytes, 2,305 below the unchanged 2,097,152-byte limit. Applying the newer canonical inverse fragment increased that private result to 2,101,777 bytes; the combined candidate therefore still requires another lossless saving before release. The generator's cap remains unchanged. No tracked helper, pin or bundle was rewritten.
+
+Linux compilation of the complete private C# succeeded. Static encoders passed every new 63/68/1 message hash, together with the full expanded Via and schematic worker encoders. The two focused shared-storage regressions, both TypeScript projects and changed-file strict type-aware lint passed. These checks allocate no EasyEDA owner, application, Job, native inspector connection or Windows process. No live writer was run.
+
+
+## 2026-11-08 validation attribution
+
+The implementation checkpoint introducing this record is `ecb590f7bdec47a13d03ee0b14d05ef5f4e53827`; its
+committed tree is `50071dea6482e3117b29866dc8d8dbb5f54aa0b3`. These are verified Git provenance identifiers,
+not a claim that the complete test-time worktree was sealed. The earlier
+record did not retain that complete worktree manifest, so its reported local
+results cannot establish validation of an exact complete release payload.
+Predecessor references and individual helper/compiler hashes keep their
+original narrower meanings. See the [PR185 attribution correction](2026-11-08-pr185-history-attribution.md)
+for the evidence limits and the final-release verification requirement.

@@ -1,12 +1,16 @@
 /** Observed CDP identity only. Matching URLs or bytes never admit a CAD owner,
  * project worker, compiler, writable receiver or arbitrary JavaScript. */
+import {CURRENT_SCHEMATIC_RELEVANCE_STATUS_BUS_SOURCE as STATUS_BUS_SOURCE} from "./current-schematic-relevance-status-bus-source.ts";
+import type {CurrentSchematicRelevanceStatusBusVariant} from "./current-schematic-relevance-status-bus-source.ts";
 import { createHash } from "node:crypto";
 import { DIAGNOSTIC_SOURCE_BYTES, diagnosticExact, diagnosticRecord, diagnosticToken } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { diagnosticAncillaryOwner } from "./current-pcb-diagnostic-ancillary.ts";
 import { CurrentPcbDiagnosticSameDocument } from "./current-pcb-diagnostic-same-document.ts";
+import { CurrentSchematicDisplaySameDocument } from "./current-schematic-display-same-document.ts";
 import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_SOURCE } from "./current-footprint-copy-manager-route-source.ts";
 import { CurrentPcbDiagnosticChildNavigation } from "./current-pcb-diagnostic-child-navigation.ts";
+import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE } from "./generated-schematic-display-accessor-source.ts";
 
 type Row = Readonly<Record<string, unknown>>;
 export interface DiagnosticFrameExpectation {
@@ -141,6 +145,8 @@ export class CurrentPcbDiagnosticContext {
   #openingConsumed = false;
   #opening: { readonly base: string; readonly url: string; readonly expectedTitle: string | null } | null = null;
   #rootNavigation: CurrentPcbDiagnosticSameDocument | null = null;
+  #schematicNavigation: CurrentSchematicDisplaySameDocument | null = null;
+  #schematicOpening: Readonly<{ base: string; url: string }> | null = null;
   #priorRootNavigation: CurrentPcbDiagnosticSameDocument | null = null;
   #pcbOpening: PcbOpeningTransition | null = null;
   #ancillaryFrame: Row | null = null;
@@ -214,6 +220,7 @@ export class CurrentPcbDiagnosticContext {
       this.#attachmentEvent = clone(params); return;
     }
     if (event.sessionId !== this.#sessionId) { this.#refuse(); }
+    if (this.#schematicNavigation?.accept(event) === true) { this.#uiSourceContext(); return; }
     if (this.#priorRootNavigation?.acceptLateNavigation(event) === true ||
         this.#rootNavigation?.accept(event) === true) { this.#uiSourceContext(); return; }
     if (this.#pcbOpening !== null && this.#pcbEvent(event)) { return; }
@@ -366,6 +373,24 @@ export class CurrentPcbDiagnosticContext {
     if (this.#frames?.length !== (ancillary === null ? 1 : 2) || ancillary !== null && this.#ancillaryOwner === null) { return this.#refuse(); }
     return selected;
   }
+  /** Data selector for the already observed schematic callee's original UI
+   * realm. Its bytes and the actual function still require independent source
+   * qualification. This does not grant evaluation or a foreign child context. */
+  public schematicCalleeContext(scriptId: string, variant: 0 | 1): Readonly<{ sessionId: string; scriptId: string; uniqueContextId: string }> {
+    const ui = this.#uiSourceContext(); const original = this.#sourceIdentity;
+    if (!diagnosticToken(scriptId) || variant !== 0 && variant !== 1 || !this.#openingConsumed || this.#schematicNavigation === null || this.#schematicOpening !== null ||
+        this.#rootNavigation !== null || this.#priorRootNavigation !== null || this.#pcbOpening !== null || this.#opening !== null || this.#frame === null || original === null) { return this.#refuse(); }
+    const profile = GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE[variant]; const selected = this.#scriptFor(this.#frame, { family: "ui", relativePath: profile.relativePath, scriptBytes: profile.bytes, scriptSha256: profile.sha256 });
+    if (selected.scriptId !== scriptId || selected.context["id"] !== original.contextId || selected.context["uniqueId"] !== original.uniqueContextId) { return this.#refuse(); }
+    return Object.freeze({ ...ui, scriptId });
+  }
+  /** Fixed metadata-only selector for the original local status bus. No new realm or function is admitted by caller data. */
+  public schematicStatusBusContext(scriptId:string,variant:CurrentSchematicRelevanceStatusBusVariant):Readonly<{sessionId:string;scriptId:string;uniqueContextId:string}>{
+    const ui=this.#uiSourceContext();const original=this.#sourceIdentity;
+    if(!diagnosticToken(scriptId)||variant!==0&&variant!==1&&variant!==2||!this.#openingConsumed||this.#schematicNavigation===null||this.#schematicOpening!==null||this.#rootNavigation!==null||this.#priorRootNavigation!==null||this.#pcbOpening!==null||this.#opening!==null||this.#frame===null||original===null){return this.#refuse();}
+    const profile=STATUS_BUS_SOURCE[variant],selected=this.#scriptFor(this.#frame,{family:"ui",relativePath:profile.relativePath,scriptBytes:profile.bytes,scriptSha256:profile.sha256});
+    if(selected.scriptId!==scriptId||selected.context["id"]!==original.contextId||selected.context["uniqueId"]!==original.uniqueContextId){return this.#refuse();}return Object.freeze({...ui,scriptId});
+  }
   /** This fixed metadata probe belongs to the original Start Page UI only.
    * Keep the complete UI/source/ancillary proof and exclude every opening
    * transition; a PCB or a previously opened project cannot adopt this phase. */
@@ -377,6 +402,14 @@ export class CurrentPcbDiagnosticContext {
     const base = startPageBase(this.#frame), fragment = this.#frame["urlFragment"] === "#" ? "#" : "";
     if (this.#target["url"] !== `${base}${fragment}`) { return this.#refuse(); }
     return selected;
+  }
+  /** Original pre-project cache selector only. The native owner additionally
+   * proves its empty UI preflight before issuing any CacheStorage request. */
+  public savedReadbackCacheContext(): Readonly<{ sessionId: string; uniqueContextId: string; frameId: string; securityOrigin: string }> {
+    const selected = this.savedCacheMetadataContext();
+    const frame = this.#frame;
+    if (frame === null || !diagnosticToken(frame["id"]) || typeof frame["securityOrigin"] !== "string" || frame["securityOrigin"].length === 0 || frame["securityOrigin"].length > 8192) { return this.#refuse(); }
+    return Object.freeze({ ...selected, frameId: frame["id"], securityOrigin: frame["securityOrigin"] });
   }
   /** Fixed model observer only, after the existing PCB frame's complete source
    * was admitted. UI opening and model inspection are intentionally disjoint;
@@ -445,9 +478,38 @@ export class CurrentPcbDiagnosticContext {
       this.#opening = null;
     } catch { this.#refuse(); }
   }
+  /** Distinct two-fragment generated SCH route. No PCB transition, child
+   * frame or prior runtime can use this branch. Its fixed native call supplies
+   * the final DOM title; the complete original loader/context stays retained. */
+  public beginSchematicOpeningTransition(projectUuid: string, pageUuid: string): Readonly<{ sessionId: string; uniqueContextId: string }> {
+    const selected = this.openingContext();
+    if (this.#openingConsumed || this.#rootNavigation !== null || this.#schematicNavigation !== null) { return this.#refuse(); }
+    this.#openingConsumed = true;
+    try {
+      if (!/^[a-f\d]{64}$/u.test(projectUuid) || !/^[a-f\d]{32}$/u.test(pageUuid) || this.#frame === null || this.#target === null) { this.#refuse(); }
+      const base = startPageBase(this.#frame), fragment = this.#frame["urlFragment"] === "#" ? "#" : "";
+      if (this.#target["url"] !== `${base}${fragment}`) { this.#refuse(); }
+      const projectUrl = `${base}#id=${projectUuid}`; const pageUrl = `${projectUrl},tab=*${pageUuid}@${projectUuid}`;
+      this.#schematicNavigation = new CurrentSchematicDisplaySameDocument(String(this.#frame["id"]), projectUrl, pageUrl);
+      this.#schematicOpening = Object.freeze({ base, url: pageUrl }); return selected;
+    } catch { return this.#refuse(); }
+  }
+  public finishSchematicOpeningTransition(targetReply: Row, frameReply: Row, documentTitle: string): void {
+    this.openingContext();
+    try {
+      const opening = this.#schematicOpening, original = this.#frame;
+      if (opening === null || original === null || this.#target === null || this.#schematicNavigation === null || !text(documentTitle, 512) || documentTitle.length === 0) { this.#refuse(); }
+      this.#schematicNavigation.seal(); const currentFrames = frames(frameReply), currentTarget = target(targetReply, this.#targetId, true); const currentFrame = currentFrames[0];
+      if (currentFrames.length !== (this.#ancillaryFrame === null ? 1 : 2) || currentFrame === undefined || this.#ancillaryFrame !== null && !currentFrames.some(row => equal(row, this.#ancillaryFrame))) { this.#refuse(); }
+      const { urlFragment: currentFragment, ...currentFields } = currentFrame, { urlFragment: _fragment, ...originalFields } = original;
+      if (currentFragment !== opening.url.slice(opening.base.length) || !equal(originalFields, currentFields) || !equal({ ...this.#target, url: opening.url, attached: true, title: documentTitle }, currentTarget)) { this.#refuse(); }
+      this.openingContext(); this.#frame = currentFrame; this.#frames = currentFrames; this.#target = Object.freeze({ ...currentTarget, attached: false }); this.#schematicOpening = null;
+    } catch { this.#refuse(); }
+  }
   /** Separate document-opening branch. The original source-shaped ancillary
    * child stays unchanged. Only this one-shot branch can add an editor child. */
   public beginPcbOpeningTransition(projectUuid: string, documentUuid: string): Readonly<{ sessionId: string; uniqueContextId: string }> {
+    if (this.#schematicNavigation !== null) { return this.#refuse(); }
     const selected = this.openingContext();
     if (this.#pcbOpening !== null || !this.#openingConsumed || this.#opening !== null || this.#frame === null ||
         this.#sourceIdentity === null || this.#target === null || !/^[a-f\d]{64}$/u.test(projectUuid) ||

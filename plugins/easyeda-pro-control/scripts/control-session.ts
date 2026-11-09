@@ -14,6 +14,7 @@ import { z } from "zod";
 import { assertSelfSoftCoreLimitZero } from "../server/src/soft-core-limit.ts";
 import { loadMachineLaunchProfile, machineProfileLaunchConfiguration } from "../server/src/machine-profile.ts";
 import type { MachineProfile } from "../server/src/machine-profile.ts";
+import { readSessionArgumentsFile, sessionArgumentsFileSchema } from "./control-session-arguments-file.ts";
 
 export const MAXIMUM_REQUEST_BYTES = 65_536;
 // Cover the native owner's one-hour normal lifetime, one-minute cleanup and
@@ -34,7 +35,11 @@ const requestSchema = z.union([
   callSchema,
   z.strictObject({ id: requestId, shutdown: z.literal(true) }),
 ]);
+const fileCallSchema = callSchema.omit({ arguments: true }).extend({ argumentsFile: sessionArgumentsFileSchema });
+const inputSchema = z.union([requestSchema, fileCallSchema]);
 type SessionRequest = z.infer<typeof requestSchema>;
+type SessionInputRequest = z.infer<typeof inputSchema>;
+export type CallInputRequest = CallRequest | z.infer<typeof fileCallSchema>;
 export type CallRequest = z.infer<typeof callSchema>;
 type Emitter = (value: unknown) => Promise<void>;
 type Invoker = (request: CallRequest) => Promise<unknown>;
@@ -46,6 +51,7 @@ const sessionPhases = ["arguments", "core-limit", "runtime", "plugin-root", "con
 type SessionPhase = typeof sessionPhases[number];
 const guardMessages = [
   ["usage-control-session--plugin-root-absolute-path", "invalid-arguments"],
+  ["arguments-file-rejected", "arguments-file-rejected"],
   ["unreviewed-runtime", "unreviewed-runtime"], ["plugin-root-not-canonical", "plugin-root-not-canonical"],
   ["unreviewed-node-command", "unreviewed-node-command"], ["invalid-bundle-manifest", "invalid-bundle-manifest"],
   ["bundle-not-regular", "bundle-not-regular"], ["bundle-drift", "bundle-drift"], ["unexpected-facade-catalog", "unexpected-facade-catalog"],
@@ -119,6 +125,24 @@ export function parseSessionRequest(line: string): SessionRequest {
     throw new Error("request-too-large");
   }
   return requestSchema.parse(JSON.parse(line));
+}
+
+/** Parse the tool-only file selector without reading it. Existing inline and
+ * shutdown requests retain their original strict schema and defaults. */
+export function parseSessionInputRequest(line: string): SessionInputRequest {
+  if (Buffer.byteLength(line) > MAXIMUM_REQUEST_BYTES) { throw new Error("request-too-large"); }
+  return inputSchema.parse(JSON.parse(line));
+}
+
+/** Materialize one normal call before dispatch and retain its decoded arguments.
+ * Selector framing and original file bytes share the existing input bound. */
+export async function resolveSessionCallArguments(input: CallInputRequest, frameBytes: number): Promise<Readonly<{ request: CallRequest; inputBytes: number }>> {
+  if (!Number.isSafeInteger(frameBytes) || frameBytes < 0 || frameBytes > MAXIMUM_REQUEST_BYTES) { throw new Error("request-too-large"); }
+  if (!("argumentsFile" in input)) { return Object.freeze({ request: input, inputBytes: frameBytes }); }
+  const file = await readSessionArgumentsFile(input.argumentsFile, MAXIMUM_REQUEST_BYTES - frameBytes);
+  const request = callSchema.parse({ id: input.id, tool: input.tool, timeoutMs: input.timeoutMs,
+    ...(input.responseFile === undefined ? {} : { responseFile: input.responseFile }), arguments: file.value });
+  return Object.freeze({ request, inputBytes: frameBytes + file.bytes });
 }
 
 export async function* boundedLines(
@@ -202,21 +226,27 @@ export async function runSessionRequests(
   emit: Emitter,
 ): Promise<void> {
   for await (const line of lines) {
-    let request: SessionRequest;
+    let input: SessionInputRequest;
     try {
-      request = parseSessionRequest(line);
+      input = parseSessionInputRequest(line);
     } catch {
       await emit({ error: "invalid-request", dispatched: false });
       return;
     }
-    if ("shutdown" in request) {
-      await emit({ id: request.id, closing: true });
+    if ("shutdown" in input) {
+      await emit({ id: input.id, closing: true });
       return;
     }
-    if (!allowedTools.has(request.tool)) {
-      await emit({ id: request.id, error: "tool-not-admitted", dispatched: false });
+    if (!allowedTools.has(input.tool)) {
+      await emit({ id: input.id, error: "tool-not-admitted", dispatched: false });
       return;
     }
+    let request: CallRequest;
+    try {
+      if ("argumentsFile" in input) { const decoded = await resolveSessionCallArguments(input, Buffer.byteLength(line)); request = decoded.request; }
+      else { request = input; }
+    }
+    catch { await emit({ id: input.id, error: "invalid-request", dispatched: false }); return; }
     try {
       const result = await invoke(request);
       const outcome = await publishSessionResult(request, result, emit);

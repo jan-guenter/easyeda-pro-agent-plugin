@@ -9,7 +9,8 @@ offline supplied-library/project-file metadata, mixed-document sources, schemati
 records, persisted PCB stack/rules and symbol pin inspection,
 tab-count/active-identity/shortcut observations, public catalog queries,
 ordinary launch, disposable project/PCB opening with layer and primitive observations,
-a separate disposable PCB viewport purpose, and original project-worker startup capture.
+a separate disposable PCB viewport purpose, original project-worker startup capture,
+and the separate generated-fixture Via writer for controlled disposable validation.
 The [public utility readers](current-utility-readers.md#language-and-api-page-viewport-readers)
 do not establish document units or account/library contents. SDK-resolved
 language can be a fallback and does not prove provider success. Selected-row
@@ -36,12 +37,87 @@ It admits the source-reviewed fixed16Math and18Unit/Environment subsets through
 their own exact runtime checks. Two utility argument sets passed on the prior
 installed release; that does not validate every method or this source payload.
 None of the older native/private design-content, project-opening or metadata-writing routes
-below is registered there. Its separate [209 opening route](current-pcb209-opening.md)
+below is registered there. The separate [ordinary schematic page workflow](current-schematic-page-observation.md)
+adds a complete-checkpoint-bound tracked open in an already loaded project, then
+current209 Text/Wire/Bus and supported-selection DTO reads on the exact active
+type-1 page. Its separate `native.sch_Page.observeComponentsPinsNets` aggregate
+observes raw component/pin/attribute/no-connect backing fields, literal Wire/Bus
+names/lines and already-built native contact Set membership. It evaluates no
+effective inherited or variant values and does not rebuild contacts. Missing or
+contradictory caches, BusEntry and unsupported component kinds refuse. Bounds are
+256 components,4096 pins,8192 attributes/contact nodes and256 Wire/Bus groups in
+the existing2MiB output. Contact freshness, complete topology, connectivity,
+persistence and writer/Save authority remain false. This is native observation,
+not public getter-instance parity. The separate generated explicit-Relevance fixture passed one
+[Text/Wire/Bus getAll case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-06-relevance-schematic-reader-live-case.md)
+with two matching samples and unchanged closed bytes. That scoped historical
+case does not validate selected/explicit-ID reads, placed parts/pins or a newer
+runtime. It grants no writer, explicit Save, connectivity or persistence
+authority. The separate [ordinary PCB read owner](current-pcb209-ordinary-read.md)
+uses its own launch-sealed namespace and truthful ordinary-project intent. It
+reuses all eight fixed209 reader stages and original cleanup; normal opening
+and closure effects can persist application data. It grants no writer or explicit
+Save authority and has no connected validation. Its separate [209 opening route](current-pcb209-opening.md)
 uses its own restricted original-owner lifecycle and source pins; it can trigger
 ordinary automatic persistence, but offers no explicit Save or writer. Its
 one-shot `observe-layers` stage provides two matching native layer samples,
 the public layer projection and enabled copper count; it does not establish
 physical stackup, complete startup or a saved baseline.
+The separate [spatial identity workflow](current-pcb209-spatial.md) offers one
+consumed Via-only, Line/Via or Arc/Line/Via point/region batch and a separate
+standalone circular SMT Pad point batch. Its older native purpose retains384
+requests. The generated Component point workflow uses a distinct419-request
+birth with genuine footprint/cache/attribute custody; it cannot upgrade an
+existing owner or accept an ordinary populated board. Discover
+`pcb209-component-spatial` for its `component-spatial` wrapper: the reference-linked
+`observe-components` action admits1–16 points/290 original callees; the distinct
+`observe-components-cloned-pads` action admits1–11 points/295 original callees.
+Either action consumes the same sole batch, including failures. Regions and
+other scene families refuse; both keep419 requests including original release.
+The cloned v2 result records exact geometry with `templateReferenceLinked:false`
+and the supported model states0,64or5202; historical v1 remains separate.
+Both workflows qualify
+original application functions and explicitly accept bounded math scratch
+effects. They return native identities rather than complete SDK objects and
+grant no writer, selection, connectivity or persistence authority. Their
+source implementations and offline checks remain separate from positive
+connected acceptance. One historical Arc/Line/Via six-query branch passed on a
+generated fixture with exact point/region results and complete closed-file/SQL
+invariance. A separate generated-Pad case accepted five points and complete
+closed raw/SQL/history invariance, then an old report-schema defect blocked
+original helper release. Its missing acknowledgment remains unknown. A separate
+frozen `20261108135950` Component cloned-Pad v2 case matched one centre hit and two outside
+misses with model state 64, matching samples and unchanged selection/descriptors.
+Original root/Job/helper cleanup completed and closed raw bytes/all 35 SQL tables
+matched the initial capture. Fresh initial qualification still refused WSL birth
+time zero; its false acceptance flags remain authoritative. Reference-linked
+Component points, other variants and later runtime admission remain separate.
+Component-only
+original-Job abort and the manager's
+retained cleanup adapter do not transfer ownership or replay a failed read.
+The [generated disposable Via controller](generated-pcb-via-write.md) has a
+separate original writer, saved reader, full SQL/source checks and failure
+cleanup composition. Offline `pcb209-via-write` reports its public-utility
+registration status and exact schemas. The source route is validation-only and
+requires the original released fixture data, explicit create/Save confirmations,
+current source admission, complete closed SQL/source proof and a separate fresh
+saved reader. Connected validation remains unclaimed. Discovery grants no
+execution, ordinary-project writer or inverse authority.
+The separate [pre-opening Via historical resolver](failed-via-preopening-relinquishment.md)
+can clear one complete failed-main prefix after fresh process-absence checks.
+Its missing original Job/release proof stays missing, and it cannot replay the
+operation or grant native ownership.
+The separate [explicit-Relevance schematic display controller](generated-schematic-display-write.md)
+has its own original journal, native owner and fresh saved reader. Its public
+schema accepts one seven-record fixture and one Text display patch. Missing
+original Modify/Save/drain completion keeps execution blocked before allocation.
+Writer-specific pre-opening Main registration has its own original intent and
+32-request continuation. Connected execution and
+ordinary-project writing remain unclaimed; no Via or Saved intent is borrowed.
+The distinct private `schematic-wire-edit209` existing-LINE owner and fixed
+algorithms have no registered public route or setter/action/Save authority.
+They do not enable ordinary Wire editing or remove the generic topology and
+delayed structure-publication guards.
 The separate `observe-primitives` stage returns two matching Line/Arc/Via and
 parentless String loaded-view projections with ordered IDs. Its256-row per-family
 and384KiB aggregate bounds refuse excess output. It does not include raw models
@@ -259,26 +335,30 @@ fixed clock/completion codecs retain their exact programs inside the pinned
 helper. Its fixed source-file ceiling is2MiB to accommodate the separate spatial
 programs; runtime request, clock, response and session limits do not grow.
 
-The complete writer, main request/completion route and logical delete/saved-reader
-models remain unmounted. Existing native profiles, message/output/control bounds
-and all four copy/readback/delete/readback generations still need joint proof.
+The complete forward/inverse writer remains unavailable. Individual Main
+request/completion transports, logical SQL/saved-source models and private
+inverse collectors are implemented; their presence does not compose the whole
+operation. Native profiles, message/output/control bounds and all four
+copy/readback/delete/readback generations still need joint proof.
 
-The delete model supports locked or aged heads and retained tombstones, with no
-native reopen or replay-exclusion proof. A dormant fixed delete trigger captures
-nine method/getter references and checks own target/client/ticket scalars before
-one exact manager invocation. Its eleven original constructors bind project and
-bus ancestry, and the pinned entry producer creates the target's own UUID. Flat
-scalar wire and a three-variant C#5 codec expose no caller program or session.
-No genuine inverse origin, consumed journal issuer, single actual delete-clock
-collector or native helper mount exists. Scalar eligibility and native success
-prove no complete dependency or upload/SQL/saved-absence result.
-Actual request/clock joins, worker
-parser/upload/publication and native SQL completion, original idle/exit/empty Job
-joins, independent closed full logical-SQL/history/backup/collateral comparison,
-fresh saved copy readback and supported native delete/saved absence remain gates
-before writer enablement. SQL can commit before a later failure; post-await
-observations and compilation grant no durability or execution authority. Query
-the offline API coverage inventory for each current route and omission reason.
+The private inverse now retains original inverse-target custody, a durable
+once-consumed delete intent and worker admission, mounted SDK/service dispatch,
+and source-qualified DEL manager/collateral preparation. Its DEL callback
+collector resumes once and holds the uninvoked service handler. The public
+wrapper's unawaited deletion and boolean cannot prove the dropped native delete
+Promise or collateral completion. These held prefixes grant no public delete
+route or saved deletion.
+
+The remaining joins are the same original handler/native delete Promise,
+causal worker request/reply, actual delete clock, Main SQL/upload/publication
+drain and dependency/editor/cache eligibility. Locked or aged-head SQL models
+do not admit a fresh unlocked copy. Full tombstone/raw-history/peer and
+backup/collateral effects, original idle/exit/empty-Job closure, replay exclusion
+and fourth-generation fresh saved absence through an independently reopened
+manager remain required. SQL can commit before a later failure; collector
+completion, post-await observations and compilation grant no durability or
+execution authority. Query the offline API coverage inventory for each current
+route and omission reason.
 The startup route retains the original
 native process, Job, pipe and fixed256-command budget. These observations do
 not establish continuous publisher ownership, peer containment, server clock
@@ -372,7 +452,7 @@ below describe retained source contracts, not execution support for types1/2/3.
 | Current PCB loaded-view identities | pcb_identities; api pcb-identities/pcb-identities-validate | Selected IDs or unfiltered Line/Arc/Via/Component/Pad/String/Dimension/Image/Attribute IDs; positive type lookup remains Line/Arc/Via-only. Attribute results retain ordered native parent groups, not verified stored ownership. Explicit target and captured native receiver, two matching ordered samples. No stored membership, ownership, geometry, connectivity or persistence claim; missing/ambiguous IDs refuse. Installed023200 passed six Attribute IDs in two groups on one disposable PCB, followed by retained closure and unchanged closed bytes. Nonempty Dimension/Image validation remains pending; see current-pcb-readers for scoped historical cases |
 | Current selected PCB geometry | pcb_geometry; pcb_SelectControl.getSelectedPrimitives | Empty arguments, exact PCB target and fingerprint. Ordered selected IDs bracket all nine supported family projections twice; complete rows, rosters and Attribute groups must match. Returns existing DTOs in selection order; unsupported, absent or ambiguous IDs refuse the whole result. At most256selected/256per family and384KiB;26fixed getter calls for nonempty selection,8for empty. Sampled stability only, not atomicity, public-object parity, ownership or saved state. Source-reviewed/offline-tested; connected validation pending. See [selected PCB objects](current-pcb-readers.md#selected-pcb-objects) |
 | Local historical abandonment | history; api history/history-validate | Two exact boundaries: sixteen-event closed-symbol validation marker-read, and seven-phase closed baseline stopped before relaunch intent. The first checks unchanged source; the second rehashes retained evidence only and proves no current process/source state. Exclusive sidecars preserve original journals. No bridge, restart, restored process authority, completion or replay. Six-event legacy baseline and generic recovery remain unavailable in restricted mode |
-| Offline SDK and exact operation reference | api sdk/operations/validate | 749 reviewed / 806 latest official declaration signatures; exact strict design/library schemas and offline custom-refinement validation; no SDK invocation or runtime admission |
+| Offline SDK and exact operation reference | api sdk/operations/validate | Separate749 reviewed,806 official-reference,844 installed-209 and862 packaged-4197 candidate declaration signatures. The candidate adds20 method paths to the855-method exhaustive inventory, with runtime-admission omissions. Exact strict design/library schemas and offline custom-refinement validation; no SDK invocation or runtime admission |
 | Ordinary current-version startup | launch | Fixed no-argument executable with exact installed code/helper pins, explicit existing-profile effects and durable attempt tracking. Retained root/Job termination or separately acknowledged supervision abandonment can permit consideration of a new-ID launch. No isolation, bridge, Start Page, navigation or CAD claim |
 | Native diagnostic validation | pcb_diagnostic_validation; api pcb-diagnostic-validation/pcb-diagnostic-validation-validate | Separate validation-only existing-profile launch and original root/Job ownership; one browser inventory, retained target/frame inspection and one compiled UI/PCB/public-API script/context check. Bounded identity results, no raw console data. Original normal-close, termination, release and exact receipt settlement; no ownership recreation after restart. Not isolated or guaranteed project-free; socket absence, bridge/worker/compiler authority and connected validation remain unproved. No navigation, arbitrary CDP/evaluation, CAD writer or Save. See [the diagnostic workflow](current-pcb-diagnostic-validation.md) |
 | Current disposable project/PCB opening | project_open; api project-open/project-open-validate | Already registered local disposable file, exact raw-path hash/original source digest, checkpoint-member default-branch PCB, initially empty editor and retained ordinary launch. Public project/document calls run once with orphan tracking. Normal opening may migrate data, replay caches and automatically Save. Inspection/observation never navigate. Terminal retirement requires original root/Job termination and exact session closure; no writer, persistence or full-initialization claim. Installed101500 passed the disposable fixture opening within its metadata round trip; other startup shapes remain separately scoped. Read [the opening guide](current-project-opening.md) |
@@ -383,6 +463,7 @@ below describe retained source contracts, not execution support for types1/2/3.
 | Current PCB layer metadata | pcb_layers; api pcb-layers/pcb-layers-validate | Explicit active ordinary PCB project/branch/document/tab, captured native receiver and two matching complete layer samples under current API/UI/PCB pins. Nine-field layer projection or enabled native SIGNAL/PLANE plus two; raw colors preserved. Native equivalent, not public-wrapper execution. No layer selection, navigation, Save, physical-stackup or ready-state proof; connected validation pending |
 | Current configured shortcuts | shortcuts; api shortcuts/shortcuts-validate | Fixed public getShortcutKeys query; optional includeSystem defaults false. Preserves raw key strings and shortcut-specific scope enums under complete bounded double samples and API/UI pins. No keypress, registration, focus/executability or complete inventory claim; source-tested, connected validation pending |
 | System-library LCSC lookup | Discovery only; omitted | Current desktop network-disabled fallback reaches the local device-update router. Concurrent library refresh can expose a physical system-library database to initialization/migration. Renderer checks cannot atomically rule out this path; a remote-only adapter or scoped library-effects contract is still required |
+| Public CBB search/detail | Discovery only; omitted | Desktop search refreshes local project-path discovery; get requires project/profile/branch and reciprocal board membership. Retained anonymous HTTP403 and the shipped system library's zero project/board rows provide no positive system-owned witness and prove no online absence. Exact anonymous ownership and bounded search/detail/project/branch/board joins without credentials, local refresh or private fallback remain required; see [the catalog contract](current-system-library.md) |
 | Connection and active context | status, context | Authenticated responsive session, exact project path/UUID and document/type/tab |
 | Existing project/document open | runtime open-existing | Saved PCB or schematic page; exact registry/checkpoint membership, exclusive-tab guard and complete unchanged SQLite proof. Imported SYMBOL/FOOTPRINT header provenance is retained and compared; installed083400 passed a disposable12document open. Later generations require separate admission. No creation, save, discard or replacement |
 | Exact schematic components | exact_read | Stable double samples with fixed public projections; schematic-topology disabled pending a verified non-mutating replacement |

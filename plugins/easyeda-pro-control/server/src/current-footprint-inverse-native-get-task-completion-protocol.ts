@@ -1,0 +1,82 @@
+/** Distinct native GET completion grammar. Historical GET programs and wire
+ * templates are immutable data, with no old public state or token admission. */
+import { z } from "zod";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { captureCurrentFootprintInverseDeleteBindingReply as capture } from "./current-footprint-inverse-delete-binding-capture.ts";
+import { CURRENT_FOOTPRINT_INVERSE_GET_COMPLETION_FLAGS as FLAGS, CURRENT_FOOTPRINT_INVERSE_GET_COMPLETION_MAXIMUM as MAXIMUM, currentFootprintInverseGetCompletionBudget as oldBudget,  currentFootprintInverseGetCompletionFrame as oldFrame, qualifyCurrentFootprintInverseGetCompletionHelper as oldHelper,  validateCurrentFootprintInverseGetCompletionCommand as oldValidate, currentFootprintInverseGetCompletionWire as oldWire } from "./current-footprint-inverse-get-completion-protocol.ts";
+import type { CurrentFootprintInverseGetCompletionCommand as OldCommand } from "./current-footprint-inverse-get-completion-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_COMPLETION_LIVE_EXPRESSIONS as EXPRESSIONS, CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_COMPLETION_LIVE_PROGRAMS as LIVE } from "./current-footprint-inverse-native-get-task-completion-live-programs.ts";
+
+const prefix = "inverse-native-get-task-completion-"; const legacy = "inverse-get-completion-";
+type Native<C extends OldCommand = OldCommand> = C extends OldCommand ? Omit<C, "phase"> & Readonly<{ phase: C["phase"] extends `inverse-get-completion-${infer Suffix}` ? `inverse-native-get-task-completion-${Suffix}` : never }> : never;
+const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u); const ref = z.strictObject({ objectId: handle });
+const flags = { objectGroup: z.literal(FLAGS.objectGroup), silent: z.literal(true), generatePreview: z.literal(false), throwOnSideEffect: z.literal(true), awaitPromise: z.literal(false), userGesture: z.literal(false) };
+const roles = ["data", "row", "title"] as const;
+const calls = Object.freeze({ roots: { program: LIVE.roots, refs: 4, byValue: false }, data: { program: LIVE.data, refs: 2, byValue: true }, row: { program: LIVE.row, refs: 2, byValue: true }, title: { program: LIVE.title, refs: 3, byValue: true } } as const);
+/* oxlint-disable unicorn/max-nested-calls -- Every added live role has an exact literal helper/expression and unchanged true flags. */
+const liveSchema = z.discriminatedUnion("phase", [
+  z.strictObject({ phase: z.literal("inverse-native-get-task-completion-live-call"), role: z.enum(["roots", ...roles]), method: z.literal("Runtime.callFunctionOn"), params: z.strictObject({ ...flags, objectId: handle, functionDeclaration: z.string().max(16_384), arguments: z.array(ref).min(2).max(4), returnByValue: z.boolean() }) }),
+  z.strictObject({ phase: z.literal("inverse-native-get-task-completion-live-frame"), role: z.enum([...roles, "caller"]), method: z.literal("Debugger.evaluateOnCallFrame"), params: z.strictObject({ callFrameId: handle, expression: z.string(), objectGroup: flags.objectGroup, silent: z.literal(true), generatePreview: z.literal(false), throwOnSideEffect: z.literal(true), returnByValue: z.literal(false), includeCommandLineAPI: z.literal(false) }) }),
+  z.strictObject({ phase: z.literal("inverse-native-get-task-completion-live-properties"), method: z.literal("Runtime.getProperties"), params: z.strictObject({ objectId: handle, ownProperties: z.literal(true), accessorPropertiesOnly: z.literal(false), generatePreview: z.literal(false) }) }),
+  z.strictObject({ phase: z.literal("inverse-native-get-task-completion-live-helper"), method: z.literal("Debugger.getScriptSource"), params: z.strictObject({ scriptId: handle }) }),
+  z.strictObject({ phase: z.literal("inverse-native-get-task-completion-live-arm"), role: z.enum(roles), method: z.literal("Debugger.setBreakpointOnFunctionCall"), params: z.strictObject({ objectId: handle, condition: z.literal("") }) }),
+  z.strictObject({ phase: z.literal("inverse-native-get-task-completion-live-remove"), role: z.enum(roles), method: z.literal("Debugger.removeBreakpoint"), params: z.strictObject({ breakpointId: handle }) }),
+  z.strictObject({ phase: z.literal("inverse-native-get-task-completion-live-resume"), role: z.enum(roles), method: z.literal("Debugger.resume"), params: z.strictObject({}) }),
+]);
+/* oxlint-enable unicorn/max-nested-calls */
+export type CurrentFootprintInverseNativeGetTaskCompletionCommand = Readonly<Native | z.infer<typeof liveSchema>>;
+function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_NATIVE_GET_TASK_COMPLETION_PROTOCOL"); } }
+/** Translate only a validated immutable old data command into this distinct
+ * native namespace. This creates no owner, Job, cursor or body permission. */
+export function currentFootprintInverseNativeGetTaskCompletionFromLegacy(input: OldCommand): CurrentFootprintInverseNativeGetTaskCompletionCommand { const command = oldValidate(input); const translated = freezeDeep({ ...command, phase: `${prefix}${command.phase.slice(legacy.length)}` });
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The closed original discriminant alone is renamed; all validated method/role/params stay paired, with every legacy row checked for round-trip parity.
+  return translated as Native; }
+/** Reject every unknown phase, altered literal, extra field or relaxed flag.
+ * Legacy program bytes are delegated only after the native prefix is proved. */
+export function validateCurrentFootprintInverseNativeGetTaskCompletionCommand(input: unknown): CurrentFootprintInverseNativeGetTaskCompletionCommand {
+  const raw = z.looseObject({ phase: z.string().max(128) }).parse(capture(input)); need(raw.phase.startsWith(prefix)); if (raw.phase.startsWith(`${prefix}live-`)) { const command = liveSchema.parse(raw); if (command.method === "Runtime.callFunctionOn") { const row = calls[command.role]; need(command.params.functionDeclaration === row.program && command.params.arguments.length === row.refs && command.params.returnByValue === row.byValue); } else if (command.method === "Debugger.evaluateOnCallFrame") { need(command.params.expression === EXPRESSIONS[command.role]); } return freezeDeep(command); } return currentFootprintInverseNativeGetTaskCompletionFromLegacy(oldValidate({ ...raw, phase: `${legacy}${raw.phase.slice(prefix.length)}` }));
+}
+/** Recover only the exact old immutable codec/data view, never its state. */
+export function currentFootprintInverseNativeGetTaskCompletionLegacy(input: CurrentFootprintInverseNativeGetTaskCompletionCommand): OldCommand { const command = validateCurrentFootprintInverseNativeGetTaskCompletionCommand(input); need(!command.phase.startsWith(`${prefix}live-`)); return oldValidate({ ...command, phase: `${legacy}${command.phase.slice(prefix.length)}` }); }
+/** Keep the same actual selected helper source before any later traversal. */
+export function currentFootprintInverseNativeGetTaskCompletionProgram(input: CurrentFootprintInverseNativeGetTaskCompletionCommand): string | null { const command = validateCurrentFootprintInverseNativeGetTaskCompletionCommand(input); if (command.method === "Runtime.callFunctionOn") { return command.params.functionDeclaration; } if (command.method === "Debugger.evaluateOnCallFrame") { return command.params.expression; } return null; }
+/** Require exact actual V8 helper bytes for a closed legacy/live literal. */
+export function qualifyCurrentFootprintInverseNativeGetTaskCompletionHelper(source: unknown, command: CurrentFootprintInverseNativeGetTaskCompletionCommand): void { const program = currentFootprintInverseNativeGetTaskCompletionProgram(command); need(program !== null); if (!command.phase.startsWith(`${prefix}live-`)) { oldHelper(source, program); return; } need(source === (program.startsWith("[") ? program : `(${program})`)); }
+/** Add only this actual original transport id/session and separate marker. */
+export function currentFootprintInverseNativeGetTaskCompletionWire(input: CurrentFootprintInverseNativeGetTaskCompletionCommand, id: number, sessionId: string): CurrentFootprintInverseNativeGetTaskCompletionCommand & Readonly<{ id: number; sessionId: string; inverseNativeGetTaskCompletion: true }> { need(Number.isSafeInteger(id) && id > 0); handle.parse(sessionId); return freezeDeep({ ...validateCurrentFootprintInverseNativeGetTaskCompletionCommand(input), id, sessionId, inverseNativeGetTaskCompletion: true }); }
+/** Decode only a byte-exact native packet. Comparison data never recreates
+ * its original Job, pending helper, invocation or actual transfer permission. */
+export function currentFootprintInverseNativeGetTaskCompletionFrame(bytes: Buffer, input: CurrentFootprintInverseNativeGetTaskCompletionCommand, sessionId: string): Readonly<Record<string, string | number>> {
+  need(bytes.length <= 65_536 && bytes.at(-1) === 0); const decoder = new TextDecoder("utf-8", { fatal: true }); const text = decoder.decode(bytes.subarray(0, -1)); const raw: unknown = JSON.parse(text); const id = z.looseObject({ id: z.number().int().positive() }).parse(capture(raw)).id; const command = validateCurrentFootprintInverseNativeGetTaskCompletionCommand(input); need(bytes.toString("utf8") === `${JSON.stringify(currentFootprintInverseNativeGetTaskCompletionWire(command, id, sessionId))}\0`);
+  if (!command.phase.startsWith(`${prefix}live-`)) { const old = currentFootprintInverseNativeGetTaskCompletionLegacy(command); const packet = oldWire(old, id, sessionId); const legacyBytes = Buffer.from(`${JSON.stringify(packet)}\0`); const fields = oldFrame(legacyBytes, old, sessionId); return Object.freeze({ ...fields, action: "footprint-inverse-native-get-task-completion", phase: command.phase }); }
+  const fields: Record<string, string | number> = { action: "footprint-inverse-native-get-task-completion", requestId: id, phase: command.phase, method: command.method }; if ("role" in command) { fields["role"] = command.role; } if (command.method === "Debugger.getScriptSource") { fields["scriptId"] = command.params.scriptId; } else if (command.method === "Debugger.evaluateOnCallFrame") { fields["callFrameId"] = command.params.callFrameId; } else if (command.method === "Debugger.removeBreakpoint") { fields["breakpointId"] = command.params.breakpointId; } else if (command.method === "Runtime.getProperties" || command.method === "Runtime.callFunctionOn" || command.method === "Debugger.setBreakpointOnFunctionCall") { fields["objectId"] = command.params.objectId; if (command.method === "Runtime.callFunctionOn") { for (const [index, arg] of command.params.arguments.entries()) { need("objectId" in arg); fields[`argument${String(index)}`] = arg.objectId; } } } return Object.freeze(fields);
+}
+export { CURRENT_FOOTPRINT_INVERSE_GET_COMPLETION_FLAGS as CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_COMPLETION_FLAGS } from "./current-footprint-inverse-get-completion-protocol.ts";
+export const CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_COMPLETION_LIVE_CALLS = calls;
+export { CURRENT_FOOTPRINT_INVERSE_GET_COMPLETION_MAXIMUM as CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_COMPLETION_MAXIMUM, currentFootprintInverseGetCompletionBudget as currentFootprintInverseNativeGetTaskCompletionLegacyBudget, currentFootprintInverseGetCompletionCases as currentFootprintInverseNativeGetTaskCompletionLegacyCases, currentFootprintInverseGetCompletionProgram as currentFootprintInverseNativeGetTaskCompletionLegacyProgram } from "./current-footprint-inverse-get-completion-protocol.ts";
+
+/** Enumerate only the added live-frame/point/helper rows. These are data
+ * fixtures; no original Job, source receiver or transfer is enrolled here. */
+export function currentFootprintInverseNativeGetTaskCompletionLiveCases(): readonly CurrentFootprintInverseNativeGetTaskCompletionCommand[] {
+  const values: unknown[] = [];
+  for (const role of ["roots", ...roles] as const) { const row = calls[role]; values.push({ phase: `${prefix}live-call`, role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: "original_ref", functionDeclaration: row.program, arguments: Array.from({ length: row.refs }, () => ({ objectId: "original_ref" })), returnByValue: row.byValue } }); }
+  for (const role of [...roles, "caller"] as const) { values.push({ phase: `${prefix}live-frame`, role, method: "Debugger.evaluateOnCallFrame", params: { callFrameId: "original_frame", expression: EXPRESSIONS[role], objectGroup: FLAGS.objectGroup, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } }); }
+  values.push({ phase: `${prefix}live-properties`, method: "Runtime.getProperties", params: { objectId: "original_ref", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }, { phase: `${prefix}live-helper`, method: "Debugger.getScriptSource", params: { scriptId: "original_script" } });
+  for (const role of roles) { values.push({ phase: `${prefix}live-arm`, role, method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: "original_ref", condition: "" } }, { phase: `${prefix}live-remove`, role, method: "Debugger.removeBreakpoint", params: { breakpointId: "original_point" } }, { phase: `${prefix}live-resume`, role, method: "Debugger.resume", params: {} }); } return freezeDeep(values.map(value => validateCurrentFootprintInverseNativeGetTaskCompletionCommand(value)));
+}
+/** Replace only original remote handles in a finite added live codec row.
+ * Old rows keep their unchanged historical template and program dictionaries. */
+export function currentFootprintInverseNativeGetTaskCompletionLiveTemplate(input: CurrentFootprintInverseNativeGetTaskCompletionCommand): Readonly<{ key: string; method: string; names: readonly string[]; template: string }> {
+  const command = validateCurrentFootprintInverseNativeGetTaskCompletionCommand(input); need(command.phase.startsWith(`${prefix}live-`)); const names: string[] = []; const field = (name: string): string => { need(!names.includes(name)); names.push(name); return `__native_get_complete_${name}__`; }; const params: Record<string, unknown> = { ...command.params };
+  if (command.method === "Runtime.callFunctionOn") { params["objectId"] = field("objectId"); params["functionDeclaration"] = `__native_get_complete_program_${command.role}__`; params["arguments"] = command.params.arguments.map((_arg, index) => ({ objectId: field(`argument${String(index)}`) })); } else if (command.method === "Debugger.evaluateOnCallFrame") { params["callFrameId"] = field("callFrameId"); } else if (command.method === "Debugger.getScriptSource") { params["scriptId"] = field("scriptId"); } else if (command.method === "Debugger.removeBreakpoint") { params["breakpointId"] = field("breakpointId"); } else if (command.method === "Runtime.getProperties" || command.method === "Debugger.setBreakpointOnFunctionCall") { params["objectId"] = field("objectId"); }
+  return freezeDeep({ key: command.phase.slice(prefix.length) + ("role" in command ? `:${command.role}` : ""), method: command.method, names, template: JSON.stringify({ method: command.method, params }) });
+}
+
+export { CURRENT_FOOTPRINT_INVERSE_GET_COMPLETION_PROGRAMS as CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_COMPLETION_PROGRAMS, currentFootprintInverseGetCompletionBudget as currentFootprintInverseNativeGetTaskCompletionBudget } from "./current-footprint-inverse-get-completion-protocol.ts";
+
+/** The native live proof spends its own fixed operations inside the existing
+ * absolute completion reservation. Larger graphs refuse before transfer; no
+ * old public graph/schema or request/event ceiling is changed. */
+export function currentFootprintInverseNativeGetTaskCompletionBudgetWithLive(inputNodes: number, rowNodes: number): Readonly<{ legacy: ReturnType<typeof oldBudget>; live: Readonly<{ cdpRequests: 33; helpers: 8; controls: 45; events: 17 }>; cdpRequests: number; helpers: number; controls: number; events: number }> {
+  const old = oldBudget(inputNodes, rowNodes); const live = Object.freeze({ cdpRequests: 33, helpers: 8, controls: 45, events: 17 } as const); const selected = { legacy: old, live, cdpRequests: old.cdpRequests + live.cdpRequests, helpers: old.helpers + live.helpers, controls: old.controls + live.controls, events: old.events + live.events }; need(selected.cdpRequests <= MAXIMUM.cdpRequests && selected.helpers <= MAXIMUM.helpers && selected.controls <= MAXIMUM.controls && selected.events <= MAXIMUM.events); return Object.freeze(selected);
+}
