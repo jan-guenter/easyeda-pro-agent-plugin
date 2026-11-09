@@ -2,6 +2,8 @@
  * callback and await return remain separate from history/Save completion. */
 /* oxlint-disable import/max-dependencies -- Keep original operation/actor custody, fixed programs and finite wire decoding separate. */
 import { z } from "zod";
+import { CURRENT_MAIN_CAPTURED_SCOPE_FRAMES as CAPTURED } from "./current-main-captured-scope-frames.ts";
+import { CURRENT_PCB_VIA_MAIN_BEGIN_BOOKKEEPING as BOOKKEEPING, CURRENT_PCB_VIA_MAIN_BEGIN_REBASE as REBASE } from "./current-pcb-via-main-captured-rebase.ts";
 import { canonicalJson } from "./core.ts";
 import { requireOriginalCurrentPcbViaMainOrigin } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentPcbViaWriteOwner } from "./current-pcb-via-write-owner.ts";
@@ -12,7 +14,6 @@ import type { CurrentPcbViaHeldMainActor } from "./current-pcb-via-main-request-
 import { CURRENT_PCB_VIA_MAIN_BEGIN_CALLBACK_CONDITION as CONDITION, CURRENT_PCB_VIA_MAIN_BEGIN_FLAGS as FLAGS, CURRENT_PCB_VIA_MAIN_BEGIN_RUN_EXPRESSION as RUN_FRAME,
   CURRENT_PCB_VIA_MAIN_BEGIN_SITES as SITES, validateCurrentPcbViaMainBeginCommand } from "./current-pcb-via-main-begin-protocol.ts";
 import type { CurrentPcbViaMainBeginCall as Role } from "./current-pcb-via-main-begin-protocol.ts";
-import { CURRENT_PCB_VIA_MAIN_BEGIN_CALLS as CALLS } from "./current-pcb-via-main-begin-programs.ts";
 import { currentPcbViaMainBeginResultSchema } from "./current-pcb-via-main-begin-custody.ts";
 import type { CurrentPcbViaMainBeginResult } from "./current-pcb-via-main-begin-custody.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -54,12 +55,16 @@ export class CurrentPcbViaMainBeginObserver {
       else { if (role !== "run") { need(event.params.hitBreakpoints[0] === this.#points.get(role), "ORIGINAL_POINT"); } const frame = event.params.callFrames[0]; need(frame !== undefined, "FRAME"); return frame.callFrameId; }
     } throw new Error("PCB_VIA_BEGIN_OBSERVER_READ_BOUND");
   }
+  /** Keep the original frame/join schedule. SQL roles reconstruct captured
+   * util; other joins use fixed scratch-copy adapters with original arguments. */
   async #capture(role: Role, arguments_: readonly string[]): Promise<string | null> {
-    const callFrameId = await this.#next(role), expression = role === "run" ? RUN_FRAME : SITES[role].expression;
-    const frame = decodeArray(await this.#send({ phase: "via-main-begin-frame", role, method: "Debugger.evaluateOnCallFrame", params: { objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true,
-      callFrameId, expression, returnByValue: false, includeCommandLineAPI: false } }, true), { save: 4, transaction: 2, run: 7, callback: 8, returned: 2 }[role]);
-    const fixed = CALLS[role], result = await this.#send({ phase: "via-main-begin-join", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: frame, functionDeclaration: fixed.program,
-      arguments: arguments_.map(objectId => ({ objectId })), returnByValue: fixed.returnByValue } }, true);
+    let captured: typeof CAPTURED.beginRun | null = null; if (role === "run") { captured = CAPTURED.beginRun; } else if (role === "callback") { captured = CAPTURED.beginCallback; }
+    const callFrameId = await this.#next(role), expression = captured?.rawExpression ?? (role === "run" ? RUN_FRAME : SITES[role].expression);
+    const frame = decodeArray(await this.#send({ phase: captured === null ? "via-main-begin-frame" : "via-main-begin-raw-frame", role, method: "Debugger.evaluateOnCallFrame", params: { objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true,
+      callFrameId, expression, returnByValue: false, includeCommandLineAPI: false } }, true), { save: 4, transaction: 2, run: 7, callback: 8, returned: 2 }[role] - (captured === null ? 0 : 1));
+    const fixed = role === "run" || role === "callback" ? REBASE[role] : BOOKKEEPING[role]; const args = role === "callback" ? [this.#bindings.sqlCaptureObjectId, ...arguments_] : arguments_;
+    const result = await this.#send({ phase: captured === null ? "via-main-begin-bookkeeping" : "via-main-begin-rebase", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: frame, functionDeclaration: fixed.program,
+      arguments: args.map(objectId => ({ objectId })), returnByValue: fixed.returnByValue } }, true);
     if (role === "returned") { resultSchema.parse(result); return null; }
     return decodeArray(result, fixed.length);
   }

@@ -1,6 +1,22 @@
 # Project history
 
+- [2026-11-08 Explicit-Relevance schematic readers](2026-11-08-explicit-relevance-schematic-readers.md). Three native reader equivalents pass on the seven-record disposable fixture, followed by original root/Job/helper cleanup and complete closed-file byte equivalence.
+
+- [2026-11-08 PR196 review corrections](2026-11-08-pr196-review-corrections.md). Bounded cold-state claims, linked historical scope correction, checked inert counter instrumentation and explicit final-freeze compatibility disposition.
+- [2026-11-08 PR195 code corrections](2026-11-08-pr195-code-corrections.md). Early spacing-overflow diagnostics and a genuine packed, unclosed inverse SDK regression, with preserved failures and unchanged guards and caps.
+- [2026-11-08 PR195 function contracts](2026-11-08-pr195-function-contracts.md). Twenty-six contracts on originally changed functions, exact source restoration after comment removal and strict changed-file lint.
+- [2026-11-08 Foreground tool argument files](2026-11-08-foreground-argument-files.md). SHA-bound private data snapshots avoid long terminal argument lines while retaining the existing input limits, original cleanup custody and refusal before dispatch.
+
+- [2026-11-08 Native constructor accessor metadata](2026-11-08-native-accessor-constructor-profile.md). A source-built accessor-retaining header profile matches the next stopped Windows descriptor fingerprint while preserving strict old profiles and false ABI/payload claims.
+- [2026-11-08 Eager subagent connection during replacement](2026-11-08-eager-subagent-handoff.md). Supported unused-child cleanup and original idle-connection closure allow a new admitted manager without a Codex restart.
+- [2026-11-08 Current coverage and skill boundaries](2026-11-08-current-coverage-boundaries.md). Component point discovery, current inverse DEL omissions, raw schematic read limits and cloned v2 guidance without new execution authority.
+- [2026-11-08 Original publisher post and worker preparation](2026-11-08-original-publisher-post-and-worker-preparation.md). Same-stream publisher prefix holds before native sending; passive original worker preparation and lossless V3 storage preserve false completion claims and fixed caps.
+
+- [2026-11-08 Bounded schematic native storage](2026-11-08-bounded-schematic-native-storage.md). Explicit token fusion and exact Main-table restoration retain the byte caps; fixed phase reconstruction now includes the unchanged SDK wait program.
 - [2026-11-08 Fixed selected-Main helper storage](2026-11-08-selected-main-native-program-sharing.md). Lossless shared JOIN/SCOPE table data restores every prior compiler byte and retains expanded length/hash checks without changing caps or authority.
+- [2026-11-08 Original DEL body and method holds](2026-11-08-inverse-del-method-hold.md). Fixed original continuation ends before worker forwarding; later owner-free C# compilation and 13 pure codecs passed, while live validation remains unrun.
+
+- [2026-11-08 Original retained getter in DEL preparation](2026-11-08-inverse-del-retained-getter.md). Configured-source fixture checks preserve the metadata-read bound after correcting the null getter slot; no application tuple or native owner ran, and the unsealed source limit is recorded.
 
 - [2026-11-08 Original notifications through the SDK action result](2026-11-08-original-notification-sdk-hold.md). Same-stream queued bodies and original visitor Promises stop at the held action-result marker; full Modify/worker/Save remain closed.
 - [2026-11-08 Inverse SDK projection hook](2026-11-08-inverse-sdk-projection-hook.md). Exact inverse-only omission of an unreachable SDK family, unchanged other layouts and recovered compiler space under existing bounds.
@@ -1067,4 +1083,6 @@ layout. The connected ledger retains its generation and case anchors.
 
 - [Closed inverse Component runtime](2026-11-08-inverse-component-runtime-projection.md), exact build-only closure of the unreachable Component family, preserved shared declarations, and measured compiler capacity under unchanged bounds.
 - [Remaining schematic command-store comparisons](2026-11-08-schematic-command-store-deltas.md), fixed undo/redo value and ticket deltas with original store mapping, full descriptors and ordered Maps, plus exact status queue states.
+
+- [Original SDK park and publication timer](2026-11-08-original-sdk-publication-timer.md), three original resume joins, exact retained timer identity and unchanged peer state, stopping before the publisher body with all downstream completion claims false.
 

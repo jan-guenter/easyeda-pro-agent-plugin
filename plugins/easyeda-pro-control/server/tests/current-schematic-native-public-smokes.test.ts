@@ -13,7 +13,9 @@ void test("every generated schematic PowerShell smoke call reaches an emitted pu
  const broad=generateWorkerStartupProtocol(seed,"schematic");assert.ok(generateWorkerStartupProtocol(broad,"schematic")===broad,"complete schematic composition remains byte-exact on its second pass");
  assert.ok(begin!==-1 && end>begin);
  const calls = [...data.helper.slice(begin,end).matchAll(/\[(Easyeda[A-Za-z0-9_]+)\]::([A-Za-z0-9_]+)\(\)/gu)];
- assert.equal(calls.length,5);
+ assert.equal(calls.length,7);
+ assert.ok(calls.some(call=>call[2]==="VerifySchematicRelevanceModifyWorkerSmoke"));
+ assert.ok(calls.some(call=>call[2]==="VerifySchematicRelevancePublicationSmoke"));
  assert.ok(calls.some(call=>call[2]==="VerifySchematicRelevanceDisplayRegistrationSmoke"));
  for(const call of calls){
   const type=call[1]; const method=call[2];assert.ok(type!==undefined && method!==undefined);

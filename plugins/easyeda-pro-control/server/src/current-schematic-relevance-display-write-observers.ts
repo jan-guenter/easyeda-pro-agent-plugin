@@ -6,11 +6,11 @@ import type { CurrentSchematicRelevanceRunPrefixObservation } from "./current-sc
 import type { CurrentSchematicRelevanceDisplayModifyEntryOrigin } from "./current-schematic-relevance-display-modify-entry-origin.ts";
 import { CurrentSchematicRelevanceDisplayModifyEntryObserver } from "./current-schematic-relevance-display-modify-entry-observer.ts";
 import type { CurrentSchematicRelevanceDisplayModifyEntryObservation, CurrentSchematicRelevanceDisplayRawSceneObservation } from "./current-schematic-relevance-display-modify-entry-observer.ts";
-/** Maintained original SCH setup. The durable enclosing operation owns birth,
- * navigation and intent publication. This group never dispatches Modify/Save. */
+/** Original SCH composition. The durable enclosing operation owns birth,
+ * navigation, intent publication and one-shot Modify/Save generation. */
 /* oxlint-disable import/max-dependencies -- One original group joins separately branded worker, accessor, action and Main collectors without accepting caller implementation. */
 import { assertOriginalCurrentSchematicRelevanceDisplayWriteOwner, originalCurrentSchematicRelevanceDisplayWriteTarget, originalCurrentSchematicRelevanceDisplayWriteTermination,
-  requireOriginalCurrentSchematicRelevanceDisplayActionGuard, requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrigin } from "./current-schematic-relevance-display-write-owner.ts";
+  requireOriginalCurrentSchematicRelevanceDisplayActionGuard, requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrigin, requireOriginalSchematicRelevanceDisplayStage } from "./current-schematic-relevance-display-write-owner.ts";
 import type { CurrentSchematicRelevanceDisplayWriteOwner } from "./current-schematic-relevance-display-write-owner.ts";
 import { requireOriginalGeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
 import type { GeneratedSchematicRelevanceDisplayNativeArguments } from "./generated-schematic-relevance-display-source.ts";
@@ -27,22 +27,56 @@ import type { CurrentProjectSaveStructurePacket } from "./current-project-save-s
 import type { CurrentSchematicRelevanceStartupStructureDrained } from "./current-schematic-relevance-startup-structure-origin.ts";
 import { CurrentProjectStructureTransportObserver } from "./current-project-structure-transport-observer.ts";
 import { CurrentProjectSaveProducerObserver, requireOriginalCurrentProjectSaveProducerHeldCall } from "./current-project-save-producer-observer.ts";
+import type { CurrentProjectSaveProducerHeldCall } from "./current-project-save-producer-observer.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS } from "./current-project-save-producer-protocol.ts";
 import { CurrentSchematicRelevanceDisplayAccessorObserver } from "./current-schematic-relevance-display-accessor-observer.ts";
 import type { CurrentSchematicRelevanceDisplayAccessorObservation } from "./current-schematic-relevance-display-accessor-observer.ts";
 import type { CurrentSchematicRelevanceDisplayActionGuardObservation } from "./current-schematic-relevance-display-action-origin.ts";
 import type { CurrentSchematicRelevanceDisplayPreModifyMainOrigin } from "./current-schematic-relevance-display-pre-modify-main-origin.ts";
 
+import { CurrentSchematicRelevanceActionCallbackObserver } from "./current-schematic-relevance-action-callback-observer.ts";
+import { CurrentSchematicRelevanceDisplayClockObserver } from "./current-schematic-relevance-display-clock-observer.ts";
+import { CurrentSchematicRelevanceDisplayMainRequestObserver } from "./current-schematic-relevance-display-main-request-observer.ts";
+import { CurrentSchematicRelevanceDisplayMainBeginObserver } from "./current-schematic-relevance-display-main-begin-observer.ts";
+import { CurrentSchematicRelevanceDisplayMainHistoryObserver } from "./current-schematic-relevance-display-main-history-observer.ts";
+import { CurrentSchematicRelevanceDisplayMainStructureObserver } from "./current-schematic-relevance-display-main-structure-observer.ts";
+import { CurrentSchematicRelevanceDisplayMainLiveHistoryObserver } from "./current-schematic-relevance-display-main-live-history-observer.ts";
+import type { CurrentSchematicRelevanceDisplaySaveMainOrigin } from "./current-schematic-relevance-display-save-main-origin.ts";
+import type { CurrentSchematicRelevanceDisplaySaveDrained } from "./current-schematic-relevance-display-save-drained.ts";
+import { requireOriginalGeneratedSchematicRelevanceDisplayEffect } from "./generated-schematic-relevance-display-effect.ts";
+import type { GeneratedSchematicRelevanceDisplayNativeEffect } from "./generated-schematic-relevance-display-effect.ts";
+import { qualifyOriginalGeneratedSchematicRelevanceDisplaySaveData } from "./generated-schematic-relevance-display-native-save.ts";
+import type { GeneratedSchematicRelevanceDisplayStageResult } from "./generated-schematic-relevance-display.ts";
+import { generatedSchematicRelevanceDisplayStageResultSchema } from "./generated-schematic-relevance-display.ts";
+import { CURRENT_PCB_VIA_LOCAL_UPLOAD_ROLES } from "./current-pcb-via-local-upload-protocol.ts";
+import { CURRENT_PCB_VIA_UPLOAD_REQUEST_REQUESTS } from "./current-pcb-via-upload-request-protocol.ts";
+import { CURRENT_PCB_VIA_SAVE_DRAIN_REQUESTS } from "./current-pcb-via-save-drain-protocol.ts";
+import { CURRENT_PCB_VIA_POST_HISTORY_SYNC_REQUESTS } from "./current-pcb-via-post-history-sync-protocol.ts";
+
 type Outcome = Readonly<{ ok: true }> | Readonly<{ ok: false; error: unknown }>;
 type StructurePacketOutcome = Readonly<{ ok: true; packet: CurrentProjectSaveStructurePacket }> | Readonly<{ ok: false; error: unknown }>;
 const consumed = new WeakSet<CurrentSchematicRelevanceDisplayWriteOwner>();
 function need(value: boolean, code: string): asserts value { if (!value) { throw createOriginalSourceError("SCHEMATIC_RELEVANCE_DISPLAY_SETUP", code); } }
 function result(value: Outcome): void { if (!value.ok) { throw value.error; } }
+function requireStageShape(value: unknown): asserts value is GeneratedSchematicRelevanceDisplayStageResult { generatedSchematicRelevanceDisplayStageResultSchema.parse(value); }
 const originalGroups = new WeakMap<CurrentSchematicRelevanceDisplayWriteObservers, Readonly<{ owner: CurrentSchematicRelevanceDisplayWriteOwner; argumentsValue: GeneratedSchematicRelevanceDisplayNativeArguments; assertCurrent: () => void }>>();
 export class CurrentSchematicRelevanceDisplayWriteObservers {
   readonly #owner: CurrentSchematicRelevanceDisplayWriteOwner; readonly #arguments: GeneratedSchematicRelevanceDisplayNativeArguments;
   readonly #prepared: ReturnType<typeof originalCurrentSchematicRelevanceDisplayWriteTarget>;
   readonly #startup = Promise.withResolvers<Outcome>();
+  readonly #failureSignal = Promise.withResolvers<Readonly<{ error: unknown }>>();
+  readonly #afterModification = Promise.withResolvers<Readonly<{ ok: true; packet: CurrentProjectSaveProducerHeldCall }> | Readonly<{ ok: false; error: unknown }>>();
+  readonly #retained = new Set<Promise<unknown>>();
+  #phase: "startup" | "action" = "startup"; #bodyReleaseEntered = false;
+  #modification: Promise<GeneratedSchematicRelevanceDisplayStageResult> | null = null; #exiting = false;
+  #continuation: Promise<void> | null = null; #callback: CurrentSchematicRelevanceActionCallbackObserver | null = null;
+  #modified: GeneratedSchematicRelevanceDisplayStageResult | null = null; #after: Promise<GeneratedSchematicRelevanceDisplayStageResult> | null = null;
+  #effect: GeneratedSchematicRelevanceDisplayNativeEffect | null = null; #clock: CurrentSchematicRelevanceDisplayClockObserver | null = null;
+  #clockCollection: Promise<void> | null = null; #saveMainCollection: Promise<void> | null = null; #saveCollection: Promise<void> | null = null;
+  #saveMain: CurrentSchematicRelevanceDisplaySaveMainOrigin | null = null; #mainRequest: CurrentSchematicRelevanceDisplayMainRequestObserver | null = null;
+  #mainBegin: CurrentSchematicRelevanceDisplayMainBeginObserver | null = null; #mainHistory: CurrentSchematicRelevanceDisplayMainHistoryObserver | null = null;
+  #mainStructure: CurrentSchematicRelevanceDisplayMainStructureObserver | null = null; #mainLive: CurrentSchematicRelevanceDisplayMainLiveHistoryObserver | null = null;
+  #localService: Promise<void> | null = null; #drain: Promise<void> | null = null; #drained: CurrentSchematicRelevanceDisplaySaveDrained | null = null;
   #failed = false; #failure: unknown; #armed = false; #accessorAttempted = false; #preparationAttempted = false;
   #save: CurrentSchematicRelevanceDisplaySaveObserver | null = null; #structure: CurrentProjectSaveStructureObserver | null = null;
   #transport: CurrentProjectStructureTransportObserver | null = null; #producer: CurrentProjectSaveProducerObserver | null = null;
@@ -68,12 +102,18 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     this.#owner = owner; this.#arguments = argumentsValue; this.#prepared = prepared; originalGroups.set(this, Object.freeze({ owner, argumentsValue, assertCurrent: (): void => { this.#current(); } })); Object.freeze(this);
   }
   #current(): void {
-    if (this.#failed) { throw this.#failure; } assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this.#owner);
+    if (this.#failed) { throw this.#failure; } need(!this.#exiting, "ORIGINAL_EXIT_CLEANUP_ONLY"); assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this.#owner);
     need(originalCurrentSchematicRelevanceDisplayWriteTarget(this.#owner) === this.#prepared, "ORIGINAL_OWNER_CHANGED"); requireOriginalGeneratedSchematicRelevanceDisplayNativeArguments(this.#arguments, this.#prepared);
   }
-  #stop(error: unknown): void { if (!this.#failed) { this.#failed = true; this.#failure = error; } this.#startup.resolve(Object.freeze({ ok: false, error: this.#failure })); }
+  #stop(error: unknown): void { if (!this.#failed) { this.#failed = true; this.#failure = error; } this.#failureSignal.resolve(Object.freeze({ error: this.#failure })); this.#startup.resolve(Object.freeze({ ok: false, error: this.#failure })); this.#afterModification.resolve(Object.freeze({ ok: false, error: this.#failure })); }
   async #retain(original: Promise<void>): Promise<Outcome> {
     try { await original; return Object.freeze({ ok: true }); } catch (error) { this.#stop(error); return Object.freeze({ ok: false, error }); }
+  }
+  #retainCall<T>(original: Promise<T>): Promise<T> {
+    this.#retained.add(original);
+    // Retain the failure handler too; callers and original-exit cleanup join
+    // The same source-started request, including failures before their join.
+    this.#retained.add((async (): Promise<void> => { try { await original; } catch (error) { this.#stop(error); } })()); return original;
   }
   /** Install trusted callbacks before the one original project navigation.
    * Each callback receives only its own actual fresh source-held origin. */
@@ -133,7 +173,7 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     let progress = observer.startupProgress();
     if (progress.initialSync?.canSettle === true) { await observer.settleInitialSyncCall(); this.#current(); progress = observer.startupProgress(); }
     if (progress.initialSync?.completed === true && progress.initialCache?.canSettle === true) { await observer.settleInitialCacheCalls(); this.#current(); progress = observer.startupProgress(); }
-    if (progress.periodicSync?.canSettle === true) { await observer.settlePeriodicSyncCall(); this.#current(); }
+    if (progress.periodicSync?.canSettle === true) { need(this.#phase === "startup", "PRE_SAVE_PERIODIC_SCOPE_UNAVAILABLE"); await observer.settlePeriodicSyncCall(); this.#current(); }
   }
   async #collectStartup(observer: CurrentProjectSaveProducerObserver): Promise<void> {
     const construction = this.#construction; need(construction !== null, "ORIGINAL_CONSTRUCTION_REQUIRED"); result(await construction); this.#current();
@@ -143,6 +183,12 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
       need(this.#pendingProducer === null, "ORIGINAL_PRODUCER_READ_PENDING"); const pending = observer.observeHeldCall(); this.#pendingProducer = pending;
       const packet = await pending; need(this.#pendingProducer === pending, "ORIGINAL_PRODUCER_READ_CHANGED"); this.#pendingProducer = null;
       this.#current(); await this.#settleStartup(observer); this.#current(); const actual = requireOriginalCurrentProjectSaveProducerHeldCall(packet, observer);
+      if (this.#phase === "action") {
+        // Own7's periodic cursor is explicitly startup-only. Quiescence must
+        // Keep it inactive; Via's separate pre-Save scope cannot be borrowed.
+        need(actual.role === "localIngress" && this.#bodyReleaseEntered, "UNPLANNED_PRODUCER_BEFORE_ORIGINAL_BODY_RELEASE");
+        this.#afterModification.resolve(Object.freeze({ ok: true, packet })); return;
+      }
       if (actual.role === "headEntry" || actual.role === "headPromise" || actual.role === "headSuccess") { await observer.continueInitialCacheCall(packet); }
       else if (observer.startupProgress().initialSync?.completed === true) { await observer.continuePeriodicSyncCall(packet); }
       else { await observer.continueInitialSyncCall(packet); }
@@ -192,8 +238,8 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
     this.#current(); need(this.#dispatch === dispatch && this.#main !== null && this.#accessor !== null && this.#accessorPacket !== null && this.#action !== null && this.#actionPacket !== null && this.#guard !== null, "ORIGINAL_PREPARATION_REQUIRED");
     this.#accessor.requireData(this.#accessorPacket, this.#owner, this.#arguments); this.#action.requireData(this.#actionPacket, this.#owner, this.#arguments); requireOriginalCurrentSchematicRelevanceDisplayActionGuard(this.#guard, this.#owner, this.#arguments); await requireOriginalCurrentSchematicRelevanceDisplayPreModifyMainOrigin(this.#main, this.#owner, this.#arguments).assertCurrent(); this.#current();
   }
-  /** One original request generation stops at runner entry. No action-start
-   * or setter continuation is available through this maintained group. */
+  /** One original generation stops at runner entry. Its later continuation
+   * joins the retained entry/prefix and source-owned callback setup. */
   public generateModificationEntry(dispatch: GeneratedSchematicRelevanceDisplayDispatch): Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> {
     this.#current(); need(!this.#modifyEntryAttempted, "MODIFY_GENERATION_CONSUMED"); this.#modifyEntryAttempted = true;
     this.#modifyEntryCollection = (async (): Promise<CurrentSchematicRelevanceDisplayModifyEntryObservation> => {
@@ -228,18 +274,204 @@ export class CurrentSchematicRelevanceDisplayWriteObservers {
   public requireOriginalModificationRawScene(): CurrentSchematicRelevanceDisplayRawSceneObservation {
     this.#current(); need(this.#modifyEntryObserver !== null && this.#modifyRawPacket !== null, "ORIGINAL_RAW_SCENE_REQUIRED"); this.#modifyEntryObserver.requireRawData(this.#modifyRawPacket, this.#owner, this.#arguments); return this.#modifyRawPacket;
   }
+  /** Start the original run once. Core retains and joins its independent
+   * prefix-end pump; the callback never substitutes that proof. */
+  public continueOriginalRun(): Promise<void> {
+    this.#current(); need(this.#continuation === null && this.#modifyEntryOrigin !== null && this.#runPrefixPacket !== null && this.#structure !== null, "ORIGINAL_RUN_CONTINUATION_REQUIRED");
+    this.requireOriginalModificationEntry(); this.requireOriginalModificationRawScene(); this.requireOriginalRunPrefix();
+    const entry = this.#modifyEntryOrigin; this.#phase = "action";
+    const original = this.#owner.continueSchematicRelevanceDisplayOriginalRun(this.#arguments, entry, origin => {
+      this.#current(); need(this.#callback === null, "ORIGINAL_CALLBACK_CONSUMED");
+      const observer = new CurrentSchematicRelevanceActionCallbackObserver(origin, this.#owner, this.#arguments); this.#callback = observer;
+      return this.#retainCall(this.#continueCallback(observer));
+    });
+    // A producer failure must wake the outward wait even when the original
+    // Callback is still held. Retain that exact Core/setup work for exit.
+    const retained = this.#retainCall(original);
+    const failed = (async (): Promise<never> => { const failure = await this.#failureSignal.promise; throw failure.error; })();
+    this.#continuation = this.#retainCall(Promise.race([retained, failed])); return this.#continuation;
+  }
+  async #continueCallback(observer: CurrentSchematicRelevanceActionCallbackObserver): Promise<void> {
+    await observer.observeEntry(); this.#current();
+    await observer.continueToFirstSetter(); this.#current();
+    await observer.observeFirstSetter(); this.#current();
+    await observer.observeUnderlineForwarding(); this.#current();
+    await observer.continueToSetAttribute(); this.#current();
+    await observer.observeSetAttribute(); this.#current();
+    await observer.observeActiveHistory(); this.#current();
+    await observer.observeUiPublicationPristine(); this.#current();
+    await observer.observeNormalCompletionGraph(); this.#current();
+    await observer.prepareOriginalPrimitive(); this.#current();
+    await observer.continueOriginalPrimitiveToRecord(); this.#current();
+    await observer.observeOriginalPrimitiveRecord(); this.#current();
+    await observer.prepareOriginalRecord(); this.#current();
+    await observer.continueOriginalRecordToAst(); this.#current();
+    await observer.observeOriginalAstHeld(); this.#current();
+    await observer.continueOriginalMonitorsToHistory(); this.#current();
+    await observer.continueOriginalHistoryToFinish(); this.#current();
+    await observer.continueOriginalNormalHistoryToCanRecord(); this.#current();
+    await observer.prepareOriginalListenerDisposal(); this.#current();
+    await observer.continueOriginalNormalRecordToUpload(); this.#current();
+    await observer.prepareOriginalNoEcho(); this.#current();
+    await observer.continueOriginalDidRecordToUploader(); this.#current();
+    await observer.continueOriginalUploaderToText(); this.#current();
+    await observer.continueOriginalTextToConsistency(); this.#current();
+    await observer.continueOriginalConsistencyToPendingCache(); this.#current();
+    await observer.continueOriginalPendingCacheBody(); this.#current();
+    await observer.continueOriginalUploaderToStatus(); this.#current();
+    await observer.continueOriginalStatusToFirstCallback(); this.#current();
+    await observer.continueOriginalStatusToLocalPublish(); this.#current();
+    await observer.continueOriginalLocalPublishToTask(); this.#current();
+    await observer.continueOriginalTaskToCloneDependencies(); this.#current();
+    await observer.continueOriginalCloneToUiFunction(); this.#current();
+    await observer.continueOriginalUiLookupToStore(); this.#current();
+    await observer.continueOriginalStoreToRender(); this.#current();
+    await observer.continueOriginalRenderDelegate(); this.#current();
+    await observer.continueOriginalFileSaveUi(); this.#current();
+    await observer.continueOriginalStatusCommands(); this.#current();
+    await observer.continueOriginalQueuedNotifications(); this.#current();
+    await observer.continueOriginalPublicationTimer(); this.#current();
+    await observer.prepareOriginalPublicationNative(); this.#current();
+    await observer.continueOriginalPublisherToPost(); this.#current();
+    await observer.prepareOriginalModifyWorker(); this.#current();
+    const structure = this.#structure; need(structure !== null, "ORIGINAL_MODIFY_STRUCTURE_READER");
+    await observer.createOriginalModifyStructureOrigin(structure); this.#current();
+    await observer.continueOriginalNativePostToWorkerBatch(); this.#current();
+    await observer.continueOriginalWorkerToCm(); this.#current();
+    await observer.continueOriginalWorkerToCanvasTicket(); this.#current();
+    await observer.continueOriginalWorkerToCanvasTimer(); this.#current();
+    await observer.continueOriginalPublisherToLoopback(); this.#current();
+    await observer.continueOriginalCanvasEcho(); this.#current();
+    const modified = await observer.completeOriginalSdkModification(); this.#current();
+    requireOriginalSchematicRelevanceDisplayStage(this.#owner, this.#arguments, modified, "modify"); this.#modified = modified;
+  }
+  /** Completion requires the SAME original run/setup and independent prefix
+   * guards before reading Core's historical native modification receipt. */
+  public waitOriginalModification(): Promise<GeneratedSchematicRelevanceDisplayStageResult> {
+    this.#current(); const continuation = this.#continuation; need(continuation !== null, "ORIGINAL_RUN_CONTINUATION_REQUIRED");
+    this.#modification ??= this.#retainCall((async (): Promise<GeneratedSchematicRelevanceDisplayStageResult> => {
+      await continuation; this.#current(); const packet = this.#owner.requireSchematicRelevanceDisplayOriginalModification(this.#arguments);
+      need(this.#modified === packet, "ORIGINAL_MODIFICATION_CHANGED"); return packet;
+    })()); return this.#modification;
+  }
+  public observeAfterModification(): Promise<GeneratedSchematicRelevanceDisplayStageResult> {
+    this.#current(); need(this.#after === null && this.#modified !== null, "ORIGINAL_AFTER_CONSUMED");
+    const original = (async (): Promise<GeneratedSchematicRelevanceDisplayStageResult> => {
+      await this.waitOriginalModification(); this.#current();
+      const raw = await this.#owner.executeSchematicDisplayStage("observe", this.#arguments); this.#current();
+      requireStageShape(raw);
+      need("stage" in raw && raw.stage === "observe" && raw.schema === "easyeda-pro-control.generated-schematic-relevance-display-stage.v1", "ORIGINAL_AFTER_STAGE");
+      return requireOriginalSchematicRelevanceDisplayStage(this.#owner, this.#arguments, raw, "observe");
+    })(); this.#after = this.#retainCall(original); return original;
+  }
+  public armSaveClock(effect: GeneratedSchematicRelevanceDisplayNativeEffect): Promise<void> {
+    this.#current(); need(this.#clockCollection === null && this.#after !== null, "ORIGINAL_CLOCK_CONSUMED");
+    requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect, this.#owner, this.#arguments); this.#effect = effect;
+    const original = (async (): Promise<void> => { await this.#owner.createSchematicRelevanceDisplayClockOrigin(this.#arguments, effect, async origin => {
+      this.#current(); need(this.#clock === null, "ORIGINAL_CLOCK_REQUIRED");
+      const observer = new CurrentSchematicRelevanceDisplayClockObserver(origin, this.#owner, this.#arguments); this.#clock = observer;
+      await observer.arm(); this.#current();
+    }); this.#current(); need(this.#clock !== null, "ORIGINAL_CLOCK_REQUIRED"); })();
+    this.#clockCollection = this.#retainCall(original); return original;
+  }
+  public prepareSaveMain(effect: GeneratedSchematicRelevanceDisplayNativeEffect): Promise<void> {
+    this.#current(); need(this.#saveMainCollection === null && this.#effect === effect && this.#clock !== null && this.#clockCollection !== null, "ORIGINAL_SAVE_MAIN_CONSUMED");
+    requireOriginalGeneratedSchematicRelevanceDisplayEffect(effect, this.#owner, this.#arguments);
+    const clock = this.#clockCollection;
+    const original = (async (): Promise<void> => {
+      await clock; this.#current();
+      const origin = await this.#owner.prepareSchematicRelevanceDisplaySaveMain(this.#arguments, effect, async actual => {
+        this.#current(); need(this.#saveMain === null && this.#mainRequest === null, "ORIGINAL_SAVE_MAIN_REQUIRED"); this.#saveMain = actual;
+        const request = new CurrentSchematicRelevanceDisplayMainRequestObserver(actual, this.#owner, this.#arguments); this.#mainRequest = request; await request.arm(); this.#current();
+        const begin = new CurrentSchematicRelevanceDisplayMainBeginObserver(actual, this.#owner, this.#arguments); this.#mainBegin = begin; await begin.arm(); this.#current();
+        const history = new CurrentSchematicRelevanceDisplayMainHistoryObserver(actual, this.#owner, this.#arguments); this.#mainHistory = history; await history.arm(); this.#current();
+        const structure = new CurrentSchematicRelevanceDisplayMainStructureObserver(actual, this.#owner, this.#arguments); this.#mainStructure = structure; await structure.arm(); this.#current();
+      }); this.#current(); need(origin === this.#saveMain && this.#owner.requireSchematicRelevanceDisplaySaveMainReady(this.#arguments, effect) === origin, "ORIGINAL_SAVE_MAIN_CHANGED");
+    })(); this.#saveMainCollection = this.#retainCall(original); return original;
+  }
+  /** Clock and body start before SDK Save generation. Only this exact joined
+   * data can reserve and release the original worker body and Main effects. */
+  public observeOriginalSave(): Promise<void> {
+    this.#current(); need(this.#saveCollection === null && this.#clock !== null && this.#save !== null && this.#effect !== null && this.#saveMain !== null &&
+      this.#mainRequest !== null && this.#mainBegin !== null && this.#mainHistory !== null && this.#mainStructure !== null && this.#structure !== null && this.#transport !== null, "ORIGINAL_SAVE_OBSERVERS_REQUIRED");
+    const beginObserver = this.#mainBegin, clock = this.#clock, effect = this.#effect, history = this.#mainHistory, main = this.#saveMain, mainStructure = this.#mainStructure,
+      request = this.#mainRequest, save = this.#save, structure = this.#structure, transport = this.#transport;
+    const original = (async (): Promise<void> => {
+      const bodies = await Promise.allSettled([this.#retainCall(clock.collect()), this.#retainCall(save.observeBody())]); this.#current();
+      const [clockResult, bodyResult] = bodies;
+      if (clockResult.status === "rejected" || bodyResult.status === "rejected") {
+        const errors: unknown[] = []; if (clockResult.status === "rejected") { errors.push(clockResult.reason); } if (bodyResult.status === "rejected") { errors.push(bodyResult.reason); }
+        throw new AggregateError(errors, "Original schematic clock/body collection failed.");
+      }
+      const joined = await clock.joinBody(clockResult.value, bodyResult.value); this.#current();
+      const data = await qualifyOriginalGeneratedSchematicRelevanceDisplaySaveData(this.#owner, this.#arguments, effect, bodyResult.value, clockResult.value, joined); this.#current();
+      await request.bindOriginalBody(data); this.#current(); const reservation = await this.#owner.reserveSchematicRelevanceDisplayStructurePublication(this.#arguments, main); this.#current();
+      this.#bodyReleaseEntered = true; await save.releaseBody(bodyResult.value); this.#current(); await save.observeCompletion(); this.#current();
+      const packet = await this.waitForOriginalSaveStructurePacket(); this.#current(); await structure.releasePrehistoryPacket(packet, reservation); this.#current();
+      const sent = await transport.observeSend(); this.#current(); await transport.releaseSend(sent, reservation); this.#current();
+      await transport.observeReturned(sent); this.#current(); await mainStructure.observe(); this.#current();
+      const publication = this.#owner.completeSchematicRelevanceDisplayStructurePublication(this.#arguments); this.#current();
+      await transport.releaseReturned(sent, publication); this.#current(); await structure.observePrehistoryCompletion(publication); this.#current();
+      const driver = await request.captureDriver(data); this.#current(); const context = await request.continueToContext(driver); this.#current();
+      const controller = await request.continueToController(context); this.#current(); const actor = await request.continueToActor(controller); this.#current();
+      const begin = await beginObserver.begin(actor); this.#current(); await history.observe(begin); this.#current();
+      this.#owner.completeSchematicRelevanceDisplayHistorySql(this.#arguments); this.#current(); need(this.#mainLive === null, "ORIGINAL_LIVE_HISTORY_CONSUMED");
+      const live = new CurrentSchematicRelevanceDisplayMainLiveHistoryObserver(main, this.#owner, this.#arguments); this.#mainLive = live;
+      await live.arm(); this.#current(); const rows = await live.observe(); this.#current();
+      need(this.#owner.requireSchematicRelevanceDisplayLiveHistoryRows(this.#arguments) === rows, "ORIGINAL_LIVE_HISTORY_ROWS");
+    })(); this.#saveCollection = this.#retainCall(original); return original;
+  }
+  async #nextProducer(observer: CurrentProjectSaveProducerObserver): Promise<CurrentProjectSaveProducerHeldCall> {
+    this.#current(); need(this.#pendingProducer === null, "ORIGINAL_PRODUCER_READ_PENDING"); const pending = observer.observeHeldCall(); this.#pendingProducer = pending;
+    const packet = await pending; need(this.#pendingProducer === pending, "ORIGINAL_PRODUCER_READ_CHANGED"); this.#pendingProducer = null;
+    this.#current(); requireOriginalCurrentProjectSaveProducerHeldCall(packet, observer); return packet;
+  }
+  public serviceSaveLocalCalls(): Promise<void> {
+    this.#current(); need(this.#localService === null && this.#saveCollection !== null && this.#phase === "action", "ORIGINAL_LOCAL_SERVICE_CONSUMED");
+    const original = (async (): Promise<void> => {
+      const first = await this.#afterModification.promise; this.#current(); if (!first.ok) { throw first.error; }
+      const observer = this.#producer; need(observer !== null && this.#collector !== null, "ORIGINAL_PRODUCER_REQUIRED");
+      // The startup collector ends at this exact packet, before any new read.
+      result(await this.#collector); this.#current(); let packet = first.packet;
+      for (const [index, role] of CURRENT_PCB_VIA_LOCAL_UPLOAD_ROLES.entries()) {
+        if (index > 0) { packet = await this.#nextProducer(observer); }
+        need(requireOriginalCurrentProjectSaveProducerHeldCall(packet, observer).role === role, "ORIGINAL_LOCAL_ROLE");
+        await observer.continueSchematicRelevanceDisplaySaveLocalCall(packet); this.#current();
+      }
+      observer.requireSchematicRelevanceDisplaySaveLocalCompleted(); this.#current();
+    })(); this.#localService = this.#retainCall(original); return original;
+  }
+  public drainOriginalSave(): Promise<void> {
+    this.#current(); const local = this.#localService; need(this.#drain === null && local !== null, "ORIGINAL_DRAIN_CONSUMED");
+    const original = (async (): Promise<void> => {
+      await local; this.#current(); const observer = this.#producer; need(observer !== null, "ORIGINAL_PRODUCER_REQUIRED");
+      const maximum = CURRENT_PCB_VIA_UPLOAD_REQUEST_REQUESTS.events + CURRENT_PCB_VIA_SAVE_DRAIN_REQUESTS.events + CURRENT_PCB_VIA_POST_HISTORY_SYNC_REQUESTS.events;
+      for (let index = 0; index < maximum; index += 1) {
+        const packet = await this.#nextProducer(observer); await observer.continueSchematicRelevanceDisplaySaveDrainCall(packet); this.#current();
+        let progress = observer.schematicRelevanceDisplaySaveDrainProgress();
+        if (progress.allCallsResumed && progress.canSettle) { await observer.settleSchematicRelevanceDisplaySaveDrain(); this.#current(); progress = observer.schematicRelevanceDisplaySaveDrainProgress(); }
+        if (progress.completed) { this.#drained = observer.requireOriginalSchematicRelevanceDisplaySaveDrained(); return; }
+        need(!progress.allCallsResumed, "ORIGINAL_DRAIN_SETTLEMENT_UNRESOLVED");
+      }
+      throw new Error("SCHEMATIC_RELEVANCE_DISPLAY_SETUP_ORIGINAL_DRAIN_CAPACITY");
+    })(); this.#drain = this.#retainCall(original); return original;
+  }
+  public requireOriginalSaveDrained(): CurrentSchematicRelevanceDisplaySaveDrained {
+    this.#current(); need(this.#drained !== null && this.#producer !== null, "ORIGINAL_DRAIN_REQUIRED");
+    need(this.#producer.requireOriginalSchematicRelevanceDisplaySaveDrained() === this.#drained, "ORIGINAL_DRAIN_CHANGED"); return this.#drained;
+  }
   /** Original Job exit wakes existing collectors; retain and join those exact
    * requests rather than starting another read or detaching live breakpoints. */
   public async settleOriginalCallsAfterExit(): Promise<void> {
     const current = (): void => { assertOriginalCurrentSchematicRelevanceDisplayWriteOwner(this.#owner); originalCurrentSchematicRelevanceDisplayWriteTermination(this.#owner); need(originalCurrentSchematicRelevanceDisplayWriteTarget(this.#owner) === this.#prepared, "ORIGINAL_EXIT_OWNER"); };
-    current(); const pending: Promise<unknown>[] = [];
+    current(); this.#exiting = true; const pending: Promise<unknown>[] = [...this.#retained];
     if (this.#construction !== null) { pending.push(this.#construction); } if (this.#structurePacket !== null) { pending.push(this.#structurePacket); } if (this.#collector !== null) { pending.push(this.#collector); } if (this.#pendingProducer !== null) { pending.push(this.#pendingProducer); }
     if (this.#modifyEntryCollection !== null) { pending.push(this.#modifyEntryCollection, this.#owner.settleSchematicRelevanceDisplayModifyEntryAfterExit()); }
     if (this.#runPrefixCollection !== null) { pending.push(this.#runPrefixCollection); }
     if (this.#pollingCollection !== null) { pending.push(this.#pollingCollection); } if (this.#libraryCollection !== null) { pending.push(this.#libraryCollection); }
     await Promise.allSettled(pending); current();
     this.#controlsRetirement ??= (async (): Promise<void> => {
-      const controls: Promise<void>[] = []; if (this.#polling !== null) { controls.push(this.#polling.retireAfterOriginalExit()); } if (this.#library !== null) { controls.push(this.#library.retireAfterOriginalExit()); }
+      const controls: Promise<void>[] = []; if (this.#save !== null) { controls.push(this.#save.retireAfterOriginalExit()); } if (this.#clock !== null) { controls.push(this.#clock.retireAfterOriginalExit()); } if (this.#transport !== null) { controls.push(this.#transport.retireAfterOriginalExit()); } if (this.#producer !== null) { controls.push(this.#producer.retireAfterOriginalExit()); } if (this.#polling !== null) { controls.push(this.#polling.retireAfterOriginalExit()); } if (this.#library !== null) { controls.push(this.#library.retireAfterOriginalExit()); }
       const settled = await Promise.allSettled(controls); current(); for (const item of settled) { if (item.status === "rejected") { throw item.reason; } }
     })(); await this.#controlsRetirement; current();
   }

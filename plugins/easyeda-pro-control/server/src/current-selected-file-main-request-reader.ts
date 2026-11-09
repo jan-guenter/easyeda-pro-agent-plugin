@@ -6,7 +6,9 @@ import { captureManagedFixtureDispatchReply } from "./managed-fixture-dispatch-r
 import { captureCurrentSelectedFileMainFetchScriptReply, decodeCurrentSelectedFileMainRequestFunction,
   qualifyCurrentSelectedFileMainFetchSource, requireOriginalCurrentSelectedFileMainFetchSource } from "./current-selected-file-main-fetch-source.ts";
 import type { CurrentSelectedFileMainFetchSource } from "./current-selected-file-main-fetch-source.ts";
-import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as CALLS, CURRENT_SELECTED_FILE_MAIN_REQUEST_FRAME as FRAME } from "./current-selected-file-main-request-programs.ts";
+import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as CALLS } from "./current-selected-file-main-request-programs.ts";
+import { CURRENT_MAIN_CAPTURED_SCOPE_FRAMES as FRAMES } from "./current-main-captured-scope-frames.ts";
+import { CURRENT_MAIN_CAPTURED_SCOPE_JOINS as JOINS, CURRENT_MAIN_CAPTURED_REQUEST_BIND_PROGRAM as PRIVATE_BIND } from "./current-main-captured-scope-joins.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as CALL, CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_FRAME_FLAGS as FLAGS } from "./current-selected-file-main-sql-fence-protocol.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand as Command } from "./current-selected-file-main-sql-fence-protocol.ts";
 
@@ -49,6 +51,9 @@ export class CurrentSelectedFileMainRequestReader {
     const found = scopes.filter(row => { const value = bag(row["value"]); return value["type"] === "object" && value["subtype"] === "internal#scope" && value["description"] === expected; });
     need(found.length === 1); return objectId(bag(found[0]?.["value"]));
   }
+  /** Qualify the original Fetch source and lexical brand holders before the
+   * fixed private bookkeeping call. The frame handle comes from the same
+   * capture's metadata, and no URL/body/application getter is read here. */
   async #bind(capture: string, metadata: unknown, frame: string): Promise<string> {
     const ctor = objectId(remote(member(metadata, "5"))), getter = objectId(remote(member(metadata, "6")));
     const actual = decodeCurrentSelectedFileMainRequestFunction(await this.#properties(getter), "method"); this.#bindings.assertFetchScript(actual.scriptId);
@@ -65,30 +70,37 @@ export class CurrentSelectedFileMainRequestReader {
     // Of Fetch metadata; no Request.url/body accessor is evaluated.
     const originals = await this.#properties(frame); const wrapper = objectId(remote(member(originals, "5")));
     decodeCurrentSelectedFileMainRequestFunction(await this.#properties(wrapper), "fetch", this.#bindings.appScriptId);
-    return objectReply(await this.#send({ phase: "sql-fence-request-bind", method: "Runtime.callFunctionOn", params: { ...CALL, objectId: capture,
-      functionDeclaration: CALLS.bind, arguments: [{ objectId: block }, { objectId: closure }, { objectId: webidl }, { objectId: brandScope }], returnByValue: false } }), 7);
+    return objectReply(await this.#send({ phase: "sql-fence-request-private-bind", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId: capture,
+      functionDeclaration: PRIVATE_BIND, arguments: [{ objectId: block }, { objectId: closure }, { objectId: webidl }, { objectId: brandScope }], returnByValue: false } }), 7);
   }
   public requireOriginalCapture(packet: CurrentSelectedFileMainRequestObservation): string {
     const capture = this.#originalCaptures.get(packet); need(capture !== undefined); return capture;
   }
+  /** Observe one original held driver through the fixed raw/fused pair.
+   * Reuse the returned capture's own legacy-frame handle for existing wrapper
+   * qualification; neither a fresh RPC nor an ambient nested util is needed. */
   public async observe(callFrameId: string): Promise<CurrentSelectedFileMainRequestObservation> {
     need(!this.#busy && this.#attempts < 64); this.#busy = true; this.#attempts += 1;
     try {
-      const frame = objectReply(await this.#send({ phase: "sql-fence-driver-frame", method: "Debugger.evaluateOnCallFrame", params: { ...FLAGS, callFrameId, expression: FRAME } }), 7);
-      const capture = objectReply(await this.#send({ phase: "sql-fence-request-capture", method: "Runtime.callFunctionOn", params: { ...CALL, objectId: frame,
-        functionDeclaration: CALLS.capture, arguments: [{ objectId: this.#bindings.captureObjectId }], returnByValue: false } }), 9);
-      const metadata = await this.#properties(capture), mode = remote(member(metadata, "7"))["value"]; let selected = capture;
+      const raw = objectReply(await this.#send({ phase: "sql-fence-driver-raw-frame", method: "Debugger.evaluateOnCallFrame", params: { ...FLAGS, callFrameId, expression: FRAMES.driver.rawExpression } }), 6);
+      const capture = objectReply(await this.#send({ phase: "sql-fence-driver-rebase-capture", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId: raw,
+        functionDeclaration: JOINS.driver, arguments: [{ objectId: this.#bindings.captureObjectId }], returnByValue: false } }), 9);
+      const metadata = await this.#properties(capture), mode = remote(member(metadata, "7"))["value"];
+      // The unchanged consumer retains its reconstructed seven-slot frame at
+      // Own slot zero. Its existing metadata read supplies that exact handle;
+      // No third capture request or free nested F5 binding is needed.
+      const frame = objectReply({ result: remote(member(metadata, "0")) }, 7); let selected = capture;
       need(mode === "fetch" || mode === "legacy");
       if (mode === "fetch") {
         if (this.#fetchBound === null) { selected = await this.#bind(capture, metadata, frame); this.#fetchBound = selected; }
-        else { need(this.#fetchSource !== null); requireOriginalCurrentSelectedFileMainFetchSource(this.#fetchSource); selected = objectReply(await this.#send({ phase: "sql-fence-request-rebind", method: "Runtime.callFunctionOn", params: { ...CALL, objectId: capture,
+        else { need(this.#fetchSource !== null); requireOriginalCurrentSelectedFileMainFetchSource(this.#fetchSource); selected = objectReply(await this.#send({ phase: "sql-fence-request-private-rebind", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId: capture,
           functionDeclaration: CALLS.rebind, arguments: [{ objectId: this.#fetchBound }], returnByValue: false } }), 7); }
       } else if (this.#legacyCapture === null) {
         const originals = await this.#properties(frame); const wrapper = objectId(remote(member(originals, "6")));
         decodeCurrentSelectedFileMainRequestFunction(await this.#properties(wrapper), "legacy", this.#bindings.appScriptId); this.#legacyCapture = capture;
-      } else { selected = objectReply(await this.#send({ phase: "sql-fence-request-rebind", method: "Runtime.callFunctionOn", params: { ...CALL, objectId: capture,
+      } else { selected = objectReply(await this.#send({ phase: "sql-fence-request-private-rebind", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId: capture,
         functionDeclaration: CALLS.rebind, arguments: [{ objectId: this.#legacyCapture }], returnByValue: false } }), 9); }
-      const result = bag(bag(await this.#send({ phase: "sql-fence-request-read", method: "Runtime.callFunctionOn", params: { ...CALL, objectId: selected,
+      const result = bag(bag(await this.#send({ phase: "sql-fence-request-private-read", method: "Runtime.callFunctionOn", params: { ...CALL, throwOnSideEffect: false, objectId: selected,
         functionDeclaration: CALLS.read, arguments: [], returnByValue: true } }))["result"]); need(result["type"] === "object" && !Object.hasOwn(result, "objectId"));
       const observed = Object.freeze(currentSelectedFileMainRequestObservationSchema.parse(result["value"])); need(observed.mode === mode); this.#originalCaptures.set(observed, capture); return observed;
     } finally { this.#busy = false; }

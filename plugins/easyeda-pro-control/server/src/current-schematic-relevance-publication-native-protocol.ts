@@ -33,6 +33,9 @@ const schema = z.discriminatedUnion("phase", [
   z.strictObject({ phase: z.literal("publication-native-call"), role: z.string().max(64), method: z.literal("Runtime.callFunctionOn"), params: z.strictObject({ ...flags, objectId: handle, functionDeclaration: z.string().max(16_384), arguments: z.array(arg).max(7), returnByValue: z.boolean(), awaitPromise: z.literal(false), userGesture: z.literal(false) }) }),
 ]);
 export type CurrentSchematicRelevancePublicationNativeCommand = z.infer<typeof schema>;
+/** Copy the bounded reply-safe input, then enforce the exact proof program,
+ * reference count, result mode and readonly flags for its closed role.
+ * Freeze accepted data without granting native dispatch or application work. */
 export function validateCurrentSchematicRelevancePublicationNativeCommand(input: unknown): CurrentSchematicRelevancePublicationNativeCommand {
   const command = schema.parse(captureCurrentPcbStringClockReply(input).value);
   if (command.phase === "publication-native-call") { const row = CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_NATIVE_CALLS.find(value => value[0] === command.role); if (row === undefined || row[1] !== command.params.functionDeclaration || row[2] !== command.params.arguments.length || row[3] !== command.params.returnByValue) { throw new Error("SCH_PUBLICATION_NATIVE_FIXED_CALL"); } }
