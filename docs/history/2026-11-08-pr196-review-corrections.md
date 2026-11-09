@@ -48,3 +48,16 @@ MCP-contract, all-skill and seven skill-creator quick validators passed.
 No complete suites, C# compiler, Windows/app/native-owner action, publication or
 CodeRabbit contact was performed. The current compatibility gate and connected
 validation remain separate.
+
+Review-scope correction, 2026-11-08: the original review also reports five
+selected files whose changes were unavailable and could not be fully reviewed:
+
+- `plugins/easyeda-pro-control/scripts/footprint-inverse-native.cs`
+- `plugins/easyeda-pro-control/scripts/pcb-diagnostic-owner.ps1`
+- `plugins/easyeda-pro-control/scripts/schematic-saved-readback-native.ps1`
+- `plugins/easyeda-pro-control/scripts/schematic-edit-native.ps1`
+- `plugins/easyeda-pro-control/scripts/footprint-inverse-native.ps1`
+
+The 45 selected paths therefore do not establish complete review coverage. This
+limit is separate from the two filtered `dist` paths and remains part of the
+original review evidence; it does not negate the separately scoped checks above.

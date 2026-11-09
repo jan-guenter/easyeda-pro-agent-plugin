@@ -14,7 +14,7 @@ import { CURRENT_PCB_VIA_WRITE_EXECUTE_ACKNOWLEDGEMENTS } from "../src/current-p
 const request = { action: "prepare", fixtureOperationId: "original-closed-data", operationId: "pcb209-via-write-coordinator-test",
   via: { netName: "", xMil: 100, yMil: 100, holeDiameterMil: 20, diameterMil: 40 } } as const;
 type Mode = "no-journal" | "terminal" | "sidecar" | "lost-ack";
-async function fixture(mode: Mode = "no-journal", abortAtBirth = false): Promise<Readonly<{ coordinator: CurrentPcbViaWriteCoordinator; calls: string[]; releasePreparation: () => void; releasePublication: () => void; failExecution: () => void; birthAbort: () => Promise<unknown> }>> {
+async function fixture(mode: Mode = "no-journal", abortAtBirth = false): Promise<Readonly<{ coordinator: CurrentPcbViaWriteCoordinator; calls: string[]; releasePreparation: () => void; releasePublication: () => void; failExecution: () => void; birthAbort: () => Promise<unknown>;replaceMainFailure:()=>void }>> {
   const calls: string[] = [], url = new URL("../src/current-pcb-via-write-coordinator.ts", import.meta.url);
   const originalRequire = createRequire(url); const source = await readFile(url, "utf8");
   const compiled = await transform(source, { loader: "ts", format: "cjs", target: "node24" });
@@ -29,7 +29,8 @@ async function fixture(mode: Mode = "no-journal", abortAtBirth = false): Promise
   let originalBirthAbort: Promise<unknown> | null = null, triggerBirthAbort: (() => void) | null = null;
   /* oxlint-disable eslint/class-methods-use-this -- The inert replacement preserves the production instance method signatures without inventing production private state. */
   class Workflow {
-    public constructor(actualOptions: unknown, actualPlan: unknown) { assert.equal(actualOptions, options); assert.equal(actualPlan, plan); calls.push("workflow"); if (abortAtBirth) { queueMicrotask(() => { triggerBirthAbort?.(); }); } }
+    public constructor(actualOptions: unknown, actualPlan: unknown) { assert.equal(actualOptions, options); assert.equal(actualPlan, plan); calls.push("workflow"); Object.freeze(this); if (abortAtBirth) { queueMicrotask(() => { triggerBirthAbort?.(); }); } }
+    public mainFailure():null{return null;}
     public execute(): Promise<never> { assert.equal(started, false); assert.equal(aborted, false); started = true; calls.push("execute"); return execution.promise; }
     public requireOriginalFailurePublicationSource(): typeof failureSource | null { assert.equal(started && failed, true); calls.push("original-failure-source"); return mode === "no-journal" ? null : failureSource; }
     public settlePublication(): Promise<void> { calls.push("journal-settlement"); return Promise.resolve(); }
@@ -72,7 +73,7 @@ async function fixture(mode: Mode = "no-journal", abortAtBirth = false): Promise
       // Retain the original rejected Promise for the regression's own await.
     } })();
   };
-  return { coordinator, calls, birthAbort: (): Promise<unknown> => { assert.ok(originalBirthAbort !== null); return originalBirthAbort; }, releasePreparation: (): void => { preparation.resolve(true); }, releasePublication: (): void => { publication.resolve(true); }, failExecution: (): void => { failed = true; execution.reject(new Error("original execution failure")); } };
+  return { coordinator, calls, replaceMainFailure:():void=>{Object.defineProperty(Workflow.prototype,"mainFailure",{get:():never=>{calls.push("replacement-workflow-main-getter");throw new Error("must not execute");},configurable:true});}, birthAbort: (): Promise<unknown> => { assert.ok(originalBirthAbort !== null); return originalBirthAbort; }, releasePreparation: (): void => { preparation.resolve(true); }, releasePublication: (): void => { publication.resolve(true); }, failExecution: (): void => { failed = true; execution.reject(new Error("original execution failure")); } };
 }
 void test("equal-looking source JSON refuses before checkpoint or native allocation", () => {
   assert.throws(() => Reflect.construct(CurrentPcbViaWriteCoordinator, [Object.freeze({}), {}, request]), /Original unconsumed/u);
@@ -138,4 +139,9 @@ void test("abort after preparation creates the workflow but before execute conti
   assert.equal(f.coordinator.failureObserved(), false); assert.equal(f.coordinator.hasActiveReservation(), false);
   await f.coordinator.shutdownOriginal(); assert.equal(f.calls.includes("execute"), false); assert.equal(f.calls.includes("original-failure-source"), false);
   assert.equal(f.coordinator.hasActiveReservation(), false);
+});
+
+void test("Main failure getter keeps original workflow method custody without invoking substituted accessors",async()=>{
+ const f=await fixture();assert.equal(f.coordinator.mainFailure(),null);f.releasePreparation();await f.coordinator.run(request);assert.equal(f.coordinator.mainFailure(),null);
+ f.replaceMainFailure();assert.throws(()=>f.coordinator.mainFailure(),/MAIN_FAILURE_ORIGINAL_WORKFLOW/u);assert.equal(f.calls.includes("replacement-workflow-main-getter"),false);
 });

@@ -79,6 +79,7 @@ async function fixture(fault: Fault = "none"): Promise<Readonly<{ runner: Curren
 }
 void test("saved readonly bootstrap instruments before both waits and leaves the original project script paused", async () => {
   const f = await fixture(), result = await f.runner.observe();
+  assert.equal(f.commands.some(command => command.phase === "saved-load-resume" && ["project"].includes(command.role)), false);
   assert.equal(f.commands.length, 22); assert.equal(f.state.callbacks, 1); assert.equal(f.state.browserRan, 1); assert.equal(f.state.pageRan, 1); assert.equal(f.state.projectResumed, false);
   assert.equal(result.projectInitialSourceRemainsPaused, true); assert.equal(result.scopedHttpCacheAndServiceWorkerBypassAcknowledged, true);
   assert.equal(f.commands.some(command => command.phase === "saved-load-service-worker"), true);

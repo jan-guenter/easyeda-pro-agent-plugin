@@ -29,7 +29,7 @@ function registrationSource(source: string): string {
       node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
   assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
   const names = ["mainOriginal", "heldCacheOriginal", "resettableDiagnosticOwnerAllocated", "heldCacheCalls",
-    "headAgeOriginal", "headAgeCalls", "startupOriginal", "startupCalls", "combinedHistoricalOriginal",
+    "headAgeOriginal", "headAgeCalls", "viaPreopeningHistoricalOriginal", "startupOriginal", "startupCalls", "combinedHistoricalOriginal",
     "forwardOpeningHistoricalOriginal", "forwardSourceHistoricalOriginal", "runForwardSourceHistorical", "runStartup"];
   const selected = names.map(name => {
     const nodes = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&

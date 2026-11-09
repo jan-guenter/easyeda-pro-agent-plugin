@@ -46,3 +46,10 @@ were corrected before the successful focused pass. The initial repository check
 rejected the temporary dependency symlink; local dependencies were copied into
 the isolated worktree before its final repository validation. These failures
 were tooling/source-leaf checks, not connected results.
+
+Provenance correction, 2026-11-08: the retained final validation report identifies
+clean source commit `fcfc6dbf76d02152f53870863b6c581e9bae44d3`, tree
+`a52661929e878f8ed8e6f2c5996b40057fdfdad1`, for the offline checks above. The
+recorded tree was rechecked against that Git object. The opening `649e0498` hash
+is its parent context, not the tested leaf. This identifies the source payload;
+it adds no generated-package or connected acceptance.

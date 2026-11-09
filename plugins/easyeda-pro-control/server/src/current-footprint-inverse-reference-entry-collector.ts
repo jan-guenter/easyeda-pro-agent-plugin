@@ -7,6 +7,7 @@ import { requireCurrentFootprintInversePublicServiceDescription as description,d
 import { currentSchematicRelevanceRawNativeConstructor as constructor } from "./current-schematic-relevance-action-raw-replies.ts";
 import { currentFootprintInverseLookupNativeCallable as callable } from "./current-footprint-inverse-lookup-native-metadata.ts";
 import { decodeCurrentNativeFunctionMetadata as native } from "./current-native-function-metadata.ts";
+import { continueCurrentFootprintInverseReference } from "./current-footprint-inverse-reference-continuation.ts";
 
 export interface CurrentFootprintInverseReferenceEntryBindings{
  readonly receipt:string;readonly original:string;readonly rowGuard:string;readonly frame:string;readonly uiScriptId:string;readonly oldPoint:string;
@@ -17,6 +18,7 @@ export interface CurrentFootprintInverseReferenceEntryBindings{
  readonly wait:(breakpoint:string)=>Promise<Readonly<{frame:string;caller:string}>>;
 }
 function need(value:boolean):asserts value{if(!value){throw new Error("INVERSE_REFERENCE_ENTRY_COLLECTOR");}}
+/** Join the original M8 and yw entry objects and retain the first reference await; later queries and deletion require separate continuations. */
 export async function collectCurrentFootprintInverseReferenceEntry(b:CurrentFootprintInverseReferenceEntryBindings):Promise<Readonly<{m8:string;entry:string;caller:string;native:string;selected:string;point:string;rowGuard:string}>>{
  const props=async(objectId:string):Promise<unknown>=>{b.current();const raw=await b.request({phase:"inverse-reference-entry-properties",method:"Runtime.getProperties",params:{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}});b.current();return raw;};
  const call=async(role:keyof typeof CALLS,refs:readonly string[],target=false):Promise<unknown>=>{const row=CALLS[role];const args:unknown[]=refs.map(objectId=>({objectId}));if(target){args.push({value:b.target});}b.current();const raw=await b.request(validate({phase:"inverse-reference-entry-call",role,method:"Runtime.callFunctionOn",params:{...FLAGS,objectId:b.receipt,functionDeclaration:row.program,arguments:args,returnByValue:row.byValue}}));b.current();return raw;};
@@ -30,7 +32,7 @@ export async function collectCurrentFootprintInverseReferenceEntry(b:CurrentFoot
  for(const[index,role]of nativeRoles.entries()){const fn=members[index];need(fn!==undefined);callable(fn,role.name);native(await props(object(fn)),{...role,constructor:false});}
  const nativeProof=await tuple("native",[m8,prototype,nativeMembers,b.nativeRoots,b.nativeMembers,b.iteratorProof],6);array(await props(nativeProof),6);truth(await call("before",[m8,b.original,nativeProof],true));
  await b.control("prepared",{scriptId:b.uiScriptId});const breakpoint=point(await b.request({phase:"inverse-reference-entry-arm",method:"Debugger.setBreakpoint",params:{location:{scriptId:b.uiScriptId,lineNumber:POINT.lineNumber,columnNumber:POINT.columnNumber},condition:""}}));await b.control("armed",{breakpointId:breakpoint});
- await b.request({phase:"inverse-reference-entry-remove",method:"Debugger.removeBreakpoint",params:{breakpointId:b.oldPoint}});await b.request({phase:"inverse-reference-entry-resume",method:"Debugger.resume",params:{}});const held=await b.wait(breakpoint);b.current();await b.control("resumed");await b.control("held");
+ const held=await continueCurrentFootprintInverseReference({current:():void=>{b.current();},remove:()=>b.request({phase:"inverse-reference-entry-remove",method:"Debugger.removeBreakpoint",params:{breakpointId:b.oldPoint}}),resume:()=>b.request({phase:"inverse-reference-entry-resume",method:"Debugger.resume",params:{}}),wait:()=>b.wait(breakpoint)});b.current();await b.control("resumed");await b.control("held");
  const entry=await frame("entry",held.frame,10);const entryValues=array(await props(entry),10);const selected=entryValues[6];need(selected!==undefined);properties(await props(object(selected)));const caller=await frame("caller",held.caller,7);array(await props(caller),7);truth(await call("rowReprove",[b.rowGuard]));const selectedTuple=result(await call("entry",[entry,m8,caller,nativeProof],true),1);array(await props(selectedTuple),1);await b.control("complete");b.current();
  return Object.freeze({m8,entry,caller,native:nativeProof,selected:object(selected),point:breakpoint,rowGuard:b.rowGuard});
 }

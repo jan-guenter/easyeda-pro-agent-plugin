@@ -5,7 +5,7 @@ import { CURRENT_FOOTPRINT_INVERSE_PUBLIC_ROW_PROGRAMS_V2 as ROW } from "./curre
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 // Formatted actor defaults are empty plain objects. Keep the older helper
-// immutable and change only this new fixed result profile's minimum key count.
+// Immutable and change only this new fixed result profile's minimum key count.
 const nonempty="if(size<1||size>129||symbols(row).length!==0)bad();";
 if(ROW.capture.split(nonempty).length!==2){throw new Error("INVERSE_GET_RESULT_ROW_ANCHOR");}
 const rowCapture=ROW.capture.replace(nonempty,"if(size>129||symbols(row).length!==0)bad();");

@@ -15,6 +15,7 @@ const DIAGNOSTICS = Object.freeze({ schema: "easyeda-pro-control.admission-scan-
 interface Observation { observedAt: string; incompleteOperations: unknown[]; diagnostics: typeof DIAGNOSTICS }
 type Handler = (input: object) => Promise<Record<string, unknown>>;
 
+/** Register the actual status wrapper in an inert VM and expose controlled connection, admission and diagnostic outcomes. */
 async function registeredStatus(options: { connectDuringProbe?: boolean; disconnected?: boolean; failureStage?: "list-tools" | "status"; diagnosticsThrow?: boolean;
   facadeMode?: "legacy-reviewed" | "calculation-only"; diagnosticBlocked?: boolean } = {}): Promise<{
   calls: string[]; invoke: Handler; refuseAdmission: () => void;

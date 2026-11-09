@@ -5,7 +5,7 @@ pe singleton getter and active-document lookup chain in both schematic bundles.
 It also pins the original UI tt.getActiveTab. The complete scripts and manager
 class spans remain hash-qualified. Twenty-seven exact callable profiles record
 source spans, descriptions, native Inspector locations and real function arity.
-The defaulted Nt parameter correctly leaves its JavaScript length at1.
+The defaulted Nt parameter correctly leaves its JavaScript length at 1.
 
 The reached source chain includes Nt, Hn, oi, splitDocId, the sheet-path test,
 the project-delimiter arrow and Wr/Xr. These source facts do not establish the
@@ -28,7 +28,7 @@ null caller/arguments and their original writable prototype. Every result keeps
 singleton, active-document and continuation authority flags false.
 
 Two focused tests passed with configured pinned source and zero skips. Actual
-Node24 Inspector qualified all27 functions in source-preserving inert realms
+Node24 Inspector qualified all 27 functions in source-preserving inert realms
 without invoking a getter/method or constructing a document/singleton. Both
 TypeScript configurations and strict changed-file lint passed. No Core, native
 ledger, controller, helper, pin, bundle or live application was changed.

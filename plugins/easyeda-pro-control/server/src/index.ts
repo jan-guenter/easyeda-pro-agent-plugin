@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import { CurrentPcbViaWriteCoordinator } from "./current-pcb-via-write-coordinator.ts";
 import { CurrentSchematicRelevanceDisplayWriteCoordinator } from "./current-schematic-relevance-display-write-coordinator.ts";
-import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL, currentSchematicRelevanceDisplayWriteActionSchema } from "./current-schematic-relevance-display-write-contract.ts";
-import type { currentSchematicRelevanceDisplayWriteResultSchema } from "./current-schematic-relevance-display-write-contract.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL, currentSchematicRelevanceDisplayWriteActionSchema, currentSchematicRelevanceDisplayWriteResultSchema } from "./current-schematic-relevance-display-write-contract.ts";
+import { currentSchematicRelevanceDisplayWriteDiagnosticSchema } from "./current-schematic-relevance-display-write-diagnostic.ts";
 import type { CurrentSchematicRelevanceDisplayWriteDiagnostic } from "./current-schematic-relevance-display-write-diagnostic.ts";
 import { CURRENT_PCB_VIA_WRITE_TOOL, currentPcbViaWriteActionSchema, currentPcbViaWriteResultSchema } from "./current-pcb-via-write-contract.ts";
+import { currentPcbViaWriteDiagnosticSchema } from "./current-pcb-via-write-diagnostic.ts";
+import {currentPcbViaWriteMainFailureSchema} from "./current-pcb-via-write-main-failure.ts";
 import { CurrentFootprintCombinedLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintForwardPrewriteLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbComponentSpatialLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbOrdinaryReadLifecycle, CurrentPcbSpatialLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
 import { currentPcbComponentSpatialRequestSchema } from "./current-pcb-component-spatial-validation.ts";
 import type { ManagedComponentFixtureOpeningSource } from "./managed-component-fixture-opening-source.ts";
@@ -352,12 +354,12 @@ function hasForwardSourceCustody(): boolean {
 }
 /* oxlint-disable typescript/unbound-method -- Retain original identities and call only on the same private-field coordinator. */
 const viaWriteMethods = Object.freeze({ run: CurrentPcbViaWriteCoordinator.prototype.run, inspect: CurrentPcbViaWriteCoordinator.prototype.inspect,
-  active: CurrentPcbViaWriteCoordinator.prototype.hasActiveReservation, shutdown: CurrentPcbViaWriteCoordinator.prototype.shutdownOriginal });
+  active: CurrentPcbViaWriteCoordinator.prototype.hasActiveReservation, shutdown: CurrentPcbViaWriteCoordinator.prototype.shutdownOriginal, diagnostic: CurrentPcbViaWriteCoordinator.prototype.diagnostic,mainFailure:CurrentPcbViaWriteCoordinator.prototype.mainFailure });
 /* oxlint-enable typescript/unbound-method */
 function assertViaWriteMethods(owner: CurrentPcbViaWriteCoordinator): void {
   if (Object.getPrototypeOf(owner) !== CurrentPcbViaWriteCoordinator.prototype || Reflect.ownKeys(owner).length > 0 || !Object.isFrozen(owner) ||
     CurrentPcbViaWriteCoordinator.prototype.run !== viaWriteMethods.run || CurrentPcbViaWriteCoordinator.prototype.inspect !== viaWriteMethods.inspect ||
-    CurrentPcbViaWriteCoordinator.prototype.hasActiveReservation !== viaWriteMethods.active || CurrentPcbViaWriteCoordinator.prototype.shutdownOriginal !== viaWriteMethods.shutdown) {
+    CurrentPcbViaWriteCoordinator.prototype.hasActiveReservation !== viaWriteMethods.active || CurrentPcbViaWriteCoordinator.prototype.shutdownOriginal !== viaWriteMethods.shutdown || CurrentPcbViaWriteCoordinator.prototype.diagnostic !== viaWriteMethods.diagnostic || Object.getOwnPropertyDescriptor(CurrentPcbViaWriteCoordinator.prototype,"mainFailure")?.value!==viaWriteMethods.mainFailure) {
     throw new Error("Original disposable Via coordinator methods changed.");
   }
 }
@@ -1393,6 +1395,7 @@ function serializedLiveResult<Input>(
 
 function serializedStatusGuarded<Input>(
   handler: (input: Input, admission: StatusAdmissionObservation) => unknown,
+  finalize: (input: Input, observation: unknown) => unknown,
 ): (input: Input) => Promise<CallToolResult> {
   return guarded((input) =>
     runFacadeGate(async () => {
@@ -1401,16 +1404,18 @@ function serializedStatusGuarded<Input>(
       await upstream.listTools();
       await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
       const lifecycle = upstream.bridgeSessionLifecycle();
+      let observation: unknown;
       if (lifecycle?.activeSession === null) {
-        const disconnectedObservation = await handler(input, admission);
-        if (upstream.bridgeSessionLifecycle()?.activeSession === null) { return disconnectedObservation; }
+        observation = await handler(input, admission);
         // A renderer may authenticate while the first read-only startup probe
         // Waits. Resample under a new exact lease instead of issuing unbound calls.
-        return upstream.withAuthenticatedBridgeDispatchScope(() => handler(input, admission));
+        if (upstream.bridgeSessionLifecycle()?.activeSession !== null) {
+          observation = await upstream.withAuthenticatedBridgeDispatchScope(() => handler(input, admission));
+        }
+      } else {
+        observation = await upstream.withAuthenticatedBridgeDispatchScope(() => handler(input, admission));
       }
-      return upstream.withAuthenticatedBridgeDispatchScope(() =>
-        handler(input, admission),
-      );
+      return finalize(input, observation);
     }),
     () => upstream.processDiagnostics(),
   );
@@ -2205,7 +2210,8 @@ const artifactReadSuccessOutputSchema = z
   .strict();
 const currentSymbolOperationToolOutputSchema = z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).strict();
 const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
-  [CURRENT_PCB_VIA_WRITE_TOOL]: z.object({ result: currentPcbViaWriteResultSchema.optional(), ...optionalFailureOutputShape }).strict(),
+  [CURRENT_PCB_VIA_WRITE_TOOL]: z.object({ result: currentPcbViaWriteResultSchema.optional(), diagnostic: currentPcbViaWriteDiagnosticSchema.optional(),mainFailure:currentPcbViaWriteMainFailureSchema.nullable().optional(), ...optionalFailureOutputShape }).strict(),
+  [CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL]: z.object({ result: currentSchematicRelevanceDisplayWriteResultSchema.optional(), diagnostic: currentSchematicRelevanceDisplayWriteDiagnosticSchema.optional(), ...optionalFailureOutputShape }).strict(),
   easyeda_control_validate_closed_symbol: closedSymbolDisposableOutputSchema,
   easyeda_control_symbol_metadata: closedSymbolOperationOutputSchema,
   easyeda_control_api: z.object({ offline: z.boolean().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -2413,6 +2419,9 @@ registerFacadeTool(
     admissionScan: admission.diagnostics,
     safetyModel: facadeMode === "legacy-reviewed" ? "plan-apply-verify-save-reopen-checkpoint" : "fixed-local-utilities-with-separate-runtime-admission",
     };
+    return value;
+  }, (input, value) => {
+    const returnMode = input.returnMode ?? "full";
     return input.evidence === undefined ? value : withEvidence({ returnMode }, value, input.evidence,
       { facadeVersion: CONTROL_VERSION, observation: "complete-status" }, { returnMode, maxInlineBytes: MAX_INLINE_RESULT_BYTES });
   }),
@@ -3610,6 +3619,9 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
    * purposes; they cannot upgrade an allocated owner or replay consumed operation IDs.
    */
   const runStartup = (request: CurrentPcbWorkerStartupValidationRequest | CurrentPcb209WorkerStartupValidationRequest | CurrentPcb209EmptyStartupValidationRequest | CurrentPcb209RatlineStartupValidationRequest | CurrentPcb209RatlineContinuationValidationRequest | CurrentFootprintCopyPreparationValidationRequest | CurrentFootprintCopyRoutePreparationValidationRequest | CurrentFootprintCombinedValidationRequest | CurrentFootprintForwardPrewriteValidationRequest, emptyPurpose = false, ratlinePurpose = false, continuationPurpose = false, footprintPurpose = false, routePurpose = false, combinedPurpose = false, forwardPurpose = false): Promise<{ result: Record<string, unknown> }> => {
+    if (viaPreopeningHistoricalOriginal !== undefined && currentPcbWorkerStartupLifecycle === viaPreopeningHistoricalOriginal.owner) {
+      throw new Error("Failed Via pre-opening historical relinquishment reserves this facade.");
+    }
     if (generatedReaderHistoricalOriginal !== undefined && currentPcbWorkerStartupLifecycle === generatedReaderHistoricalOriginal.owner) {
       throw new Error("Closed-reader historical relinquishment reserves this facade.");
     }
@@ -5580,11 +5592,11 @@ function assertFreshClosedGeneratedDataEnvironment(originalVia?: CurrentPcbViaWr
 if (facadeMode === "public-utilities-only" && facadeToolRegistered(facadeMode, CURRENT_PCB_VIA_WRITE_TOOL)) {
   registerFacadeTool(CURRENT_PCB_VIA_WRITE_TOOL, {
     title: "Write one Via in an original disposable PCB fixture",
-    description: "Controlled disposable validation only; connected lifecycle acceptance is unclaimed. Prepare from this facade's released closed generated PCB data qualification, then explicitly execute one fixed typed Via creation and one Save. The original controller retains both writer and fresh saved-readback generations, complete scene and SQL checks, and original cleanup. Inspection and cleanup join that same operation. No caller paths, owners, code, retry, inverse, production target or historical-owner adoption. Completion requires original closure, full closed/reopened SQL proof and both helper releases.",
+    description: "Controlled disposable validation only; connected lifecycle acceptance is unclaimed. Prepare from this facade's released closed generated PCB data qualification, then explicitly execute one fixed typed Via creation and one Save. The original controller retains both writer and fresh saved-readback generations, complete scene and SQL checks, and original cleanup. Inspection and cleanup join that same operation. Separate readonly diagnostics retain the first failure phase/code and a bounded original Main runner snapshot before cleanup, without vendor messages, stacks or design paths. No caller paths, owners, code, retry, inverse, production target or historical-owner adoption. Completion requires original closure, full closed/reopened SQL proof and both helper releases.",
     inputSchema: { request: z.unknown().pipe(currentPcbViaWriteActionSchema) },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   }, guarded(({ request }) => {
-    const run = async (): Promise<{ result: z.infer<typeof currentPcbViaWriteResultSchema> }> => {
+    const run = async (): Promise<{ result: z.infer<typeof currentPcbViaWriteResultSchema>; diagnostic: z.infer<typeof currentPcbViaWriteDiagnosticSchema>;mainFailure:z.infer<typeof currentPcbViaWriteMainFailureSchema>|null }> => {
       if (currentPcbViaWriteCoordinator === undefined) {
         if (request.action !== "prepare") { throw new Error("Via actions require this facade's retained original preparation."); }
         assertFreshClosedGeneratedDataEnvironment();
@@ -5623,7 +5635,7 @@ if (facadeMode === "public-utilities-only" && facadeToolRegistered(facadeMode, C
       }
       const result = await viaWriteMethods.run.call(owner, request); assertViaWriteMethods(owner);
       if (currentPcbViaWriteCoordinator !== owner) { throw new Error("Original Via controller changed during its action."); }
-      return { result };
+      return { result, diagnostic: viaWriteMethods.diagnostic.call(owner),mainFailure:viaWriteMethods.mainFailure.call(owner) };
     };
     return request.action === "prepare" || request.action === "execute" ? runFacadeGate(run, false, true) : run();
   }, undefined, false, true));

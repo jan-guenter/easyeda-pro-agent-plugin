@@ -44,3 +44,18 @@ must be measured again on their actual union.
 Further spatial, visual, and model-family omissions remain unimplemented.
 Their wider selector and packed-program dependencies need separate closure
 proofs if more capacity is required.
+
+## 2026-11-08 provenance correction
+
+This record entered the local implementation history in `f6b06e5183615a62751472d2a20b4b6530bb35a8`,
+Git tree `b985744c11ce15bbd3b471421c0ed1caf22af4e7`, with Git author timestamp
+`2026-11-08T07:50:05+01:00`. Those objects are retained in the local private
+repository. They are source-introduction provenance, not a recovered timestamp
+or sealed identity for the earlier tested worktree. That worktree and its
+uncommitted changes were not completely sealed in the retained evidence and
+cannot be reconstructed for attribution. The stated checks and measurements
+remain historical observations with that limit. Any compiler SHA256 above
+identifies only its emitted C# input; it does not identify the complete
+TypeScript, test or generator tree. No earlier test was rerun or attributed to
+a later commit for this correction. Private implementation ancestors are not
+published to fill this gap.
