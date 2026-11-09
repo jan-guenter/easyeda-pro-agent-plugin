@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-09 Release CI and review corrections](2026-11-09-release-ci-and-review-corrections.md). Retained failed release checks, strict native compiler warning fixes, focused facade regressions, PR209 findings and documentation scope, and concrete review omissions before the requested post-merge break.
+
 - [2026-11-09 Composed control development](2026-11-09-composed-control-development.md). Exact frozen package and automatic controller handoff, four native inputs and 66 inert checks, the consumed Via q refusal and cleanup, and the scoped source checkpoints before the next PR/break boundary.
 
 - [2026-11-09 Wire held callback source checkpoint](2026-11-09-wire-held-callback-source-checkpoint.md). Distinct unmounted v3 callback markers, readonly raw/active/prefix cursors and point proofs keep the original event/worker/bbox/SQL/Save/reopen writer boundary explicit.

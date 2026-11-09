@@ -47,8 +47,9 @@ void test("seven-record Main reuses exact inert selectors while every native sen
   assert.throws(() => currentSchematicRelevanceDisplayMainWire(getter, 79));
   assert.throws(() => currentSchematicRelevanceDisplayMainWire(new Proxy({}, { getOwnPropertyDescriptor: hook, get: hook }), 79));
   assert.equal(hooks, 0);
-  assert.deepEqual(WIRE.main, SIX.main); assert.equal(WIRE.renderer.total, 2721); assert.equal(WIRE.renderer.modifyEntryObservation, 0); assert.deepEqual([SEVEN.main.normal, SEVEN.main.cleanup, SEVEN.main.total], [1152, 43, 1195]);
-  assert.deepEqual([SIX.main.normal, SIX.main.cleanup, SIX.main.total], [901, 8, 909]);
+  // The shared SQL fence now checks all four import operands with one additional passive read.
+  assert.deepEqual(WIRE.main, SIX.main); assert.equal(WIRE.renderer.total, 2721); assert.equal(WIRE.renderer.modifyEntryObservation, 0); assert.deepEqual([SEVEN.main.normal, SEVEN.main.cleanup, SEVEN.main.total], [1153, 43, 1196]);
+  assert.deepEqual([SIX.main.normal, SIX.main.cleanup, SIX.main.total], [902, 8, 910]);
 });
 void test("copied seven-record or Via origins cannot create any original Main observer", () => {
   const argumentsValue = Object.freeze({ explicitNonOriginalArguments: true }), owner = Object.freeze({ explicitNonOriginalOwner: true });
@@ -62,5 +63,5 @@ void test("copied seven-record or Via origins cannot create any original Main ob
 void test("own7 live rows retain all thirteen readonly messages and cannot be created by copied origins", () => {
  for(const command of currentPcbViaMainLiveHistoryNativeCases()){assert.deepEqual(currentSchematicRelevanceDisplayMainLiveHistoryWire(command,79),{...currentPcbViaMainLiveHistoryWire(command,79),action:"schematic-relevance-display-main-live-history"});assert.throws(()=>currentSchematicRelevanceDisplayMainLiveHistoryWire({...command,rows:[]},79));}
  assert.throws(()=>Reflect.construct(CurrentSchematicRelevanceDisplayMainLiveHistoryObserver,[Object.freeze({profile:"private.current-schematic-relevance-display-save-main-origin.v1"}),Object.freeze({}),Object.freeze({})]),/ORIGINAL_ORIGIN/u);
- assert.equal(SEVEN.main.normal,1152);assert.equal(SEVEN.main.cleanup,43);assert.equal(SEVEN.main.total,1195);
+ assert.equal(SEVEN.main.normal,1153);assert.equal(SEVEN.main.cleanup,43);assert.equal(SEVEN.main.total,1196);
 });

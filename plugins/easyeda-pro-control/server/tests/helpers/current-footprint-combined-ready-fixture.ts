@@ -185,6 +185,9 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
       verifyCurrentPcb209DiagnosticInstallation: (): Promise<unknown> => mode === "saved-admission-failure" && selectedWriter !== null ?
         Promise.reject(new Error("Synthetic saved admission failed")) : Promise.resolve(installation),
       verifyCurrentPcb209DiagnosticFacade: (): Promise<unknown> => Promise.resolve(installation),
+      verifyCurrentSelectedFileMainInstallation: (): Promise<unknown> => mode === "saved-admission-failure" && selectedWriter !== null ?
+        Promise.reject(new Error("Synthetic saved admission failed")) : Promise.resolve(installation),
+      verifyCurrentSelectedFileMainFacade: (): Promise<unknown> => Promise.resolve(installation),
       qualifyCurrentPcb209StartupActorInstallation: (): Promise<unknown> => Promise.resolve(sourceOnly),
       verifyCurrentPcb209WorkerBootstrapInstallation: (): Promise<void> => Promise.resolve(),
       verifyCurrentSelectedFileMainSqlFenceInstallation: (): Promise<void> => Promise.resolve(),

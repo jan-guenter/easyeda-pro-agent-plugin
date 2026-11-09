@@ -82,3 +82,35 @@ Validation targeted a disposable generated fixture. Raw projects, transcripts,
 failure logs and ownership evidence remain outside the public repository.
 The user requested a break after the next real PR merge; retain the unfinished
 work as backlog at that boundary.
+
+## Final local package and controller closure
+
+The diagnostic correction described above is now in source `d4873f94`.
+It retains the existing bounded pause context before the unchanged refusal.
+Its focused regression passed; the unknown live site and startup continuation
+remain unresolved. No further live writer was attempted.
+
+Generation 12 retired through the supported manager selector. Lease release,
+original stdin EOF, exit code zero and independent original-pidfd exit were
+observed. The original foreground manager then acknowledged shutdown and its
+retained pidfd observed exit. No signal, owner adoption or manual restart was
+used. An initial retirement envelope used the wrong confirmation field and
+was rejected before dispatch; its failure remains retained separately.
+
+The combined local package is `0.3.0+codex.20261109101534`, based on the same
+source. Dependency installation/inventory, signature and moderate-vulnerability
+audits, sanitizer checks, both facade and bridge types, bridge lint, full strict
+type-aware lint, API coverage, build and compatibility checks passed. Strict
+lint reported zero warnings. Repository, plugin-contract and all-skill results
+each independently parsed as successful; all seven installed skill-creator
+checks passed. All three bundles reproduced and external compatibility pins
+remained unchanged.
+
+All four compiler inputs and expanded native sources are byte-exact to the
+compiled snapshot above, so its 66 inert checks are reused without another
+native campaign. No complete local suite was repeated. Exact-release GitHub
+suites, complete CodeRabbit coverage and protected merge remain pending.
+The full main-to-source review audit found 149 additional current blobs beyond
+the two prepared review batches; they require a separate bounded review.
+Synthetic review contexts must never be merged. Official installation remains
+on the earlier published version until a separately verified update.

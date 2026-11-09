@@ -8,6 +8,7 @@ import { test } from "node:test";
 import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS as ACTIONS, CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE as PROFILE } from "../src/current-footprint-inverse-native-profile.ts";
 import { combinedReadyFactoryFixture } from "./helpers/current-footprint-combined-ready-fixture.ts";
+import { CURRENT_FOOTPRINT_INVERSE_PRIVATE_FIELDS } from "../src/current-footprint-inverse-private-fields.ts";
 
 function pending(method: unknown, args: readonly unknown[]): Promise<unknown> {
   assert.equal(typeof method, "function"); assert.ok(typeof method === "function");
@@ -98,7 +99,9 @@ void test("whole native composition is idempotent with original inverse limits a
   assert.equal(ACTIONS["footprint-inverse-initial-sync"], 120); assert.ok(expanded.includes('case "footprint-inverse-initial-sync":limit=120;break;'));
   assert.equal(ACTIONS["footprint-inverse-initial-cache"], 298); assert.ok(expanded.includes('case "footprint-inverse-initial-cache":limit=298;break;'));
   assert.equal(PROFILE.deleteInvocationAuthorized, false); assert.equal(PROFILE.executionAuthorized, false); assert.equal(PROFILE.saveAuthorized, false);
-  assert.ok(expanded.includes('if(footprintInverseConstructionComplete)throw Error("footprint-inverse-main-construction-consumed")'));
+  const construction = CURRENT_FOOTPRINT_INVERSE_PRIVATE_FIELDS.find(entry => entry.field === "footprintInverseConstructionComplete");
+  assert.ok(construction !== undefined);
+  assert.ok(expanded.includes(`if(${construction.emitted})throw Error("footprint-inverse-main-construction-consumed")`));
 });
 
 void test("an original inverse factory cannot adopt a copied source or constructor receipt", async context => {

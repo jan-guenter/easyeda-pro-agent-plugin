@@ -13,6 +13,7 @@ import { currentSchematicPageReadRequestSchema } from "../../src/current-schemat
 import { currentPcbOrdinaryReadRequestSchema } from "../../src/current-pcb-ordinary-read-validation.ts";
 import { currentPcbComponentSpatialRequestSchema } from "../../src/current-pcb-component-spatial-validation.ts";
 import { currentGeneratedReaderRelinquishmentRequestSchema } from "../../src/current-generated-reader-relinquishment-contract.ts";
+import { currentPcbViaPreopeningRelinquishmentRequestSchema } from "../../src/current-pcb-via-preopening-relinquishment-contract.ts";
 
 export function indexFixtureGateSource(source:string):string {
  const text=stripTypeScriptTypes(source);const rows=parse(text,{ecmaVersion:"latest",sourceType:"module"}).body.filter(row=>row.type==="FunctionDeclaration"&&row.id?.name==="runFacadeGate");assert.equal(rows.length,1);const row=rows[0];assert.ok(row!==undefined&&row.end-row.start<5000);return text.slice(row.start,row.end);
@@ -33,6 +34,7 @@ export function installIndexFixtureDependencies(scope:Context,source:string):voi
  if(!Object.hasOwn(scope,"currentPcbOrdinaryReadRequestSchema")){Reflect.set(scope,"currentPcbOrdinaryReadRequestSchema",currentPcbOrdinaryReadRequestSchema);}
  if(!Object.hasOwn(scope,"currentPcbComponentSpatialRequestSchema")){Reflect.set(scope,"currentPcbComponentSpatialRequestSchema",currentPcbComponentSpatialRequestSchema);}
  if(!Object.hasOwn(scope,"currentGeneratedReaderRelinquishmentRequestSchema")){Reflect.set(scope,"currentGeneratedReaderRelinquishmentRequestSchema",currentGeneratedReaderRelinquishmentRequestSchema);}
+ if(!Object.hasOwn(scope,"currentPcbViaPreopeningRelinquishmentRequestSchema")){Reflect.set(scope,"currentPcbViaPreopeningRelinquishmentRequestSchema",currentPcbViaPreopeningRelinquishmentRequestSchema);}
  const text=stripTypeScriptTypes(source);const body=parse(text,{ecmaVersion:"latest",sourceType:"module"}).body;
  for(const name of ["hasClosedGeneratedDataCustody","hasGeneratedSchematicCustody","hasViaWriteCustody","hasSchematicDisplayWriteCustody","hasFixtureImportCustody","runFacadeGate"]){
   if(!Object.hasOwn(scope,name)){const rows=body.filter(row=>row.type==="FunctionDeclaration"&&row.id?.name===name);assert.equal(rows.length,1);const row=rows[0];assert.ok(row!==undefined&&row.end-row.start<5000);runInContext(text.slice(row.start,row.end),scope);}

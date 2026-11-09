@@ -5,6 +5,7 @@ import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-f
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_PREFIX_CALLS as CALLS, CURRENT_FOOTPRINT_INVERSE_DELETE_PREFIX_REQUESTS as LIMIT, currentFootprintInverseDeletePrefixCases as cases, currentFootprintInverseDeletePrefixTemplate as template } from "./current-footprint-inverse-delete-prefix-protocol.ts";
 
 const quote=(s:string):string=>`@"${s.replaceAll('"','""')}"`,sha=(b:Uint8Array):string=>createHash("sha256").update(b).digest("hex");
+/** Emit the empty-check and DEL-prefix codec and ledger, rejecting oversized rows and unescaped table delimiters before packing. */
 export function currentFootprintInverseDeletePrefixNativeSource():string{
  const all=cases(),rows=[...Object.entries(CALLS).map(([name,r])=>["program",name,"",JSON.stringify(r.program)]),...all.map(c=>{const r=template(c);return[r.key,r.method,r.names.join(","),r.template];})],tables:string[][][]=[];let bucket:string[][]=[],bytes=0;
  for(const r of rows){if(r.some(s=>s.includes("\0")||s.includes("\t"))){throw new Error("INVERSE_DELETE_PREFIX_TABLE_FIELD");}const n=Buffer.byteLength(r.join("\t"));if(n>60_000){throw new Error("INVERSE_DELETE_PREFIX_TABLE_ROW");}if(bytes+Number(bucket.length>0)+n>60_000){tables.push(bucket);bucket=[];bytes=0;}bytes+=Number(bucket.length>0)+n;bucket.push(r);}if(bucket.length>0){tables.push(bucket);}if(tables.length>4){throw new Error("INVERSE_DELETE_PREFIX_TABLE_BOUND");}

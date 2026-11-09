@@ -11,6 +11,7 @@ const frame=z.strictObject({callFrameId:handle,functionName:z.string(),functionL
 const packet=z.strictObject({method:z.literal("Debugger.paused"),sessionId:handle,params:z.strictObject({callFrames:z.array(frame).min(1).max(6),reason:z.enum(["other","debugCommand"]),hitBreakpoints:z.tuple([handle]),asyncStackTrace:z.unknown().optional(),asyncStackTraceId:z.unknown().optional()})});
 function need(value:boolean):asserts value{if(!value){throw new Error("INVERSE_DELETE_PREFIX_REPLY");}}
 export interface CurrentFootprintInverseDeletePrefixHeld{readonly role:"l"|"c"|"rpc";readonly frames:readonly string[];readonly point:string;}
+/** Validate the source-pinned l, c or DEL RPC caller stack in its exact session and breakpoint before returning held frame handles. */
 export function currentFootprintInverseDeletePrefixPause(input:unknown,sessionId:string,scripts:Readonly<{ui:string;manager:string}>,profile:"ui"|"manager",role:"l"|"c"|"rpc",point:string,lIndex:0|1|2=0):CurrentFootprintInverseDeletePrefixHeld{
  const scriptId=scripts.ui;const raw=packet.parse(capture(input));need(raw.sessionId===sessionId&&raw.params.hitBreakpoints[0]===point);let expected:readonly(readonly(string|number|undefined)[])[];
  if(role==="l"){expected=[["l",1933,28_709,1933,28_725],["yw",1933,28_667,1935,[2816,2868,2916][lIndex]]];}
@@ -19,4 +20,5 @@ export function currentFootprintInverseDeletePrefixPause(input:unknown,sessionId
 
  need(raw.params.callFrames.length===expected.length);for(const[index,f]of raw.params.callFrames.entries()){const e=expected[index];need(e!==undefined&&f.functionName===e[0]&&f.functionLocation.scriptId===(role==="rpc"&&index===0?scripts[profile]:scriptId)&&f.functionLocation.lineNumber===e[1]&&f.functionLocation.columnNumber===e[2]&&f.location.scriptId===(role==="rpc"&&index===0?scripts[profile]:scriptId)&&f.location.lineNumber===e[3]&&f.location.columnNumber===e[4]);}return Object.freeze({role,frames:Object.freeze(raw.params.callFrames.map(f=>f.callFrameId)),point});
 }
+/** Require the complete pinned delete UI and exact c body digest before accepting its function metadata and handle. */
 export function qualifyCurrentFootprintInverseDeletePrefixC(text:unknown,metadata:unknown,scriptId:string,source:string):string{qualifyCurrentFootprintInversePublicDeleteSource("ui",source);const row=CURRENT_FOOTPRINT_INVERSE_DELETE_PREFIX_C_SOURCE;need(typeof text==="string"&&text===source.slice(row.start,row.end)&&Buffer.byteLength(text)===2104&&createHash("sha256").update(text).digest("hex")==="e2702c72f8b0136b70c27f1eb1139f6d576c3372afada8f663520990a24a37cb");return qualifyCurrentFootprintSourceFunctionMetadata(metadata,row,scriptId);}
