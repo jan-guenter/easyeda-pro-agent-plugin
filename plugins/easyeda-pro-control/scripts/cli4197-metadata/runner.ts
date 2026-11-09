@@ -65,6 +65,19 @@ export function cli4197MetadataClosedFailure(command: Cli4197MetadataCommand, ob
     originalChildExitObserved: observed?.exitObserved ?? false, originalChildStdioClosed: observed?.stdioClosed ?? false, exitCode: observed?.exitCode ?? null,
     stdoutOverflow: observed?.stdoutOverflow ?? false, stderrOverflow: observed?.stderrOverflow ?? false, hostSignalIssued: false, runtimeAdmitted: false, retryAuthorized: false });
 }
+const closedFailureWrites = new WeakMap<Pick<Cli4197Artifacts, "write">, Promise<void>>();
+/** Reserve before calling the writer and retain that original Promise. Preserve
+ * both failures without inspecting them; repeated calls never retry I/O. */
+export function writeCli4197MetadataClosedFailure(artifacts: Pick<Cli4197Artifacts, "write">, command: Cli4197MetadataCommand,
+  observed: Cli4197OriginalChildResult | null, caughtError: unknown): Promise<void> {
+  const previous = closedFailureWrites.get(artifacts); if (previous !== undefined) { return previous; }
+  const pending = (async (): Promise<void> => {
+    await Promise.resolve();
+    try { await artifacts.write("closed-failure.json", json(cli4197MetadataClosedFailure(command, observed))); }
+    catch (writeError) { throw new AggregateError([caughtError, writeError], "CLI4197_METADATA_FAILURE_RECORD_FAILED", { cause: writeError }); }
+  })();
+  closedFailureWrites.set(artifacts, pending); return pending;
+}
 const encoded = z.strictObject({ base64: z.string().max(27_308), bytes: z.number().int().min(0).max(LIMITS.outputBytes), sha256: z.string().regex(/^[a-f\d]{64}$/u) });
 const namespaceName = z.string().min(7).max(64).regex(/^(?:user|mnt|pid|net|ipc|uts):\[\d+\]$/u);
 const reportSchema = z.strictObject({
@@ -150,7 +163,7 @@ export async function runCli4197MetadataProbe(input: unknown): Promise<Readonly<
       hostSignalIssued: false, editorOpenAuthorized: false, apiInvocationAuthorized: false, networkAuthorized: false })); return result;
   } catch (caughtError) {
     const observed = original === null ? null : await original;
-    if (artifacts !== null) { await artifacts.write("closed-failure.json", json(cli4197MetadataClosedFailure(options.command, observed))); }
+    if (artifacts !== null) { await writeCli4197MetadataClosedFailure(artifacts, options.command, observed, caughtError); }
     throw caughtError;
   } finally {
     if (original !== null) { await original; }

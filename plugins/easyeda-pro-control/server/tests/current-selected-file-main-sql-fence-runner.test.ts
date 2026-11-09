@@ -22,6 +22,7 @@ import type { CurrentFootprintCopyMainBackendCommand as Command } from "../src/c
 import type { CurrentFootprintCopyMainBackendRunner, CurrentFootprintCopyMainBackendTransport } from "../src/current-footprint-copy-main-backend-runner.ts";
 import type { CurrentSelectedFileMainSqlFenceCommand as SqlCommand } from "../src/current-selected-file-main-sql-fence-protocol.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_EARLY_ID as EARLY_ID } from "../src/current-selected-file-main-sql-fence-protocol.ts";
+import { currentSelectedFileMainSqlFenceNativeCases } from "../src/current-selected-file-main-sql-fence-native.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SOURCE } from "../src/current-selected-file-main-sql-fence-source.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_EXPRESSIONS as CAPTURED_EXPRESSIONS, CURRENT_SELECTED_FILE_MAIN_SQL_CAPTURED_FRAME_PROGRAM as CAPTURED_FRAME } from "../src/current-selected-file-main-sql-fence-programs.ts";
 import { currentSelectedFileMainSqlStartupDiagnosticV2Schema } from "../src/current-selected-file-main-sql-startup-diagnostic-v2.ts";
@@ -36,6 +37,7 @@ import { currentPcbViaMainNativeCases, validateCurrentPcbViaMainCommand } from "
 type Data = Record<string, unknown>;
 type CapturedSite = keyof typeof CAPTURED_EXPRESSIONS;
 type Classification = "held" | "guard-passed" | "guard-refused" | "malformed" | "legacy-count" | "lost-ack";
+type RegistrationFault = "metadata" | "location" | "remove-ack" | "resume-ack" | "complete-false" | "complete-ack" | "copied-command" | "pending-return" | "lineage" | "unowned-site";
 type SqlPauseFixture = Readonly<{ site: CapturedSite; classification?: Classification;
   fault?: "frame" | "properties" | "probe" | "raw-count" | "raw-exception" | "raw-reference" | "raw-side-effect" | "original-pause" | "resume-ack";
   hitBreakpoints?: readonly string[]; following?: "driver"; batchResume?: boolean }>;
@@ -74,9 +76,11 @@ const configPacket = (role: "jb" | "dc", site: "run" | "prepare" | "prepared", s
  * not replace the real command validators, counters or continuation gates. */
 async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed" | null = null, unsupportedNative = false,
   firstStartup: SqlPauseFixture | null = null, startupCallerFrames: readonly Data[] = [],
-  failureProbe?: Readonly<{ consumeError?: Error; projectionError?: Error; locationProjectionCount?: { count: number } }>, stockMode: "complete" | "lineage" | "early-registration" | "interleave" | "interleave-refused" | null = null): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
+  failureProbe?: Readonly<{ consumeError?: Error; projectionError?: Error; locationProjectionCount?: { count: number } }>, stockMode: "complete" | "lineage" | "early-registration" | "late-registration" | "interleave" | "interleave-refused" | null = null, registrationFault?: RegistrationFault): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
   injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole) => void; injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole) => void; injectBeginPoint: (role: "save" | "transaction" | "run" | "callback" | "returned") => void; injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean | "structure") => void; injectMutation: () => void; injectSql: (pause: SqlPauseFixture) => void; injectDriver: () => void; resumes: () => number; resumeBatches: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
+  if (registrationFault === "metadata") { base.state.metadataShapeRole = "protocolCallback"; }
+  if (registrationFault === "location") { base.state.registrationColumnDelta = 1; }
   const ids = new Map<number, number>(), phases: string[] = [], queue: Data[] = [], retainedRegistration: Data[] = [];
   let currentRequest = { method: "GET", url: "", delta: 0, pathHeader:"f".repeat(64) }, fetchScriptSeen = false;
   const startup: { site: keyof typeof SOURCE.sites; value?: Data; stock?: number }[] = [{ site: "startupVersion" }, { site: "startupJB" },
@@ -112,9 +116,9 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
   const location = (site: keyof typeof SOURCE.sites): Data => ({ scriptId: "app", lineNumber: SOURCE.sites[site].lineNumber, columnNumber: SOURCE.sites[site].breakpointColumnNumber + (site === "import" ? delta : 0) });
   /** Deliver the exact armed SQL point, with optional negative event data. */
   const pause = (site: keyof typeof SOURCE.sites, options: SqlPauseFixture | null = null): void => { currentSqlPause = options; const frames:Data[]=[{callFrameId:`frame-${site}`,location:location(site),...(site==="driver"?{functionName:"",functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:2434}}:{})},...startupCallerFrames];
-    if (stockMode !== null && interleaveIndex < 0 && startup[startupIndex]?.stock === 0) {
+    if (site === "run" && stockMode !== null && interleaveIndex < 0 && startup[startupIndex]?.stock === 0) {
       frames.splice(0, frames.length, ...STOCK.initialLineage.map((point, index) => ({ callFrameId: `stock-${String(stockIndex)}-${String(index)}`, location: { scriptId: "app", ...point } })));
-      if (stockIndex > 0 && stockMode !== "lineage") { frames.pop(); }
+      if (stockIndex > 0 && stockMode !== "lineage" && registrationFault !== "lineage") { frames.pop(); }
     }
     if (interleaveIndex >= 0) { frames.splice(0, frames.length, { callFrameId: `config-${site}`, location: location(site) }, ...[{lineNumber:1025,columnNumber:847},{lineNumber:1025,columnNumber:3173},{lineNumber:8583,columnNumber:256}].map(point => ({callFrameId:`config-caller-${String(point.columnNumber)}`,location:{scriptId:"app",...point}}))); }
     if(site==="driver"){frames.push({callFrameId:"frame-caller",functionName:"interceptHttpProtocol",functionLocation:{scriptId:"app",lineNumber:1164,columnNumber:51_072},location:{scriptId:"app",lineNumber:1164,columnNumber:51_414}});}
@@ -124,6 +128,20 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
    * check its fixed arguments before issuing each synthetic CDP response. */
   const sqlSend = (command: SqlCommand, id: number): Promise<void> => {
     phases.push(command.phase); let result: unknown = {};
+    if (command.phase.startsWith("sql-fence-startup-registration-")) {
+      assert.ok(runner !== null); runner.requireOriginalStartupRegistrationCommand(command, id);
+      if (command.phase === "sql-fence-startup-registration-remove") { assert.equal(stockSchedule.requests, stockMode === "late-registration" ? 1996 : 10); if (registrationFault === "remove-ack") { return Promise.reject(new Error("registration-remove-ack-lost")); } }
+      else if (command.phase === "sql-fence-startup-registration-resume") {
+        assert.equal(stockSchedule.requests, stockMode === "late-registration" ? 1996 : 10); if (registrationFault === "resume-ack") { return Promise.reject(new Error("registration-resume-ack-lost")); }
+        event("Debugger.resumed", {}); stockIndex += 1; if (stockMode === "late-registration") { event("Debugger.paused", { reason: "other", hitBreakpoints: ["stock-return"], callFrames: [{ callFrameId: "stock-return-frame", location: { scriptId: "app", ...STOCK.returnPoint }, returnValue: { type: "object", subtype: "promise", className: "Promise", description: "Promise", objectId: "stock-native-return" } }] }); } else if (registrationFault === "unowned-site") { pause("keeperBirth", { site: "keeperBirth", classification: "guard-passed" }); } else { pause("run"); }
+      } else if (command.phase === "sql-fence-startup-registration-complete") {
+        assert.equal(stockSchedule.complete, true); assert.equal(stockSchedule.requests, 2002);
+        assert.equal(command.params.objectId, "frame"); assert.deepEqual(command.params.arguments, [{ objectId: "capture" }]);
+        if (registrationFault === "complete-ack") { return Promise.reject(new Error("registration-complete-ack-lost")); }
+        result = { result: { type: "boolean", value: registrationFault !== "complete-false" } };
+      }
+      runner.requireOriginalStartupRegistrationCommand(command, id); queue.push({ id, result }); return Promise.resolve();
+    }
     const batchResume = command.phase === "sql-fence-resume" && currentSqlPause?.batchResume === true;
     if (command.phase === "sql-fence-early-arm") { result = { breakpointId: EARLY_ID, locations: [] }; }
     else if (command.phase === "sql-fence-after-imports-arm" || command.phase === "sql-fence-held-arm") {
@@ -230,11 +248,12 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     else if (suffix === "select") { result = { result: { type: "object", value: { recognized: true, role: "jl", site: "run", scriptIndex: stockIndex, sql: `inert-stock-${String(stockIndex)}`, parametersEmpty: true, transactionDepth: 0, designWriteGrant: false, nativeCompletionProven: false, normalReturnProven: false } } }; }
     else if (suffix === "require" || suffix === "return") { result = { result: { type: "boolean", value: true } }; }
     else if (suffix === "return-frame") { result = array(1); }
-    else if (suffix === "return-properties") { result = { result: [], internalProperties: [{ name: "[[Prototype]]", value: { type: "object", className: "Promise", description: "Promise", objectId: "promise-prototype" } }, { name: "[[PromiseState]]", value: { type: "string", value: "fulfilled" } }, { name: "[[PromiseResult]]", value: { type: "object", className: "Yo", description: "Yo", objectId: "stock-owner" } }] }; }
+    else if (suffix === "return-properties") { result = { result: [], internalProperties: [{ name: "[[Prototype]]", value: { type: "object", className: "Promise", description: "Promise", objectId: "promise-prototype" } }, { name: "[[PromiseState]]", value: { type: "string", value: registrationFault === "pending-return" ? "pending" : "fulfilled" } }, { name: "[[PromiseResult]]", value: { type: "object", className: "Yo", description: "Yo", objectId: "stock-owner" } }] }; }
     else if (suffix === "resume") {
       event("Debugger.resumed", {});
       if (interleaved && stockIndex === 0) { interleaveIndex = 0; const first = configTail[0]; assert.ok(first !== undefined); pause(first.site); }
-      else if (stockIndex < 331 && stockMode !== "early-registration") { stockIndex += 1; pause("run"); }
+      else if ((stockMode === "early-registration" && stockIndex === 0 || stockMode === "late-registration" && stockIndex === 331)) { holdRegistration = false; queue.push(...retainedRegistration.splice(0)); }
+      else if (stockIndex < 331) { stockIndex += 1; pause("run"); }
       else if (stockIndex === 331) { stockIndex += 1; event("Debugger.paused", { reason: "other", hitBreakpoints: ["stock-return"], callFrames: [{ callFrameId: "stock-return-frame", location: { scriptId: "app", ...STOCK.returnPoint }, returnValue: { type: "object", subtype: "promise", className: "Promise", description: "Promise", objectId: "stock-native-return" } }] }); }
       else { holdRegistration = false; queue.push(...retainedRegistration.splice(0)); }
     }
@@ -243,6 +262,8 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
   const transport: CurrentFootprintCopyMainBackendTransport = Object.freeze({
     assertCurrent: (): Promise<void> => base.transport.assertCurrent(),
     send: (command: Command, id: number): Promise<void> => {
+      assert.ok(runner !== null); runner.requireOriginalStartupRegistrationCommand(command, id);
+      if (registrationFault === "copied-command" && command.phase === "frame") { return (async (): Promise<void> => { await Promise.resolve(); runner.requireOriginalStartupRegistrationCommand({ ...command }, id); })(); }
       phases.push(command.phase); const local = base.commands.length + 1; ids.set(local, id);
       if (command.phase === "resume") {
         normalResumes += 1;
@@ -886,12 +907,63 @@ void test("stock V2 runner joins initial4/later3 pauses through332 calls and the
   assert.equal(f.runner.issueForwardMainCursor(), cursor); assert.equal(f.phases.length, requestsBefore);
   await assert.rejects(f.runner.release(), /SELECTED_SQL_RETAIN_THROUGH_EXIT/u);
 });
-void test("stock V2 runner holds foreign continuation lineage with zero additional refusal requests and denies early registration", async () => {
+void test("stock V2 runner holds foreign continuation lineage with zero additional refusal requests", async () => {
   const f = await fixture(0, null, false, null, [], undefined, "lineage"); await assert.rejects(f.runner.observe(), /STOCK_ORIGINAL_LINEAGE/u);
   const packet = f.runner.retainedStartupLibraryRefusalContext(); assert.ok(packet !== null); assert.equal(packet.progress.scriptCallsConsumed, 1); assert.equal(packet.stockRequests, 10); assert.equal(packet.callFrames.totalFrames, 4);
   assert.equal(packet.additionalRequests, 0); assert.equal(packet.resumeAuthorized, false); assert.equal(f.phases.filter(phase => phase === "sql-stock-v2-select").length, 1);
-  const early = await fixture(0, null, false, null, [], undefined, "early-registration"); await assert.rejects(early.runner.observe(), /STOCK_REGISTRATION_BEFORE_NORMAL_RETURN/u);
-  assert.equal(early.runner.startupLibraryState()["originalNormalReturnProven"], false); assert.equal(early.phases.includes("sql-stock-v2-return"), false);
+});
+
+void test("qualified early registration retains its13tuple while all332 original stock calls and normal return finish before construction", async () => {
+  for (const mode of ["early-registration", "late-registration"] as const) {
+  const f = await fixture(0, null, false, null, [], undefined, mode); const packet = await f.runner.observe();
+  const remove = f.phases.indexOf("sql-fence-startup-registration-remove"), resume = f.phases.indexOf("sql-fence-startup-registration-resume");
+  const complete = f.phases.indexOf("sql-fence-startup-registration-complete"), returned = f.phases.indexOf("sql-stock-v2-return");
+  assert.ok(f.phases.indexOf("startup-actors") < remove && remove < resume && resume < returned && returned < complete);
+  for (const phase of ["sql-fence-startup-registration-remove", "sql-fence-startup-registration-resume", "sql-fence-startup-registration-complete"]) { assert.equal(f.phases.filter(value => value === phase).length, 1); }
+  assert.equal(f.phases.filter(phase => phase === "sql-stock-v2-caller").length, 332); assert.equal(f.phases.filter(phase => phase === "sql-stock-v2-resume").length, 333);
+  assert.equal(f.runner.startupLibraryState()["requests"], 2002); assert.equal(f.runner.startupLibraryState()["originalNormalReturnProven"], true);
+  assert.equal(f.phases.filter(phase => phase === "resume").length, 1); assert.equal(f.phases.includes("remove"), false);
+  assert.equal(packet.executionAuthorized, false); assert.equal(f.runner.issueForwardMainCursor().profile, "private.current-footprint-forward-main-cursor.v1");
+  const requests = f.phases.length;
+  assert.doesNotThrow(() => { f.runner.requireOriginalStartupRegistrationCommand({ phase: "source", method: "Debugger.getScriptSource", params: { scriptId: "app" } }, requests + 1); });
+  for (const command of currentSelectedFileMainSqlFenceNativeCases().filter(value => value.phase.startsWith("sql-fence-startup-registration-"))) { assert.throws(() => { f.runner.requireOriginalStartupRegistrationCommand(command, requests + 1); }); }
+  assert.equal(f.phases.length, requests);
+  }
+});
+
+void test("unknown registration metadata or location and a replaced pending command refuse before the original pair", async () => {
+  for (const fault of ["metadata", "location", "copied-command"] as const) {
+    const f = await fixture(0, null, false, null, [], undefined, "early-registration", fault); await assert.rejects(f.runner.observe());
+    assert.equal(f.phases.includes("sql-fence-startup-registration-remove"), false); assert.equal(f.runner.startupLibraryState()["originalNormalReturnProven"], false);
+    assert.throws(() => f.runner.issueForwardMainCursor());
+  }
+});
+
+void test("an unowned non-read pause after registration retains original source context without resuming or spending stock", async () => {
+  const f = await fixture(0, null, false, null, [], undefined, "early-registration", "unowned-site");
+  await assert.rejects(f.runner.observe(), /STOCK_INTERLEAVE_READ_SITE/u);
+  const context = f.runner.retainedSelectedSqlStartupRefusalContext(); assert.ok(context !== null);
+  assert.equal(context.site, "keeperBirth"); assert.equal(context.reason, "site-outside-startup-profile");
+  // This peer substitutes a source sentinel.
+  // Out-of-source coordinates are counted and omitted.
+  assert.deepEqual(context.callFrames, { totalFrames: 1, omittedForeignScript: 0, omittedOutsideSource: 1, locations: [] });
+  assert.equal(context.additionalRequests, 0); assert.equal(context.callStackReevaluated, false); assert.equal(context.selectionReevaluated, false);
+  assert.equal(context.resumeAuthorized, false); assert.equal(context.executionAuthorized, false); assert.equal(context.saveAuthorized, false);
+  assert.equal(f.runner.startupLibraryState()["requests"], 10); assert.equal(f.runner.startupLibraryState()["originalNormalReturnProven"], false);
+  assert.equal(f.phases.filter(phase => phase === "sql-stock-v2-select").length, 1);
+  const resume = f.phases.indexOf("sql-fence-startup-registration-resume"); assert.ok(resume > 0);
+  assert.deepEqual(f.phases.slice(resume + 1), ["sql-fence-raw-frame", "sql-fence-captured-frame"]);
+  assert.throws(() => f.runner.issueForwardMainCursor());
+});
+
+void test("a lost original registration acknowledgement or failed final reproof cannot issue a construction packet or retry", async () => {
+  for (const fault of ["remove-ack", "resume-ack", "complete-false", "complete-ack", "pending-return", "lineage"] as const) {
+    const f = await fixture(0, null, false, null, [], undefined, "early-registration", fault); await assert.rejects(f.runner.observe());
+    const requests = f.phases.length; await assert.rejects(f.runner.observe(), /OBSERVE_CONSUMED/u); assert.equal(f.phases.length, requests); assert.throws(() => f.runner.issueForwardMainCursor());
+    assert.equal(f.phases.filter(phase => phase === "sql-fence-startup-registration-remove").length, 1);
+    assert.equal(f.phases.filter(phase => phase === "sql-fence-startup-registration-resume").length, fault === "remove-ack" ? 0 : 1);
+    if (fault === "pending-return" || fault === "lineage") { assert.equal(f.phases.includes("sql-fence-startup-registration-complete"), false); assert.equal(f.runner.startupLibraryState()["originalNormalReturnProven"], false); }
+  }
 });
 
 void test("pending original stock retains its cursor through source-profile cookie cleanup and an original config read", async () => {

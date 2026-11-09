@@ -6,7 +6,7 @@ import { PassThrough } from "node:stream";
 import { setImmediate } from "node:timers/promises";
 import { test } from "node:test";
 import { CLI4197_METADATA_LIMITS as LIMITS } from "../../scripts/cli4197-metadata/profile.ts";
-import { cli4197MetadataClosedFailure, observeCli4197MetadataChild, runCli4197MetadataProbe } from "../../scripts/cli4197-metadata/runner.ts";
+import { cli4197MetadataClosedFailure, observeCli4197MetadataChild, runCli4197MetadataProbe, writeCli4197MetadataClosedFailure } from "../../scripts/cli4197-metadata/runner.ts";
 
 /** Fresh native wrapper only. It is never spawned and cannot signal a PID. */
 function peer(): Readonly<{ child: ChildProcess; out: PassThrough; err: PassThrough }> {
@@ -63,4 +63,25 @@ void test("invalid developer arguments refuse before any filesystem or child pre
     await assert.rejects(runCli4197MetadataProbe(input));
   }
   assert.equal(hooks, 0);
+});
+
+void test("failure publication retains primary and write failures without inspection or a retry", async () => {
+  let hooks = 0; const poison = new Proxy({}, { get: (): never => { hooks += 1; throw new Error("failure must not be inspected"); } });
+  for (const synchronous of [true, false]) {
+    let calls = 0; const writeError = new Error("synthetic publication failure");
+    const writer = { write: (): Promise<void> => { calls += 1; if (synchronous) { throw writeError; } return Promise.reject(writeError); } };
+    const pending = writeCli4197MetadataClosedFailure(writer, "rootHelp", null, poison);
+    assert.equal(calls, 0); assert.equal(writeCli4197MetadataClosedFailure(writer, "rootHelp", null, poison), pending);
+    await assert.rejects(pending, (error: unknown): boolean => {
+      assert.ok(error instanceof AggregateError); assert.equal(error.message, "CLI4197_METADATA_FAILURE_RECORD_FAILED");
+      assert.equal(error.errors.length, 2); assert.equal(error.errors[0], poison); assert.equal(error.errors[1], writeError); assert.equal(error.cause, writeError); return true;
+    });
+    assert.equal(calls, 1); assert.equal(writeCli4197MetadataClosedFailure(writer, "rootHelp", null, poison), pending);
+  }
+  let calls = 0;
+  await writeCli4197MetadataClosedFailure({ write: (name, bytes): Promise<void> => {
+    calls += 1; assert.equal(name, "closed-failure.json"); const value: unknown = JSON.parse(bytes.toString());
+    assert.ok(value !== null && typeof value === "object" && "retryAuthorized" in value); assert.equal(value.retryAuthorized, false); return Promise.resolve();
+  } }, "rootHelp", null, poison);
+  assert.equal(calls, 1); assert.equal(hooks, 0);
 });

@@ -16,7 +16,8 @@ function packet(value: unknown, stage: "preflight" | "modify" | "observe"): Stag
   const result = schema.parse(value);
   need(result.stage === stage && result.ok && result.originalContextIntact && result.source !== null && !result.saveAttempted &&
     (stage === "preflight" ? !result.modifyAttempted && !result.dispatchAttempted && !result.originalPromiseSettled : result.modifyAttempted && result.modifyAcknowledged) &&
-    (stage !== "modify" || result.dispatchAttempted && result.originalPromiseSettled), "STAGE_STATE"); return result;
+    (stage !== "modify" || result.dispatchAttempted && result.originalPromiseSettled) &&
+    (stage !== "observe" || !result.dispatchAttempted && !result.originalPromiseSettled), "STAGE_STATE"); return result;
 }
 export function compareGeneratedSchematicWireLifecycleEffect(args: GeneratedSchematicWireEditNativeArguments, beforeInput: unknown, modifiedInput: unknown, observedInput: unknown): Readonly<{
   schema: "private.generated-schematic-wire-lifecycle-effect.v2";

@@ -6,6 +6,7 @@ import { z } from "zod";
 // oxlint-disable-next-line import/no-namespace -- Only fixed original central registry exports are consulted; absent issuers refuse, with no supplied callback fallback.
 import * as native from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { captureCurrentSchematicRelevanceModifyStructureRosterReply } from "./current-schematic-relevance-modify-structure-roster-capture.ts";
 import { decodeCurrentPcb209WorkerProducerFunction, decodeCurrentPcb209WorkerProducerScopeList, decodeCurrentPcb209WorkerProducerScopes } from "./current-pcb-string-producer-scope.ts";
 import { decodeCurrentPcb209WorkerCallbackFunction, decodeCurrentPcb209WorkerCallbackScopeList } from "./current-pcb-string-producer-callback-scope.ts";
 import { captureCurrentProjectStructureCompletionReply } from "./current-project-structure-completion-protocol.ts";
@@ -45,6 +46,11 @@ const completionSchema = z.strictObject({ projectUuid: z.string().regex(/^[a-f\d
   bodySha256: z.string().regex(/^[a-f\d]{64}$/u), saveHeadTicket: z.number().int().positive().max(Number.MAX_SAFE_INTEGER), workerClock: z.number().int().positive().max(8_640_000_000_000_000),
   workerEditVersion: z.string().max(128).nullable(), originalHistoryNativeCallbacksCompleted: z.literal(true), selectedSqlStillFenced: z.literal(true) });
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PROJECT_SAVE_STRUCTURE_${code}`); } }
+/** Only an explicit array-property caller uses the cumulative roster capture.
+ * Every other Modify reply retains the ordinary clock-reply bounds. */
+export function captureCurrentSchematicRelevanceModifyStructureReply(input: unknown, roster = false): unknown {
+  return roster ? captureCurrentSchematicRelevanceModifyStructureRosterReply(input) : captureCurrentPcbStringClockReply(input).value;
+}
 /** Decode the cumulative original Modify roster up to the worker's256
  * retained objects. Its one length descriptor is separate from the128-new-
  * object graph budget, and supplies no owner or continuation permission. */
@@ -485,13 +491,14 @@ export class CurrentProjectSaveStructureObserver {
   }
   /** Resumes carry the actual routed event into Core's atomic reservation.
    * Passive commands carry null and cannot borrow an old startup allowance. */
-  async #modifySend(modify: ModifyState, input: CurrentSchematicRelevanceModifyStructureCommand, event: CurrentProjectSaveStructureEvent | null = null, retain?: (reply: unknown) => void): Promise<unknown> {
+  async #modifySend(modify: ModifyState, input: CurrentSchematicRelevanceModifyStructureCommand, event: CurrentProjectSaveStructureEvent | null = null, retain?: (reply: unknown) => void, roster = false): Promise<unknown> {
     const command = validateModify(input); need((command.phase === "modify-structure-resume") === (event !== null), "MODIFY_ORIGINAL_EVENT_ARGUMENT");
+    need(!roster || command.phase === "modify-structure-properties", "MODIFY_ROSTER_PROPERTIES_REQUIRED");
     await this.#modifyCurrent(modify); modify.requests += 1; need(modify.requests <= MODIFY_REQUESTS.reads, "MODIFY_REQUEST_CAPACITY");
-    const raw = await modify.binding.request(command, event, retain); await this.#modifyCurrent(modify); return captureCurrentPcbStringClockReply(raw).value;
+    const raw = await modify.binding.request(command, event, retain); await this.#modifyCurrent(modify); return captureCurrentSchematicRelevanceModifyStructureReply(raw, roster);
   }
-  #modifyProperties(modify: ModifyState, objectId: string): Promise<unknown> {
-    return this.#modifySend(modify, { phase: "modify-structure-properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
+  #modifyProperties(modify: ModifyState, objectId: string, roster = false): Promise<unknown> {
+    return this.#modifySend(modify, { phase: "modify-structure-properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }, null, undefined, roster);
   }
   /** Select immutable source/arity/value-mode rows only. The default receiver
    * is the original worker I11; retained frame/Promise helpers are explicit. */
@@ -507,7 +514,7 @@ export class CurrentProjectSaveStructureObserver {
    * or extra-index replies before selecting any child handle from it. */
   async #modifyArray(modify: ModifyState, raw: unknown, length?: number): Promise<Readonly<{ id: string; fields: Map<string, z.infer<typeof remote>> }>> {
     const result = remoteResult(raw); need(result.type === "object" && result.subtype === "array" && result.className === "Array", "MODIFY_ARRAY");
-    const id = object(result);const fields = decodeCurrentSchematicRelevanceModifyStructureArrayFields(await this.#modifyProperties(modify, id), length);
+    const id = object(result);const fields = decodeCurrentSchematicRelevanceModifyStructureArrayFields(await this.#modifyProperties(modify, id, true), length);
     return { id, fields };
   }
   async #modifyUnchanged(modify: ModifyState): Promise<void> { await this.#modifyTrue(modify, "same", [modify.snapshot, modify.qualified]); }

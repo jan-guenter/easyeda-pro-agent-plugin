@@ -85,6 +85,13 @@ resources must send status and remain active instead of returning a final answer
 with those resources retained. A missing tool session or process listing supplies
 no original exit or closure evidence and cannot transfer an unfinished owner.
 
+Use the manager's `inspect`, `retire`, `start` and `shutdown` selectors for
+session lifecycle. Its ordinary tool-call path rejects every
+`easyeda_control_session` call before dispatch, including inspection. The
+generic `session-stopped` diagnostic on that refusal does not establish process
+exit. Check the dispatch flag, manager stage and original closure evidence;
+use the corresponding manager selector for the next action.
+
 Ordinary tool requests retain the existing foreground-client grammar:
 
 ```json

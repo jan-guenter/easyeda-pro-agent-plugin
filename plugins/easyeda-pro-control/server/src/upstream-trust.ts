@@ -910,11 +910,12 @@ export async function openReviewedSandboxExecutable(
 /** Developer metadata namespaces enter only through the reviewed sanitizer at
  * FD10. This static opener checks the same reviewed identity without launching
  * a direct bubblewrap version/help probe outside that descriptor contract. */
-export function openReviewedSandboxDescriptorWithoutExecution(expected: UpstreamLauncherFingerprint["sandbox"]): Promise<ReviewedExecutable> {
+export async function openReviewedSandboxDescriptorWithoutExecution(expected: UpstreamLauncherFingerprint["sandbox"]): Promise<ReviewedExecutable> {
   if (expected.command !== configuredSandboxCommand() || expected.version !== REVIEWED_SANDBOX_VERSION) {
     throw new Error("The configured bubblewrap identity differs from review.");
   }
-  return openReviewedExecutable(expected.command, expected.commandSha256, "Reviewed bubblewrap descriptor", true, 0o755);
+  const executable = await openReviewedExecutable(expected.command, expected.commandSha256, "Reviewed bubblewrap descriptor", true, 0o755);
+  return executable;
 }
 
 export function openReviewedNodeExecutable(

@@ -28,5 +28,9 @@ export const generatedSchematicWireLifecycleStageResultSchema = z.strictObject({
 }).refine(value => (!value.modifyAcknowledged || value.modifyAttempted) && (!value.originalPromiseSettled || value.dispatchAttempted) &&
   (!value.ok || value.originalContextIntact) && (!value.saveAttempted || value.modifyAcknowledged) &&
   (!value.saveAcknowledged || value.saveAttempted && value.savePromiseSettled) && (!value.savePromiseSettled || value.saveAttempted) &&
-  (value.stage === "save" || !value.saveAttempted));
+  (value.stage === "save" || !value.saveAttempted) && (!value.ok || (
+    (value.stage !== "preflight" || !value.dispatchAttempted && !value.originalPromiseSettled && !value.modifyAttempted && !value.modifyAcknowledged) &&
+    (value.stage !== "observe" || !value.dispatchAttempted && !value.originalPromiseSettled && value.modifyAttempted && value.modifyAcknowledged) &&
+    (value.stage !== "modify" || value.dispatchAttempted && value.originalPromiseSettled && value.modifyAttempted && value.modifyAcknowledged) &&
+    (value.stage !== "save" || value.dispatchAttempted && value.originalPromiseSettled && value.saveAttempted && value.saveAcknowledged && value.savePromiseSettled))));
 export type GeneratedSchematicWireLifecycleStageResult = z.infer<typeof generatedSchematicWireLifecycleStageResultSchema>;

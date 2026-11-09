@@ -121,7 +121,7 @@ export const CURRENT_SCHEMATIC_PRIVATE_FIELDS = freezeDeep([
   { field: "relevanceUploadSerializeReady", emitted: "sgx110", uses: 8, contextSha256: "6ff91833be82af429b3fbe89db5a30b8275c21d915344736db8cb9851fe93f95" },
   { field: "relevanceUploadSerializeStage", emitted: "sgx111", uses: 12, contextSha256: "ade36a5111000dc480bbc30048b9973b3533f3fa99e44e9f490dad89cf749f3e" },
   { field: "schematicDisplayAbort", emitted: "sgx112", uses: 110, contextSha256: "3f98c2430ee502acd155d0375b722897bf3c8cfd19ad93036bc61442ce189f3f" },
-  { field: "schematicDisplayConstructionComplete", emitted: "sgx113", uses: 14, contextSha256: "4f2498e1fb000e363a8c8b4ef7f589850f9a2b83337e8e245edcb3ef68c9e405" },
+  { field: "schematicDisplayConstructionComplete", emitted: "sgx113", uses: 15, contextSha256: "930c56d5d3991a9b1ca2e7f1f9f8d1e49e2b4fdab8c387e423f681bd57879f8e" },
   { field: "schematicDisplayContext", emitted: "sgx114", uses: 10, contextSha256: "ceecab1acde22c43b2823b17f567775b5719e9bf2ff23ee3c9663b4bba558653" },
   { field: "schematicDisplayOperation", emitted: "sgx115", uses: 18, contextSha256: "8a9e56021656a2700cb31f0147351cc6560bdf3a067986fc398df7cfd392d167" },
   { field: "schematicDisplaySession", emitted: "sgx116", uses: 60, contextSha256: "b4487ec5c4bda896eaa8c98b962a77fa8930f0f39c0f08ff94db8eb5e4fc3e00" },
@@ -165,9 +165,38 @@ export const CURRENT_SCHEMATIC_PRIVATE_FIELDS = freezeDeep([
   { field: "schematicWorkerStage", emitted: "sgx154", uses: 50, contextSha256: "6e3938767331ffe137d2848a9f726edc7329f9982a672ec994f872543b51699e" },
 ] as const);
 const FIELDS = CURRENT_SCHEMATIC_PRIVATE_FIELDS;
-const originalNames = new Map<string, typeof FIELDS[number]>(FIELDS.map(row => [row.field, row]));
-const emittedNames = new Set<string>(FIELDS.map(row => row.emitted));
-need(createHash("sha256").update(JSON.stringify(FIELDS)).digest("hex") === "6c8da5d28f20db7cadbc8309c8ca6bf5951675f891eaffee765df6d115fae338");
+/** Appended Wire-only fields. The original155-row catalogue is byte-exact.
+ * Every declaration and reference stays in the separately pinned region. */
+export const CURRENT_SCHEMATIC_WIRE_ACCESSOR_PRIVATE_FIELDS = freezeDeep([
+  { field: "schematicWireAccessorNormal", emitted: "sgx155", uses: 3, contextSha256: "06ee66506b129506cf25c3d4981c836fb44baa8f96f2535625484d97c5703e35" },
+  { field: "schematicWireAccessorCleanup", emitted: "sgx156", uses: 3, contextSha256: "d8e1c3a218d42e763e4b5f4d5ae4841458149ec3ba8f761eae71915e55fd3b02" },
+] as const);
+const WIRE_FIELDS = CURRENT_SCHEMATIC_WIRE_ACCESSOR_PRIVATE_FIELDS;
+const wireReferences = [
+  ...WIRE_FIELDS,
+  { field: "schematicDisplayAbort", uses: 1, contextSha256: "725db305b1aed8893149ff08bbef2a0616c510c275012c2a422cdd99d24ccaac" },
+  { field: "schematicDisplayTuple", uses: 2, contextSha256: "74753a038db467512054c6b869ae203767762efd4a3ed5c0d7663fa9cb847d51" },
+  { field: "schematicDisplayTarget", uses: 2, contextSha256: "6335910645c19f159ce64cf92fb043a36a3f3a6d9385cf92baccc4237bf52aa6" },
+  { field: "schematicDisplayOperation", uses: 2, contextSha256: "d9adccc8093e75a0fdf828bf7d9afdc24ea8be0ad015017092668a0192f7a790" },
+  { field: "schematicDisplaySession", uses: 1, contextSha256: "5bc895777241d3c054c3f6a575c8e7586156bbcfde6c85849fbe69288c4ad9fd" },
+] as const;
+export const CURRENT_SCHEMATIC_WIRE_LEXICAL_PRIVATE_FIELDS = freezeDeep([
+  { field: "schematicWireLexicalNormal", emitted: "sgx157", uses: 5, contextSha256: "bd8b0f23be28cf4fc0157d337c2dbbfe1c7997aa750d1eaecee2e42e3bc84443" },
+  { field: "schematicWireLexicalCleanup", emitted: "sgx158", uses: 5, contextSha256: "b8e9936af773345a22c88322e28b6e571da43950ae7a14749faaf1ce1bef46d2" },
+] as const);
+const LEXICAL_FIELDS = CURRENT_SCHEMATIC_WIRE_LEXICAL_PRIVATE_FIELDS;
+const lexicalReferences = [
+  ...LEXICAL_FIELDS,
+  { field: "schematicDisplayAbort", uses: 2, contextSha256: "eeca8286d29adbc90e9ba9666c4f4282649ea067743f05660f419df7ceb3e9f8" },
+  { field: "schematicDisplayTuple", uses: 4, contextSha256: "423173b639204c58cf7bb201216adcbc0200da5c2d1d71549ad4645eca93656f" },
+  { field: "schematicDisplayTarget", uses: 4, contextSha256: "3d602293abfb7ec2a04af8e435ec7f886ee7d3f0488955c309dffbb6a8423a6f" },
+  { field: "schematicDisplayOperation", uses: 4, contextSha256: "dcb76c490c34ed3de465df17a60daa8a265ed153b3b1b45d67e3c49598993548" },
+  { field: "schematicDisplaySession", uses: 2, contextSha256: "ab8def52eb37bae423be20e9662e48e3562d41f6e4769259e23073e2b8864a8a" },
+] as const;
+const allFields = [...FIELDS, ...WIRE_FIELDS, ...LEXICAL_FIELDS];
+const originalNames = new Map<string, typeof allFields[number]>(allFields.map(row => [row.field, row]));
+const emittedNames = new Set<string>(allFields.map(row => row.emitted));
+need(createHash("sha256").update(JSON.stringify(FIELDS)).digest("hex") === "5a06e467ef7cf91f7197021c6df811a4e1b723a275c1721a42785d39bd6ae45d");
 /** These exact names describe the fixed upload protocol, never Owner object
  * serialization. Pin every occurrence; all other serializer/reflection tokens
  * still refuse before emitting a renamed source. */
@@ -199,14 +228,37 @@ function privateField(active: readonly Token[], index: number, scope: ClassScope
   if (depth === scope.depth) { need(next === "=" || next === "," || next === ";"); const prefix = active.slice(scope.member, index); need(prefix.length > 0 && !prefix.some(item => forbidden.has(item.text) || item.text === "[")); return true; }
   need(!(previous?.kind === "identifier" && primitive.has(previous.text) && (next === "=" || next === "," || next === ";" || next === ")" || next === "in"))); return false;
 }
+function fieldDeclarationLedger(base: Map<string, number>, wire: boolean, lexical: boolean, accessorLedger: Map<string, number>, lexicalLedger: Map<string, number>): Map<string, number> {
+  if (wire) { return accessorLedger; } if (lexical) { return lexicalLedger; } return base;
+}
 /** Prove every selected spelling is one private owner FIELD, with its exact
  * declaration/reference census. A fresh name, local shadow, anonymous key,
  * foreign owner or serializer/reflection construct permanently refuses. */
+/** Two independently pinned regions preserve all earlier catalogues. The
+ * selector is internal fixed data; no caller region or field list is accepted. */
+function inspectWireRegion(source: string, kind: "ACCESSOR" | "LEXICAL"): Readonly<{ from: number; to: number }> {
+  const begin = `// BEGIN GENERATED SCHEMATIC WIRE ${kind} FIELDS`; const end = `// END GENERATED SCHEMATIC WIRE ${kind} FIELDS`;
+  const from = source.indexOf(begin); const stop = source.indexOf(end); const outer = "// BEGIN GENERATED SCHEMATIC WIRE EDIT BIRTH209"; const outerEnd = "// END GENERATED SCHEMATIC WIRE EDIT BIRTH209";
+  need(from !== -1 && stop > from && source.split(begin).length === 2 && source.split(end).length === 2 && source.split(outer).length === 2 && source.split(outerEnd).length === 2 && source.indexOf(outer) < from && stop < source.indexOf(outerEnd));
+  const prefix = kind === "ACCESSOR" ? "public sealed partial class EasyedaDiagnosticOwner {\nbool schematicWireEdit209;\n" : "public sealed partial class EasyedaDiagnosticOwner {\n";
+  const suffix = kind === "ACCESSOR" ? "\nstatic string SchematicWireEditStart {get{return SchematicRelevanceDisplayStart;}}" : "\n}\n// END GENERATED SCHEMATIC WIRE EDIT BIRTH209";
+  need(source.slice(from - prefix.length, from) === prefix && source.startsWith(suffix, stop + end.length));
+  const region = source.slice(from, stop + end.length); const hash = kind === "ACCESSOR" ? "0a761220b0bac7550a3a694c33f5af28bf430c8daf850494f78c461096d1980d" : "2aeebf017466f2c31adb13e9f23f762d1c34a3f7232e3ca6eef8a1f330fbbf18";
+  need(createHash("sha256").update(region).digest("hex") === hash);
+  const active = tokenize(region).filter(token => token.kind !== "space" && token.kind !== "comment"); const references = kind === "ACCESSOR" ? wireReferences : lexicalReferences;
+  for (const row of references) {
+    const context = active.flatMap((token, index) => token.kind === "identifier" && token.text === row.field ? [active.slice(Math.max(0, index - 4), index + 5).map(item => item.kind === "string" || item.kind === "verbatim" || item.kind === "char" ? `[${item.kind}]` : item.text)] : []);
+    need(context.length === row.uses && createHash("sha256").update(JSON.stringify(context)).digest("hex") === row.contextSha256);
+  }
+  return Object.freeze({ from, to: stop + end.length });
+}
 function inspect(source: string): readonly Token[] {
-  need(FIELDS.length === 155 && originalNames.size === 155 && emittedNames.size === 155 && FIELDS.reduce((sum, row) => sum + row.uses, 0) === 1717);
+  need(FIELDS.length === 155 && WIRE_FIELDS.length === 2 && LEXICAL_FIELDS.length === 2 && originalNames.size === 159 && emittedNames.size === 159 && FIELDS.reduce((sum, row) => sum + row.uses, 0) === 1718 && WIRE_FIELDS.reduce((sum, row) => sum + row.uses, 0) === 6 && LEXICAL_FIELDS.reduce((sum, row) => sum + row.uses, 0) === 10);
+  const accessorRegion = inspectWireRegion(source, "ACCESSOR"); const lexicalRegion = inspectWireRegion(source, "LEXICAL"); need(accessorRegion.to < lexicalRegion.from);
   const all = tokenize(source); const active = all.filter(token => token.kind !== "space" && token.kind !== "comment");
   const protocolContexts = new Map<string, string[][]>();
   const counts = new Map<string, number>(); const declarations = new Map<string, number>(); const scopes: ClassScope[] = []; const anonymous: number[] = []; const contexts = new Map<string, string[][]>();
+  const wireDeclarations = new Map<string, number>(); const lexicalDeclarations = new Map<string, number>();
   let depth = 0; let pending: Readonly<{ name: string; kind: ClassScope["kind"] }> | null = null; let timezoneCalls = 0;
   for (const [index, token] of active.entries()) {
     const own = name(token);
@@ -234,11 +286,16 @@ function inspect(source: string): readonly Token[] {
         const row = originalNames.get(own);
         if (row !== undefined) {
           need(token.text === own && scope !== undefined && scope.name === "EasyedaDiagnosticOwner" && scope.kind === "class");
-          counts.set(own, (counts.get(own) ?? 0) + 1);
-          const context = contexts.get(own) ?? []; context.push(active.slice(Math.max(0, index - 4), index + 5).map(item => item.kind === "string" || item.kind === "verbatim" || item.kind === "char" ? `[${item.kind}]` : item.text)); contexts.set(own, context);
+          const wire = token.start > accessorRegion.from && token.end < accessorRegion.to; const lexical = token.start > lexicalRegion.from && token.end < lexicalRegion.to; const guarded = wire || lexical;
+          need(guarded || ![...WIRE_FIELDS, ...LEXICAL_FIELDS].some(field => field.field === own));
+          need(!guarded || scopes.length === 1 && scope.depth === 1);
+          need(!wire || wireReferences.some(field => field.field === own)); need(!lexical || lexicalReferences.some(field => field.field === own));
+          counts.set(own, (counts.get(own) ?? 0) + (guarded ? 0 : 1));
+          const context = contexts.get(own) ?? []; const nextContext = active.slice(Math.max(0, index - 4), index + 5).map(item => item.kind === "string" || item.kind === "verbatim" || item.kind === "char" ? `[${item.kind}]` : item.text);
+          contexts.set(own, guarded ? context : [...context, nextContext]);
           const next = active[index + 1]?.text; const previous = active[index - 1];
           need(!(anonymous.at(-1) === depth && (previous?.text === "{" || previous?.text === ",") && (next === "=" || next === "," || next === "}")));
-          const declared = privateField(active, index, scope, depth); declarations.set(own, (declarations.get(own) ?? 0) + (declared ? 1 : 0));
+          const declared = privateField(active, index, scope, depth); const selected = fieldDeclarationLedger(declarations, wire, lexical, wireDeclarations, lexicalDeclarations); selected.set(own, (selected.get(own) ?? 0) + (declared ? 1 : 0));
         }
       }
     }
@@ -246,6 +303,8 @@ function inspect(source: string): readonly Token[] {
   need(depth === 0 && scopes.length === 0 && anonymous.length === 0 && timezoneCalls === 1); need(source.split("System.TimeZoneInfo zone = System.TimeZoneInfo.Local;").length === 2);
   for (const row of protocolNames) { const context = protocolContexts.get(row.name); need(context !== undefined && context.length === row.uses && createHash("sha256").update(JSON.stringify(context)).digest("hex") === row.contextSha256); }
   for (const row of FIELDS) { const context = contexts.get(row.field); need(context !== undefined); need(declarations.get(row.field) === 1 && counts.get(row.field) === row.uses && createHash("sha256").update(JSON.stringify(context)).digest("hex") === row.contextSha256); }
+  for (const row of wireReferences) { need(wireDeclarations.get(row.field) === (WIRE_FIELDS.some(field => field.field === row.field) ? 1 : 0)); }
+  for (const row of lexicalReferences) { need(lexicalDeclarations.get(row.field) === (LEXICAL_FIELDS.some(field => field.field === row.field) ? 1 : 0)); }
   return all;
 }
 /** Emit only injective globally fresh FIELD tokens. Splicing retains every

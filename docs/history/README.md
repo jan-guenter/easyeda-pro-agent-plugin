@@ -1,10 +1,31 @@
 # Project history
 
+- [2026-11-09 Composed control development](2026-11-09-composed-control-development.md). Exact frozen package and automatic controller handoff, four native inputs and 66 inert checks, the consumed Via q refusal and cleanup, and the scoped source checkpoints before the next PR/break boundary.
+
+- [2026-11-09 Wire held callback source checkpoint](2026-11-09-wire-held-callback-source-checkpoint.md). Distinct unmounted v3 callback markers, readonly raw/active/prefix cursors and point proofs keep the original event/worker/bbox/SQL/Save/reopen writer boundary explicit.
+
+- [2026-11-09 Backlog consolidation](2026-11-09-backlog-consolidation.md). Completed Component and seven-record reader cases leave the queue; original startup, writer/footprint lifecycles, final review, CI and installation remain, with generation 11 and Via p evidence kept separate.
+- [2026-11-09 Managed v2 footprint closed baseline](2026-11-09-forward-v2-closed-baseline.md). The original provider joins normal close and root/whole-Job exit to one complete SQL equality check; separate evidence preserves opening v2 schemas and grants no writer/head/frontier/Save authority.
+
+- [2026-11-09 Forward footprint head-read source](2026-11-09-forward-footprint-head-read-source.md). Fixed same-connection SELECT and original query-Promise/row programs pass bounded source checks; native issuer, continuous frontier and full writer/coordinator remain unmounted backlog at the requested break.
+
+- [2026-11-09 Main registration while stock startup awaits](2026-11-09-main-registration-stock-continuation.md). A genuine qualified registration pause can continue once while its original stock invocation finishes; all 332 calls, native normal return and final retained-reference proof still precede construction. Five native births retain separate completion fields and unchanged limits.
+
+- [2026-11-09 PR205 review corrections](2026-11-09-pr205-review-corrections.md). All five reported issues are corrected in source, including cumulative roster capture, retained failure publication and test provenance. The reviewed head passed the docstring gate at 80.77%; two unavailable file changes remained incompletely reviewed.
+- [2026-11-09 Original Wire lexical operands](2026-11-09-wire-original-lexical-operands.md). Distinct original lexical and intent origins join point views/defaults, idle action metadata and watched-monitor lexical receivers within the existing reservation; mutation and Save remain blocked.
+
+- [2026-11-09 Original Wire accessor qualification](2026-11-09-wire-original-accessor-qualification.md). A distinct original owner/pipe/codebook joins four retained native functions to complete source and locations; fixed Wire-region field proof preserves the original155catalogue and all source/request bounds. Mutation and Save remain blocked.
+
 - [2026-11-09 Wire lifecycle source checkpoint](2026-11-09-wire-lifecycle-source-checkpoint.md). Distinct v2 Save syntax, original Wire effect joins and a readonly cold-scene program preserve v1 schemas and keep runtime dispatch blocked pending its own original callback, worker, Main and closed-SQL lifecycle.
 
 - [2026-11-09 Stock async controller validation](2026-11-09-055500-stock-async-controller-validation.md). Exact generation 10 package and offline checks passed; disposable Via o stopped before Create or Save, retained its original source context and completed automatic original cleanup.
 
 - [2026-11-09 PR204 review corrections](2026-11-09-pr204-review-corrections.md). Stock cursor accounting, native GET manager dispatch, CLI failure diagnostics and checked-payload attribution address every reported issue; contract comments address the docstring gate, with its next remote percentage pending.
+- [Original internal GET UI return preparation](2026-11-09-inverse-native-get-ui-return-preparation.md). Unmounted original UI return, clone/resolver and raw-row comparison code passes bounded Inspector and codec checks; Core/native issuance stays closed after a retained capacity refusal.
+
+- [Fixed inverse legacy codec sharing](2026-11-09-inverse-fixed-legacy-codec-sharing.md). A closed27-method catalogue saves10544 canonical review bytes through mechanically equivalent pure encoders, preserving all legacy tables, flags, signatures, golden smokes, other purpose bytes and limits.
+
+- [Original internal GET worker completion](2026-11-09-inverse-native-get-task-worker-completion.md). A distinct accepted-Job continuation mounts fresh live worker lexicals, original raw-row/post/loopback completion and once-only custody inside unchanged bounds; genuine UI result and DEL remain separate.
 
 - [Original native GET accepted worker Job](2026-11-09-inverse-native-get-task-accepted-job.md). Separate forwarding, original invocation-Promise custody and actual accepted-event enrollment retain the final UI return and keep GET body/result/reference/DEL closed under unchanged global bounds.
 

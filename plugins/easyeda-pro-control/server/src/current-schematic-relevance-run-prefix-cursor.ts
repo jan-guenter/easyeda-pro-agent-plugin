@@ -178,9 +178,9 @@ export class CurrentSchematicRelevanceRunPrefixCursor {
     if (this.#command === null && this.#completed === null) { const next = this.#plan.next(); need(next.done !== true); this.#command = next.value; }
     return this.#command;
   }
-  public reserve(command: Command): void { need(!this.#failed && !this.#reserved && command === this.#command && this.#requests < CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND); this.#requests += 1; this.#reserved = true; }
+  public reserve(command: Command): void { need(!this.#failed && !this.#reserved && this.#command !== null && command === this.#command && this.#requests < CURRENT_SCHEMATIC_RELEVANCE_RUN_PREFIX_READ_BOUND); this.#requests += 1; this.#reserved = true; }
   public accept(command: Command, raw: unknown): void {
-    need(!this.#failed && this.#reserved && command === this.#command);
+    need(!this.#failed && this.#reserved && this.#command !== null && command === this.#command);
     try { const next = this.#plan.next(raw); this.#reserved = false; if (next.done === true) { this.#completed = next.value; this.#command = null; } else { this.#command = next.value; } }
     catch (error) { this.#failed = true; throw error; }
   }

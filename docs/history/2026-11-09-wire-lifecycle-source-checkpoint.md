@@ -68,3 +68,24 @@ The source agent's own eagerly allocated ownership-conflict stub was inspected
 once with a correctly retained full structured reply, then closed through its
 supported action. The original pidfd observed that same process exit. This
 created no native owner and did not touch the root's foreground controller.
+
+The subsequent [original Wire accessor batch](2026-11-09-wire-original-accessor-qualification.md)
+implements the first item's original function/source/location qualification.
+Its actual lexical operands and the remaining mutation/persistence joins stay
+open. This checkpoint's original observations and limits remain retained above.
+
+## 2026-11-09 test provenance correction
+
+[PR205's review](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/205#pullrequestreview-5822635274)
+identified that the starting commit above does not identify the tested payload.
+The original nine-case run used a dirty source tree before the plan, controller
+and history additions. Its complete source and test tree was not sealed and
+cannot be recovered. Those nine passes and the accompanying leaf checks remain
+unbound historical observations. Neither `1351748c` nor a later commit is their
+tested payload, and they establish no check result for the current head.
+
+A separate later run on frozen source commit
+`147e2c08fc5e807bcf7be96f6ae291b7946e9dcd` passed ten focused cases, comprising
+the nine Wire cases and the complete field proof, plus strict TypeScript.
+Its original `union-focused-tests.log` and `union-typecheck.log` are retained
+privately. That later evidence does not repair the missing original snapshot.

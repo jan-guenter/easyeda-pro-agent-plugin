@@ -353,6 +353,12 @@ const savedRegistrationRunRemote = z.strictObject({ type: z.literal("object"), v
 const savedRegistrationRunReply = z.strictObject({ result: savedRegistrationRunRemote });
 type SavedRegistrationSite = typeof CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES[number];
 interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly stockReturn?: true; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; readonly savedRegistrationSite?: SavedRegistrationSite; resumeAttempted: boolean; resumed: boolean }
+interface StartupRegistration {
+  readonly pause: Pause; readonly point: string; readonly location: string; readonly source: object; readonly appSource: string; readonly scriptId: string;
+  readonly stockOrigin: CurrentMainStartupLibraryOrigin; readonly stockTracker: string; readonly stockEnrollment: Pause; readonly stockPoint: string;
+  readonly sqlCapture: string; readonly configTracker: string; readonly commands: Map<number, object>; readonly metadata: Map<MetadataRole, string>;
+  sourceArray: string | null; retainedArray: string | null; stage: 0 | 1 | 2 | 3; acknowledged: boolean;
+}
 interface SavedProjectRegistrationEnrollment {
   readonly kind: "saved";
   readonly intent: CurrentSavedProjectRegistrationIntent; readonly bindings: CurrentSavedProjectRegistrationBindings;
@@ -442,6 +448,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   #stockEnrollmentPause: Pause | null = null;
   #stockRequests = 0;
   #stockCompleted = false;
+  #startupRegistration: StartupRegistration | null = null;
   #stockReturnPoint: string | null = null;
   #stockRefusalContext: CurrentMainStartupLibraryRefusalContext | null = null; #stockRefusalContextAttempted = false;
   #stockArming = false;
@@ -690,7 +697,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (this.#source !== null) { requireCurrentFootprintCopyMainBackendSource(this.#source); }
     need(this.#started === 0 || performance.now() - this.#started < (cleanup ? PROFILE.totalMilliseconds : PROFILE.normalMilliseconds), "TOTAL_DEADLINE");
   }
-  async #current(cleanup = false): Promise<void> { this.#same(cleanup); await this.#transport.assertCurrent(); this.#same(cleanup); }
+  async #current(cleanup = false): Promise<void> { this.#same(cleanup); this.#startupRegistrationSame(); await this.#transport.assertCurrent(); this.#same(cleanup); this.#startupRegistrationSame(); }
   #location(actual: z.infer<typeof location>): void {
     const scriptObserved = this.#scripts.has(actual.scriptId);
     const matches = actual.lineNumber === SOURCE.registration.https.lineNumber && actual.columnNumber === SOURCE.registration.https.breakpointColumnNumber && scriptObserved;
@@ -1032,6 +1039,8 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   #properties(objectId: string, role: MetadataRole): Promise<unknown> {
     this.#metadataRole = role;
+    const held = this.#startupRegistration;
+    if (held !== null && held.stage === 0) { need(!held.metadata.has(role), "STOCK_REGISTRATION_METADATA_CONSUMED"); held.metadata.set(role, objectId); }
     return this.#request({ phase: "properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   }
   async #qualify(scriptId: string): Promise<void> {
@@ -1085,9 +1094,11 @@ export class CurrentFootprintCopyMainBackendRunner {
       const selected = objectReply.parse(await this.#request({ phase: "frame", method: "Debugger.evaluateOnCallFrame", params: { callFrameId: registration.frameId,
         expression: EXPRESSION, objectGroup: GROUP, silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }));
       need(selected.result.description === "Array(9)", "FRAME_ARRAY"); this.#sourceArray = selected.result.objectId;
+      if (this.#startupRegistration !== null) { this.#startupRegistration.sourceArray = this.#sourceArray; }
       const captured = objectReply.parse(await this.#request({ phase: "capture", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: this.#sourceArray,
         functionDeclaration: CALLS.capture.program, arguments: [], returnByValue: false } }));
       need(captured.result.description === "Array(13)", "CAPTURE_ARRAY"); this.#retainedArray = captured.result.objectId;
+      if (this.#startupRegistration !== null) { this.#startupRegistration.retainedArray = this.#retainedArray; }
       const ids = decodeCurrentFootprintCopyMainBackendArray(await this.#properties(this.#retainedArray, "retained-array"));
       for (const [index, role] of [[10, "Date"], [11, "now"]] as const) {
         const id = ids[index]; need(id !== undefined, "NATIVE_MEMBER_REQUIRED"); decodeCurrentFootprintCopyMainBackendNative(await this.#properties(id, role), role);
@@ -1099,7 +1110,9 @@ export class CurrentFootprintCopyMainBackendRunner {
       this.#driverCallbackObjectId = ids[6] ?? null;
       await this.#reprove();
       if (this.#selectedSqlBootstrap !== null) { await prepareOriginalCurrentSelectedFileStartupActors(this.#selectedSqlBootstrap, this); await this.#current(); }
-      await this.#remove(); await this.#resume(registration); await this.#current();
+      if (this.#startupRegistration === null) { await this.#remove(); await this.#resume(registration); }
+      else { await this.#continueStartupRegistration(registration); }
+      await this.#current();
       this.#packet = Object.freeze(currentFootprintCopyMainBackendObservationSchema.parse({ profile: "private.current-footprint-copy-main-backend-construction.v1",
         originalMainTransportRetained: true, runtimeAppSourceQualified: true, runtimeAppSourceSha256: SOURCE.sha256, initialContinuationCount: this.#initialContinuationCount,
         registrationBreakpointArmedBeforeInitialContinuation: true, actualRegistrationLocationVerified: true, originalProtocolCallbackAndBackendRetained: true,
@@ -1109,6 +1122,8 @@ export class CurrentFootprintCopyMainBackendRunner {
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   public requireOriginalStartupActorPause(capability: CurrentSelectedFileMainSqlFenceBootstrap): void {
+    this.#startupRegistrationSame();
+    if (this.#startupRegistration !== null) { this.#requireStockInterleave(this.#startupRegistration.pause); }
     this.#same(false); need(this.#selectedSqlBootstrap === capability && this.#busy && this.#sqlReady && this.#source !== null && this.#appSource !== null &&
       this.#retainedArray !== null && this.#sourceArray !== null && this.#packet === null && this.#metadataRole === null &&
       this.#pause?.registration === true && !this.#pause.resumeAttempted && !this.#pause.resumed && !this.#removeAttempted,
@@ -1222,10 +1237,82 @@ export class CurrentFootprintCopyMainBackendRunner {
       await this.#wait(() => this.#pause !== configuration);
     }
     this.#startupConfigProgress.complete();
-    need(this.#stockOrigin === null || this.#stockCompleted, "STOCK_REGISTRATION_BEFORE_NORMAL_RETURN");
     // Every mutation stays paused until a distinct original request/SQL issuer
     // Proves that exact current call. This bootstrap publishes no such grant.
     need(this.#pause?.registration === true, "SELECTED_SQL_MUTATION_BEFORE_REGISTRATION");
+    if (this.#stockOrigin !== null && !this.#stockCompleted) {
+      const pause = this.#pause;
+      need(this.#startupRegistration === null && this.#breakpoint === REGISTRATION_ID && this.#source !== null && this.#appSource !== null && this.#appScriptId !== null &&
+        this.#stockTracker !== null && this.#stockEnrollmentPause !== null && this.#stockReturnPoint !== null && this.#sqlCapture !== null && this.#startupConfigTracker !== null, "STOCK_REGISTRATION_ORIGINAL_REQUIRED");
+      this.#beginStockInterleave(pause);
+      this.#startupRegistration = { pause, point: this.#breakpoint, location: canonicalJson(pause.location), source: this.#source, appSource: this.#appSource, scriptId: this.#appScriptId,
+        stockOrigin: this.#stockOrigin, stockTracker: this.#stockTracker, stockEnrollment: this.#stockEnrollmentPause, stockPoint: this.#stockReturnPoint,
+        sqlCapture: this.#sqlCapture, configTracker: this.#startupConfigTracker, commands: new Map(), metadata: new Map(), sourceArray: null, retainedArray: null, stage: 0, acknowledged: false };
+    }
+  }
+  /** Preserve the genuine registration and retained source/stock references
+   * through metadata capture, its consumed continuation and the later drain. */
+  #startupRegistrationSame(): void {
+    const held = this.#startupRegistration; if (held === null) { return; }
+    need(this.#source === held.source && this.#appSource === held.appSource && this.#appScriptId === held.scriptId && this.#breakpoint === held.point &&
+      held.pause.registration && canonicalJson(held.pause.location) === held.location && this.#stockOrigin === held.stockOrigin && this.#stockTracker === held.stockTracker &&
+      this.#stockEnrollmentPause === held.stockEnrollment && this.#stockReturnPoint === held.stockPoint && this.#sqlCapture === held.sqlCapture && this.#startupConfigTracker === held.configTracker &&
+      this.#sourceArray === held.sourceArray && this.#retainedArray === held.retainedArray, "STOCK_REGISTRATION_REFERENCES_CHANGED");
+  }
+  /** Bind each actual pending command object and ID before any Core await.
+   * Metadata cannot remove/resume; only the distinct fixed phases can do so. */
+  public requireOriginalStartupRegistrationCommand(command: Command | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentProjectStructureMainCommand, requestId: number): void {
+    const held = this.#startupRegistration;
+    const special = command.phase.startsWith("sql-fence-startup-registration-");
+    if (held === null) { need(!special, "STOCK_REGISTRATION_ORIGINAL_REQUIRED"); return; }
+    this.#startupRegistrationSame();
+    if (!special && held.stage === 3 && held.acknowledged && this.#stockCompleted && this.#packet !== null && issued.get(this.#packet) === this) { return; }
+    need(special || held.stage === 0, "STOCK_REGISTRATION_METADATA_CONSUMED");
+    need(this.#busy && this.#packet === null && this.#pendingId !== null && this.#pendingId === requestId, "STOCK_REGISTRATION_PENDING_REQUIRED");
+    if (command.phase === "sql-fence-startup-registration-complete") {
+      need(held.stage === 3 && this.#stockCompleted && this.#stockRequests === STOCK.requests && this.#removed && held.pause.resumed &&
+        this.#pause?.stockReturn === true && this.#pause.resumed && this.#stockCommandPause === this.#pause &&
+        command.params.objectId === held.sourceArray && command.params.arguments[0].objectId === held.retainedArray, "STOCK_REGISTRATION_RETURN_BARRIER");
+      this.#stockProgress.requireAllCallsConsumed();
+    } else {
+      this.#requireStockInterleave(held.pause);
+      if (command.phase === "sql-fence-startup-registration-remove") {
+        need(held.stage === 1 && this.#removeAttempted && !this.#removed && !held.pause.resumeAttempted && command.params.breakpointId === held.point &&
+          held.sourceArray !== null && held.retainedArray !== null && this.#metadataRole === null, "STOCK_REGISTRATION_REMOVE_RESERVED");
+      } else if (command.phase === "sql-fence-startup-registration-resume") {
+        need(held.stage === 2 && this.#removeAttempted && this.#removed && held.pause.resumeAttempted && held.sourceArray !== null && held.retainedArray !== null, "STOCK_REGISTRATION_RESUME_RESERVED");
+      } else {
+        need(held.stage === 0 && !this.#removeAttempted && !held.pause.resumeAttempted && !held.pause.resumed &&
+          ["frame", "capture", "properties", "require"].includes(command.phase), "STOCK_REGISTRATION_METADATA_ONLY");
+        if (command.phase === "frame") { need(command.params.callFrameId === held.pause.frameId && held.sourceArray === null && held.retainedArray === null, "STOCK_REGISTRATION_FRAME"); }
+        else if (command.phase === "capture") { need(command.params.objectId === held.sourceArray && held.sourceArray !== null && held.retainedArray === null, "STOCK_REGISTRATION_CAPTURE"); }
+        else if (command.phase === "properties") { need(held.retainedArray !== null && this.#metadataRole !== null && held.metadata.get(this.#metadataRole) === command.params.objectId, "STOCK_REGISTRATION_METADATA"); }
+        else if (command.phase === "require") { need(command.params.objectId === held.sourceArray && command.params.arguments[0].objectId === held.retainedArray && held.sourceArray !== null && held.retainedArray !== null && this.#metadataRole === null, "STOCK_REGISTRATION_REPROOF"); }
+      }
+    }
+    const previous = held.commands.get(this.#pendingId);
+    if (previous === undefined) { held.commands.set(this.#pendingId, command); }
+    else { need(previous === command, "STOCK_REGISTRATION_PENDING_COMMAND_CHANGED"); }
+  }
+  /** Resume only the captured registration, then service the same original
+   * stock invocation through its real normal return before the final reproof. */
+  async #continueStartupRegistration(registration: Pause): Promise<void> {
+    const held = this.#startupRegistration;
+    need(held !== null && held.pause === registration && held.stage === 0 && this.#selectedSqlBootstrap !== null && held.sourceArray !== null && held.retainedArray !== null, "STOCK_REGISTRATION_CAPTURE_REQUIRED");
+    this.#requireStockInterleave(registration); held.stage = 1; this.#removeAttempted = true;
+    empty.parse(await this.#request({ phase: "sql-fence-startup-registration-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: REGISTRATION_ID } })); this.#removed = true;
+    held.stage = 2; registration.resumeAttempted = true;
+    empty.parse(await this.#request({ phase: "sql-fence-startup-registration-resume", method: "Debugger.resume", params: {} })); await this.#wait(() => registration.resumed);
+    while (!this.#stockCompleted) {
+      await this.#wait(() => this.#pause !== registration && this.#pause?.resumed === false);
+      const pause = this.#pause; need(pause !== null && !pause.registration, "STOCK_REGISTRATION_UNEXPECTED_PAUSE");
+      if (pause.stockReturn === true) { await this.#finishStartupLibrary(pause); }
+      else if (!await this.#configureStartupSql(pause)) { await this.#captureStartupRefusal(pause); need(false, "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION"); }
+    }
+    this.#startupRegistrationSame(); held.stage = 3;
+    sqlTrueReply.parse(await this.#request({ phase: "sql-fence-startup-registration-complete", method: "Runtime.callFunctionOn", params: { ...SQL_CALL,
+      objectId: held.sourceArray, functionDeclaration: CALLS.require.program, arguments: [{ objectId: held.retainedArray }], returnByValue: true } }));
+    held.acknowledged = true;
   }
   /** Retain one refusal before any diagnostic await. The original captured
    * tuple supplies operand kinds through at most one property read. A missing
@@ -1545,6 +1632,9 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (stockPending) { this.#requireStockInterleave(pause); }
     if (classification === "guard-passed") {
       if (stockPending) {
+        if (site !== "queryAll" && site !== "queryOne") {
+          this.#captureStartupRefusalContext(pause, "site-outside-startup-profile");
+        }
         need(site === "queryAll" || site === "queryOne", "STOCK_INTERLEAVE_READ_SITE"); const rawFrame = this.#sqlRawFrames.get(pause); need(rawFrame !== undefined && this.#startupConfigTracker !== null, "STOCK_INTERLEAVE_READ_FRAME");
         sqlTrueReply.parse(await this.#request({ phase: "sql-fence-startup-read-owner", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, objectId: rawFrame, functionDeclaration: STOCK_READ_OWNER, arguments: [{ objectId: this.#startupConfigTracker }], returnByValue: true } }));
         this.#requireStockInterleave(pause); this.#stockInterleaveReadOwners.add(pause);

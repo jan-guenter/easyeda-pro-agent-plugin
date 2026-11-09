@@ -8,7 +8,7 @@ import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
-import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_APP_URL_PATTERN as URL } from "./current-footprint-copy-main-backend-contract.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REGISTRATION_BREAKPOINT_ID as REGISTRATION_ID, CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_APP_URL_PATTERN as URL } from "./current-footprint-copy-main-backend-contract.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SOURCE } from "./current-selected-file-main-sql-fence-source.ts";
 import { CURRENT_MAIN_CAPTURED_SCOPE_FRAMES as SCOPE_FRAMES } from "./current-main-captured-scope-frames.ts";
 import { CURRENT_MAIN_CAPTURED_REQUEST_BIND_PROGRAM as CAPTURED_REQUEST_BIND, CURRENT_MAIN_CAPTURED_SCOPE_JOINS as SCOPE_JOINS } from "./current-main-captured-scope-joins.ts";
@@ -21,6 +21,7 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CALL_FLAGS as CALL, CURRENT_SELECT
 import type { CurrentSelectedFileMainSqlFenceCommand as Command } from "./current-selected-file-main-sql-fence-protocol.ts";
 
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP } from "./current-main-startup-config-programs.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_CALLS as BACKEND } from "./current-footprint-copy-main-backend-programs.ts";
 
 import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as REQUEST, CURRENT_SELECTED_FILE_MAIN_REQUEST_FRAME as REQUEST_FRAME } from "./current-selected-file-main-request-programs.ts";
 
@@ -50,7 +51,7 @@ export function currentSelectedFileMainSqlFenceWire(input: unknown, id: number):
     else if (command.phase === "sql-fence-request-capture" || command.phase === "sql-fence-request-bind" || command.phase === "sql-fence-request-rebind" || command.phase === "sql-fence-request-private-bind" || command.phase === "sql-fence-request-private-rebind") {
       for (const [index, argument] of command.params.arguments.entries()) { request[`argument${String(index)}`] = argument.objectId; }
     }
-    else if (command.phase === "sql-fence-startup-read-owner" || command.phase === "sql-fence-select" || command.phase === "sql-fence-configure" || command.phase === "sql-fence-startup-version" || command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc" || command.phase === "sql-fence-startup-select" || command.phase === "sql-fence-captured-frame" || command.phase === "sql-fence-driver-rebase-capture") { request["argument0"] = command.params.arguments[0].objectId; }
+    else if (command.phase === "sql-fence-startup-registration-complete" || command.phase === "sql-fence-startup-read-owner" || command.phase === "sql-fence-select" || command.phase === "sql-fence-configure" || command.phase === "sql-fence-startup-version" || command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc" || command.phase === "sql-fence-startup-select" || command.phase === "sql-fence-captured-frame" || command.phase === "sql-fence-driver-rebase-capture") { request["argument0"] = command.params.arguments[0].objectId; }
   }
   return freezeDeep({ command: { ...command, id }, request });
 }
@@ -62,6 +63,9 @@ export function currentSelectedFileMainSqlFenceNativeCases(): readonly Command[]
     ...currentSavedProjectRegistrationConfigNativeCases(),
     { phase: "sql-fence-startup-read-owner", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: STARTUP_READ_OWNER, arguments: [{ objectId: marker("argument0") }], returnByValue: true } },
     { phase: "sql-fence-startup-config-resume", method: "Debugger.resume", params: {} },
+    { phase: "sql-fence-startup-registration-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: REGISTRATION_ID } },
+    { phase: "sql-fence-startup-registration-resume", method: "Debugger.resume", params: {} },
+    { phase: "sql-fence-startup-registration-complete", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: BACKEND.require.program, arguments: [{ objectId: marker("argument0") }], returnByValue: true } },
     { phase: "sql-fence-early-arm", method: "Debugger.setBreakpointByUrl", params: { urlRegex: URL,
       lineNumber: SOURCE.sites.import.lineNumber, columnNumber: SOURCE.sites.import.breakpointColumnNumber } },
     { phase: "sql-fence-after-imports-arm", method: "Debugger.setBreakpoint", params: { location: { scriptId,

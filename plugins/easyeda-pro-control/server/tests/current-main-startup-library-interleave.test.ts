@@ -22,11 +22,23 @@ void test("cookie cleanup belongs to the separately pinned DC/exec chain while o
 });
 void test("two distinct startup interleave rows retain every historical row and normal-budget ceiling", () => {
   const rows = currentSelectedFileMainSqlFenceNativeCases();
-  const old = rows.filter(row=>row.phase!=="sql-fence-startup-read-owner"&&row.phase!=="sql-fence-startup-config-resume");
+  const old = rows.filter(row=>row.phase!=="sql-fence-startup-read-owner"&&row.phase!=="sql-fence-startup-config-resume"&&!row.phase.startsWith("sql-fence-startup-registration-"));
   assert.equal(old.length,162); assert.equal(createHash("sha256").update(JSON.stringify(old)).digest("hex"),"cf3c57fe32a4ca995ae7c8d56baad906fda469d6162369863dee92aa02d41559");
   const added = rows.filter(row=>row.phase==="sql-fence-startup-read-owner"||row.phase==="sql-fence-startup-config-resume"); assert.equal(added.length,2);
   for(const row of added){const wire=currentSelectedFileMainSqlFenceWire(row,73);assert.equal(wire.request["action"],"main-send");assert.equal(wire.request["phase"],row.phase);assert.throws(()=>validateCurrentSelectedFileMainSqlFenceCommand({...row,phase:"sql-fence-stock-resume"}));}
   assert.ok(currentSelectedFileMainSqlFenceNativeSource().includes("EasyedaSelectedFileMainSqlFenceProtocol"));
   assert.equal(LIMITS.normal,838);assert.equal(LIMITS.perReadonlyRequestMaximum,6);assert.equal(STOCK.requests,2002);
   const readonlyRequests=2+1+1;assert.ok(readonlyRequests<=LIMITS.perReadonlyRequestMaximum);
+});
+
+void test("three fixed registration commands cannot select another point, program or stock budget", () => {
+  const rows = currentSelectedFileMainSqlFenceNativeCases().filter(row => row.phase.startsWith("sql-fence-startup-registration-")); assert.equal(rows.length, 3);
+  for (const row of rows) {
+    assert.deepEqual(validateCurrentSelectedFileMainSqlFenceCommand(row), row);
+    const encoded = currentSelectedFileMainSqlFenceWire(row, 73); assert.equal(encoded.request["action"], "main-send"); assert.equal(encoded.request["phase"], row.phase);
+    assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...row, phase: "sql-stock-v2-resume" }));
+    if (row.phase === "sql-fence-startup-registration-remove") { assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...row, params: { breakpointId: "foreign-point" } })); }
+    if (row.phase === "sql-fence-startup-registration-complete") { assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...row, params: { ...row.params, functionDeclaration: "function(){return true;}" } })); }
+  }
+  assert.equal(LIMITS.normal, 838); assert.equal(STOCK.requests, 2002);
 });

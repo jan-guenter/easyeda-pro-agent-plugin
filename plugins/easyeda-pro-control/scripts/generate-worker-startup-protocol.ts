@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { applyCurrentSchematicRelevanceSdkCompletionNativeFragment } from "../server/src/current-schematic-relevance-sdk-completion-native-fragment.ts";
 import { applyCurrentSchematicRelevanceModifyEchoNativeFragment } from "../server/src/current-schematic-relevance-modify-echo-native-fragment.ts";
+import { factorCurrentFootprintInverseLegacyCodecs } from "../server/src/current-footprint-inverse-legacy-codecs.ts";
 import { compactCurrentFootprintInversePrivateFields } from "../server/src/current-footprint-inverse-private-fields.ts";
 import { expandCurrentFootprintInverseNativeHashVectors, hasCurrentFootprintInverseNativeHashVectorStorage, projectCurrentFootprintInverseNativeHashVectors } from "../server/src/current-footprint-inverse-native-hash-vector-storage.ts";
 import { applyCurrentSchematicRelevancePublicationReturnNativeFragment } from "../server/src/current-schematic-relevance-publication-return-native-fragment.ts";
@@ -339,7 +340,7 @@ export function generateWorkerStartupProtocol(source: string, layout: "diagnosti
   next = projectCurrentSelectedMainNativePrograms(next);
   if(layout==="inverse"){next=projectCurrentFootprintInverseTaskNativePrograms(next);}
   if(layout==="schematic"){next=projectCurrentSchematicCapturedNativePrograms(next);next=nativeCompilerView(next,compactCurrentSchematicPrivateFields);next=nativeCompilerView(next,projectCurrentSchematicNativeHashVectors);next=nativeCompilerView(next,projectCurrentSchematicNativeTypeAliasesV2);}
-  if(layout==="inverse"){next=nativeCompilerView(next,compactCurrentFootprintInversePrivateFields);next=nativeCompilerView(next,projectCurrentFootprintInverseNativeHashVectors);next=nativeCompilerView(next,projectCurrentFootprintInverseNativeTypeAliases);}
+  if(layout==="inverse"){next=nativeCompilerView(next,factorCurrentFootprintInverseLegacyCodecs);next=nativeCompilerView(next,compactCurrentFootprintInversePrivateFields);next=nativeCompilerView(next,projectCurrentFootprintInverseNativeHashVectors);next=nativeCompilerView(next,projectCurrentFootprintInverseNativeTypeAliases);}
   next = layout==="inverse" || layout==="schematic" ? packCurrentPcbDiagnosticCSharpTokenFusionStorage(next) : packCurrentPcbDiagnosticCSharpReviewStorage(next);
   if (Buffer.byteLength(next) > CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES) {
     throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >${String(CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES)}`);

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { checkCurrentSavedProjectRegistrationConfigCommand, currentSavedProjectRegistrationConfigCommandSchemas } from "./current-saved-project-registration-config-protocol.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_APP_URL_PATTERN as URL } from "./current-footprint-copy-main-backend-contract.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REGISTRATION_BREAKPOINT_ID as REGISTRATION_ID, CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_APP_URL_PATTERN as URL } from "./current-footprint-copy-main-backend-contract.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SOURCE } from "./current-selected-file-main-sql-fence-source.ts";
 import { CURRENT_MAIN_CAPTURED_SCOPE_FRAMES as SCOPE_FRAMES } from "./current-main-captured-scope-frames.ts";
 import { CURRENT_MAIN_CAPTURED_REQUEST_BIND_PROGRAM as CAPTURED_REQUEST_BIND, CURRENT_MAIN_CAPTURED_SCOPE_JOINS as SCOPE_JOINS } from "./current-main-captured-scope-joins.ts";
@@ -15,6 +15,7 @@ import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as CAPTURE,
   CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_REQUIRE_PROGRAM as REQUIRE,CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SELECT_PROGRAM as SELECT } from "./current-selected-file-main-sql-fence-programs.ts";
 
 import { CURRENT_MAIN_STARTUP_LIBRARY_READ_OWNER_PROGRAM as STARTUP_READ_OWNER } from "./current-main-startup-library-interleave.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_CALLS as BACKEND } from "./current-footprint-copy-main-backend-programs.ts";
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP } from "./current-main-startup-config-programs.ts";
 
 import { CURRENT_SELECTED_FILE_MAIN_REQUEST_CALLS as REQUEST, CURRENT_SELECTED_FILE_MAIN_REQUEST_FRAME as REQUEST_FRAME } from "./current-selected-file-main-request-programs.ts";
@@ -83,9 +84,14 @@ const startupVersionParams = z.object({ ...callFlags, throwOnSideEffect: z.liter
 const startupJBParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.bindJB), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
 const startupDCParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.bindDC), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
 const startupReadOwnerParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(STARTUP_READ_OWNER), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
+const startupRegistrationRemoveParams = z.strictObject({ breakpointId: z.literal(REGISTRATION_ID) });
+const startupRegistrationCompleteParams = z.strictObject({ ...callFlags, objectId: handle, functionDeclaration: z.literal(BACKEND.require.program), arguments: selectArguments, returnByValue: z.literal(true) });
 const command = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("sql-fence-startup-read-owner"), method: z.literal("Runtime.callFunctionOn"), params: startupReadOwnerParams }).strict(),
   z.object({ phase: z.literal("sql-fence-startup-config-resume"), method: z.literal("Debugger.resume"), params: empty }).strict(),
+  z.object({ phase: z.literal("sql-fence-startup-registration-remove"), method: z.literal("Debugger.removeBreakpoint"), params: startupRegistrationRemoveParams }).strict(),
+  z.object({ phase: z.literal("sql-fence-startup-registration-resume"), method: z.literal("Debugger.resume"), params: empty }).strict(),
+  z.object({ phase: z.literal("sql-fence-startup-registration-complete"), method: z.literal("Runtime.callFunctionOn"), params: startupRegistrationCompleteParams }).strict(),
   ...currentSavedProjectRegistrationConfigCommandSchemas,
   z.object({ phase: z.literal("sql-fence-startup-version"), method: z.literal("Runtime.callFunctionOn"), params: startupVersionParams }).strict(),
   z.object({ phase: z.literal("sql-fence-startup-jb"), method: z.literal("Runtime.callFunctionOn"), params: startupJBParams }).strict(),

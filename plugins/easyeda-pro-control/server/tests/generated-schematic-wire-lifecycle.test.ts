@@ -54,6 +54,7 @@ void test("Wire stage comparison rejects mixed schemas/generations and original 
   assert.throws(() => compareGeneratedSchematicWireLifecycleEffect(args, before, modified, { ...observed, windowTabId: "other" }), /ORIGINAL_GENERATION/u);
   assert.throws(() => compareGeneratedSchematicWireLifecycleEffect(args, before, modified, { ...observed, schema: "easyeda-pro-control.generated-schematic-wire-lifecycle-stage.v2" }), /ORIGINAL_GENERATION/u);
   assert.throws(() => compareGeneratedSchematicWireLifecycleEffect(args, before, { ...modified, originalPromiseSettled: false }, observed), /STAGE_STATE/u);
+  assert.throws(() => compareGeneratedSchematicWireLifecycleEffect(args, before, modified, { ...observed, dispatchAttempted: true }), /STAGE_STATE/u);
   const fake: unknown = Object.create(CurrentSchematicWireEditOwner.prototype); let touched = false;
   assert.throws(() => Reflect.apply(qualifyOriginalGeneratedSchematicWireEffect, undefined, [fake, { get target(): never { touched = true; throw new Error("caller target"); } }, before, modified, observed]));
   assert.equal(touched, false); assert.throws(() => Reflect.apply(requireOriginalGeneratedSchematicWireEffect, undefined, [{ profile: "private.generated-schematic-wire-native-effect.v1", projection: effect, originalNativeStagesJoined: true }, fake, args]), /ORIGINAL/u);

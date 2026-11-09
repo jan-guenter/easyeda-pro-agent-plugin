@@ -13,6 +13,13 @@ import { CURRENT_SCHEMATIC_WIRE_EDIT_NAVIGATION_FUNCTION as NAVIGATION, CURRENT_
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_NAVIGATION_FUNCTION as SHARED_NAVIGATION, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_START_FUNCTION as SHARED_START } from "./current-schematic-relevance-display-write-programs.ts";
 import { installOwnedNativeDispatch } from "./native-owned-dispatch.ts";
 import { installNativeCompileOnlyHook } from "./native-compile-only-hook.ts";
+import { currentSchematicWireAccessorNativeSource, currentSchematicWireAccessorOwnerSource } from "./current-schematic-wire-accessor-native.ts";
+import { CURRENT_SCHEMATIC_WIRE_ACCESSOR_REQUESTS as ACCESSORS } from "./current-schematic-wire-accessor-protocol.ts";
+import { CURRENT_SCHEMATIC_WIRE_LEXICAL_REQUESTS as LEXICAL } from "./current-schematic-wire-lexical-protocol.ts";
+import { currentSchematicWireLexicalNativeSource, currentSchematicWireLexicalOwnerSource } from "./current-schematic-wire-lexical-native.ts";
+
+import { CURRENT_SCHEMATIC_WIRE_INTENT_REQUESTS as INTENT } from "./current-schematic-wire-intent-protocol.ts";
+import { currentSchematicWireIntentNativeSource } from "./current-schematic-wire-intent-native.ts";
 
 const begin = "// BEGIN GENERATED SCHEMATIC WIRE EDIT BIRTH209", end = "// END GENERATED SCHEMATIC WIRE EDIT BIRTH209";
 const quote = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
@@ -56,9 +63,11 @@ export function prepareCurrentSchematicWireEditNativeSwitch(input: string): stri
 }
 function native(source: string): string {
   if (START !== SHARED_START || NAVIGATION !== SHARED_NAVIGATION) { throw new Error("SCHEMATIC_WIRE_SHARED_PROGRAM_DRIFT"); }
-  const admission = method(source, "public void AdmitSchematicDisplayAction(string action)", "void SchematicDisplayDiscovery(")
+  if (ACCESSORS.total + LEXICAL.total + INTENT.total > PROFILE.renderer.accessorObservation) { throw new Error("SCHEMATIC_WIRE_ACCESSOR_RESERVATION"); }
+  let admission = method(source, "public void AdmitSchematicDisplayAction(string action)", "void SchematicDisplayDiscovery(")
     .replaceAll("AdmitSchematicDisplayAction", "AdmitSchematicWireEditAction").replaceAll("schematicDisplayWrite209", "schematicWireEdit209").replaceAll('"schematic-display-native"', '"schematic-wire-edit-native"')
     .replace("(string action){", '(string action){foreach(string denied in new[]{"schematic-relevance-display-save-prepare","schematic-relevance-display-save-generate","schematic-relevance-display-save-body-enroll","schematic-relevance-display-clock","schematic-relevance-display-clock-bind","schematic-relevance-display-modify-bind","schematic-relevance-display-modify-generate","schematic-relevance-display-modify-entry","schematic-relevance-display-accessor","schematic-relevance-display-action","schematic-relevance-display-action-guard","schematic-relevance-display-action-guard-bind","schematic-relevance-display-producer-prefix-enroll","schematic-display-native","schematic-relevance-display-native","schematic-display-action","schematic-display-action-guard","schematic-display-action-guard-bind","schematic-display-accessor","schematic-display-clock","schematic-display-clock-bind","schematic-display-producer-prefix-enroll"})if(action==denied)throw Error("schematic-wire-own-mutation-required");');
+  admission = once(admission, 'case "schematic-display-accessor":', 'case "schematic-wire-edit-intent":case "schematic-wire-edit-lexical":case "schematic-wire-edit-accessor":case "schematic-display-accessor":');
   let encoder = method(source, "public static string SchematicDisplayProtocolMessage(", "public void SendSchematicDisplayNative(")
     .replaceAll("SchematicDisplayProtocolMessage", "SchematicWireEditProtocolMessage").replaceAll("SchematicDisplayIndex", "SchematicWireEditIndex")
     .replaceAll("SchematicDisplayStart", "SchematicWireEditStart").replaceAll("SchematicDisplayNavigation", "SchematicWireEditNavigation").replaceAll("SchematicDisplayStage", "SchematicWireEditStage")
@@ -68,10 +77,14 @@ function native(source: string): string {
     .replaceAll("SendSchematicDisplayNative", "SendSchematicWireEditNative").replaceAll("SchematicDisplayProtocolMessage", "SchematicWireEditProtocolMessage")
     .replaceAll("SchematicDisplayIndex", "SchematicWireEditIndex").replaceAll("schematicDisplayWrite209", "schematicWireEdit209");
   return `${begin}
+${currentSchematicWireAccessorNativeSource()}
+${currentSchematicWireLexicalNativeSource()}
+${currentSchematicWireIntentNativeSource()}
 internal enum EasyedaSchematicWireEditBirth { Original }
 internal sealed partial class EasyedaOriginalMainTransport {internal EasyedaOriginalMainTransport(EasyedaSchematicWireEditBirth birth):this(){Need(birth==EasyedaSchematicWireEditBirth.Original,"schematic-wire-purpose");normalLimit=${String(PROFILE.main.normal)};cleanupLimit=${String(PROFILE.main.cleanup)};}}
 public sealed partial class EasyedaDiagnosticOwner {
 bool schematicWireEdit209;
+${currentSchematicWireAccessorOwnerSource()}
 static string SchematicWireEditStart {get{return SchematicRelevanceDisplayStart;}}
 static string SchematicWireEditNavigation {get{return SchematicRelevanceDisplayNavigation;}}
 static readonly string SchematicWireEditStage=${packed(STAGE)};
@@ -83,6 +96,7 @@ ${encoder}
 ${send}
 ${smoke()}
 }
+${currentSchematicWireLexicalOwnerSource()}
 ${end}`;
 }
 function smoke(): string {
@@ -106,6 +120,30 @@ const dispatch = String.raw`        'schematic-wire-edit-native' {
           $owner.SendSchematicWireEditNative([int]$request.requestId,$request.sessionId,$request.phase,$fields);$result=@{written=$true}
         }
 `;
+const accessorDispatch = String.raw`        'schematic-wire-edit-accessor' {
+          if (-not $SchematicWireEdit209 -or -not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])) {throw 'schematic-wire-accessor-fields'}
+          $baseFields=@('action','helperInstance','id','jobId','rootCreated','rootPid','requestId','phase','method');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+          foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'schematic-wire-accessor-field'}}
+          foreach ($property in $request.PSObject.Properties) {if ($baseFields -cnotcontains $property.Name) {$fields.Add($property.Name,$property.Value)}}
+          $owner.SendSchematicWireAccessor([int]$request.requestId,$request.phase,$request.method,$fields);$result=@{written=$true}
+        }
+`;
+const lexicalDispatch = String.raw`        'schematic-wire-edit-lexical' {
+          if (-not $SchematicWireEdit209 -or -not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])) {throw 'schematic-wire-lexical-fields'}
+          $baseFields=@('action','helperInstance','id','jobId','rootCreated','rootPid','requestId','phase','method');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+          foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'schematic-wire-lexical-field'}}
+          foreach ($property in $request.PSObject.Properties) {if ($baseFields -cnotcontains $property.Name) {$fields.Add($property.Name,$property.Value)}}
+          $owner.SendSchematicWireLexical([int]$request.requestId,$request.phase,$request.method,$fields);$result=@{written=$true}
+        }
+`;
+const intentDispatch = String.raw`        'schematic-wire-edit-intent' {
+          if (-not $SchematicWireEdit209 -or -not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])) {throw 'schematic-wire-intent-fields'}
+          $baseFields=@('action','helperInstance','id','jobId','rootCreated','rootPid','requestId','phase','method');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+          foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'schematic-wire-intent-field'}}
+          foreach ($property in $request.PSObject.Properties) {if ($baseFields -cnotcontains $property.Name) {$fields.Add($property.Name,$property.Value)}}
+          $owner.SendSchematicWireIntent([int]$request.requestId,$request.phase,$request.method,$fields);$result=@{written=$true}
+        }
+`;
 export function applyCurrentSchematicWireEditNativeFragment(input: string): string {
   let source = normalizeCurrentSchematicWireEditNativeFamily(input);
   const extra = native(source);
@@ -125,6 +163,12 @@ export function applyCurrentSchematicWireEditNativeFragment(input: string): stri
   source = once(source, "      if ($SchematicRelevanceDisplayWrite209) {$owner.AdmitSchematicRelevanceDisplayAction($request.action)}", "      if ($SchematicWireEdit209) {$owner.AdmitSchematicWireEditAction($request.action)}\n      if ($SchematicRelevanceDisplayWrite209) {$owner.AdmitSchematicRelevanceDisplayAction($request.action)}");
   source = once(source, "          if ($SchematicRelevanceDisplayWrite209) {$requestLimit=", `          if ($SchematicWireEdit209) {$requestLimit=${String(PROFILE.renderer.total)}}\n          if ($SchematicRelevanceDisplayWrite209) {$requestLimit=`);
   source = installOwnedNativeDispatch(source, dispatch, "        'schematic-relevance-display-native' {");
+  source = installOwnedNativeDispatch(source, accessorDispatch, "        'schematic-wire-edit-native' {");
+  source = installOwnedNativeDispatch(source, lexicalDispatch, "        'schematic-wire-edit-accessor' {");
+  source = installOwnedNativeDispatch(source, intentDispatch, "        'schematic-wire-edit-lexical' {" );
   source = installNativeCompileOnlyHook(source, "    [EasyedaDiagnosticOwner]::VerifySchematicWireEditSmoke()", "    [EasyedaDiagnosticOwner]::VerifySchematicRelevanceDisplaySmoke()");
+  source = installNativeCompileOnlyHook(source, "    [EasyedaSchematicWireAccessorProtocol]::VerifySmoke()", "    [EasyedaDiagnosticOwner]::VerifySchematicWireEditSmoke()");
+  source = installNativeCompileOnlyHook(source, "    [EasyedaSchematicWireLexicalProtocol]::VerifySmoke()", "    [EasyedaSchematicWireAccessorProtocol]::VerifySmoke()");
+  source = installNativeCompileOnlyHook(source, "    [EasyedaSchematicWireIntentProtocol]::VerifySmoke()", "    [EasyedaSchematicWireLexicalProtocol]::VerifySmoke()");
   return once(source, "\n'@\n", `\n${extra}\n'@\n`);
 }
