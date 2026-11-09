@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Compare independent driver, closure, alias, hash-bank and historical vector codecs without merging their contracts. */
 /** Source projection only. No PowerShell, owner or application is created. */
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
@@ -9,6 +10,9 @@ import {generateSchematicEditNativeSource} from "../../scripts/schematic-edit-na
 import {expandCurrentPcbDiagnosticCSharpReviewSource} from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import {projectCurrentSchematicViaSdkRuntime as project,projectCurrentFootprintInverseViaSdkRuntime} from "../src/current-pcb-via-write-native-fragment.ts";
 import {expandCurrentFootprintInverseSmokeVectors as expandVectors,projectCurrentFootprintInverseSmokeVectors as packVectors} from "../src/current-footprint-inverse-smoke-vector-storage.ts";
+import {expandCurrentSchematicNativeTypeAliasesV2} from "../src/current-schematic-native-type-aliases-v2.ts";
+import {expandCurrentFootprintInverseNativeTypeAliases} from "../src/current-footprint-inverse-native-type-aliases.ts";
+import {expandCurrentFootprintInverseNativeHashVectors} from "../src/current-footprint-inverse-native-hash-vector-storage.ts";
 
 /** Transform exactly one C# body while retaining the generated PowerShell driver. */
 function withBody(source:string,transform:(body:string)=>string):string {
@@ -28,7 +32,7 @@ async function unclosedSenderFixture():Promise<string>{
 }
 
 void test("the exact closed schematic driver omits only Via SDK execution and rejects mixed or changed closure",async()=>{
- const seed=await readFile(new URL("../../scripts/native-baseline/shared-owner.ps1.txt",import.meta.url),"utf8");const data=generateSchematicEditNativeSource(seed);const source=project(expandCurrentPcbDiagnosticCSharpReviewSource(data.helper));
+ const seed=await readFile(new URL("../../scripts/native-baseline/shared-owner.ps1.txt",import.meta.url),"utf8");const data=generateSchematicEditNativeSource(seed);const source=project(withBody(expandCurrentPcbDiagnosticCSharpReviewSource(data.helper),expandCurrentSchematicNativeTypeAliasesV2));
  assert.ok(data.helper.startsWith("param([switch]$CompileOnly,[switch]$SchematicRelevanceDisplayWrite209,[switch]$SchematicWireEdit209)"));assert.ok(data.helper.includes("$PcbViaWrite209=[System.Management.Automation.SwitchParameter]$false"));assert.ok(data.helper.includes("$owner=if ($SchematicRelevanceDisplayWrite209) {[EasyedaDiagnosticOwner]::CreateSchematicRelevanceDisplayWrite209()} else {[EasyedaDiagnosticOwner]::CreateSchematicWireEdit209()}"));
  assert.equal(project(source),source);assert.equal(source.includes("ViaSdkFunction"),false);assert.equal(source.split("PcbViaSdkProtocolMessage(").length-1,2);assert.equal(source.split("SendPcbViaSdk(").length-1,2);assert.ok(source.includes("public static EasyedaDiagnosticOwner CreatePcbViaWrite209()"));assert.ok(source.includes("public void SendPcbViaSdkProperties("));assert.ok(source.includes("class EasyedaSelectedFileMainSqlFenceProtocol"));
  const marker="// BEGIN CLOSED SCHEMATIC VIA SDK";
@@ -37,7 +41,7 @@ void test("the exact closed schematic driver omits only Via SDK execution and re
 });
 
 void test("the inverse projection has a separate fixed closure and retains its disabled compatibility dispatch",async()=>{
- const seed=await readFile(new URL("../../scripts/native-baseline/shared-owner.ps1.txt",import.meta.url),"utf8");const data=generateFootprintInverseNativeSource(seed);const before=expandCurrentPcbDiagnosticCSharpReviewSource(data.helper);const source=projectCurrentFootprintInverseViaSdkRuntime(before);
+ const seed=await readFile(new URL("../../scripts/native-baseline/shared-owner.ps1.txt",import.meta.url),"utf8");const data=generateFootprintInverseNativeSource(seed);const before=withBody(expandCurrentPcbDiagnosticCSharpReviewSource(data.helper),expandCurrentFootprintInverseNativeTypeAliases);const source=projectCurrentFootprintInverseViaSdkRuntime(before);
  assert.ok(data.helper.startsWith("param([switch]$CompileOnly,[switch]$FootprintInverse209,"));assert.ok(data.helper.includes("$PcbViaWrite209=[System.Management.Automation.SwitchParameter]$false"));assert.ok(data.helper.includes("$owner=[EasyedaDiagnosticOwner]::CreateFootprintInverse209()"));
  assert.equal(projectCurrentFootprintInverseViaSdkRuntime(source),source);assert.equal(source.includes("ViaSdkFunction"),false);assert.equal(source.split("PcbViaSdkProtocolMessage(").length-1,2);assert.equal(source.split("SendPcbViaSdk(").length-1,2);assert.ok(source.includes("public static EasyedaDiagnosticOwner CreatePcbViaWrite209()"));assert.ok(source.includes("class EasyedaSelectedFileMainSqlFenceProtocol"));assert.ok(source.includes('throw new InvalidOperationException("inverse-via-sdk-codec-closed")'));
  for(const changed of[source.replace("// BEGIN CLOSED INVERSE VIA SDK","// BEGIN CLOSED SCHEMATIC VIA SDK"),source.replace("public void AdmitFootprintInverseAction(string action)","public void AdmitForeignAction(string action)"),source.replace('throw new InvalidOperationException("inverse-via-sdk-codec-closed")','throw new InvalidOperationException("changed-codec")')]){assert.throws(()=>projectCurrentFootprintInverseViaSdkRuntime(changed));}
@@ -47,7 +51,9 @@ void test("the inverse projection has a separate fixed closure and retains its d
 
 void test("packed unclosed inverse SDK projection removes its original positive vector and repacks to a fixed point",async()=>{
  const seed=await readFile(new URL("../../scripts/native-baseline/shared-owner.ps1.txt",import.meta.url),"utf8");
- const closed=expandCurrentPcbDiagnosticCSharpReviewSource(generateFootprintInverseNativeSource(seed).helper);
+ // Restore current aliases and hash banks before using the historical codec.
+ // Seal the closed fixture and the projected result with that same codec.
+ const closed=withBody(expandCurrentPcbDiagnosticCSharpReviewSource(generateFootprintInverseNativeSource(seed).helper),body=>packVectors(expandCurrentFootprintInverseNativeHashVectors(expandCurrentFootprintInverseNativeTypeAliases(body))));
  const diagnostic=expandCurrentPcbDiagnosticCSharpReviewSource(generateWorkerStartupProtocol(seed));
  const inverseSender=await unclosedSenderFixture();
  let unclosed=withBody(closed,expandVectors);

@@ -5,15 +5,15 @@ import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { types } from "node:util";
 import { runInNewContext } from "node:vm";
-import { CURRENT_GENERATED_INITIAL_CACHE_SOURCE as SOURCE } from "../src/current-generated-initial-cache-source.ts";
 import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_PROGRAMS as PROGRAMS } from "../src/current-pcb-via-main-live-history-programs.ts";
-import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE as SITE } from "../src/current-pcb-via-main-live-history-source.ts";
+import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE as SITE, CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SOURCE as SOURCE } from "../src/current-pcb-via-main-live-history-source.ts";
 import { currentPcbViaMainLiveHistoryNativeCases, validateCurrentPcbViaMainLiveHistoryCommand } from "../src/current-pcb-via-main-live-history-protocol.ts";
 import { currentPcbViaMainLiveHistoryWire } from "../src/current-pcb-via-main-live-history-wire.ts";
+import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_CAPTURE_PROGRAM as SQL_CAPTURE } from "../src/current-selected-file-main-sql-fence-programs.ts";
 
 function observe(scenario: "positive" | "proxy-row" | "getter-row" | "foreign-db" | "drift" | "promise-drift" | "owner-drift"): unknown {
   return runInNewContext(`(()=>{let getters=0,applications=0;const forbidden=()=>{applications++;throw Error("application")};class SqlWrap{}class Sql{}class Database{}class Statement{};const sqlite={Database,Statement},util={types:{isProxy}},path="synthetic-original-selected",db=new Database,wrap=new SqlWrap,sql=new Sql;
-Object.defineProperty(db,"filename",{value:path});Object.assign(wrap,{db});Object.assign(sql,{path,db,dbWrap:wrap,transactionDepth:0});const frame=[SqlWrap,Sql,sqlite,util],capture=[frame,SqlWrap,Sql,sqlite,util,[],isProxy,path,new Map,Date,Date.now],prior=[null,sql,Sql.prototype,db,wrap,SqlWrap.prototype,forbidden];
+Object.defineProperty(db,"filename",{value:path});Object.assign(wrap,{db});Object.assign(sql,{path,db,dbWrap:wrap,transactionDepth:0});const frame=[SqlWrap,Sql,sqlite,util],capture=Reflect.apply(eval("("+sqlCaptureProgram+")"),frame,[path]);
 const row={id:2,uuid:"c".repeat(32),parent:"d".repeat(32),key:"e".repeat(32),is_lock:0,num:0,snapshot_num:0,created_at:"2026-11-07 01:02:03",updated_at:"2026-11-07 01:02:04",lock_time:"1970-01-01 08:00:00",iv:"c".repeat(32)};
 if(scenario==="getter-row")Object.defineProperty(row,"key",{enumerable:true,get(){getters++;return"e".repeat(32)}});
 const rows=[scenario==="proxy-row"?new Proxy(row,{getOwnPropertyDescriptor(){getters++;throw Error("proxy trap")},getPrototypeOf(){getters++;throw Error("proxy trap")}}):row];
@@ -21,7 +21,7 @@ const rows=[scenario==="proxy-row"?new Proxy(row,{getOwnPropertyDescriptor(){get
 const request={},response=()=>{},requestFrame=[null,request,response,sqlite,util,null,null],requestCapture=[requestFrame,capture,request,null,null,null,null,null,null],ctx={projectUuid:"a".repeat(64),req:request,res:response,db:{[path]:Promise.resolve(sql)}};
 let selected=sql;if(scenario==="foreign-db"){const other=new Sql;Object.assign(other,{path,db:sql.db,dbWrap:wrap,transactionDepth:0});selected=other;}
 const scoped=[ctx,path,{historyUuid:"c".repeat(32),branchUuid:"b".repeat(32)},selected,[{uuid:"b".repeat(32),node:0}],rows,forbidden,forbidden,forbidden];let refused=false,value=null,stage="capture";
-try{const captured=Reflect.apply(eval("("+programs.capture.program+")"),scoped,[capture,requestCapture]);stage="resolved";Reflect.apply(eval("("+programs.resolved.program+")"),captured,[sql]);stage="value";if(scenario==="drift")row.created_at="2026-11-07 01:02:05";if(scenario==="promise-drift")ctx.db[path]=Promise.resolve(sql);if(scenario==="owner-drift"){const other=new Sql;Object.assign(other,{path,db,dbWrap:wrap,transactionDepth:0});scoped[3]=other;}value=Reflect.apply(eval("("+programs.value.program+")"),captured,[]);}catch{refused=true;}return{refused,value,getters,applications,stage};})()`, { programs: PROGRAMS, isProxy: types.isProxy, scenario });
+try{const captured=Reflect.apply(eval("("+programs.capture.program+")"),scoped,[capture,requestCapture]);stage="resolved";Reflect.apply(eval("("+programs.resolved.program+")"),captured,[sql]);stage="value";if(scenario==="drift")row.created_at="2026-11-07 01:02:05";if(scenario==="promise-drift")ctx.db[path]=Promise.resolve(sql);if(scenario==="owner-drift"){const other=new Sql;Object.assign(other,{path,db,dbWrap:wrap,transactionDepth:0});scoped[3]=other;}value=Reflect.apply(eval("("+programs.value.program+")"),captured,[]);}catch{refused=true;}return{refused,value,getters,applications,stage};})()`, { programs: PROGRAMS, sqlCaptureProgram: SQL_CAPTURE, isProxy: types.isProxy, scenario });
 }
 void test("actual fixed read retains source SQLite timestamp strings without sampling or predicting them", () => {
   const raw: unknown = structuredClone(observe("positive")); assert.ok(raw !== null && typeof raw === "object");

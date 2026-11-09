@@ -4,9 +4,7 @@ This source-only increment connects the genuine four-query completion to the
 three original empty `l` calls, original `yw.c`, footprint `forEach`, `Ze` and
 `F2` calls. The original DEL RPC is held before its first body statement.
 `advanceFootprintInversePublicDelete()` returns a distinct private entry packet;
-its getter calls `assertCurrent()` for the same owner, checkpoint and original
-call. The binding exposes the separate `assertOriginalHeld()` check for the
-original live held event.
+its getter checks the same owner, checkpoint, original call and live held event.
 No manager-to-worker delete Job is issued by this increment.
 
 The native ledger consumes the completed reference hold before its first resume,
@@ -80,3 +78,60 @@ The earlier getter summary incorrectly claimed it also checked the live held
 event. The getter actually calls `assertCurrent()` only. This correction
 distinguishes that call from the separately exposed `assertOriginalHeld()`;
 it adds no execution grant or runtime behavior change.
+
+## 2026-11-09 PR209 corrections
+
+CodeRabbit review `5824820785` covered head
+`f2a9d521c3160a1bdd0a630d2c2b13906a8903de` and reported one history issue and one
+storage nit. Both apply to the current source. The source-introduction wording
+at the start of this record is restored from `9f496551`; the appended provenance
+correction above remains intact. Earlier observations are preserved.
+
+The immutable inverse smoke-vector decoder had also recompressed valid stored
+gzip bytes while checking their canonical C# representation. It now retains
+the already validated packed bytes for that comparison. New block creation
+still uses its existing level-nine compressor. Packed and raw hashes, decoded
+row checks, fixed source grammar and all existing size/count limits remain
+enforced. A bounded alternate valid gzip encoding reproduced the old refusal;
+the corrected decoder restores the same original call, rejects hash and source
+tampering, and regenerates the usual new-block encoding.
+
+The three-path source checkpoint is
+`a7da7bf096960903a4eb91ccd932b909f6296ea5`, tree
+`61dee681d2debf2c05556b184ffe9e67936bc68e`, based on
+`727337f176dd8f96fdea4ab5ab40905304a5f977`. Its two focused offline cases pass
+with zero skips, both TypeScript projects pass, and strict changed-file lint
+reports zero warnings. Repository, plugin and all-skill validators individually
+exit zero with parsed `ok:true`. The before-source regression failure and all
+raw results remain retained privately. This leaf supplies no full-release CI,
+native compilation, generated-artifact update, application, writer or saved
+lifecycle proof.
+
+## 2026-11-09 scoped documentation gate follow-up
+
+The completed PR209 walkthrough reported documentation coverage of 58.16%
+against an 80% threshold. It analyzed 98 touched functions in 50 files and
+skipped 93 files, comprising 19 unsupported files and 74 over the file limit.
+The comment and check-run output expose no function names or complete analyzed
+path roster. Those omissions are not counted as analyzed documentation.
+
+An independent syntax-tree walk of the first 50 available supported selected
+files reproduces 98 touched named non-method functions and 57 documented
+functions. That numerical agreement does not prove the service uses the same
+cohort or parser. Twenty-two useful contracts were added to previously
+undocumented functions in that candidate set, covering fixed native codebooks,
+source-pinned pause and scope decoding, callback reproof, topic and argument
+selection, and native-refusal provenance. No skipped file, CI test/helper or
+already documented class method was edited. If the service cohort is unchanged,
+79 of 98 functions would have documentation, or 80.61%. This is an inference;
+no updated external coverage percentage or passed gate is claimed.
+
+The comment-only source checkpoint is
+`c8f0c95b5d7ec772372f6e514a4b2e8b77dcc8e2`, tree
+`6cf7f23dd31130ae9d4bd18c0329dc7e7ab2f0a3`. All 17 edited files emit
+byte-identical JavaScript before and after the comments. Both TypeScript
+projects, strict changed-file lint and the repository, plugin and all-skill
+validators pass; the three validator results independently parse as `ok:true`.
+Diagnostic-tool and malformed lint-invocation failures remain retained
+separately from those final project checks. No additional test campaign,
+native call, generated helper or application ran for the documentation change.

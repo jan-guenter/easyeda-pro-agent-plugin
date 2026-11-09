@@ -93,7 +93,9 @@ export async function fixture(context: TestContext): Promise<{
         result: { windows: state.windows ?? [{ handle: "12345", pid: 100, owner: "0", className: "Chrome_WidgetWin_1", minimized: false, title: "Synthetic", bounds: [0, 0, 1384, 736] }], mainWindowHandle: "12345" } };
     },
   });
-  const identity = fingerprint(), implementation = await engine.controlFingerprintPromise, machine = await syntheticSqlRuntime();
+  // Model the reviewed installed bundle in this synthetic transport/UI fixture.
+  // Keep the real engine implementation fingerprint in the separate plan binding.
+  const identity = fingerprint("bundle"), implementation = await engine.controlFingerprintPromise, machine = await syntheticSqlRuntime();
   const plan: Record<string, unknown> = { profile: FAMILY, projectUuid: browser.input.projectUuid, branchUuid: browser.input.branchUuid,
     ownerUuid: browser.input.ownerUuid, targetUuid: "c".repeat(32), activeUuid: "f".repeat(32), projectPath: source,
     operation: { id: "coordinator-synthetic", action: "library.symbol.modify", libraryUuid: browser.input.projectUuid,

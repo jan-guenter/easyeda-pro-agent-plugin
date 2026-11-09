@@ -245,7 +245,7 @@ void test("fresh readback native composition repeats exactly and its current pip
   assert.equal(first.split("        'saved-readback-abort' {").length - 1, 1);
   const expanded = expandCurrentPcbDiagnosticCSharpReviewSource(first);
   assert.ok(expanded.includes("spatial209?384:")); assert.ok(expanded.includes("componentSpatial209?419:"));
-  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 941); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 665);
+  assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.main.total, 942); assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.total, 665);
   assert.deepEqual(CURRENT_PCB_VIA_SAVED_READBACK_BOOTSTRAP_REQUESTS, { parent: 2, inventory: 1, workerNormal: 16, workerCleanup: 8, total: 27 });
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.earlyActorPrefix, 3);
   assert.equal(CURRENT_PCB_VIA_SAVED_READBACK_PROFILE.renderer.activeReadOnly, 182);

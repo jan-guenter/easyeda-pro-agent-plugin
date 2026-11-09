@@ -9,8 +9,8 @@ export const CURRENT_FOOTPRINT_INVERSE_CLOSED_COMPONENT_NATIVE_SOURCE = `${BEGIN
 // BEGIN CLOSED INVERSE COMPONENT419
 public sealed partial class EasyedaDiagnosticOwner {
 readonly bool componentSpatial209=false;
-string componentPcbSession,componentProject,componentDocument;
-int componentStage;
+string componentPcbSession,componentProject=null,componentDocument=null;
+int componentStage=0;
 public static EasyedaDiagnosticOwner CreateComponentSpatial209(){throw Error("inverse-component-purpose-closed");}
 public void AdmitComponentAction(string action){throw Error("inverse-component-purpose-closed");}
 public void AbortComponentSpatial(){throw Error("inverse-component-purpose-closed");}

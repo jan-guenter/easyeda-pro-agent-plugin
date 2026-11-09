@@ -5,14 +5,18 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 import { fixture } from "./generated-schematic-relevance-display-vm.ts";
-import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_FUNCTION as CAPTURE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION as MODIFY } from "../src/current-schematic-relevance-display-action-programs.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_ACTION_CALLBACK as CALLBACK, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_CAPTURE_FUNCTION as CAPTURE, CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_MODIFY_FUNCTION as MODIFY } from "../src/current-schematic-relevance-display-action-programs.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_STAGE_FUNCTION as BASE } from "../src/generated-schematic-relevance-display-program.ts";
 
 void test("only own seven-record capture/modify use phase variants; shared stages retain their complete bytes", () => {
   assert.notEqual(CAPTURE, BASE); assert.notEqual(MODIFY, BASE);
   assert.equal(CAPTURE.replace("b={root,ui,host,sch,tabs,", "b={ui,host,sch,tabs,"), BASE);
   assert.equal(MODIFY.includes('timeout:0,dependencies:[]'), true);
-  assert.equal(MODIFY.split("debugger;").length - 1, 4);
+  assert.equal(CALLBACK.split("debugger;").length - 1, 4);
+  // The SDK completion gate has its own result and retained-context pauses.
+  assert.equal(MODIFY.split(CALLBACK).length, 2);
+  assert.equal(MODIFY.replace(CALLBACK, "").split("debugger;").length - 1, 2);
+  assert.ok(MODIFY.includes("const originalCompletionContext=[this,tuple,b,state,before,ownedAction,original,result,originalCompletionWait,originalCompletionResolve]"));
   assert.equal(BASE.includes("debugger;"), false);
 });
 void test("original callback holds before readers and failure stays held when its private active-action proof is absent", async context => {
