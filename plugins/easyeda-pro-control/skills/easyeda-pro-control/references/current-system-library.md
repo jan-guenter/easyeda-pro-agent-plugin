@@ -103,9 +103,13 @@ only the fixed public-system metadata subset.
 CBB methods remain omitted. Desktop CBB search can refresh local project-path
 discovery; its online positive project/block metadata projection is not yet
 qualified for the fixed system library. CBB lookup fetches a project and its
-branch profile/structure before assembling boards, rather than the generic
-component metadata GET. Do not substitute an empty board list, follow arbitrary
-project/branch endpoints or infer CBB absence from the empty anonymous sample.
+branch profile/structure before assembling reciprocal board membership, rather
+than the generic component metadata GET. Retained anonymous requests returned
+HTTP403; the inspected shipped system library has zero project and board rows.
+Neither supplies a positive anonymous system-owned project/branch witness or
+proves online absence. Do not substitute an empty board list, use credentials or
+private-library fallback, follow arbitrary project/branch endpoints or repeat
+absence probes as validation.
 Inspect the exact method's `coverage` entry for its remaining implementation
 requirements.
 

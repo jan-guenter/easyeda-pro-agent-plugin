@@ -26,6 +26,8 @@ const schema = z.discriminatedUnion("phase", [
   z.strictObject({ phase: z.literal("modify-worker-call"), role: z.string().max(64), method: z.literal("Runtime.callFunctionOn"), params: z.strictObject({ ...flags, objectId: handle, functionDeclaration: z.string().max(16_384), arguments: z.array(argument).max(11), returnByValue: z.boolean(), awaitPromise: z.literal(false), userGesture: z.literal(false) }) }),
 ]);
 export type CurrentSchematicRelevanceModifyWorkerCommand = z.infer<typeof schema>;
+/** Accept only the literal/context and fixed passive helper catalogue, with
+ * its exact arity/value mode. Parsing supplies no worker owner or control grant. */
 export function validateCurrentSchematicRelevanceModifyWorkerCommand(input: unknown): CurrentSchematicRelevanceModifyWorkerCommand {
   const command = schema.parse(captureCurrentPcbStringClockReply(input).value);
   if (command.phase === "modify-worker-call") { const row = CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_CALLS.find(value => value[0] === command.role); if (row === undefined || row[1] !== command.params.functionDeclaration || row[2] !== command.params.arguments.length || row[3] !== command.params.returnByValue) { throw new Error("SCH_MODIFY_WORKER_FIXED_CALL"); } }

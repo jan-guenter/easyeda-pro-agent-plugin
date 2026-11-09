@@ -1,0 +1,18 @@
+/** Native GET begins at the original tw function. These fixed programs retain
+ * its original scope and first frame; no public Call or GET result is used. */
+import { CURRENT_NATIVE_OWN_DATA_CHECK } from "./current-native-own-data-intrinsics.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
+
+const common = `"use strict";${CURRENT_NATIVE_OWN_DATA_CHECK}`;
+// Each newly returned object remains opaque until its original property packet
+// Is checked by the host. In particular roots does not traverse Ze or w.
+const roots = `function(wrapper){${common}const scope=value(wrapper,"object");return[scope,value(scope,"tw"),value(scope,"Ze"),value(scope,"w")];}`;
+const context = `function(roots){${common}dense(roots,4);const scope=value(roots,"0");if(value(scope,"tw")!==value(roots,"1")||value(scope,"Ze")!==value(roots,"2")||value(scope,"w")!==value(roots,"3")||value(root,"gVars")!==value(roots,"3"))bad();return[value(value(roots,"3"),"currentProject"),value(value(roots,"2"),"getFootprint")];}`;
+const prepare = `function(roots,context,sender,target){${common}dense(roots,4);dense(context,2);dense(sender,8);if(proto(target)!==objectProto||count(target)!==3)bad();const scope=value(roots,"0"),fn=value(roots,"1"),facade=value(roots,"2"),host=value(roots,"3"),project=value(context,"0"),getter=value(context,"1"),id=value(target,"documentUuid"),projectId=value(target,"projectUuid"),branch=value(target,"branchUuid"),used=[false];if(typeof fn!=="function"||typeof getter!=="function"||typeof id!=="string"||id.length!==16&&id.length!==32||typeof projectId!=="string"||projectId.length!==64||typeof branch!=="string"||branch.length!==32)bad();const check=()=>{dense(roots,4);dense(context,2);dense(sender,8);dense(used,1);if(value(scope,"tw")!==fn||value(scope,"Ze")!==facade||value(scope,"w")!==host||value(root,"gVars")!==host||value(host,"currentProject")!==project||value(facade,"getFootprint")!==getter||value(project,"projectId")!==projectId||value(project,"branchUuid")!==branch||value(target,"documentUuid")!==id||value(target,"projectUuid")!==projectId||value(target,"branchUuid")!==branch||typeof value(used,"0")!=="boolean"||invoke(value(sender,"5"),undefined,[])!==true)bad();return true;};check();return[roots,context,sender,id,projectId,branch,used,check];}`;
+const before = `function(prepared){${common}dense(prepared,8);const used=value(prepared,"6");dense(used,1);if(value(used,"0")!==false)bad();return invoke(value(prepared,"7"),undefined,[]);}`;
+/** This sole false-side-effect program burns only its own fresh array slot.
+ * The next application statement is held at the original tw entry. */
+const invokeOnce = `function(prepared){${common}dense(prepared,8);const used=value(prepared,"6");dense(used,1);if(value(used,"0")!==false)bad();used[0]=true;if(invoke(value(prepared,"7"),undefined,[])!==true)bad();const fn=value(value(prepared,"0"),"1");return fn("footprint",value(prepared,"3"),value(prepared,"4"));}`;
+const entry = `function(frame,prepared){${common}dense(frame,6);dense(prepared,8);const roots=value(prepared,"0"),used=value(prepared,"6");dense(roots,4);dense(used,1);if(value(used,"0")!==true||invoke(value(prepared,"7"),undefined,[])!==true||value(frame,"0")!==root||value(frame,"1")!=="footprint"||value(frame,"2")!==value(prepared,"3")||value(frame,"3")!==value(prepared,"4")||value(frame,"4")!==value(roots,"2")||value(frame,"5")!==value(roots,"3"))bad();return true;}`;
+export const CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_LOOKUP_PROGRAMS = freezeDeep({ roots, context, prepare, before, invokeOnce, entry } as const);
+export const CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_LOOKUP_FRAME = "[this,t,e,i,Ze,w]";

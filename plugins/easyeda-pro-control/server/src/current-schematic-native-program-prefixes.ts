@@ -1,5 +1,7 @@
 /** Immutable build-only catalogue additions. Signatures, cut points and full
  * prefix hashes are pinned; no runtime input selects or supplies these bytes. */
+import { CURRENT_SCHEMATIC_NATIVE_PROGRAM_PREFIXES_V4_A } from "./current-schematic-native-program-prefixes-v4-a.ts";
+import { CURRENT_SCHEMATIC_NATIVE_PROGRAM_PREFIXES_V4_B } from "./current-schematic-native-program-prefixes-v4-b.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_SNAPSHOT as SNAPSHOT, CURRENT_SCHEMATIC_RELEVANCE_PUBLICATION_SNAPSHOT_SAME as SNAPSHOT_SAME } from "./current-schematic-relevance-publication-snapshot-programs.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_ACTIVE_HISTORY_NOVEL as NOVEL } from "./current-schematic-relevance-active-history-programs.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_NOECHO_INTRINSICS as NOECHO_INTRINSICS, CURRENT_SCHEMATIC_RELEVANCE_NOECHO_MAPS_SAME as NOECHO_MAPS } from "./current-schematic-relevance-noecho-programs.ts";
@@ -14,3 +16,5 @@ export const CURRENT_SCHEMATIC_NATIVE_PROGRAM_PREFIXES_V3: readonly Prefix[] = O
   [HOOKS, "function(){", 256, "34ea7a41325ef85c5be0ce502460981f290ab85a2d22bd83ed532ffce720a76e"],
   [SNAPSHOT, "function(native){", 3072, "fd6cd5611bf9e3a80b9ba9d31b90eda5eadeb6f4af624630aa34df29720172df"],
 ]);
+
+export const CURRENT_SCHEMATIC_NATIVE_PROGRAM_PREFIXES_V4: readonly Prefix[] = Object.freeze([...CURRENT_SCHEMATIC_NATIVE_PROGRAM_PREFIXES_V3, ...CURRENT_SCHEMATIC_NATIVE_PROGRAM_PREFIXES_V4_A, ...CURRENT_SCHEMATIC_NATIVE_PROGRAM_PREFIXES_V4_B]);

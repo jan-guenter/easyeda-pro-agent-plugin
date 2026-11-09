@@ -28,6 +28,8 @@ const schema = z.discriminatedUnion("phase", [
 ]);
 export type CurrentFootprintInverseDeleteSendCommand = Readonly<z.infer<typeof schema>>;
 export const CURRENT_FOOTPRINT_INVERSE_DELETE_SEND_REQUESTS = Object.freeze({normal:54,calls:13,properties:33,frames:2,arm:2,remove:2,resume:2,helpers:15,cdpRequests:69,controls:78}as const);
+/** Reject departures from the fixed DEL wire/argument grammar with a closed
+ * error code; successful parsing supplies no native dispatch authority. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("INVERSE_DELETE_SEND_COMMAND"); } }
 /** Validate the closed command grammar and every fixed program, argument and flag. */
 export function validateCurrentFootprintInverseDeleteSendCommand(input: unknown): CurrentFootprintInverseDeleteSendCommand { const command = schema.parse(capture(input)); if (command.method === "Runtime.callFunctionOn") { const row = CURRENT_FOOTPRINT_INVERSE_DELETE_SEND_CALLS[command.role]; need(command.params.functionDeclaration === row.program && command.params.returnByValue === row.byValue && command.params.arguments.length === row.refs + Number(row.value)); for (const [index, value] of command.params.arguments.entries()) { need(index < row.refs ? "objectId" in value : "value" in value); } } else if (command.method === "Debugger.evaluateOnCallFrame") { need(command.params.expression === EXPRESSIONS[command.role]); } return freezeDeep(command); }

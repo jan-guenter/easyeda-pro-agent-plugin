@@ -35,6 +35,11 @@ export function generateSchematicEditNativeSource(seed: string): Readonly<{ help
     [EasyedaDiagnosticOwner]::VerifySchematicProtocolSmokes()
     [EasyedaDiagnosticOwner]::VerifySchematicRelevancePublicationSmoke()
     [EasyedaDiagnosticOwner]::VerifySchematicRelevanceModifyWorkerSmoke()
+    [EasyedaDiagnosticOwner]::VerifySchematicRelevanceModifyContinuationCodecSmoke()
+    [EasyedaDiagnosticOwner]::VerifySchematicRelevanceModifyStructureCodecSmoke()
+    [EasyedaDiagnosticOwner]::VerifySchematicRelevanceModifyCmCodecSmoke()
+    [EasyedaDiagnosticOwner]::VerifySchematicRelevanceModifyCanvasCodecSmoke()
+    [EasyedaDiagnosticOwner]::VerifySchematicRelevanceModifyReturnCodecSmoke()
     [EasyedaDiagnosticOwner]::VerifyRelevanceDrainSmoke()
     if (-not $owner.Terminated()) {throw 'schematic-native-compile-job-not-empty'}
     $owner.ReleaseUnlaunched()
