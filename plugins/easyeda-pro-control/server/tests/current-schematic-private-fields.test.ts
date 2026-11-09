@@ -27,7 +27,8 @@ void test("complete schematic emission changes only the fixed private FIELD toke
   const emitted = expandCurrentSchematicNativeHashVectors(expandCurrentSchematicNativeTypeAliasesV2(currentPcbDiagnosticCSharpReviewSource(generated)));
   const restored = original(emitted);
   context.diagnostic(JSON.stringify({ compilerBytes: Buffer.byteLength(compiler), compilerSha256: hash(compiler), prehashBytes: Buffer.byteLength(emitted), prehashSha256: hash(emitted), sourceSaving: Buffer.byteLength(restored) - Buffer.byteLength(emitted) }));
-  assert.equal(Buffer.byteLength(restored), 2_232_131); assert.equal(hash(restored), "1c6f4f238289faae81a63d47c16316ff0461c28ccb796ac6cea839cd9381b802");
+  // The full payload also pins the independently reviewed shared SQL codec.
+  assert.equal(Buffer.byteLength(restored), 2_233_094); assert.equal(hash(restored), "1a471107f748f30e30a1ff3e77db9add90338a89e5b877dac5676be5435fdd1d");
   assert.equal(Buffer.byteLength(restored) - Buffer.byteLength(emitted), 35_384);
   assert.ok(Buffer.byteLength(emitted) <= 2_228_224 - 30_000); assert.ok(Buffer.byteLength(compiler) <= 2_097_152 - 30_000);
   assert.equal(compact(restored), emitted); assert.equal(FIELDS.length, 155); assert.equal(FIELDS.reduce((sum, row) => sum + row.uses, 0), 1717);
