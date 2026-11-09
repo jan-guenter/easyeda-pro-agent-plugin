@@ -1,4 +1,12 @@
 /* oxlint-disable import/max-dependencies -- The original callback facade binds independently fixed read and partial-continuation cursors to one genuine owner and event lane. */
+import type { CurrentSchematicRelevanceModifyEchoCompleted } from "./current-schematic-relevance-modify-echo-lifecycle.ts";
+import type { CurrentSchematicRelevancePublicationLoopbackHeld } from "./current-schematic-relevance-publication-return-delivery.ts";
+import type { CurrentSchematicRelevanceModifyReturnTimerHeld } from "./current-schematic-relevance-modify-return-delivery.ts";
+import type { CurrentSchematicRelevanceModifyCanvasTicketHeld } from "./current-schematic-relevance-modify-canvas-delivery.ts";
+import type { CurrentSchematicRelevanceModifyCmHeld } from "./current-schematic-relevance-modify-cm-delivery.ts";
+import type { CurrentSchematicRelevanceModifyBatchHeld } from "./current-schematic-relevance-modify-delivery.ts";
+import type { CurrentProjectSaveStructureObserver } from "./current-project-save-structure-observer.ts";
+import type { CurrentSchematicRelevanceModifyStructureOrigin } from "./current-schematic-relevance-modify-structure-origin.ts";
 import type {CurrentSchematicRelevanceModifyWorkerPrepared} from "./current-schematic-relevance-modify-worker-collector.ts";
 import type {CurrentSchematicRelevancePublicationNativePrepared} from "./current-schematic-relevance-publication-native-collector.ts";
 import type {CurrentSchematicRelevancePublicationPostHeld} from "./current-schematic-relevance-publication-body-collector.ts";
@@ -110,17 +118,49 @@ export class CurrentSchematicRelevanceActionCallbackObserver {
     catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}
   }
   public async continueOriginalNormalRecordToUpload():Promise<CurrentSchematicRelevanceNormalRecordReceipt>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{for(let stage=0;stage<8;stage+=1){for(;;){const command=this.#bindings.nextNormalRecordCommand();if(command===null){break;}await this.#bindings.requestNormalRecord(command);this.#current();}const receipt=this.#bindings.requireOriginalNormalRecord();if(receipt.stage==="didRecord"){return receipt;}await this.#bindings.continueOriginalNormalRecord();this.#current();}throw new Error("SCH_RECORD_DID_RECORD_NOT_REACHED");}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
-  /** Complete only the original queued UI callbacks, retain each visitor's
-   * actual fulfilled Promise, then hold the original SDK fulfillment marker.
-   * The wrapper, worker TEXT wave, Modify and Save remain incomplete. */
-  /** Retain the private SDK wait and stop the actual timer at the original publisher entry before any native sender runs. */
+  /** Join the original native post/active worker event and stop before the
+   * source batch body. This issues no TEXT, Nd, whole Modify or Save proof. */
+  public async continueOriginalNativePostToWorkerBatch(): Promise<CurrentSchematicRelevanceModifyBatchHeld> { this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true; try { const result = await this.#bindings.continueOriginalNativePostToWorkerBatch(); this.#current(); return result; } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; } }
+  /** Reprove the retained original batch pause without granting its body,
+   * taking another event reader or adopting a caller-supplied receipt. */
+  /** Consume original UI cache/timer/loopback bodies while the distinct
+   * worker Canvas timer stays held and the private SDK Promise stays pending. */
+  /** Join the original Canvas sender, trusted UI Echo, exact temporary-entry
+   * deletion and both normal returns. SDK/Modify and Save stay independent. */
+  public async continueOriginalCanvasEcho():Promise<CurrentSchematicRelevanceModifyEchoCompleted>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const result=await this.#bindings.continueOriginalCanvasEcho();this.#current();return result;}catch(caughtError){this.#failed=true;this.#bindings.fail();throw caughtError;}finally{this.#busy=false;}}
+  public async continueOriginalPublisherToLoopback(): Promise<CurrentSchematicRelevancePublicationLoopbackHeld> { this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true; try { const result = await this.#bindings.continueOriginalPublisherToLoopback(); this.#current(); return result; } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; } }
+  /** Join original CM and handler returns, the notification cancellation and
+   * TEXT serial completion while keeping the distinct Canvas timer body held. */
+  public async continueOriginalWorkerToCanvasTimer(): Promise<CurrentSchematicRelevanceModifyReturnTimerHeld> { this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true; try { const result = await this.#bindings.continueOriginalWorkerToCanvasTimer(); this.#current(); return result; } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; } }
+  /** Reprove the same original timer pause; receipt data is not a capability. */
+  public requireOriginalModifyCanvasTimerHeld(): CurrentSchematicRelevanceModifyReturnTimerHeld { this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } return this.#bindings.requireOriginalModifyCanvasTimerHeld(); }
+  /** Consume the original onChange and six Canvas boundaries, then retain
+   * the actual pending timer/Promise and CM ticket body without a Save grant. */
+  public async continueOriginalWorkerToCanvasTicket(): Promise<CurrentSchematicRelevanceModifyCanvasTicketHeld> { this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true; try { const result = await this.#bindings.continueOriginalWorkerToCanvasTicket(); this.#current(); return result; } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; } }
+  /** Reprove this same observer's original ticket delivery. A structural
+   * copy or the historical pre-Canvas CM packet cannot authorize its body. */
+  public requireOriginalModifyCanvasTicketHeld(): CurrentSchematicRelevanceModifyCanvasTicketHeld { this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } return this.#bindings.requireOriginalModifyCanvasTicketHeld(); }
+  /** Release the original worker batch and remoteChange once, retain the
+   * exact CM delta, and stop before the source-owned onChange body. */
+  public async continueOriginalWorkerToCm(): Promise<CurrentSchematicRelevanceModifyCmHeld> { this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true; try { const result = await this.#bindings.continueOriginalWorkerToCm(); this.#current(); return result; } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; } }
+  /** Reprove the same original held onChange event without replaying either
+   * consumed worker continuation or accepting a copied descriptive receipt. */
+  public requireOriginalModifyCmHeld(): CurrentSchematicRelevanceModifyCmHeld { this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } return this.#bindings.requireOriginalModifyCmHeld(); }
+  public requireOriginalWorkerBatchHeld(): CurrentSchematicRelevanceModifyBatchHeld { this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } return this.#bindings.requireOriginalWorkerBatchHeld(); }
+  /** Enroll the same original startup observer before the original UI native
+   * post. This capability adds no second reader or startup/Save completion. */
+  public async createOriginalModifyStructureOrigin(observer: CurrentProjectSaveStructureObserver): Promise<CurrentSchematicRelevanceModifyStructureOrigin> { this.#current(); if (this.#busy) { throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY"); } this.#busy = true; try { const result = await this.#bindings.createOriginalModifyStructureOrigin(observer); this.#current(); return result; } catch (error) { this.#failed = true; this.#bindings.fail(); throw error; } finally { this.#busy = false; } }
   /** Capture the same original worker channel/event metadata while the UI native send stays held. */
   public async prepareOriginalModifyWorker():Promise<CurrentSchematicRelevanceModifyWorkerPrepared>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalModifyWorker();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
   /** Qualify the original publisher/channel dependencies without yielding its held body. */
   public async prepareOriginalPublicationNative():Promise<CurrentSchematicRelevancePublicationNativePrepared>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalPublicationNative();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
   /** Run only the qualified original publisher prefix, ending before native BC postMessage. */
   public async continueOriginalPublisherToPost():Promise<CurrentSchematicRelevancePublicationPostHeld>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.continueOriginalPublisherToPost();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
+  /** Retain the private SDK wait and stop the actual timer at the original publisher entry before any native sender runs. */
   public async continueOriginalPublicationTimer():Promise<CurrentSchematicRelevancePublicationPublishHeld>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalPublicationTimer();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
+  /** Join the original queued UI callbacks and each visitor's actual fulfilled
+   * Promise, then hold the original SDK fulfillment marker. Worker TEXT,
+   * whole Modify and Save remain incomplete. */
   public async continueOriginalQueuedNotifications():Promise<CurrentSchematicRelevanceSdkGateRun>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalNotifications();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
   public async continueOriginalStatusCommands():Promise<CurrentSchematicRelevanceNormalCommandUiReturned>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalStatusCommands();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}
   public async continueOriginalFileSaveUi():Promise<CurrentSchematicRelevanceFileSaveUiReturned>{this.#current();if(this.#busy){throw new Error("SCHEMATIC_CALLBACK_OBSERVER_BUSY");}this.#busy=true;try{const data=await this.#bindings.prepareOriginalFileSaveUi();this.#current();return data;}catch(error){this.#failed=true;this.#bindings.fail();throw error;}finally{this.#busy=false;}}

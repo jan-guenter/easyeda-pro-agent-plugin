@@ -1,4 +1,12 @@
 /* oxlint-disable import/max-dependencies -- Typed cursor and command boundaries remain separate while this one original callback capability shares their retained owner custody. */
+import type { CurrentSchematicRelevanceModifyEchoCompleted } from "./current-schematic-relevance-modify-echo-lifecycle.ts";
+import type { CurrentSchematicRelevancePublicationLoopbackHeld } from "./current-schematic-relevance-publication-return-delivery.ts";
+import type { CurrentSchematicRelevanceModifyReturnTimerHeld } from "./current-schematic-relevance-modify-return-delivery.ts";
+import type { CurrentSchematicRelevanceModifyCanvasTicketHeld } from "./current-schematic-relevance-modify-canvas-delivery.ts";
+import type { CurrentSchematicRelevanceModifyCmHeld } from "./current-schematic-relevance-modify-cm-delivery.ts";
+import type { CurrentSchematicRelevanceModifyBatchHeld } from "./current-schematic-relevance-modify-delivery.ts";
+import type { CurrentProjectSaveStructureObserver } from "./current-project-save-structure-observer.ts";
+import type { CurrentSchematicRelevanceModifyStructureOrigin } from "./current-schematic-relevance-modify-structure-origin.ts";
 import type {CurrentSchematicRelevanceModifyWorkerPrepared} from "./current-schematic-relevance-modify-worker-collector.ts";
 import type {CurrentSchematicRelevancePublicationNativePrepared} from "./current-schematic-relevance-publication-native-collector.ts";
 import type {CurrentSchematicRelevancePublicationPostHeld} from "./current-schematic-relevance-publication-body-collector.ts";
@@ -89,6 +97,17 @@ export interface CurrentSchematicRelevanceActionCallbackBindings {
   readonly requestNormalRecord:(command:CurrentSchematicRelevanceNormalRecordCommand)=>Promise<unknown>;
   readonly requireOriginalNormalRecord:()=>CurrentSchematicRelevanceNormalRecordReceipt;
   readonly continueOriginalNormalRecord:()=>Promise<void>;
+  readonly continueOriginalNativePostToWorkerBatch: () => Promise<CurrentSchematicRelevanceModifyBatchHeld>;
+  readonly continueOriginalCanvasEcho:()=>Promise<CurrentSchematicRelevanceModifyEchoCompleted>;
+  readonly continueOriginalPublisherToLoopback: () => Promise<CurrentSchematicRelevancePublicationLoopbackHeld>;
+  readonly continueOriginalWorkerToCanvasTimer: () => Promise<CurrentSchematicRelevanceModifyReturnTimerHeld>;
+  readonly requireOriginalModifyCanvasTimerHeld: () => CurrentSchematicRelevanceModifyReturnTimerHeld;
+  readonly continueOriginalWorkerToCanvasTicket: () => Promise<CurrentSchematicRelevanceModifyCanvasTicketHeld>;
+  readonly requireOriginalModifyCanvasTicketHeld: () => CurrentSchematicRelevanceModifyCanvasTicketHeld;
+  readonly continueOriginalWorkerToCm: () => Promise<CurrentSchematicRelevanceModifyCmHeld>;
+  readonly requireOriginalModifyCmHeld: () => CurrentSchematicRelevanceModifyCmHeld;
+  readonly requireOriginalWorkerBatchHeld: () => CurrentSchematicRelevanceModifyBatchHeld;
+  readonly createOriginalModifyStructureOrigin: (observer: CurrentProjectSaveStructureObserver) => Promise<CurrentSchematicRelevanceModifyStructureOrigin>;
   readonly prepareOriginalModifyWorker:()=>Promise<CurrentSchematicRelevanceModifyWorkerPrepared>;
   readonly prepareOriginalPublicationNative:()=>Promise<CurrentSchematicRelevancePublicationNativePrepared>;
   readonly continueOriginalPublisherToPost:()=>Promise<CurrentSchematicRelevancePublicationPostHeld>;

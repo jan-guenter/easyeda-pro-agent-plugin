@@ -8,6 +8,13 @@ import{CURRENT_FOOTPRINT_INVERSE_DELETE_PREFIX_REQUESTS as DELETE_PREFIX}from"./
 import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_PROGRESS_REQUESTS as REFERENCE_PROGRESS}from"./current-footprint-inverse-reference-progress-protocol.ts";
 import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_RESULT_REQUESTS as REFERENCE_RESULT}from"./current-footprint-inverse-reference-result-protocol.ts";
 import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_SEND_REQUESTS as REFERENCE_SEND}from"./current-footprint-inverse-reference-send-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_MANAGER_REQUESTS as NATIVE_GET_TASK_MANAGER } from "./current-footprint-inverse-native-get-task-manager-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_CALLBACK_REQUESTS as NATIVE_GET_TASK_CALLBACK } from "./current-footprint-inverse-native-get-task-callback-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_DEPENDENCIES_REQUESTS as NATIVE_GET_TASK_DEPENDENCIES } from "./current-footprint-inverse-native-get-task-dependencies-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_INTRINSICS_REQUESTS as NATIVE_GET_TASK_INTRINSICS } from "./current-footprint-inverse-native-get-task-intrinsics-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_SENDER_REQUESTS as NATIVE_GET_TASK } from "./current-footprint-inverse-native-get-task-sender-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_LOOKUP_REQUESTS as NATIVE_GET_LOOKUP } from "./current-footprint-inverse-native-get-lookup-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_WORKER_REQUESTS as NATIVE_GET_WORKER } from "./current-footprint-inverse-native-get-worker-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_REFERENCE_WORKER_MAXIMUM as REFERENCE_WORKER } from "./current-footprint-inverse-reference-worker-protocol.ts";
 import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_REQUESTS as REFERENCE_CALLBACK}from"./current-footprint-inverse-reference-callback-protocol.ts";
 import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_DISPATCH_REQUESTS as REFERENCE_DISPATCH}from"./current-footprint-inverse-reference-dispatch-protocol.ts";
@@ -26,6 +33,9 @@ import { CURRENT_FOOTPRINT_INVERSE_GET_WORKER_REQUESTS as GET_WORKER } from "./c
 import { CURRENT_FOOTPRINT_INVERSE_LOOKUP_PREENTRY_REQUESTS as LOOKUP_PREENTRY } from "./current-footprint-inverse-lookup-preentry-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELIVERY_REQUESTS as NATIVE_DELIVERY } from "./current-footprint-inverse-native-delivery-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_CHANNEL_REQUESTS as NATIVE_CHANNEL } from "./current-footprint-inverse-native-channel-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SENDER_READ_REQUESTS as NATIVE_DELETE_SENDER } from "./current-footprint-inverse-native-delete-sender-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_REGISTRATION_REQUESTS as NATIVE_DELETE_REGISTRATION } from "./current-footprint-inverse-native-delete-registration-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_BOOTSTRAP_REQUESTS as NATIVE_DELETE_BOOTSTRAP } from "./current-footprint-inverse-native-delete-bootstrap-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_UI_OWN_DATA_REQUESTS as UI_OWN_DATA } from "./current-footprint-inverse-ui-own-data-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_OWN_DATA_REQUESTS as OWN_DATA } from "./current-footprint-inverse-own-data-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_DELETE_WORKER_PEER_REQUESTS as WORKER_PEER } from "./current-footprint-inverse-delete-worker-peer-protocol.ts";
@@ -67,7 +77,21 @@ const mainCleanup = MAIN.cleanupRequests + INITIAL_HISTORY.repetitions * INITIAL
 const discovery = 16, emptyGuard = 9 + 1, parent = 3 + 1, projectOpening = 9 + 1, registration = 2;
 const generic = discovery + 2 * 8 + 3 + 4;
 const sourceHeldPrefix = discovery + emptyGuard + registration + parent + WORKER.totalUntilProjectHeld + projectOpening;
-const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests + INITIAL_CACHE.cdpRequests + INITIAL_SYNC.cdpRequests + MODEL.cdpRequests + LIBRARY.total + DELETE_BINDING.cdpRequests + DELETE_ENCODER.cdpRequests + PUBLIC_API.cdpRequests + CLOCK_WORKER.cdpRequests + PUBLIC_SERVICE.cdpRequests + DELETE_ENTRY.cdpRequests + PUBLIC_CALL.cdpRequests + DELETE_RPC.cdpRequests + DELETE_JOB.cdpRequests + WORKER_PEER.cdpRequests + PUBLIC_PREFERENCES.cdpRequests + OWN_DATA.cdpRequests + NATIVE_CHANNEL.cdpRequests + UI_OWN_DATA.cdpRequests + LOOKUP_PREENTRY.cdpRequests + NATIVE_DELIVERY.cdpRequests + GET_INTRINSICS.cdpRequests + GET_WORKER.cdpRequests + GET_RPC_ENTRY.cdpRequests + GET_FORWARDING.cdpRequests + GET_SEND.cdpRequests + GET_CALLBACK.cdpRequests + GET_MANAGER.cdpRequests + GET_NATIVE.cdpRequests + GET_COMPLETION.cdpRequests + GET_RESULT.cdpRequests + REFERENCE_ENTRY.cdpRequests + REFERENCE_UI.cdpRequests + REFERENCE_DISPATCH.cdpRequests + REFERENCE_CALLBACK.cdpRequests + REFERENCE_WORKER.cdpRequests + 3 * REFERENCE_SEND.cdpRequests + REFERENCE_PROGRESS.cdpRequests + REFERENCE_RESULT.cdpRequests + DELETE_PREFIX.cdpRequests + DELETE_COLLATERAL.cdpRequests + DELETE_SEND.cdpRequests+DELETE_CALLBACK.cdpRequests+DELETE_MANAGER.cdpRequests;
+// Public held-SDK preparation requires the original public Call. The fresh
+// Native bootstrap excludes it in both Core and the native public bind guard.
+// Public Call/preferences require the actual public Call; native intent excludes
+// Both before bind. The public callback also requires its original public
+// Call. Their budgets join this complete exclusive group, including the
+// Native task prefix which can resume only its own original pending Call. Passive
+// API/service readers remain common outside it. Native task dependencies reuse
+// The original GET readiness and cannot follow a consumed tw attempt. The
+// Public native-send budget joins this same exclusive group; the fresh native
+// Wrapper/body continuation cannot enroll that public callback/send origin.
+const publicQualificationRequests = GET_SEND.cdpRequests + GET_CALLBACK.cdpRequests + PUBLIC_CALL.cdpRequests + PUBLIC_PREFERENCES.cdpRequests + UI_OWN_DATA.cdpRequests + LOOKUP_PREENTRY.cdpRequests + GET_RPC_ENTRY.cdpRequests + GET_FORWARDING.cdpRequests + GET_MANAGER.cdpRequests;
+const nativeQualificationRequests = NATIVE_DELETE_BOOTSTRAP.cdpRequests + NATIVE_DELETE_SENDER.cdpRequests + NATIVE_DELETE_REGISTRATION.cdpRequests + Math.max(NATIVE_GET_LOOKUP.cdpRequests, NATIVE_GET_TASK.cdpRequests + NATIVE_GET_TASK_DEPENDENCIES.cdpRequests + NATIVE_GET_TASK_CALLBACK.cdpRequests + NATIVE_GET_TASK_MANAGER.cdpRequests);
+const publicQualificationControls = GET_SEND.controls + GET_CALLBACK.controls + PUBLIC_CALL.controls + PUBLIC_PREFERENCES.controls + UI_OWN_DATA.controls + LOOKUP_PREENTRY.controls + GET_RPC_ENTRY.controls + GET_FORWARDING.controls + GET_MANAGER.controls;
+const nativeQualificationControls = NATIVE_DELETE_BOOTSTRAP.controls + NATIVE_DELETE_SENDER.controls + NATIVE_DELETE_REGISTRATION.controls + Math.max(NATIVE_GET_LOOKUP.controls, NATIVE_GET_TASK.controls + NATIVE_GET_TASK_DEPENDENCIES.controls + NATIVE_GET_TASK_CALLBACK.controls + NATIVE_GET_TASK_MANAGER.controls);
+const renderer = sourceHeldPrefix + CONSTRUCTION.cdpRequests + CACHE.total + PRODUCER.cdpRequests + COLD.total + 1 + STEP.maximum + STARTUP.cdpRequests + CONDITIONS.reads + TIMER.direct + QUEUE.cdpRequests + INITIAL_CACHE.cdpRequests + INITIAL_SYNC.cdpRequests + MODEL.cdpRequests + LIBRARY.total + DELETE_BINDING.cdpRequests + DELETE_ENCODER.cdpRequests + PUBLIC_API.cdpRequests + CLOCK_WORKER.cdpRequests + PUBLIC_SERVICE.cdpRequests + DELETE_ENTRY.cdpRequests + DELETE_RPC.cdpRequests + DELETE_JOB.cdpRequests + WORKER_PEER.cdpRequests + OWN_DATA.cdpRequests + NATIVE_CHANNEL.cdpRequests + Math.max(publicQualificationRequests, nativeQualificationRequests) + NATIVE_DELIVERY.cdpRequests + Math.max(GET_INTRINSICS.cdpRequests, NATIVE_GET_TASK_INTRINSICS.cdpRequests) + Math.max(GET_WORKER.cdpRequests, NATIVE_GET_WORKER.cdpRequests) + GET_NATIVE.cdpRequests + GET_COMPLETION.cdpRequests + GET_RESULT.cdpRequests + REFERENCE_ENTRY.cdpRequests + REFERENCE_UI.cdpRequests + REFERENCE_DISPATCH.cdpRequests + REFERENCE_CALLBACK.cdpRequests + REFERENCE_WORKER.cdpRequests + 3 * REFERENCE_SEND.cdpRequests + REFERENCE_PROGRESS.cdpRequests + REFERENCE_RESULT.cdpRequests + DELETE_PREFIX.cdpRequests + DELETE_COLLATERAL.cdpRequests + DELETE_SEND.cdpRequests+DELETE_CALLBACK.cdpRequests+DELETE_MANAGER.cdpRequests;
 // One finite renderer poll lane, paired with the existing original-main poll
 // Envelope. A consumed failure does not replenish this reservation.
 const rendererPolls = MAIN.totalPolls;
@@ -87,8 +111,18 @@ export const CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS = Object.freeze({
   "footprint-inverse-model-step": MODEL.controls, "footprint-inverse-initial-sync": INITIAL_SYNC.controls, "footprint-inverse-initial-cache": INITIAL_CACHE.controls, "footprint-inverse-startup-queue": QUEUE.controls, "footprint-inverse-condition-source":CONDITIONS.controls, "footprint-inverse-startup-callback":STARTUP.controls, "footprint-inverse-cold-step":STEP.maximum, "footprint-inverse-startup":1, "footprint-inverse-cold": COLD.total + 2 + COLD.pauses, "footprint-inverse-producer-arm": PRODUCER.cdpRequests, "footprint-inverse-actors": 3, "footprint-inverse-parent": 1, "footprint-inverse-worker-bind": 1,
   "footprint-inverse-main-history": INITIAL_HISTORY.repetitions * INITIAL_HISTORY.total,
   "footprint-inverse-timer": TIMER.directControls, "footprint-inverse-library-refresh":LIBRARY.controls,"footprint-inverse-delete-bindings":DELETE_BINDING.controls,"footprint-inverse-delete-encoder":DELETE_ENCODER.controls,"footprint-inverse-public-api":PUBLIC_API.controls,"footprint-inverse-clock-worker":CLOCK_WORKER.controls,"footprint-inverse-delete-entry":DELETE_ENTRY.controls,"footprint-inverse-public-service":PUBLIC_SERVICE.controls,"footprint-inverse-public-call":PUBLIC_CALL.controls,"footprint-inverse-public-preferences":PUBLIC_PREFERENCES.controls,"footprint-inverse-delete-rpc":DELETE_RPC.controls,"footprint-inverse-delete-job":DELETE_JOB.controls,"footprint-inverse-delete-worker-peer":WORKER_PEER.controls,"footprint-inverse-own-data":OWN_DATA.controls,"footprint-inverse-native-channel":NATIVE_CHANNEL.controls,"footprint-inverse-ui-own-data":UI_OWN_DATA.controls,"footprint-inverse-lookup-preentry":LOOKUP_PREENTRY.controls,"footprint-inverse-native-delivery":NATIVE_DELIVERY.controls,
+  "footprint-inverse-native-delete-bootstrap": NATIVE_DELETE_BOOTSTRAP.controls,
+  "footprint-inverse-native-delete-sender": NATIVE_DELETE_SENDER.controls,
+  "footprint-inverse-native-delete-registration": NATIVE_DELETE_REGISTRATION.controls,
   "footprint-inverse-get-intrinsics": GET_INTRINSICS.controls,
   "footprint-inverse-get-worker": GET_WORKER.controls,
+  "footprint-inverse-native-get-worker": NATIVE_GET_WORKER.controls,
+  "footprint-inverse-native-get-lookup": NATIVE_GET_LOOKUP.controls,
+  "footprint-inverse-native-get-task-sender": NATIVE_GET_TASK.controls,
+  "footprint-inverse-native-get-task-intrinsics": NATIVE_GET_TASK_INTRINSICS.controls,
+  "footprint-inverse-native-get-task-dependencies": NATIVE_GET_TASK_DEPENDENCIES.controls,
+  "footprint-inverse-native-get-task-manager": NATIVE_GET_TASK_MANAGER.controls,
+  "footprint-inverse-native-get-task-callback": NATIVE_GET_TASK_CALLBACK.controls,
   "footprint-inverse-get-rpc-entry": GET_RPC_ENTRY.controls,
   "footprint-inverse-get-forwarding": GET_FORWARDING.controls,
   "footprint-inverse-get-manager": GET_MANAGER.controls,
@@ -107,13 +141,17 @@ export const CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS = Object.freeze({
   "footprint-inverse-get-completion": GET_COMPLETION.controls,
   "footprint-inverse-worker": WORKER.totalUntilProjectHeld, "footprint-inverse-construction": CONSTRUCTION.controls, "footprint-inverse-source-bind": 1, "footprint-inverse-project": 1,
 });
-const controls = Object.values(CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS).reduce((sum, limit) => sum + limit, 0);
+// Both qualification groups retain the original public/fresh exclusion.
+// Their per-action bounds remain separate; reserve the complete larger group.
+// The native GET preparation excludes the public Call/lookup lane in Core,
+// Native bind and the original worker queue. Reserve the complete branch max.
+const controls = Object.values(CURRENT_FOOTPRINT_INVERSE_ACTION_LIMITS).reduce((sum, limit) => sum + limit, 0) - Math.min(publicQualificationControls, nativeQualificationControls) - Math.min(GET_WORKER.controls, NATIVE_GET_WORKER.controls) - Math.min(NATIVE_GET_LOOKUP.controls, NATIVE_GET_TASK.controls + NATIVE_GET_TASK_DEPENDENCIES.controls + NATIVE_GET_TASK_CALLBACK.controls + NATIVE_GET_TASK_MANAGER.controls) - Math.min(GET_INTRINSICS.controls, NATIVE_GET_TASK_INTRINSICS.controls);
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE = Object.freeze({
   purpose: CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE, nativeSwitch: "-FootprintInverse209",
   main: Object.freeze({ constructionNormal: MAIN.normalRequests, fenceNormal: FENCE.normal,
     registrationNormal: REGISTRATION, initialHistory: INITIAL_HISTORY, normal: mainNormal, cleanup: mainCleanup, total: mainNormal + mainCleanup,
     reproofs: mainReproofs, polls: MAIN.totalPolls }),
-  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldPrefix, construction: CONSTRUCTION.cdpRequests, producerArm: PRODUCER, libraryRefresh:LIBRARY,deleteBindings:DELETE_BINDING,deleteEncoder:DELETE_ENCODER,publicApi:PUBLIC_API,clockWorker:CLOCK_WORKER,deleteEntry:DELETE_ENTRY,publicService:PUBLIC_SERVICE,publicCall:PUBLIC_CALL,publicPreferences:PUBLIC_PREFERENCES,deleteRpc:DELETE_RPC,deleteJob:DELETE_JOB,workerPeer:WORKER_PEER,ownData:OWN_DATA,nativeChannel:NATIVE_CHANNEL,nativeDelivery:NATIVE_DELIVERY,uiOwnData:UI_OWN_DATA,lookupPreentry:LOOKUP_PREENTRY,getIntrinsics:GET_INTRINSICS,getWorker:GET_WORKER,getRpcEntry:GET_RPC_ENTRY,getForwarding:GET_FORWARDING,getSend:GET_SEND,getCallback:GET_CALLBACK,getManager:GET_MANAGER,getNative:GET_NATIVE,getCompletion:GET_COMPLETION,getResult:GET_RESULT,deletePrefix:DELETE_PREFIX,deleteCollateral:DELETE_COLLATERAL,deleteManager:DELETE_MANAGER,deleteCallback:DELETE_CALLBACK,deleteSend:DELETE_SEND,referenceProgress:REFERENCE_PROGRESS,referenceResult:REFERENCE_RESULT,referenceSend:REFERENCE_SEND,referenceWorker:REFERENCE_WORKER,referenceEntry:REFERENCE_ENTRY,referenceUi:REFERENCE_UI,referenceDispatch:REFERENCE_DISPATCH, cold: COLD, cache: CACHE, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
+  renderer: Object.freeze({ discovery, emptyGuard, generic, registration, parent, projectOpening, sourceHeldPrefix, construction: CONSTRUCTION.cdpRequests, producerArm: PRODUCER, libraryRefresh:LIBRARY,deleteBindings:DELETE_BINDING,deleteEncoder:DELETE_ENCODER,publicApi:PUBLIC_API,clockWorker:CLOCK_WORKER,deleteEntry:DELETE_ENTRY,publicService:PUBLIC_SERVICE,publicCall:PUBLIC_CALL,publicPreferences:PUBLIC_PREFERENCES,deleteRpc:DELETE_RPC,deleteJob:DELETE_JOB,workerPeer:WORKER_PEER,ownData:OWN_DATA,nativeChannel:NATIVE_CHANNEL,nativeDelivery:NATIVE_DELIVERY,uiOwnData:UI_OWN_DATA,nativeDeleteBootstrap:NATIVE_DELETE_BOOTSTRAP,nativeDeleteSender:NATIVE_DELETE_SENDER,nativeDeleteRegistration:NATIVE_DELETE_REGISTRATION,lookupPreentry:LOOKUP_PREENTRY,getIntrinsics:GET_INTRINSICS,getWorker:GET_WORKER,getRpcEntry:GET_RPC_ENTRY,getForwarding:GET_FORWARDING,getSend:GET_SEND,getCallback:GET_CALLBACK,getManager:GET_MANAGER,getNative:GET_NATIVE,getCompletion:GET_COMPLETION,getResult:GET_RESULT,deletePrefix:DELETE_PREFIX,deleteCollateral:DELETE_COLLATERAL,deleteManager:DELETE_MANAGER,deleteCallback:DELETE_CALLBACK,deleteSend:DELETE_SEND,referenceProgress:REFERENCE_PROGRESS,referenceResult:REFERENCE_RESULT,referenceSend:REFERENCE_SEND,referenceWorker:REFERENCE_WORKER,referenceEntry:REFERENCE_ENTRY,referenceUi:REFERENCE_UI,referenceDispatch:REFERENCE_DISPATCH, cold: COLD, cache: CACHE, sourceHeldBootstrap: WORKER.totalUntilProjectHeld, total: renderer, polls: rendererPolls }), controls,
   completeInverseReserved: false, deleteInvocationAuthorized: false, executionAuthorized: false, saveAuthorized: false,
 });
 export const CURRENT_FOOTPRINT_INVERSE_DISCOVERY_METHODS = Object.freeze(["Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree",

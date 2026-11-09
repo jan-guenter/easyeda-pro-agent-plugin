@@ -1,0 +1,17 @@
+/** Fresh object-state guards and actual held-frame lexicals. Old GET and
+ * collateral guards remain comparison data and are never called here. */
+import { CURRENT_NATIVE_OWN_DATA_CHECK } from "./current-native-own-data-intrinsics.ts";
+import { CURRENT_FOOTPRINT_INVERSE_DELETE_COLLATERAL_PROGRAMS as OLD } from "./current-footprint-inverse-delete-collateral-programs.ts";
+import { CURRENT_FOOTPRINT_INVERSE_DELETE_COLLATERAL_RUN_PROGRAMS as RUN } from "./current-footprint-inverse-delete-collateral-run-programs.ts";
+import { CURRENT_FOOTPRINT_INVERSE_GET_RESULT_PROGRAMS as ROW } from "./current-footprint-inverse-get-result-programs.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
+
+const common = `"use strict";${CURRENT_NATIVE_OWN_DATA_CHECK}const guard=f=>{if(typeof f!=="function"||f()!==true)bad();};const data=(o,k)=>{const d=get(o,k);if(!d||!has(d,"value")||!d.writable||!d.enumerable||!d.configurable)bad();return d.value;};`;
+const module = `function(old,rowGraph,preferences){${common}dense(old,4);dense(preferences,4);const frame=value(old,"0"),row=value(old,"1"),project=value(old,"2");dense(frame,12);const retained=[null,null,null,null,null,null,null,null,null,null,null,null];for(let j=0;j<12;j++)retained[j]=value(frame,""+j);const host=value(frame,"8"),bar=value(frame,"5"),enumObject=value(frame,"10"),removal=value(frame,"9"),rowReprove=(${ROW.reprove});const check=()=>{invoke(rowReprove,packet,[rowGraph]);dense(old,4);dense(frame,12);dense(preferences,4);if(value(old,"0")!==frame||value(old,"1")!==row||value(old,"2")!==project||value(root,"gVars")!==host||value(host,"currentProject")!==project||value(frame,"6")!==bar||value(preferences,"2")!==removal||value(frame,"11")!=="@"||proto(row)!==objectProto||count(row)!==16||data(row,"docType")!==4||data(row,"path")!==value(project,"projectId")||proto(enumObject)!==objectProto||value(enumObject,"FOOTPRINT")!==4)bad();for(let j=0;j<12;j++)if(value(frame,""+j)!==value(retained,""+j))bad();for(const key of["attributes","cbb_project"])if(get(row,key)!==undefined||get(objectProto,key)!==undefined)bad();return true;};check();return[frame,row,project,check];}`;
+const ja = `function(frame,module,proof){${common}dense(frame,7);dense(module,4);const original=value(module,"0");dense(original,12);if(value(frame,"4")!==value(original,"2")||value(frame,"5")!==value(original,"1")||value(frame,"6")!==value(original,"10"))bad();return invoke((${RUN.ja}),packet,[[value(frame,"0"),value(frame,"1"),value(frame,"2"),value(frame,"3")],module,proof]);}`;
+const p4 = `function(frame,module,ja){${common}dense(frame,7);dense(module,4);const original=value(module,"0");dense(original,12);if(value(frame,"6")!==value(original,"8"))bad();return invoke((${RUN.p4}),packet,[[value(frame,"0"),value(frame,"1"),value(frame,"2"),value(frame,"3"),value(frame,"4"),value(frame,"5")],module,ja]);}`;
+
+/** Inspector scope objects are mirrors. These expressions instead capture the
+ * actual lexical bindings at the original source entry, before its body runs. */
+export const CURRENT_FOOTPRINT_INVERSE_DELETE_UI_RUN_EXPRESSIONS = Object.freeze({ ja: "[this,t,e,arguments.length,dn,P4,Me]", p4: "[this,t,e,i,o,arguments.length,w]", yy: "[this,t,arguments.length,me,G9o]" } as const);
+export const CURRENT_FOOTPRINT_INVERSE_DELETE_UI_RUN_PROGRAMS = freezeDeep({ module, proof: OLD.proof, reprove: OLD.reprove, ja, p4, yy: RUN.yy } as const);

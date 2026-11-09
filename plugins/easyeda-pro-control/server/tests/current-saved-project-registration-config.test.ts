@@ -45,7 +45,9 @@ void test("native Date instances and metadata objects cannot masquerade as indep
 });
 
 void test("the finite registration native vocabulary rejects substituted source, conditions, locations and connection selectors", () => {
-  const cases = currentSavedProjectRegistrationConfigNativeCases(); assert.equal(cases.length, 10);
+  const cases = currentSavedProjectRegistrationConfigNativeCases(); assert.equal(cases.length, 16);
+  const historical = cases.slice(0, 10); const historicalJson = JSON.stringify(historical);
+  assert.equal(sha256Text(historicalJson), "3724ba9e3d16e0033b97bf5b5696ac66866cbbe166b8476eb7be0ddef49379e2");
   for (const command of cases) {
     validateCurrentSelectedFileMainSqlFenceCommand(command); const wire = currentSelectedFileMainSqlFenceWire(command, 73); assert.equal(wire.command.id, 73);
     assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...command, params: { ...command.params, sessionId: "foreign" } }));
@@ -53,6 +55,9 @@ void test("the finite registration native vocabulary rejects substituted source,
     if (command.method === "Debugger.setBreakpoint") {
       assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...command, params: { ...command.params, condition: "false" } }));
       assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...command, params: { ...command.params, location: { ...command.params.location, columnNumber: command.params.location.columnNumber + 1 } } }));
+    }
+    if (command.phase === "sql-fence-registration-raw-frame") {
+      assert.throws(() => validateCurrentSelectedFileMainSqlFenceCommand({ ...command, params: { ...command.params, expression: "[this,F5]" } }));
     }
   }
 });
