@@ -1,8 +1,8 @@
-/** Cumulative Modify array descriptors need257 rows for256 objects and length.
+/** Cumulative Modify array descriptors need 257 rows for 256 objects and length.
  * Only their array/node caps differ from the ordinary clock-reply capture. */
 import { types } from "node:util";
 
-const LIMITS = Object.freeze({ nodes: 8192, depth: 12, array: 257, fields: 32, key: 128, string: 16_384, bytes: 131_072 });
+const LIMITS = Object.freeze({ nodes: 8192, depth: 12, array: 257, fields: 32, key: 128, stringUnits: 16_384, bytes: 131_072 });
 function fail(): never { throw new Error("SCHEMATIC_RELEVANCE_MODIFY_STRUCTURE_ROSTER_CAPTURE"); }
 /** Copy complete own data before schema traversal. No getters, proxies,
  * aliases, inherited serializers or caller-selected budgets are accepted. */
@@ -11,7 +11,7 @@ export function captureCurrentSchematicRelevanceModifyStructureRosterReply(input
   const copy = (value: unknown, depth: number): unknown => {
     nodes += 1; if (nodes > LIMITS.nodes || depth > LIMITS.depth) { return fail(); }
     if (value === null || typeof value === "boolean") { return value; }
-    if (typeof value === "string") { if (value.length > LIMITS.string || !value.isWellFormed()) { return fail(); } return value; }
+    if (typeof value === "string") { if (value.length > LIMITS.stringUnits || !value.isWellFormed()) { return fail(); } return value; }
     if (typeof value === "number") { if (!Number.isFinite(value) || Object.is(value, -0)) { return fail(); } return value; }
     if (typeof value !== "object" || types.isProxy(value) || seen.has(value)) { return fail(); } seen.add(value);
     const own = (key: string): unknown => {

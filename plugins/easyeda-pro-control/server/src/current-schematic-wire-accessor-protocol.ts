@@ -63,11 +63,15 @@ export function currentSchematicWireAccessorTemplate(input: unknown): Readonly<{
   else if (command.phase === "wire-accessor-source") { params["scriptId"] = field("scriptId", command.params.scriptId); }
   return freezeDeep({ phase: command.phase, method: command.method, fields, values, template: JSON.stringify({ method: command.method, params }) });
 }
+/** Pair a validated fixed accessor command with a positive native request ID.
+ * Only template-declared handle values enter the external request. */
 export function currentSchematicWireAccessorWire(input: unknown, requestId: number): Readonly<{ command: CurrentSchematicWireAccessorCommand; request: Readonly<Record<string, string | number>> }> {
   if (!Number.isSafeInteger(requestId) || requestId < 1 || requestId > 2_147_483_647) { throw new Error("SCHEMATIC_WIRE_ACCESSOR_ID"); }
   const command = validateCurrentSchematicWireAccessorCommand(input), fixed = currentSchematicWireAccessorTemplate(command);
   return freezeDeep({ command, request: { action: "schematic-wire-edit-accessor", requestId, phase: fixed.phase, method: fixed.method, ...fixed.values } });
 }
+/** Refuse substitution of the original holder and checkpoint JSON in either
+ * function-call phase; property/source/release commands carry no such arguments. */
 export function requireCurrentSchematicWireAccessorBoundArguments(command: CurrentSchematicWireAccessorCommand, holder: string, target: string, operation: string): void {
   if (command.phase === "wire-accessor-callees" && (command.params.objectId !== holder || canonicalJson(command.params.arguments) !== canonicalJson([{ value: target }, { value: operation }])) ||
     command.phase === "wire-accessor-same" && canonicalJson(command.params.arguments) !== canonicalJson([{ objectId: holder }, { value: target }, { value: operation }])) { throw new Error("SCHEMATIC_WIRE_ACCESSOR_ORIGINAL_ARGUMENTS"); }

@@ -27,6 +27,8 @@ void test("native seven-record admission retains independent state while sharing
   assert.match(source, /schematicStructureTransportBodyReserved=true/u);
   assert.match(source, /schematicStructureTransportPublished=true/u);
   assert.match(source, /EasyedaPcbViaMainStructureProtocol\.Encode/u);
+  assert.match(source, /string relevanceStructureExpected;bool relevanceStructureBodyEnrollmentAttempted/u);
+  assert.doesNotMatch(source, /\brelevanceStructureNative(?:Project|Branch)\b/u);
   assert.doesNotMatch(source, /\b(?:via|Via)[A-Z]\w*|\bpcbViaWrite209\b|public static class EasyedaPcbViaMainStructureProtocol/u);
 });
 void test("copied origins and serialized reservation/publication profiles never create a continuation", () => {

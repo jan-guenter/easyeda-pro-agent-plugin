@@ -5,11 +5,13 @@ import { test } from "node:test";
 import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
 import { currentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
 import { applyNativeFixedProtocolProjection } from "../src/native-fixed-protocol-projection.ts";
+import { expandCurrentSchematicNativeTypeAliasesV2 } from "../src/current-schematic-native-type-aliases-v2.ts";
+import { expandCurrentSchematicNativeHashVectors } from "../src/current-schematic-native-hash-vector-storage.ts";
 
 void test("schematic layout retains byte-exact shared Via codecs without unreachable Via owners or dispatch", async () => {
  const seed=await readFile(new URL("../../scripts/native-baseline/shared-owner.ps1.txt",import.meta.url),"utf8");
  const diagnostic=generateWorkerStartupProtocol(seed,"diagnostic"),schematic=generateWorkerStartupProtocol(seed,"schematic");assert.equal(generateWorkerStartupProtocol(schematic,"schematic"),schematic);
- const closed=currentPcbDiagnosticCSharpReviewSource(schematic),full=currentPcbDiagnosticCSharpReviewSource(diagnostic),owner="public sealed partial class EasyedaDiagnosticOwner {";
+ const closed=expandCurrentSchematicNativeHashVectors(expandCurrentSchematicNativeTypeAliasesV2(currentPcbDiagnosticCSharpReviewSource(schematic))),full=currentPcbDiagnosticCSharpReviewSource(diagnostic),owner="public sealed partial class EasyedaDiagnosticOwner {";
  for(const name of ["LOCAL UPLOAD","UPLOAD REQUEST","TAIL OBSERVATION","POST HISTORY SYNC","SAVE DRAIN","OBSERVED SOURCES"]){
   const end=`// END ORIGINAL VIA ${name}`,marker=`// BEGIN ORIGINAL VIA ${name}\n`;const a=full.indexOf(marker),b=closed.indexOf(marker);assert.ok(a!==-1&&b!==-1,name);
   const after=closed.slice(b+marker.length,closed.indexOf(owner,b)),before=full.slice(a+marker.length,full.indexOf(owner,a));assert.equal(after,before,`${name} shared fixed classes retain all program/table bytes and hashes`);

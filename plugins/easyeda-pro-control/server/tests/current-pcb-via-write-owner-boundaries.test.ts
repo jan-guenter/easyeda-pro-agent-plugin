@@ -74,7 +74,12 @@ void test("full API pin refuses small sources, proxies and getters before touchi
   assert.throws(() => { qualifyCurrentPcbViaSdkSource(new Proxy({}, { ownKeys: rejected, getPrototypeOf: rejected })); }); assert.equal(calls, 0);
 });
 void test("early fence vocabulary retains fixed source sites and admits no arbitrary conditions, SQL or caller programs", () => {
-  const cases = currentSelectedFileMainSqlFenceNativeCases(); assert.equal(cases.length, 164);
+  const cases = currentSelectedFileMainSqlFenceNativeCases();
+  // The selected-file startup now closes its original registration separately.
+  assert.deepEqual(cases.filter(command => command.phase.startsWith("sql-fence-startup-registration-")).map(command => command.phase), [
+    "sql-fence-startup-registration-remove", "sql-fence-startup-registration-resume", "sql-fence-startup-registration-complete",
+  ]);
+  assert.equal(cases.length, 164 + 3);
   for (const command of cases) {
     const wire = currentSelectedFileMainSqlFenceWire(command, PROFILE.main.total); assert.equal(wire.request["action"], "main-send");
     for (const field of ["condition", "lineNumber", "functionDeclaration", "sql", "sessionId"]) { assert.equal(Object.hasOwn(wire.request, field), false); }

@@ -181,8 +181,10 @@ const wireReferences = [
   { field: "schematicDisplaySession", uses: 1, contextSha256: "5bc895777241d3c054c3f6a575c8e7586156bbcfde6c85849fbe69288c4ad9fd" },
 ] as const;
 export const CURRENT_SCHEMATIC_WIRE_LEXICAL_PRIVATE_FIELDS = freezeDeep([
-  { field: "schematicWireLexicalNormal", emitted: "sgx157", uses: 5, contextSha256: "bd8b0f23be28cf4fc0157d337c2dbbfe1c7997aa750d1eaecee2e42e3bc84443" },
-  { field: "schematicWireLexicalCleanup", emitted: "sgx158", uses: 5, contextSha256: "b8e9936af773345a22c88322e28b6e571da43950ae7a14749faaf1ce1bef46d2" },
+  { field: "schematicWireLexicalNormal", emitted: "sgx157", uses: 3, contextSha256: "86886070a81dead72fe47eab606f726417606bddbd96eb6270f132dd9850f8b9" },
+  { field: "schematicWireLexicalCleanup", emitted: "sgx158", uses: 3, contextSha256: "3f9f3835238e03bd312d23d6970f09b36220d15640b7bcd25f730235182e2423" },
+  { field: "schematicWireIntentNormal", emitted: "sgx159", uses: 3, contextSha256: "63dbdfe3458325b284ffc474c069bfcaf00b911a2c749a782c58c6264b8f3234" },
+  { field: "schematicWireIntentCleanup", emitted: "sgx160", uses: 3, contextSha256: "4227694901d8deed9723a3feb5b007aa3166d360f7cf1ce16f4edeea77ade52a" },
 ] as const);
 const LEXICAL_FIELDS = CURRENT_SCHEMATIC_WIRE_LEXICAL_PRIVATE_FIELDS;
 const lexicalReferences = [
@@ -243,7 +245,7 @@ function inspectWireRegion(source: string, kind: "ACCESSOR" | "LEXICAL"): Readon
   const prefix = kind === "ACCESSOR" ? "public sealed partial class EasyedaDiagnosticOwner {\nbool schematicWireEdit209;\n" : "public sealed partial class EasyedaDiagnosticOwner {\n";
   const suffix = kind === "ACCESSOR" ? "\nstatic string SchematicWireEditStart {get{return SchematicRelevanceDisplayStart;}}" : "\n}\n// END GENERATED SCHEMATIC WIRE EDIT BIRTH209";
   need(source.slice(from - prefix.length, from) === prefix && source.startsWith(suffix, stop + end.length));
-  const region = source.slice(from, stop + end.length); const hash = kind === "ACCESSOR" ? "0a761220b0bac7550a3a694c33f5af28bf430c8daf850494f78c461096d1980d" : "2aeebf017466f2c31adb13e9f23f762d1c34a3f7232e3ca6eef8a1f330fbbf18";
+  const region = source.slice(from, stop + end.length); const hash = kind === "ACCESSOR" ? "0a761220b0bac7550a3a694c33f5af28bf430c8daf850494f78c461096d1980d" : "a2eece8d907fd93180d71b0a2076cde9b41edcb1be56d786eb2983630a430a57";
   need(createHash("sha256").update(region).digest("hex") === hash);
   const active = tokenize(region).filter(token => token.kind !== "space" && token.kind !== "comment"); const references = kind === "ACCESSOR" ? wireReferences : lexicalReferences;
   for (const row of references) {
@@ -253,7 +255,7 @@ function inspectWireRegion(source: string, kind: "ACCESSOR" | "LEXICAL"): Readon
   return Object.freeze({ from, to: stop + end.length });
 }
 function inspect(source: string): readonly Token[] {
-  need(FIELDS.length === 155 && WIRE_FIELDS.length === 2 && LEXICAL_FIELDS.length === 2 && originalNames.size === 159 && emittedNames.size === 159 && FIELDS.reduce((sum, row) => sum + row.uses, 0) === 1718 && WIRE_FIELDS.reduce((sum, row) => sum + row.uses, 0) === 6 && LEXICAL_FIELDS.reduce((sum, row) => sum + row.uses, 0) === 10);
+  need(FIELDS.length === 155 && WIRE_FIELDS.length === 2 && LEXICAL_FIELDS.length === 4 && originalNames.size === 161 && emittedNames.size === 161 && FIELDS.reduce((sum, row) => sum + row.uses, 0) === 1718 && WIRE_FIELDS.reduce((sum, row) => sum + row.uses, 0) === 6 && LEXICAL_FIELDS.reduce((sum, row) => sum + row.uses, 0) === 12);
   const accessorRegion = inspectWireRegion(source, "ACCESSOR"); const lexicalRegion = inspectWireRegion(source, "LEXICAL"); need(accessorRegion.to < lexicalRegion.from);
   const all = tokenize(source); const active = all.filter(token => token.kind !== "space" && token.kind !== "comment");
   const protocolContexts = new Map<string, string[][]>();

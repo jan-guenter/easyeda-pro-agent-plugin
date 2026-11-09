@@ -10,6 +10,8 @@ function one(source: string, before: string, after: string): string {
   if (source.includes(after)) { if (source.split(after).length !== 2) { throw new Error("RELEVANCE_STRUCTURE_NATIVE_DUPLICATE"); } return source; }
   if (source.split(before).length !== 2) { throw new Error(`RELEVANCE_STRUCTURE_NATIVE_ANCHOR:${before.slice(0, 60)}`); } return source.replace(before, after);
 }
+/** Derive the Relevance sender from fixed Via syntax while replacing owner
+ * state and enrollment gates. Any residual Via state or missing boundary refuses. */
 export function currentSchematicRelevanceDisplayStructureNativeSource(): string {
   const source = currentPcbViaMainStructureNativeSource(); const owner = "public sealed partial class EasyedaDiagnosticOwner {"; const stop = "public static void VerifyPcbViaMainStructureSmoke()";
   if (source.split(owner).length !== 2 || source.split(stop).length !== 2) { throw new Error("RELEVANCE_STRUCTURE_FIXED_SOURCE_BOUNDARY"); }
@@ -25,7 +27,7 @@ export function currentSchematicRelevanceDisplayStructureNativeSource(): string 
   body = body.slice(0, enroll) + String.raw`public void AssertRelevanceStructureMainPrepared(){if(!schematicRelevanceDisplayWrite209||schematicDisplayAbort||relevanceStructureMainArms.Count!=9||relevanceStructureMainStep!=0||relevanceStructureExpected!=null||relevanceStructureBodyEnrollmentAttempted)throw Error("relevance-structure-original-main-prepared");}
 public void EnrollRelevanceStructureBody(string project,string branch,long ticket,string tree){if(!schematicRelevanceDisplayWrite209||schematicDisplayAbort||relevanceStructureBodyEnrollmentAttempted||!schematicDisplayConstructionComplete||!relevanceSaveGenerated||!relevanceSaveBodyEnrolled||!schematicDisplayStages[6]||schematicWorkerStage!=7||!schematicWorkerParentRunning||schematicSavePoints.Count!=6||!schematicRelevanceClockBound||schematicStructureTransportContext==null||!schematicStructureTransportCaptured||schematicStructureTransportPoints.Count!=3||schematicWorkerProjectUuid!=project||schematicDisplayTarget==null||schematicDisplayTarget.IndexOf("\"branchUuid\":\""+branch+"\"",StringComparison.Ordinal)<0||relevanceStructureMainArms.Count!=9||relevanceBeginStep!=0||relevanceHistoryStep!=0)throw Error("relevance-structure-original-body");relevanceStructureBodyEnrollmentAttempted=true;MainPurpose();AssertLive();relevanceStructureExpected=EasyedaPcbViaMainStructureProtocol.Expected(project,branch,ticket,tree);schematicStructureTransportBodyReserved=true;AssertLive();}
 ` + body.slice(clock);
-  body = body.replace("string relevanceStructureNativeProject,relevanceStructureNativeBranch,relevanceStructureExpected;", "string relevanceStructureExpected;");
+  body = one(body, "string relevanceStructureNativeProject=null,relevanceStructureNativeBranch=null,relevanceStructureExpected;", "string relevanceStructureExpected;");
   if (/\b(?:via|Via)[A-Z]\w*|\bpcbViaWrite209\b/u.test(body) || body.includes("SendViaMain") || body.includes("CreatePcbVia")) { throw new Error("RELEVANCE_STRUCTURE_FOREIGN_OWNER_STATE"); }
   return `${begin}\npublic sealed partial class EasyedaDiagnosticOwner {${body}}\n${end}`;
 }

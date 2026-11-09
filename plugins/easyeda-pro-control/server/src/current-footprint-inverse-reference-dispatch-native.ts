@@ -7,6 +7,7 @@ import{CURRENT_FOOTPRINT_INVERSE_REFERENCE_DISPATCH_CALLS as CALLS,CURRENT_FOOTP
 
 const quote=(text:string):string=>`@"${text.replaceAll('"','""')}"`;
 const sha=(bytes:Uint8Array):string=>createHash("sha256").update(bytes).digest("hex");
+/** Partition thirty fixed reference-dispatch cases into exactly two bounded native tables and derive their golden packet digests. */
 export function currentFootprintInverseReferenceDispatchNativeSource():string{
  const cases=currentFootprintInverseReferenceDispatchCases(),rows=[...Object.entries(CALLS).map(([name,row])=>["program",name,"",JSON.stringify(row.program)]),...cases.map(command=>{const row=currentFootprintInverseReferenceDispatchTemplate(command);return[row.key,row.method,row.names.join(","),row.template];})];if(rows.some(row=>row.some(value=>value.includes("\0")||value.includes("\t")))||cases.length!==30){throw new Error("INVERSE_REFERENCE_DISPATCH_TABLE");}
  const groups:string[][][]=[[]];let size=0;for(const row of rows){const bytes=Buffer.byteLength(row.join("\t"))+1;if(bytes>60_000){throw new Error("INVERSE_REFERENCE_DISPATCH_ROW");}if(size+bytes>60_000){groups.push([]);size=0;}groups.at(-1)?.push(row);size+=bytes;}if(groups.length!==2){throw new Error("INVERSE_REFERENCE_DISPATCH_GROUPS");}

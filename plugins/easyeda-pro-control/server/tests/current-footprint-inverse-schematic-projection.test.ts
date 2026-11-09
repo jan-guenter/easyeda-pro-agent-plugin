@@ -4,14 +4,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { generateWorkerStartupProtocol } from "../../scripts/generate-worker-startup-protocol.ts";
-import { expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
+import { currentPcbDiagnosticCSharpReviewSource, expandCurrentPcbDiagnosticCSharpReviewSource } from "../src/current-pcb-diagnostic-csharp-review-storage.ts";
+import { expandCurrentFootprintInverseNativeTypeAliases } from "../src/current-footprint-inverse-native-type-aliases.ts";
 import { projectCurrentFootprintInverseSchematicRuntime } from "../src/current-footprint-inverse-native-schematic-projection.ts";
 
 void test("closed inverse omits schematic runtime and retains only refusing shared entries", async () => {
   const seed = await readFile(new URL("../../scripts/native-baseline/shared-owner.ps1.txt", import.meta.url), "utf8");
   const inverse = generateWorkerStartupProtocol(seed, "inverse");
   assert.equal(generateWorkerStartupProtocol(inverse, "inverse"), inverse);
-  const source = expandCurrentPcbDiagnosticCSharpReviewSource(inverse);
+  const expanded = expandCurrentPcbDiagnosticCSharpReviewSource(inverse);
+  const body = currentPcbDiagnosticCSharpReviewSource(expanded);
+  const source = expanded.replace(body, expandCurrentFootprintInverseNativeTypeAliases(body));
   assert.ok(source.includes("readonly bool schematicDisplayWrite209=false;"));
   for (const [signature, code] of [
     ["public static EasyedaDiagnosticOwner CreateSchematicDisplayWrite209()", "birth"],

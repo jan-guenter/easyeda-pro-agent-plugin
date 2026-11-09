@@ -10,8 +10,8 @@ const blocks = [
 const closed = `// BEGIN CLOSED INVERSE SCHEMATIC ENTRIES
 public sealed partial class EasyedaDiagnosticOwner {
 readonly bool schematicDisplayWrite209=false;
-bool schematicDisplayAbort,schematicProducerModeRequested,schematicStructureBootstrapResumed,schematicWorkerInstrumentRemoved,schematicWorkerSourceRead;
-int schematicWorkerStage;string schematicWorkerSession,schematicWorkerProjectScript;
+bool schematicDisplayAbort=false,schematicProducerModeRequested,schematicStructureBootstrapResumed,schematicWorkerInstrumentRemoved=false,schematicWorkerSourceRead;
+int schematicWorkerStage;string schematicWorkerSession,schematicWorkerProjectScript=null;
 readonly bool[] schematicDisplayStages=new bool[7];
 readonly System.Collections.Generic.HashSet<string> schematicStructurePoints=new System.Collections.Generic.HashSet<string>();
 public static EasyedaDiagnosticOwner CreateSchematicDisplayWrite209(){throw Error("inverse-schematic-birth-closed");}

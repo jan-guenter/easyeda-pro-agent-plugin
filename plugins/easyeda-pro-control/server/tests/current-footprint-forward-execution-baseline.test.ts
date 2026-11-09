@@ -138,6 +138,8 @@ void test("baseline publication reserves each record and detects result-file rep
   await journal.publishIntent(); await assert.rejects(journal.publishIntent(), /PUBLICATION_CONSUMED/u);
   await assert.rejects(journal.publishResult({ ...result, baselineIntentSha256: "b".repeat(64) }), /RESULT_BINDING/u);
   await journal.publishResult(result); await journal.assertCurrent();
+  await assert.rejects(journal.publishFailure(), /PUBLICATION_ORDER/u);
+  await assert.rejects(readFile(sidecar(selected.operationId, "failure")), { code: "ENOENT" });
   await writeFile(sidecar(selected.operationId, "result"), "{}\n"); await assert.rejects(journal.assertCurrent());
   await assert.rejects(journal.publishResult(result), /PUBLICATION_CONSUMED/u);
 });
@@ -158,6 +160,35 @@ void test("baseline keeps the original capture error and a separate failure-publ
   assert.equal(await readFile(sidecar(selected.operationId, "failure"), "utf8"), "unrelated existing evidence\n");
   await f.provider.release(); assert.equal(await f.provider.observeRelease(), "released");
 });
+
+for (const failedResult of [false, true]) {
+  void test(`baseline terminal publication joins the original ${failedResult ? "failed" : "successful"} result attempt`, async () => {
+    const digest = "a".repeat(64), selected = request(failedResult ? "failed-result-order" : "pending-result-order");
+    const intent = currentFootprintForwardExecutionBaselineIntentSchema.parse({ schema: "easyeda-pro-control.footprint-forward-execution-baseline-intent.v1",
+      operationId: selected.operationId, sourceInputSha256: digest, openingRecordsSha256: digest, normalCloseResultSha256: digest,
+      terminationResultSha256: digest, beforeCheckpointSha256: digest, beforeSqlSha256: digest,
+      originalNormalCloseAcknowledged: true, originalRootExited: true, originalJobEmpty: true, executionAuthorized: false, saveAuthorized: false });
+    const journal = new CurrentFootprintForwardExecutionBaselineJournal(intent);
+    const result = currentFootprintForwardExecutionBaselineResultSchema.parse({ ...intent, schema: "easyeda-pro-control.footprint-forward-execution-closed-baseline.v1",
+      baselineIntentSha256: sha256Json(intent), closedCheckpointSha256: digest, closedSqlSha256: digest,
+      exactLogicalSqlUnchanged: true, originalCompletedReadersRetained: true, helperReleaseProved: false, savedCopyVerified: false,
+      currentHeadVerified: false, continuousProducerExclusionVerified: false, executionReady: false });
+    await journal.publishIntent();
+    if (failedResult) { await writeFile(sidecar(selected.operationId, "result"), "unrelated existing evidence\n", { flag: "wx", mode: 0o600 }); }
+    const resultPending = journal.publishResult(result);
+    const resultOutcome = failedResult ? assert.rejects(resultPending) : resultPending;
+    const failurePending = journal.publishFailure();
+    const failureOutcome = failedResult ? failurePending : assert.rejects(failurePending, /PUBLICATION_ORDER/u);
+    await Promise.all([resultOutcome, failureOutcome]);
+    if (failedResult) {
+      const failure: unknown = JSON.parse(await readFile(sidecar(selected.operationId, "failure"), "utf8"));
+      assert.ok(failure !== null && typeof failure === "object" && "originalErrorRetained" in failure && failure.originalErrorRetained === true);
+      assert.equal(await readFile(sidecar(selected.operationId, "result"), "utf8"), "unrelated existing evidence\n");
+    } else { await assert.rejects(readFile(sidecar(selected.operationId, "failure")), { code: "ENOENT" }); }
+    await assert.rejects(journal.publishFailure(), /PUBLICATION_CONSUMED/u);
+    await journal.assertCurrent();
+  });
+}
 
 void test("original abort and actual root/Job exit cannot supply the normal-close baseline", async context => {
   const { f } = await provider(context, "abort");

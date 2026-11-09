@@ -105,3 +105,28 @@ mounting a write route or claiming saved/reopened support.
 
 Private raw logs retain the exact failed and successful commands. They are not
 packaged evidence or connected validation.
+
+### 2026-11-09 supplemental source attribution
+
+The initial nine-case observation above ran on dirty private source based on
+`f12ac20e`; no complete tree snapshot was retained. It remains an unbound
+historical observation. Neither `1351748c` nor a later sealed tree is its tested
+payload.
+
+The later attributable union is commit
+`147e2c08fc5e807bcf7be96f6ae291b7946e9dcd`, tree
+`007076edd4af1b0a71dee5804246b0aaf0636edf`. It was frozen during the retained
+union TypeScript and ten-case focused runs. Those ten cases include the nine
+Wire cases and the complete field-token proof. The compiler/readable sizes in
+this document describe that union, rather than the earlier private WIP.
+
+The corrected import and additional foreign-ancestry guard/test source belong
+to commit `7575ecb8fa63d761c5c33fb6bffc864b3e037b31`, tree
+`2fdbea6fd0c671df41739966f6e139b8d10d5ac3`. The separately retained import-order
+and field-guard lint checks reported zero diagnostics. The final one-case
+exact-emission regression ran against those final guard/test source blobs
+before the accompanying history commit, and passed with the same 2,057,311
+compiler bytes and 2,202,014 readable bytes. This identifies the supplemental
+source without claiming that every union check was repeated on the whole
+later tree. The earlier failures and earlier union results retain their
+original scope.

@@ -127,3 +127,21 @@ accepted before next() on the unchanged legacy source. Both reserve and accept
 now require a non-null pending command. The regression also retains the real
 command identity, rejects copied commands and accepts the first raw reply in
 its original phase. No request count, ordinal, grammar or owner gate changes.
+
+### 2026-11-09 corrected cursor source attribution
+
+The first cursor correction belongs to commit
+`598e552978dd05a299a7cb56275b98877340aa55`, tree
+`91eb6075207042f97c47e8a21d482b8eb787a990`. Its four focused cases include the
+new raw/active null-command regression and the three writer source cases.
+Both TypeScript configurations and changed-file strict lint passed on that
+sealed source. These results belong to the correction, not to `35dd2536`.
+
+The legacy Relevance correction belongs to commit
+`0af42d9f55d05b84387da3a447660608d65ebac6`, tree
+`20f0cc8b4139de98777c284bfed8ac8e20c3dd83`. Its separately retained exact-source
+run passed eleven focused cases with no skips, both TypeScript configurations,
+changed-file strict lint with zero warnings, and the repository, plugin/MCP
+contract and packaged-skill validators. The two before-change failures and the
+first strict-lint failure remain retained. No observation here establishes a
+mounted writer or connected application lifecycle.

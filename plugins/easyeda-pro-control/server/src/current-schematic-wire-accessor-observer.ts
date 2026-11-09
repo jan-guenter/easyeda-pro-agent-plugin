@@ -56,6 +56,8 @@ export function qualifyCurrentSchematicWireAccessorSource(input: unknown): 0 | 1
   }
   return index;
 }
+/** Join exact function text, own descriptors and Inspector location to one
+ * qualified source variant. Return its scope handle without invoking the function. */
 export function decodeCurrentSchematicWireAccessorFunction(input: unknown, variant: 0 | 1, role: Role, scriptId: string, description: string): Readonly<Omit<Ref, "objectId">> {
   handle.parse(scriptId); const source = METHODS[variant]; need(source !== undefined, "SOURCE_VARIANT"); const expected = source.methods[role];
   need(description.isWellFormed() && Buffer.byteLength(description) === expected.end - expected.start && sha256Text(description) === expected.sha256, "FUNCTION_DESCRIPTION");

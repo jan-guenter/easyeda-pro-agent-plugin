@@ -52,6 +52,8 @@ export class CurrentFootprintForwardExecutionBaselineJournal {
   public constructor(intent: CurrentFootprintForwardExecutionBaselineIntent) {
     this.#intent = Object.freeze(currentFootprintForwardExecutionBaselineIntentSchema.parse(intent)); Object.freeze(this);
   }
+  /** Reserve each record once. Failure joins any original result attempt and
+   * cannot publish a second terminal outcome after a verified success. */
   async #publish(kind: RecordKind, value: unknown): Promise<void> {
     if (this.#attempts.has(kind)) { throw new Error("FORWARD_EXECUTION_BASELINE_PUBLICATION_CONSUMED"); }
     let selected;
@@ -62,6 +64,7 @@ export class CurrentFootprintForwardExecutionBaselineJournal {
       if (selected[key] !== this.#intent[key]) { throw new Error("FORWARD_EXECUTION_BASELINE_PUBLICATION_BINDING"); }
     }
     if (kind === "result" && (!this.#descriptors.has("intent") || this.#attempts.has("failure"))) { throw new Error("FORWARD_EXECUTION_BASELINE_PUBLICATION_ORDER"); }
+    if (kind === "failure" && this.#descriptors.has("result")) { throw new Error("FORWARD_EXECUTION_BASELINE_PUBLICATION_ORDER"); }
     if (kind === "result" && (!Object.hasOwn(selected, "baselineIntentSha256") ||
         Reflect.get(selected, "baselineIntentSha256") !== sha256Json(this.#intent) ||
         Reflect.get(selected, "closedSqlSha256") !== this.#intent.beforeSqlSha256)) { throw new Error("FORWARD_EXECUTION_BASELINE_RESULT_BINDING"); }
@@ -74,8 +77,15 @@ export class CurrentFootprintForwardExecutionBaselineJournal {
     const pending = this.#write(kind, bytes, selected.schema, descriptor);
     this.#attempts.set(kind, pending); await pending;
   }
+  /** Yield until the attempt map retains this Promise. A failure waits for
+   * the original result and writes only if that attempt produced no verified result. */
   async #write(kind: RecordKind, bytes: Buffer, schema: string, descriptor: Readonly<ArtifactDescriptor>): Promise<void> {
     await Promise.resolve();
+    if (kind === "failure") {
+      const result = this.#attempts.get("result");
+      if (result !== undefined) { await result.catch(() => null); }
+      if (this.#descriptors.has("result")) { throw new Error("FORWARD_EXECUTION_BASELINE_PUBLICATION_ORDER"); }
+    }
     await publishManagedAttachmentExclusive(descriptor.path, "Forward execution closed baseline", bytes, schema);
     await verifyExactManagedArtifact(descriptor); this.#descriptors.set(kind, descriptor);
   }

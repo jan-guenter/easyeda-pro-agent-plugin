@@ -7,6 +7,7 @@ import { CURRENT_FOOTPRINT_INVERSE_REFERENCE_CALLBACK_CALLS as CALLS, currentFoo
 
 const quote = (text: string): string => `@"${text.replaceAll('"', '""')}"`;
 const sha = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
+/** Encode fourteen reference-callback cases in a bounded native table and derive packet digests for its byte-parity smoke. */
 export function currentFootprintInverseReferenceCallbackNativeSource(): string {
   const cases = currentFootprintInverseReferenceCallbackCases(), templates = cases.map(value => currentFootprintInverseReferenceCallbackTemplate(value)); const rows = [...Object.entries(CALLS).map(([name, row]) => ["program", name, "", JSON.stringify(row.program)]), ...templates.map(row => [row.key, row.method, row.names.join(","), row.template])];
   const raw = Buffer.from(rows.map(row => row.join("\t")).join("\0")); if (raw.length > 65_536 || rows.some(row => row.some(value => value.includes("\0") || value.includes("\t"))) || cases.length !== 14) { throw new Error("INVERSE_REFERENCE_CALLBACK_TABLE"); }

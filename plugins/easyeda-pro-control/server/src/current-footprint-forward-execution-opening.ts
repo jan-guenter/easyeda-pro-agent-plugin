@@ -463,6 +463,8 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
         prepared.completion.observedChildClose && prepared.completion.exitCode === 0 && prepared.completion.exitSignal === null,
       "CLOSED_BASELINE_ORIGINAL_SOURCE");
       this.#baselineTermination = termination;
+      /** Reprove the same closed owner, source, completed reader and journal
+       * around each capture/publication await; equal replacement objects refuse. */
       const current = async (): Promise<void> => {
         this.#current(true); owner.requireFootprintForwardExecutionTermination(termination);
         const fresh = owner.originalFootprintForwardExecutionSource();

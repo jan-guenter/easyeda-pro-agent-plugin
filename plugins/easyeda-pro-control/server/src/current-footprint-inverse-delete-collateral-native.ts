@@ -6,6 +6,7 @@ import { CURRENT_FOOTPRINT_INVERSE_DELETE_COLLATERAL_CALLS as CALLS, CURRENT_FOO
 
 const quote = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
 const sha = (value: Uint8Array): string => createHash("sha256").update(value).digest("hex");
+/** Encode the fifteen pre-delete collateral cases with bounded table framing and packet digests for the emitted native decoder and smoke. */
 export function currentFootprintInverseDeleteCollateralNativeSource(): string {
   const cases = currentFootprintInverseDeleteCollateralCases(), templates = cases.map(command => currentFootprintInverseDeleteCollateralTemplate(command)); const rows = [...Object.entries(CALLS).map(([name, row]) => ["program", name, "", JSON.stringify(row.program)]), ...templates.map(row => [row.key, row.method, row.names.join(","), row.template])]; const raw = Buffer.from(rows.map(row => row.join("\t")).join("\0")); if (raw.length > 65_536 || rows.some(row => row.some(value => value.includes("\t") || value.includes("\0"))) || cases.length !== 15) { throw new Error("INVERSE_DELETE_COLLATERAL_TABLE"); }
   // oxlint-disable-next-line node/no-sync -- Fixed build-only literals.
