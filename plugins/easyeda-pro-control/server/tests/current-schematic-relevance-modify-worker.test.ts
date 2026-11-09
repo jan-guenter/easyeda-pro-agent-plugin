@@ -1,6 +1,7 @@
 /* oxlint-disable max-classes-per-file, class-methods-use-this, typescript/no-extraneous-class -- Inert class inheritance and throwing methods test exact receiver/prototype associations without application execution. */
 /** Inert models and local Inspector reads only. They issue no worker owner,
  * registered callback receiver, trusted delivery or Modify/Save proof. */
+import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAsset } from "./helpers/installed-easyeda-source.ts";
 import assert from "node:assert/strict";
 import { Session } from "node:inspector/promises";
 import type { Runtime } from "node:inspector";
@@ -8,7 +9,7 @@ import { createContext, runInContext, runInThisContext } from "node:vm";
 import { test } from "node:test";
 import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_PROGRAMS as P } from "../src/current-schematic-relevance-modify-worker-programs.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_CALLS as CALLS, CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_FLAGS as FLAGS, CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_REQUESTS as REQUESTS, validateCurrentSchematicRelevanceModifyWorkerCommand as validate } from "../src/current-schematic-relevance-modify-worker-protocol.ts";
-import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_SOURCE as SOURCE, qualifyCurrentSchematicRelevanceModifyWorkerSource as source } from "../src/current-schematic-relevance-modify-worker-replies.ts";
+import { CURRENT_SCHEMATIC_RELEVANCE_MODIFY_WORKER_SOURCE as SOURCE, qualifyCurrentSchematicRelevanceModifyWorkerFunction as qualifyFunction, qualifyCurrentSchematicRelevanceModifyWorkerSource as source, currentSchematicRelevanceModifyWorkerScript as sourceScript } from "../src/current-schematic-relevance-modify-worker-replies.ts";
 
 function run(program: string, receiver: unknown, args: readonly unknown[]): unknown { const fn: unknown = runInThisContext(`(${program})`); assert.ok(typeof fn === "function"); return Reflect.apply(fn, receiver, args); }
 /** Build an inert worker PROJECT/bus/task graph with real native intrinsics
@@ -61,4 +62,30 @@ void test("fresh descriptor output refuses inherited numeric setters before any 
   const context = createContext({});
   runInContext('var hits=0;var native=[Object.getOwnPropertyDescriptor,Object.getPrototypeOf,Object.hasOwn,Object.getOwnPropertyNames,Object.getOwnPropertySymbols,Array.isArray,Function.prototype.apply,Object.prototype,Array.prototype,Function.prototype,this];var qualified=[{a:1}];Object.defineProperty(Array.prototype,"0",{set(){hits++},configurable:true})', context);
   assert.throws(() => runInContext(`(${P.snapshot}).call(native,qualified)`, context)); assert.equal(runInContext("hits", context), 0);
+});
+
+void test("the exact JP constructor creates an anonymous registered handler with source-bound metadata", async context => {
+  const text = await readConfiguredEasyedaAsset("pro-mgr/3.2.185.bf63a159/js/project-worker.js");
+  if (text === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; } source(text);
+  const inspector = new Session(); inspector.connect(); let contextId: number | null = null;
+  inspector.on("Runtime.executionContextCreated", event => { if (event.params.context.name === "inert-original-jp-handler") { contextId = event.params.context.id; } });
+  try {
+    await inspector.post("Runtime.enable");
+    const realm = createContext({}, { name: "inert-original-jp-handler" });
+    const prelude = 'class KP{constructor(id){this.uuid=id}}class BroadcastChannel{}';
+    const constructor = SOURCE.roles.channelConstructor;
+    const prefix = `${prelude}${" ".repeat(constructor.start - prelude.length - "var JP=".length)}var JP=`;
+    runInContext(`${prefix}${text.slice(constructor.start, constructor.end)};var handler=new JP("inert-channel","inert-uuid").bc.onmessage;`, realm);
+    assert.ok(contextId !== null);
+    const parameters: Runtime.EvaluateParameterType & Readonly<{ throwOnSideEffect: true }> = { expression: "handler", contextId, returnByValue: false, throwOnSideEffect: true };
+    const actual = await inspector.post("Runtime.evaluate", parameters);
+    assert.equal(actual.exceptionDetails, undefined); assert.ok(actual.result.objectId !== undefined);
+    if (actual.result.type !== "function") { assert.fail("the original constructor must return a callable handler"); }
+    const remote: Parameters<typeof qualifyFunction>[1] = { ...actual.result, type: actual.result.type };
+    const metadata = await inspector.post("Runtime.getProperties", { objectId: actual.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+    assert.equal(metadata.result.find(row => row.name === "name")?.value?.value, "");
+    qualifyFunction(metadata, remote, "handler", sourceScript(metadata));
+    const mislabeled = { ...metadata, result: metadata.result.map(row => row.name === "name" ? { ...row, value: { ...row.value, type: "string", value: "JP.bc.onmessage" } } : row) };
+    assert.throws(() => { qualifyFunction(mislabeled, remote, "handler", sourceScript(metadata)); });
+  } finally { inspector.disconnect(); }
 });

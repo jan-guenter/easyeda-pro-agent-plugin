@@ -19,7 +19,7 @@ export function currentSchematicRelevanceDisplayStructureNativeSource(): string 
     viaBeginStep: "relevanceBeginStep", viaHistoryStep: "relevanceHistoryStep", EnrollViaStructureBody: "EnrollRelevanceStructureBody", SendViaMainStructure: "SendRelevanceMainStructure", ViaStructureUtcMilliseconds: "RelevanceStructureUtcMilliseconds" };
   for (const [before, after] of Object.entries(replacements)) { if (!body.includes(before)) { throw new Error("RELEVANCE_STRUCTURE_FIXED_FIELD"); } body = body.replaceAll(before, after); }
   body = body.replaceAll("viaSdkStages[4]", "relevanceSaveGenerated").replaceAll(/\bviaStructureTransport(\w*)/gu, "schematicStructureTransport$1").replaceAll(/\bviaStructure(\w*)/gu, "relevanceStructure$1");
-  body = one(body, `id>${String(VIA.main.total)}`, `id>${String(PROFILE.main.total)}`);
+  body = one(body, `id-stockMainRequests>${String(VIA.main.total)}`, `id-stockMainRequests>${String(PROFILE.main.total)}`);
   const enroll = body.indexOf("public void EnrollRelevanceStructureBody("); const clock = body.indexOf("static long RelevanceStructureUtcMilliseconds(");
   if (enroll === -1 || clock <= enroll) { throw new Error("RELEVANCE_STRUCTURE_ENROLL_BOUNDARY"); }
   body = body.slice(0, enroll) + String.raw`public void AssertRelevanceStructureMainPrepared(){if(!schematicRelevanceDisplayWrite209||schematicDisplayAbort||relevanceStructureMainArms.Count!=9||relevanceStructureMainStep!=0||relevanceStructureExpected!=null||relevanceStructureBodyEnrollmentAttempted)throw Error("relevance-structure-original-main-prepared");}
