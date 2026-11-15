@@ -70,12 +70,14 @@ void test("ready native rows and complete-only dispatch preserve closed programs
 // Mechanically execute only the emitted ledger method bodies with inert
 // Validation/write fixtures. The separate C#5 check covers native syntax.
 function ownerMethod(source:string,name:string):string{
- const start=source.indexOf(`${name}(`);assert.ok(start!==-1);const open=source.indexOf("{",start);let depth=1,end=open+1;
+ const declaration=new RegExp(`\\b(?:void|bool|string) ${name}\\(`,"u").exec(source);assert.ok(declaration!==null);const start=declaration.index;const open=source.indexOf("{",start);let depth=1,end=open+1;
  for(;end<source.length&&depth>0;end+=1){if(source[end]==="{"){depth+=1;}else if(source[end]==="}"){depth-=1;}}
  assert.equal(depth,0);
  return source.slice(open+1,end-1).replaceAll(' as string',"").replaceAll(/\b(?:int|string|bool) /gu,"let ")
   .replaceAll(".Length",".length").replaceAll(".Substring(",".slice(").replaceAll(".StartsWith(",".startsWith(")
-  .replaceAll(",StringComparison.Ordinal","").replaceAll(".Count",".size").replaceAll(".Contains(",".has(").replaceAll(".Add(",".add(")
+  .replaceAll(",StringComparison.Ordinal","").replaceAll(".Count",".size").replaceAll('fields.Contains("body")','Object.hasOwn(fields,"body")').replaceAll(".Contains(",".has(").replaceAll(".Add(",".add(")
+  .replaceAll(" as EasyedaForwardWriterAllocatedClockLedger","").replaceAll(".ToString(CultureInfo.InvariantCulture)",".toString()")
+  .replaceAll("let count;fullDrainCounts.TryGetValue(phase,out count);","let count=fullDrainCounts[phase]??0;")
   .replaceAll("catch{","catch(caughtError){").replaceAll("throw;","throw caughtError;");
 }
 void test("cache settlement records only validated attempts and failed dispatch cannot complete",()=>{
@@ -157,7 +159,7 @@ void test("ticket baseline is successful-send-only and uncertain setup/held/slot
  for(const role of ["baseline","setup","held","slot"]as const){
   for(const failSend of [false,true]){
    const failure=new Error("inert-partial-write");let attempts=0;
-   const state={fullTicketBound:true,fullTicketReady:role!=="setup",fullTicketFailed:false,forwardWriterCompletePublishTimerComplete:false,
+   const state={fullTicketBound:true,fullTicketReady:role!=="setup",fullTicketFailed:false,fullCompleteSendFailed:false,forwardWriterCompletePublishTimerComplete:false,
     footprintCreateClockBegun:role==="held"||role==="slot",fullTicketSetup:role==="setup"?0:37,
     forwardWriterCompleteTimerBaseline:role!=="baseline",fullTicketRole:role==="held"?"entry":null,fullTicketHeldStep:0,fullTicketHolds:0,fullTicketSlots:0,
     fullPublicationComplete:true,fullPostComplete:true,fullDrainComplete:true,forwardWriterCompleteTimerArms:3,
@@ -244,5 +246,103 @@ void test("startup success follows the send; pre-dispatch refusal is correctable
    else{assert.equal(state.writes,1);assert.throws(()=>invoke(3));assert.equal(context["fullStartupWsConsumed"],false);assert.equal(state.writes,1);assert.throws(precreate);}
   }
   assert.throws(()=>invoke(state.nextRequest));assert.equal(state.writes,1);
+ }
+});
+
+function completeContext(extra:Readonly<Record<string,unknown>>,refusal:"none"|"encode"|"send"="none"):ReturnType<typeof createContext>{
+ const failure=new Error("inert-complete-send");const context=createContext({
+  forwardWriterCompleteBirth:true,forwardWriterProducerEnrolled:true,forwardWriterCacheCompleted:true,forwardWriterInitialSyncComplete:true,
+  forwardWriterFrontierComplete:true,fullTicketFailed:false,fullCompleteSendFailed:false,fullComplete:false,
+  forwardWriterBirth:true,forwardWriterRendererNormalId:0,protocolFailed:false,launchCompleted:true,nextRequest:2,EffectiveRequestLimit:10,
+  footprintCreateClockBegun:false,footprintCreateClockActive:false,footprintCreateClockLedger:null,footprintCopyWorkerSession:"session7",
+  forwardWriterProducerScript:"script8",forwardWriterProducerContext:"context9",writes:0,
+  RequireForwardWriterProducer:():void=>{
+   // This inert fixture grants no original producer.
+  },AssertLive:():void=>{
+   // The separate transport fixture controls native liveness.
+  },Error:():Error=>failure,
+  RendererWriteRole:{ForwardWriterProducer:7},...extra
+ });
+ context["SendMessage"]=(id:number):void=>{assert.equal(id,context["nextRequest"]);context["nextRequest"]=id+1;context["writes"]=Number(context["writes"])+1;if(refusal==="send"){throw failure;}};
+ const codec={Phase:():"fixed-phase"=>"fixed-phase",Encode:():string=>{if(refusal==="encode"){throw failure;}return "fixed-frame";}};
+ for(const name of ["BranchQuery","CopyLocal","PcbViaUploadRequest","PcbViaSaveTailObservation","PcbViaSaveTailDeleteControl","Publication","PcbViaSaveDrain","CopyPost"]){
+  const prefix=name.startsWith("Pcb")?"Easyeda":"EasyedaForwardWriter";context[`${prefix+name}Protocol`]=codec;
+ }
+ const tail=currentFootprintForwardWriterCompleteTailNativeSource();
+ for(const name of ["RequireForwardWriterCompleteBase","RequireForwardWriterCompleteRendererId","SendForwardWriterCompleteNormalMessage"]){
+  runInContext(`globalThis.${name}=function(id,message){${ownerMethod(tail,name)}}`,context);
+ }
+ runInContext(`globalThis.SendForwardWriterNormalMessage=function(id,message){${ownerMethod(CURRENT_FOOTPRINT_FORWARD_WRITER_RENDERER_CLASS_NATIVE,"SendForwardWriterNormalMessage")}}`,context);
+ // Inert created/drain/post admission invokes the actual common base;
+ // It creates no original clock, owner or application permission.
+ runInContext("globalThis.RequireForwardWriterCompleteCreated=globalThis.RequireForwardWriterCopyDrain=globalThis.RequireForwardWriterCopyPost=RequireForwardWriterCompleteBase",context);
+ return context;
+}
+void test("all complete renderer lanes reject a wrong physical ID before consuming their own phase",()=>{
+ const tail=currentFootprintForwardWriterCompleteTailNativeSource();
+ const lanes=[
+  {name:"BranchQuery",counter:"fullBranchWorkerStep",initial:{fullBranchMainStep:1,fullBranchWorkerStep:0},args:"'fixed-phase','Runtime.callFunctionOn',{}"},
+  {name:"CopyLocal",counter:"fullLocalStep",initial:{fullLocalStep:0},args:"'fixed-phase','Runtime.callFunctionOn',{}"},
+  {name:"CopyUpload",counter:"fullUploadStep",initial:{fullLocalStep:21,fullUploadStep:0},args:"'fixed-phase','Runtime.callFunctionOn',{}"},
+  {name:"CopyTailObservation",counter:"fullTailStep",initial:{fullTailStep:0},args:"'fixed-phase','Runtime.getProperties',{scriptId:'script8'}"},
+  {name:"CopyDelete",counter:"fullDeleteStep",initial:{fullUploadStep:9,fullDeleteStep:0,fullTailStep:7,fullDrainResumed:new Set(["historyReply","detachedEntry"]),fullDrainJobs:[3,0,0]},args:"'fixed-phase','Runtime.callFunctionOn',{}"},
+  {name:"Publication",counter:"fullPublicationQueueRequests",initial:{fullPublicationRecords:2,fullPublicationBodyBound:true,fullPublicationComplete:false,fullPublicationQueueOpened:true,fullPublicationHeld:null,fullPublicationQueueRequests:0,fullPublicationQueueSeen:false},args:"'queue','inverse-startup-queue-empty','Runtime.callFunctionOn',{}"},
+  {name:"CopyDrain",counter:"fullDrainRequests",initial:{fullDrainRequests:0,fullDrainCounts:{}},args:"'via-drain-call-capture-0','Runtime.callFunctionOn',{}"},
+  {name:"CopyPost",counter:"fullPostRequests",initial:{fullPostRequests:0,fullPostStep:0,FullPostRoles:["syncEntry"],fullPostSeen:{add:():boolean=>true},FullPostAllowed:():boolean=>true},args:"'via-post-sync-call-capture','Runtime.callFunctionOn',{}"}
+ ]as const;
+ for(const lane of lanes){
+  for(const refusal of ["none","send"]as const){
+   const context=completeContext({...lane.initial,...(lane.name==="CopyDrain"?{fullDrainCounts:{}}:{})},refusal);
+   const invoke=(id:number):unknown=>runInContext(`(function(id,${lane.name==="Publication"?"lane,":""}phase,method,fields){${ownerMethod(tail,`SendForwardWriter${lane.name}`)}})(${String(id)},${lane.args})`,context);
+   assert.throws(()=>invoke(3),lane.name);assert.equal(context[lane.counter],0);assert.equal(context["writes"],0);assert.equal(context["fullCompleteSendFailed"],false);
+   if(refusal==="send"){
+    assert.throws(()=>invoke(2));assert.equal(context[lane.counter],1);assert.equal(context["writes"],1);assert.equal(context["nextRequest"],3);assert.equal(context["fullCompleteSendFailed"],true);
+    assert.throws(()=>invoke(3));assert.equal(context["writes"],1);assert.throws(()=>runInContext("RequireForwardWriterCompleteBase()",context));
+   }else{invoke(2);assert.equal(context[lane.counter],1);assert.equal(context["writes"],1);assert.equal(context["fullCompleteSendFailed"],false);}
+  }
+ }
+});
+
+void test("complete publication queue proof survives no encoding failure and cannot complete after an uncertain send",()=>{
+ const tail=currentFootprintForwardWriterCompleteTailNativeSource();
+ for(const refusal of ["encode","send"]as const){
+  const context=completeContext({fullPublicationRecords:2,fullPublicationBodyBound:true,fullPublicationComplete:false,fullPublicationQueueOpened:true,
+   fullPublicationHeld:null,fullPublicationQueueRequests:2,fullPublicationQueueSeen:false,fullPublicationCalls:0},refusal);
+  const invoke=():unknown=>runInContext(`(function(id,lane,phase,method,fields){${ownerMethod(tail,"SendForwardWriterPublication")}})(2,'queue','inverse-startup-queue-empty','Runtime.callFunctionOn',{})`,context);
+  assert.throws(invoke);assert.equal(context["fullPublicationQueueSeen"],refusal==="send");assert.equal(context["fullPublicationQueueRequests"],refusal==="send"?3:2);
+  assert.equal(context["writes"],refusal==="send"?1:0);
+  const complete=():unknown=>runInContext(`(function(operation,role,records){${ownerMethod(tail,"ControlForwardWriterPublication")}})('complete',null,0)`,context);
+  assert.throws(complete);assert.equal(context["fullPublicationComplete"],false);
+  if(refusal==="send"){assert.throws(invoke);assert.equal(context["writes"],1);}
+  else{
+   context["EasyedaForwardWriterPublicationProtocol"]={Encode:():"fixed-frame"=>"fixed-frame"};
+   invoke();assert.equal(context["fullPublicationQueueSeen"],true);assert.equal(context["writes"],1);
+   complete();assert.equal(context["fullPublicationComplete"],true);
+  }
+ }
+});
+void test("complete Main phase and physical ID are consumed only after validation, and partial sends poison the common owner",()=>{
+ const tail=currentFootprintForwardWriterCompleteTailNativeSource();
+ for(const lane of ["BranchMain","LiveHistory"]as const){
+  for(const refusal of ["id","encode","frame","purpose","live","send","after-send"]as const){
+   let checks=0,writes=0;const failure=new Error("inert-main-refusal");const context=completeContext({
+    mainRequest:1,stockMainRequests:0,mainCompletionBegun:false,mainCompletionRetired:true,mainCompletionFailed:false,
+    fullBranchMainStep:lane==="BranchMain"?0:11,fullLiveStep:0,FullBranchPhases:["fixed-phase"],FullLivePhases:["fixed-phase"],
+    EasyedaFootprintForwardExecutionLimits:{MainRequests:10},originalMain:{ForwardExecutionProfile:true,SendFixed:():void=>{writes+=1;if(refusal==="send"){throw failure;}}},
+    ForwardWriterHistoryMessage:(message:string):string=>{if(refusal==="frame"){throw failure;}return message;},
+    MainPurpose:():void=>{if(refusal==="purpose"){throw failure;}},
+    AssertLive:():void=>{checks+=1;if(refusal==="live"||refusal==="after-send"&&writes>0){throw failure;}},
+    EasyedaForwardWriterCompleteBranchProtocol:{Encode:():string=>{if(refusal==="encode"){throw failure;}return "framed";}},
+    EasyedaForwardWriterMainHistoryProtocol:{Encode:():string=>{if(refusal==="encode"){throw failure;}return "framed";}}
+   });
+   runInContext(`globalThis.SendForwardWriterCompleteMain=function(id,framed,cleanup,consume){${ownerMethod(tail,"SendForwardWriterCompleteMain")}}`,context);
+   const invoke=(id:number):unknown=>runInContext(`(function(id,phase,method,fields){${ownerMethod(tail,`SendForwardWriter${lane}`)}})(${String(id)},'fixed-phase','Runtime.callFunctionOn',{})`,context);
+   assert.throws(()=>invoke(refusal==="id"?3:2));
+   const counter=lane==="BranchMain"?"fullBranchMainStep":"fullLiveStep",dispatched=refusal==="send"||refusal==="after-send";
+   assert.equal(context[counter],dispatched?1:0);assert.equal(context["mainRequest"],dispatched?2:1);assert.equal(context["fullCompleteSendFailed"],dispatched);assert.equal(writes,dispatched?1:0);
+   if(dispatched){assert.throws(()=>invoke(3));assert.equal(writes,1);}
+   if(refusal==="id"){invoke(2);assert.equal(context[counter],1);assert.equal(writes,1);}
+   assert.ok(checks>0);
+  }
  }
 });

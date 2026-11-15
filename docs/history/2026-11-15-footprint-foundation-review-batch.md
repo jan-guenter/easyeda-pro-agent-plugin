@@ -281,3 +281,31 @@ and all-skill validation pass. Initial fixture-only lint failures remain private
 The parent integration batch owns generated bundle regeneration and exact-head
 CI/review. No facade, native owner, application, retry or live authority was
 created for this correction.
+
+## 2026-11-15 follow-up: forward dispatch validation and inherited bus methods
+
+The three forward-writer findings at public `7ba18f3c` were reproduced against
+the emitted owner methods. Branch and changed-history Main commands now finish
+ID, frame, purpose and liveness validation before consuming their original
+physical ID and fixed phase. Eight complete-only renderer lanes likewise check
+the physical ID before changing their own phase. A rejected pre-dispatch request
+leaves that phase available; an attempted send consumes its phase and any failure
+permanently blocks normal progress on that original complete owner. Cleanup must
+abort and join its original generation, rather than replaying the failed send.
+
+Publication marks queue-empty only after its fixed encoder succeeds. A failed
+encoding cannot satisfy completion, and a partial-write failure cannot turn its
+consumed queue flag into a completion grant. The timer binding also records the
+absence of `publish` and `onReceivedPublish` on the intermediate JP prototype,
+so neither a preexisting nor a later getter shadow can redirect the pinned KP
+method selection. The passive checks invoke neither getter nor app method.
+
+All sixteen focused tests pass without skips, including actual emitted method
+bodies for the eight renderer lanes, both Main lanes, queue proof, inherited
+shadow capture and retained guard. A separate 46,405-byte inert C#5 fixture
+compiles with warnings treated as errors and passes actual fixed branch/history/
+frontier codecs, the shared renderer wrapper and the changed caller/helper
+methods. It allocates no owner process, Job or application. Both TypeScript
+projects, strict lint on all four source/test inputs and the repository, MCP
+and skill validators pass. No persisted shape, request/control budget,
+authority gate, generated bundle or connected-workflow claim changes here.
