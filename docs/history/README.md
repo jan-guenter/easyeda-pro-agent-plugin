@@ -1272,3 +1272,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Native PR #212 boundary corrections](2026-11-15-native-pr212-review-boundaries.md), exact bind fields, UUID admission parity, PowerShell null roles, helper obligations, immutable serialization expectations and original Inspector failure settlement. Source/Inspector/PS5 checks only.
 
 - [Windows-to-WSL bootstrap](2026-11-15-windows-wsl-bootstrap.md) — 2026-11-15; strict transport/provisioning, crash-released publication serialization, captured six-file namespace custody, disposable binary EOF interop and the CI-only synthetic sandbox pin correction.
+
+- [Windows capsule nested user namespace](2026-11-15-windows-capsule-nested-user-namespace.md) — 2026-11-15; exact UID-map diagnostic, UID0-only private identity mapping with capabilities still dropped, and inert nested-sandbox regression.
