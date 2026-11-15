@@ -308,3 +308,43 @@ SHA-256 is
 This was verification/configuration only; it started no real index, facade,
 native owner or application. Official installation, fresh serving-process
 proof, final-head review and complete CI remain separate release gates.
+
+
+## 2026-11-15 CI fixture sandbox identity correction
+
+Exact public head `846c1cfadd2c833c7341c07af69dbac89e7093f0` received an actual
+current-head CodeRabbit walkthrough with matching reviewed coverage metadata
+and no new actionable comments. Its two prior race threads were resolved.
+That review did not establish passing CI: facade shard 5 in run 43746019694,
+job 132909371906, reported 1,759 tests, 1,730 passes, 4 failures and 25 platform skips.
+All four failures were the WSL runtime fixtures: readonly verification, minified
+helper verification, EOF handoff and captured-namespace replacement.
+
+The fixture had copied the released machine compatibility manifest, including
+its compiler-specific Bubblewrap binary hash. CI builds the reviewed 0.13.1
+source with its own Ubuntu compiler. The released binary has a different
+compiler identity, so the runtime correctly refused that fixture pin. The old
+CI log does not retain the CI binary hash; no inferred hash is recorded as an
+actual observation.
+
+The inert fixture now captures the canonical path and SHA-256 of its actual
+reviewed test binary and places that explicit synthetic tuple in its own
+compatibility bytes. A TAP diagnostic retains the observed test-binary hash.
+The new negative case replaces only that sandbox hash with a different valid
+64-hex value and recaptures the complete six-file packet. Thus all six file hashes
+match and refusal reaches the separate sandbox hash check before entry
+dispatch. Restoring the original compatibility bytes must execute the same
+inert entry, preventing an unrelated early refusal from satisfying the case.
+
+Production source, compatibility pins and all three generated bundles remain
+byte-identical to 846. No test filter, platform skip, deadline or runtime guard
+was relaxed. No actual index, facade, bridge, native owner, application, Job or
+design was started.
+
+Local dependency materialization was interrupted by an unexpected WSL kernel
+restart before types, lint or the affected test file began. None of those
+checks passed in this attempt; it is an infrastructure interruption, not a
+failed or passing test result. The public patch and interruption evidence are
+retained independently. Further Linux launches are held during coordinated
+storage recovery. Exact new-head Linux CI, strict checks and actual follow-up
+review remain required before merge; no new-head passing result is claimed.

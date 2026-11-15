@@ -1,7 +1,8 @@
 /** Actual isolated Node/descriptor/byte handoff, never an EasyEDA owner. */
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
-import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { chmod, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -19,13 +20,18 @@ function runNode(args: readonly string[]): Promise<string> {
   });
   return outcome.promise;
 }
-async function packetFixture(): Promise<Readonly<{ root: string; packet: WindowsWslRuntimePacket }>> {
+async function packetFixture(): Promise<Readonly<{ root: string; packet: WindowsWslRuntimePacket; sandboxSha256: string }>> {
   const root = await createTestTemporaryDirectory("windows-wsl-byte-fixture-");
+  // The CI workflow builds the reviewed Bubblewrap source for its own compiler.
+  // This inert fixture binds those actual bytes, never the released machine pin.
+  const sandboxCommand = await realpath("/usr/sbin/bwrap"); const sandboxBytes = await readFile(sandboxCommand);
+  const sandboxSha256 = createHash("sha256").update(sandboxBytes).digest("hex");
+  const compatibility = Buffer.from(JSON.stringify({ upstream: { launcher: { sandbox: { command: sandboxCommand, commandSha256: sandboxSha256 } } } }));
   for (const spec of windowsWslRuntimeFiles()) {
     const filename = join(root, spec.relativePath);
     await mkdir(dirname(filename), { recursive: true });
     let content: string | Buffer = "fixed fixture\n";
-    if (spec.relativePath === "reviewed-compatibility.json") { content = await readFile(new URL("../../reviewed-compatibility.json", import.meta.url)); }
+    if (spec.relativePath === "reviewed-compatibility.json") { content = compatibility; }
     else if (spec.relativePath === "server/dist/server.mjs") { content = "process.stdout.write('fixed-fixture');\n"; }
     await writeFile(filename, content);
     await chmod(filename, spec.mode);
@@ -33,7 +39,7 @@ async function packetFixture(): Promise<Readonly<{ root: string; packet: Windows
   await mkdir(join(root, "configuration"));
   const profile = parseWindowsWslLaunchProfile({ schema: "easyeda-pro-control.windows-wsl-launch.v1", distribution: "synthetic",
     nodeExecutable: process.execPath, pluginRoot: root, machineProfilePath: join(root, "configuration", "machine-profile.json") });
-  return { root, packet: await captureWindowsWslRuntime(root, profile) };
+  return { root, packet: await captureWindowsWslRuntime(root, profile), sandboxSha256 };
 }
 void test("WSL profile and packet selectors reject accessors, noncanonical paths and injected flags", () => {
   const profile = { schema: "easyeda-pro-control.windows-wsl-launch.v1", distribution: "synthetic",
@@ -53,8 +59,9 @@ void test("WSL profile and packet selectors reject accessors, noncanonical paths
   assert.throws(() => parseWindowsWslConfigurationArguments([...args, "--replace", "--replace"]));
   assert.throws(() => parseWindowsWslConfigurationArguments([]),/windows-wsl-profile-invalid/u);
 });
-void test("actual readonly WSL program verifies fixed bytes and refuses a changed package", async () => {
+void test("actual readonly WSL program verifies fixed bytes and refuses a changed package", async context => {
   const fixture = await packetFixture(), program = windowsWslRuntimeProgram();
+  context.diagnostic(`Synthetic reviewed-test Bubblewrap bytes sha256=${fixture.sandboxSha256}`);
   const argv = ["--input-type=module", "--eval", program, "--", "verify", serializeWindowsWslRuntimePacket(fixture.packet)];
   const stdout = await runNode(argv);
   assert.deepEqual(JSON.parse(stdout), { schema: "easyeda-pro-control.windows-wsl-verification.v1", runtimeBytesMatched: true,
@@ -65,6 +72,25 @@ void test("actual readonly WSL program verifies fixed bytes and refuses a change
   assert.equal(args[0], "--distribution"); assert.equal(args[3], "/"); assert.equal(args.at(-2), "verify");
   await writeFile(join(fixture.root, "server/dist/server.mjs"), "changed fixture\n");
   await assert.rejects(runNode(argv));
+});
+void test("a consistent six-file packet with the wrong sandbox hash refuses before fixture entry dispatch", async () => {
+  const fixture = await packetFixture(); const compatibilityPath = join(fixture.root, "reviewed-compatibility.json");
+  const compatibility = await readFile(compatibilityPath, "utf8"), wrong = "0".repeat(64);
+  assert.notEqual(fixture.sandboxSha256, wrong);
+  await writeFile(compatibilityPath, compatibility.replace(fixture.sandboxSha256, wrong));
+  const profile = parseWindowsWslLaunchProfile({ schema: "easyeda-pro-control.windows-wsl-launch.v1", distribution: "synthetic",
+    nodeExecutable: process.execPath, pluginRoot: fixture.root, machineProfilePath: fixture.packet.machineProfilePath });
+  // Capture again: all six byte hashes match, so refusal reaches the separate
+  // sandbox descriptor/hash check rather than a stale runtime-packet mismatch.
+  const packet = await captureWindowsWslRuntime(fixture.root, profile);
+  const refused = await runFixtureNode(`process.argv=[process.execPath,"launch",${JSON.stringify(serializeWindowsWslRuntimePacket(packet))}];${windowsWslRuntimeProgram()}`);
+  assert.equal(refused.code, 1); assert.equal(refused.signal, null); assert.equal(refused.stdout, "");
+  assert.equal(refused.stderr, '{"ok":false,"error":"windows-wsl-runtime-refused"}\n');
+  // The otherwise identical correctly pinned packet must actually execute the
+  // inert entry, making an unrelated early refusal fail this negative control.
+  await writeFile(compatibilityPath, compatibility);
+  const accepted = await runFixtureNode(`process.argv=[process.execPath,"launch",${JSON.stringify(serializeWindowsWslRuntimePacket(fixture.packet))}];${windowsWslRuntimeProgram()}`);
+  assert.equal(accepted.code, 0, accepted.stderr); assert.equal(accepted.signal, null); assert.equal(accepted.stdout, "fixed-fixture");
 });
 void test("the minified packaged bootstrap retains every lexical helper and validates before execution", async () => {
   const fixture = await packetFixture();
