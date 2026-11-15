@@ -14,7 +14,7 @@ export function currentFootprintForwardWriterBranchTemplate(input: unknown): Rea
   return freezeDeep({ phase: "role" in command ? `${command.phase}-${command.role}` : command.phase, method: command.method, fields, values, template: JSON.stringify({ method: command.method, params }) });
 }
 export function currentFootprintForwardWriterBranchWire(input: unknown, requestId: number): Readonly<Record<string, string | number>> {
-  if (!Number.isSafeInteger(requestId) || requestId < 1) { throw new Error("FORWARD_WRITER_BRANCH_ID"); }
+  if (!Number.isSafeInteger(requestId) || requestId < 1 || requestId > 2_147_483_647) { throw new Error("FORWARD_WRITER_BRANCH_ID"); }
   const fixed = currentFootprintForwardWriterBranchTemplate(input); return freezeDeep({ action: "footprint-forward-writer-branch", requestId, phase: fixed.phase, method: fixed.method, ...fixed.values });
 }
 export function currentFootprintForwardWriterBranchTemplates(): readonly ReturnType<typeof currentFootprintForwardWriterBranchTemplate>[] { return freezeDeep(currentFootprintForwardWriterBranchNativeCases().map(command => currentFootprintForwardWriterBranchTemplate(command))); }

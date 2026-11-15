@@ -33,6 +33,9 @@ void test("fixed branch selectors retain the real API row and refuse traps, fore
 });
 void test("all ten branch commands are finite and absent from the historical inverse grammar",()=>{
  const cases=currentFootprintForwardWriterBranchNativeCases();assert.equal(cases.length,10);
+ const first=cases[0];assert.ok(first!==undefined);
+ assert.equal(currentFootprintForwardWriterBranchWire(first,2_147_483_647)["requestId"],2_147_483_647);
+ for(const id of [2_147_483_648,Number.MAX_SAFE_INTEGER,Number.POSITIVE_INFINITY,Number.NaN,0,-1,1.5]){assert.throws(()=>currentFootprintForwardWriterBranchWire(first,id),/BRANCH_ID/u);}
  for(const [i,command] of cases.entries()){assert.deepEqual(validateCurrentFootprintForwardWriterBranchCommand(command),command);const wire=currentFootprintForwardWriterBranchWire(command,i+1);assert.equal(wire["action"],"footprint-forward-writer-branch");assert.throws(()=>validateCurrentFootprintInverseMainHistoryCommand(command));assert.throws(()=>validateCurrentFootprintForwardWriterBranchCommand({...command,extra:true}));}
 });
 

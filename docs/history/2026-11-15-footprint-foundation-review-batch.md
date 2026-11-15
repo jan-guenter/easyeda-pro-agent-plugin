@@ -197,3 +197,28 @@ establishes no connected workflow.
 Both TypeScript projects, strict type-aware lint on all five source/test inputs,
 and repository, MCP-contract and all-skill validators passed. Generated helpers,
 bundles, historical persisted shapes and request/control limits are unchanged.
+
+## 2026-11-15 follow-up: branch integer and initial-sync failure
+
+A second review of the same c8 head found two further valid forward issues.
+The branch wire now refuses request IDs above Int32.MaxValue before building a
+native request; the exact maximum remains accepted. Boundary tests cover the
+first overflowing value and malformed numeric inputs.
+
+Initial-sync dispatch keeps validation before state changes, consumes its step
+and resume hold once, and latches any send exception. Its original shared guard
+then refuses hold, later send and completion. A failed final sample cannot
+advance to a successful completion. No rollback, same-phase replay or failed
+transport acknowledgment supplies a retry.
+
+Both new regressions reject the original c8 source. Thirteen focused cases pass
+without skips, including the earlier three review corrections. The expanded
+70,062-byte offline C#5-language Linux fixture runs the actual initial-sync
+codec and both a failed resume and failed final settlement, preserves successful
+final completion, and rechecks the previous timer/history companion cases.
+Senders are inert and no application, native owner, Job or Windows process is
+created. Native request/control limits and persisted projections are unchanged.
+
+Both TypeScript projects, strict type-aware lint on the four source/test inputs,
+and repository, MCP-contract and all-skill validators pass. Existing files only
+are changed; native generated outputs and bundles remain untouched.

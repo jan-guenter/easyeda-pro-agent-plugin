@@ -11,6 +11,7 @@ import {CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS,currentFootprintF
 import {currentFootprintForwardWriterFrontierCases,currentFootprintForwardWriterFrontierTemplate} from "../src/current-footprint-forward-writer-frontier-protocol.ts";
 import {currentFootprintForwardWriterFrontierNativeSource} from "../src/current-footprint-forward-writer-frontier-native.ts";
 import {currentFootprintForwardWriterCacheNativeSource} from "../src/current-footprint-forward-writer-cache-native.ts";
+import {currentFootprintForwardWriterSyncNativeSource} from "../src/current-footprint-forward-writer-sync-native.ts";
 import {currentFootprintForwardWriterTicketTimerNativeSource} from "../src/current-footprint-forward-writer-ticket-timer-native.ts";
 import {currentFootprintInverseMainHistoryNativeSource} from "../src/current-footprint-inverse-main-history-native.ts";
 import {CURRENT_FOOTPRINT_FORWARD_WRITER_RENDERER_CLASS_NATIVE,currentFootprintForwardWriterRendererRoleSource} from "../src/current-footprint-forward-writer-renderer-class.ts";
@@ -179,6 +180,34 @@ void test("ticket baseline is successful-send-only and uncertain setup/held/slot
     assert.throws(invoke);assert.equal(attempts,1);
     assert.throws(()=>runInContext(`(function(operation,role,ordinal){${ownerMethod(source,"ControlForwardWriterTicketTimer")}})('complete',null,0)`,context));
     assert.equal(context["forwardWriterCompletePublishTimerComplete"],false);
+   }
+  }
+ }
+});
+
+void test("initial sync failed sends consume their step but cannot advance or complete",()=>{
+ const source=currentFootprintForwardWriterSyncNativeSource();
+ for(const initialStage of [42,44]){
+  for(const refusal of ["encode","work","live","write"]as const){
+   const failure=new Error("inert-sync-failure");let attempts=0;
+   const state={forwardWriterProducerEnrolled:true,forwardWriterCacheCompleted:true,forwardHeadCompleted:true,forwardWriterInitialSyncComplete:false,
+    forwardWriterInitialSyncFailed:false,footprintCreateClockBegun:false,forwardWriterInitialSyncStage:initialStage,
+    forwardWriterInitialSyncHeld:initialStage===42?"syncReturned":null,forwardWriterInitialSyncHolds:9,forwardWriterHistoryStep:52,footprintCopyWorkerSession:"session7"};
+   const context=createContext({...state,Error:():Error=>failure,RequireForwardWriterProducer:():void=>{assert.equal(state.forwardHeadCompleted,true);},
+    EasyedaForwardWriterInitialSyncProtocol:{Observation:():boolean=>false,Index:():number=>initialStage,Encode:():string=>{if(refusal==="encode"){throw failure;}return "inert-frame";}},
+    CheckFootprintWork:():void=>{if(refusal==="work"){throw failure;}},AssertLive:():void=>{if(refusal==="live"){throw failure;}},
+    SendMessage:():never=>{attempts+=1;throw failure;}});
+   runInContext(`globalThis.RequireForwardWriterInitialSync=function(){${ownerMethod(source,"RequireForwardWriterInitialSync")}}`,context);
+   const invoke=():unknown=>runInContext(`(function(id,phase,method,fields){${ownerMethod(source,"SendForwardWriterInitialSync")}})(1,'inert-phase','Debugger.resume',{})`,context);
+   let caught:unknown;try{invoke();}catch(error){caught=error;}assert.equal(caught,failure);
+   const attempted=refusal==="write";assert.equal(attempts,attempted?1:0);assert.equal(context["forwardWriterInitialSyncStage"],initialStage+(attempted?1:0));
+   assert.equal(context["forwardWriterInitialSyncHeld"],initialStage===42&&!attempted?"syncReturned":null);
+   assert.equal(context["forwardWriterInitialSyncFailed"],attempted);
+   if(attempted){
+    assert.throws(invoke);assert.equal(attempts,1);
+    assert.throws(()=>runInContext(`(function(){${ownerMethod(source,"CompleteForwardWriterInitialSync")}})()`,context));
+    assert.throws(()=>runInContext(`(function(role){${ownerMethod(source,"HoldForwardWriterInitialSync")}})('syncReturned')`,context));
+    assert.equal(context["forwardWriterInitialSyncComplete"],false);
    }
   }
  }
