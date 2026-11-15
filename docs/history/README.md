@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-15 Native-only projector review corrections](2026-11-15-native-only-projector-review.md). Instance receiver closure and surviving signature constants retain reachable code without reopening closed public bodies; focused regressions and inert C#5 execution remain separate from native admission.
+
 - [2026-11-15 Footprint continuation foundation review batch](2026-11-15-footprint-foundation-review-batch.md). Independently buildable typed primitives, exact local validation and explicit pending integration/release boundaries.
 
 - [2026-11-15 Versioned package-growth envelope](2026-11-15-versioned-package-growth-envelope.md). Explicit v2 verification preserves the original profile and exact per-path byte bounds.

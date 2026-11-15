@@ -4,7 +4,7 @@
 import { currentPcbDiagnosticCSharpLexicalTokens as tokenize } from "./current-pcb-diagnostic-csharp-spacing.ts";
 
 type Token = ReturnType<typeof tokenize>[number];
-interface Method { readonly owner: string; readonly name: string; readonly start: number; readonly end: number; readonly bodyStart: number; readonly bodyEnd: number; readonly public: boolean; readonly uses: readonly Token[] }
+interface Method { readonly owner: string; readonly name: string; readonly start: number; readonly end: number; readonly bodyStart: number; readonly bodyEnd: number; readonly public: boolean; readonly signature: readonly Token[]; readonly uses: readonly Token[] }
 interface Field { readonly owner: string; readonly start: number; readonly end: number; readonly prefix: string; readonly cells: readonly Readonly<{ name: string; text: string; uses: readonly Token[] }>[] }
 interface Block { readonly start: number; readonly end: number; readonly contentStart: number; readonly contentEnd: number; readonly name: string }
 const prefix = "// BEGIN NATIVE ONLY CLOSED PUBLIC ", suffix = "// END NATIVE ONLY CLOSED PUBLIC ";
@@ -51,7 +51,7 @@ function members(source: string, tokens: readonly Token[]): Readonly<{ methods: 
       else if (token.text === "{" && !assignment) {
         const paren = head.findIndex(row => row.text === "("); need(paren > 0); const method = head[paren - 1]; need(method?.kind === "identifier");
         last = closing(tokens, stop, "{", "}"); const final = tokens[last]; need(final !== undefined);
-        methods.push({ owner: name, name: method.text, start: firstToken.start, end: final.end, bodyStart: token.start, bodyEnd: final.end, public: head.some(row => row.text === "public"), uses: tokens.slice(stop + 1, last) });
+        methods.push({ owner: name, name: method.text, start: firstToken.start, end: final.end, bodyStart: token.start, bodyEnd: final.end, public: head.some(row => row.text === "public"), signature: head, uses: tokens.slice(stop + 1, last) });
       } else {
         while (tokens[last]?.text !== ";") { if (tokens[last]?.text === "{") { last = closing(tokens, last, "{", "}"); } last += 1; need(last < end); }
         const final = tokens[last]; need(final !== undefined); const declaration = tokens.slice(first, last);
@@ -109,13 +109,19 @@ export interface CurrentFootprintInverseNativeOnlyProjection { readonly source: 
 export function projectCurrentFootprintInverseNativeOnly(input: string): CurrentFootprintInverseNativeOnlyProjection {
   need(Buffer.byteLength(input) <= 4_194_304); const marked = blocks(input); const allMethods: Method[] = []; const allFields: Field[] = [];
   const lexical=tokenize(input);for (const block of marked) { const tokens = lexical.filter(token => token.start >= block.contentStart && token.end <= block.contentEnd && token.kind !== "space" && token.kind !== "comment"); const parsed = members(input, tokens); allMethods.push(...parsed.methods); allFields.push(...parsed.fields); }
-  const graph = new Map(uses(input, marked)); const retained = new Set<Method>(); const kept = new Set<string>();
+  const graph = new Map(uses(input, marked)); const signatures = new Map<string, readonly Token[]>();
+  /* A closed public method keeps its declaration. Signature-only references
+   * retain fields, never method bodies: the method/parameter declaration names
+   * must not accidentally reopen an otherwise closed public route. */
+  const retainSignature = (method: Method): void => { signatures.set(method.owner, [...(signatures.get(method.owner) ?? []), ...method.signature]); };
+  for (const method of allMethods) { if (method.public) { retainSignature(method); } }
+  const retained = new Set<Method>(); const kept = new Set<string>();
   const names=new Set([...allMethods.map(row=>row.name),...allFields.flatMap(row=>row.cells.map(cell=>cell.name))]);for(const rows of graph.values()){for(let i=2;i<rows.length;i+=1){const token=rows[i];if(token?.kind==="string"&&rows[i-1]?.text==="("&&["GetField","GetMethod","GetProperty","InvokeMember"].includes(rows[i-2]?.text??"")){for(const name of names){need(token.text!==JSON.stringify(name));}}}}
   let changed = true;
   while (changed) {
     changed = false;
-    for (const method of allMethods) { if (!retained.has(method) && referenced(method.owner, method.name, graph, true)) { retained.add(method); graph.set(method.owner, [...(graph.get(method.owner) ?? []), ...method.uses]); changed = true; } }
-    for (const field of allFields) { for (const cell of field.cells) { const key = `${field.owner  }:${  cell.name}`; if (!kept.has(key) && referenced(field.owner, cell.name, graph, false,/\b(?:public|internal|protected)\b/u.test(field.prefix))) { kept.add(key); graph.set(field.owner, [...(graph.get(field.owner) ?? []), ...cell.uses]); changed = true; } } }
+    for (const method of allMethods) { if (!retained.has(method) && referenced(method.owner, method.name, graph, true, true)) { retained.add(method); if (!method.public) { retainSignature(method); } graph.set(method.owner, [...(graph.get(method.owner) ?? []), ...method.uses]); changed = true; } }
+    for (const field of allFields) { for (const cell of field.cells) { const key = `${field.owner  }:${  cell.name}`; if (!kept.has(key) && (referenced(field.owner, cell.name, graph, false,/\b(?:public|internal|protected)\b/u.test(field.prefix)) || referenced(field.owner, cell.name, signatures, false,/\b(?:public|internal|protected)\b/u.test(field.prefix)))) { kept.add(key); graph.set(field.owner, [...(graph.get(field.owner) ?? []), ...cell.uses]); changed = true; } } }
   }
   const edits: { start: number; end: number; value: string }[] = []; const closedPublicMethods: string[] = []; let omittedFields = 0, omittedPrivateMethods = 0;
   for (const method of allMethods) { if (!retained.has(method)) { if (method.public) { edits.push({ start: method.bodyStart, end: method.bodyEnd, value: closed }); closedPublicMethods.push(`${method.owner  }.${  method.name}`); } else { edits.push({ start: method.start, end: method.end, value: "" }); omittedPrivateMethods += 1; } } }

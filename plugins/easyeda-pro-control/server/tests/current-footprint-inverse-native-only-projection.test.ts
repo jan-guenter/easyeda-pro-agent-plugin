@@ -20,3 +20,34 @@ void test("native-only projection refuses unpaired/duplicate markers and malform
   assert.throws(() => project(source.replace("PublicOne\n", "PublicOne\n// BEGIN NATIVE ONLY CLOSED PUBLIC PublicOne\n")));
   assert.throws(() => project(source.replace("int Keep(){return Shared();}", "int Keep(){return Shared();")));
 });
+
+void test("native-only closure retains instance receiver methods and their complete transitive bodies", () => {
+  const entry = "public sealed partial class Owner{public int Native(){var reader=new Reader();return reader.Read();}}\n";
+  const leaf = "public sealed class Reader{int value=6;public int Read(){return Normalize(value);}int Normalize(int input){return input+1;}public int Unreachable(){return PrivateUnused();}int PrivateUnused(){return 99;}}";
+  const result = project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ReaderGraph\n${leaf}\n// END NATIVE ONLY CLOSED PUBLIC ReaderGraph\n`);
+  assert.equal(result.retainedMethods,2);
+  assert.ok(result.source.includes("public int Read(){return Normalize(value);}"));
+  assert.ok(result.source.includes("int Normalize(int input){return input+1;}"));
+  assert.ok(result.source.includes("int value=6;"));
+  assert.deepEqual(result.closedPublicMethods,["Reader.Unreachable"]);
+  assert.equal(result.source.includes("int PrivateUnused"),false);
+  assert.ok(result.source.includes('public int Unreachable(){throw new System.InvalidOperationException("native-only-public-route-closed");}'));
+});
+void test("native-only retained and closed public signatures retain defaults without opening declaration-name routes", () => {
+  const entry = "public sealed partial class Owner{public int Native(){return Keep();}}\n";
+  const leaf = "public sealed partial class Owner{const int RootLimit=4,DefaultLimit=RootLimit+1,ClosedLimit=RootLimit+2,BodyOnlyConstant=99;int Keep(int count=DefaultLimit){return count;}public int PublicCall(int Dangerous=ClosedLimit){return Dangerous+BodyOnly();}public int Dangerous(){return BodyOnly();}int BodyOnly(){return BodyOnlyConstant;}}";
+  const result = project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC SignatureGraph\n${leaf}\n// END NATIVE ONLY CLOSED PUBLIC SignatureGraph\n`);
+  assert.equal(result.retainedMethods,1);
+  for(const text of["RootLimit=4","DefaultLimit=RootLimit+1","ClosedLimit=RootLimit+2","int Keep(int count=DefaultLimit){return count;}"]){assert.ok(result.source.includes(text),text);}
+  assert.deepEqual(result.closedPublicMethods,["Owner.PublicCall","Owner.Dangerous"]);
+  assert.ok(result.source.includes('public int PublicCall(int Dangerous=ClosedLimit){throw new System.InvalidOperationException("native-only-public-route-closed");}'));
+  assert.equal(result.source.includes("int BodyOnly("),false);assert.equal(result.source.includes("BodyOnlyConstant"),false);
+});
+void test("native-only closed signatures retain qualified constant chains across marked classes", () => {
+  const entry = "public sealed partial class Owner{public int Native(){return Keep();}}\n";
+  const leaf = "public sealed partial class Owner{int Keep(){return 1;}public int Closed(int count=Limits.DefaultLimit){return count+BodyOnly();}int BodyOnly(){return 99;}}public static class Limits{public const int RootLimit=2,DefaultLimit=RootLimit+3,Unused=99;public static int UnusedRoute(){return Unused;}}";
+  const result = project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC QualifiedSignatures\n${leaf}\n// END NATIVE ONLY CLOSED PUBLIC QualifiedSignatures\n`);
+  assert.equal(result.retainedMethods,1);assert.ok(result.source.includes("public const int RootLimit=2,DefaultLimit=RootLimit+3;"));
+  assert.deepEqual(result.closedPublicMethods,["Owner.Closed","Limits.UnusedRoute"]);
+  assert.equal(result.source.includes("int BodyOnly("),false);assert.equal(result.source.includes("Unused=99"),false);
+});
