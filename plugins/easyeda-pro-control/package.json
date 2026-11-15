@@ -70,6 +70,7 @@
     "pcb209:spatial:check": "node scripts/generate-pcb209-spatial-protocol.ts --check",
     "pcb209:spatial:update": "node scripts/generate-pcb209-spatial-protocol.ts --write",
     "repository:history:check": "node scripts/check-publishable-history.ts",
+    "fresh-cli:metadata-proof": "node scripts/fresh-cli-metadata-proof.ts",
     "schematic:native:check": "node scripts/generate-schematic-edit-native.ts --check",
     "schematic:native:update": "node scripts/generate-schematic-edit-native.ts --write",
     "schematic:saved:native:check": "node scripts/generate-schematic-saved-readback-native.ts --check",

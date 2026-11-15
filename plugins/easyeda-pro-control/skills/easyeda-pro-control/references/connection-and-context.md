@@ -690,3 +690,114 @@ Region and full-page capture change the user's visible viewport because EasyEDA 
 When the full-page result says its geometry came from inferred A4, the requested bounds are approximate. Exact sheet geometry establishes the requested bounds, not that the returned bitmap has painted them. Neither `deterministic_viewport:true` nor `captured:true` proves pixel coverage or page completeness. Inspect the actual image before using it for visual review; follow the [capture-framing guidance](native-ui.md) when the image is stale or incorrectly framed.
 
 Use images to inspect legibility, approximate placement, and obvious visual defects. Do not use a screenshot as proof of net membership, primitive identity, clearance, drill size, save state, or persistence. Pair it with structured readback.
+
+
+### Fresh CLI installed-snapshot metadata proof
+
+The maintained [metadata proof helper](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/plugins/easyeda-pro-control/scripts/fresh-cli-metadata-proof.ts)
+can verify a newly installed snapshot through a fresh Codex CLI registry while
+Codex stays running. It uses one ephemeral app-server thread and direct, fixed
+metadata/session RPCs; it starts no model turn. This does not refresh the current
+desktop tool registry or admit live CAD work. The reviewed protocol is Codex
+CLI 0.168.0, including the thread-bound direct tool-call ABI. Linux Node remains
+exactly 24.18.0; Windows host Node version and executable hash are explicit trusted
+plan inputs, rather than one machine's Node 24.10 assumption.
+
+Prepare a bounded UTF-8 JSON plan with schema
+`easyeda-pro-control.fresh-cli-metadata-plan.v1`. Use a separately trusted release
+checkout and independent full installed Linux V2 byte/mode/link verification.
+On Windows, also verify published Windows bytes/reparse/link observations and
+configure the maintained launcher against that exact Linux root first. Do not
+patch a cache. Keep the same current CODEX_HOME/auth without copying credentials.
+
+The plan binds host, full merged commit, stamped plugin version, reviewed CLI
+executable, explicit expected host Node version, Linux Node canonical path/hash,
+actual Linux/host installed roots, distro, fresh evidence/workspace paths, and
+six exact runtime rows (`relativePath`, `bytes`, `sha256`, `mode`). Windows also
+binds the canonical host Node path/hash. Derive the distribution from the
+maintained WSL profile or trusted local configuration; no distro name is built
+in. Use canonical absolute paths and the existing fixed six runtime paths in
+[installation](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/installation.md#starting-the-bundled-launcher-on-windows).
+These are expected data observations, never serialized process/native authority.
+
+Before preparing `overrides`, inspect the SAME active host's resolved enabled
+MCP/plugin names read-only with child `--enable plugins`; retain raw CLI output
+privately and display names/flags only. `plugin list --json` lists installed
+entries; uninstalled availability needs `--available`. Derive the COMPLETE set
+of disabled unrelated MCPs/plugins for this focused child, leaving EasyEDA
+enabled. A filtered status query after thread creation does not prevent other
+enabled servers from starting. Use only existing persisted MCP transport tables
+and observed plugin IDs: an enabled-only table for a dynamically supplied server
+can create an invalid transport. Disable such a source through its actual plugin.
+Only child `.enabled=false` overrides are accepted; no global setting/auth change.
+
+Choose a NEW empty workspace outside EVERY project/check-out, so repository
+marketplace discovery cannot shadow the installed cache. Both evidence and
+workspace paths must be new for each attempt. The helper creates them exclusively
+and allocates every local evidence/control descriptor before spawning a CLI.
+From the plugin directory, pinned Linux Node/core 0 can run:
+
+```bash
+ulimit -c 0
+node scripts/fresh-cli-metadata-proof.ts --preview /absolute/trusted/plan.json
+node scripts/fresh-cli-metadata-proof.ts --prove /absolute/trusted/plan.json
+```
+
+Omitting the mode defaults to preview, which starts no owner and creates no
+workspace/evidence. The equivalent npm entry is `fresh-cli:metadata-proof`.
+On Windows, use the explicitly selected reviewed host Node directly; no developer
+node_modules is needed by these three builtin-only modules. Linux observation
+requires `/usr/bin/python3`; the Windows route also uses maintained WSL interop
+and Windows PowerShell/.NET, without a Get-FileHash module dependency.
+
+The helper verifies installed metadata, starts one fresh CLI process, initializes
+one ephemeral read-only thread, and lists ONLY the verified server name together
+with its actual threadId. Both selectors are required to reuse that thread's
+connection in CLI 0.168; preliminary global discovery can allocate another manager.
+The exact plugin ID and actual API/session roster must match before its four
+fixed calls: loaded-facade, inspect, retire, close-retired. Status, native/bridge,
+project calls, arbitrary RPC and model turns are unavailable. Unexpected approval
+or elicitation requests are retained as incomplete outcomes, never approved-all.
+
+Plan bytes and JSONL replies require fatal UTF-8 decoding, including the final
+EOF flush. Malformed text stops normal dispatch while retaining raw bytes and
+original EOF/settlement; physical close alone cannot make that proof successful.
+
+Full raw replies include structuredContent before formatting. An independent
+watcher holds the original returned facade PID's pidfd/start identity, exact Node
+executable descriptor and six descriptor-bound namespace file views before parent
+ACK and retirement. Windows additionally retains original CLI-descendant wrapper
+Node/wsl handles, matching start identity and host Node bytes. Retired state must
+include liveAdmissionOpen:false, activeCalls0 and lease ACK. A close-scheduled
+reply's processExitProved:false remains distinct from later original pidfd/handle
+exit. Join watchers and original CLI before another connection can start. The
+caller should retain its original helper process handle through its actual exit.
+
+The original nonce and `control.jsonl` path are published before owner allocation.
+Only status, close-cli-stdin and settle-exited-watchers are accepted through that
+retained descriptor or original stdin; there is no arbitrary method/PID selector.
+For example, append one UTF-8 line `{"nonce":"ORIGINAL_NONCE","action":"status"}`
+to the original control file. Use a Node append writer on Windows to share an
+already-open file correctly. JSON cannot reconstruct the original handles.
+
+Evidence failure stops normal sends and still closes the original CLI stdin.
+Bounded unknown bytes remain in memory for retrying ONLY their original journal
+writes; the failed transport/calls are never replayed. Watcher settlement waits
+for its original exit observation. Incomplete closure keeps the fixed status/
+control channel actionable. After resources close, pending evidence must flush
+before an incomplete exit. Journal `receivedSha256` hashes received stream bytes;
+after failure it need not equal the bytes currently persisted to disk. Overflow
+is reported explicitly and never becomes successful proof.
+
+A terminal `cleanup-manifest.json` lists the original-created workspace identity,
+closure/emptiness observations and eligibility for removing that empty directory
+AFTER the caller observes the original driver exit. The helper creates no runtime
+copies or clones and includes empty inventories for both. It offers no generic
+purge command; preserve raw/unknown evidence and remove only independently proved
+owned closed temporary artifacts. The manifest itself grants no ownership.
+
+Keep full installed V2 proof, Windows byte/link observations, six-file namespace
+observations and original process exits separate. None proves NTFS ACL custody,
+loaded JavaScript memory, continuous whole-package ownership or live runtime/CAD
+admission. Actual private Linux/Windows cases are recorded in the
+[installed handoff history](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-15-installed-fresh-cli-handoff.md).

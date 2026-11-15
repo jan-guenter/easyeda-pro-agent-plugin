@@ -1277,3 +1277,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Windows-to-WSL bootstrap](2026-11-15-windows-wsl-bootstrap.md) — 2026-11-15; strict transport/provisioning, crash-released publication serialization, captured six-file namespace custody, disposable binary EOF interop and the CI-only synthetic sandbox pin correction.
 
 - [Windows capsule nested user namespace](2026-11-15-windows-capsule-nested-user-namespace.md) — 2026-11-15; exact UID-map diagnostic, UID0-only private identity mapping with capabilities still dropped, and inert nested-sandbox regression.
+
+- [Maintained fresh CLI metadata proof](2026-11-15-through-2026-11-16-fresh-cli-metadata-proof-helper.md) — 2026-11-15 through 2026-11-16; portable default-preview coordinator, original pidfd/handle retirement, failure-safe evidence/control and bounded closed-workspace cleanup manifest.
