@@ -4,8 +4,8 @@
 import { currentPcbDiagnosticCSharpLexicalTokens as tokenize } from "./current-pcb-diagnostic-csharp-spacing.ts";
 
 type Token = ReturnType<typeof tokenize>[number];
-interface Method { readonly owner: string; readonly name: string; readonly start: number; readonly end: number; readonly bodyStart: number; readonly bodyEnd: number; readonly public: boolean; readonly signature: readonly Token[]; readonly uses: readonly Token[] }
-interface Field { readonly owner: string; readonly start: number; readonly end: number; readonly prefix: string; readonly cells: readonly Readonly<{ name: string; text: string; uses: readonly Token[] }>[] }
+interface Method { readonly owner: string; readonly name: string; readonly start: number; readonly end: number; readonly bodyStart: number; readonly bodyEnd: number; readonly public: boolean; readonly static: boolean; readonly signature: readonly Token[]; readonly uses: readonly Token[] }
+interface Field { readonly owner: string; readonly start: number; readonly end: number; readonly prefix: string; readonly static: boolean; readonly cells: readonly Readonly<{ name: string; text: string; uses: readonly Token[] }>[] }
 interface Block { readonly start: number; readonly end: number; readonly contentStart: number; readonly contentEnd: number; readonly name: string }
 const prefix = "// BEGIN NATIVE ONLY CLOSED PUBLIC ", suffix = "// END NATIVE ONLY CLOSED PUBLIC ";
 const closed = '{throw new System.InvalidOperationException("native-only-public-route-closed");}';
@@ -51,7 +51,7 @@ function members(source: string, tokens: readonly Token[]): Readonly<{ methods: 
       else if (token.text === "{" && !assignment) {
         const paren = head.findIndex(row => row.text === "("); need(paren > 0); const method = head[paren - 1]; need(method?.kind === "identifier");
         last = closing(tokens, stop, "{", "}"); const final = tokens[last]; need(final !== undefined);
-        methods.push({ owner: name, name: method.text, start: firstToken.start, end: final.end, bodyStart: token.start, bodyEnd: final.end, public: head.some(row => row.text === "public"), signature: head, uses: tokens.slice(stop + 1, last) });
+        methods.push({ owner: name, name: method.text, start: firstToken.start, end: final.end, bodyStart: token.start, bodyEnd: final.end, public: head.some(row => row.text === "public"), static: head.some(row => row.text === "static"), signature: head, uses: tokens.slice(stop + 1, last) });
       } else {
         while (tokens[last]?.text !== ";") { if (tokens[last]?.text === "{") { last = closing(tokens, last, "{", "}"); } last += 1; need(last < end); }
         const final = tokens[last]; need(final !== undefined); const declaration = tokens.slice(first, last);
@@ -74,7 +74,7 @@ function members(source: string, tokens: readonly Token[]): Readonly<{ methods: 
             cells.push({ name: id.text, text: source.slice(id.start, stopAt), uses: declaration.slice(cellStart + 1, i) }); cellStart = i + 1;
           }
         }
-        const id = declaration[firstName]; need(id !== undefined); fields.push({ owner: name, start: firstToken.start, end: final.end, prefix: source.slice(firstToken.start, id.start), cells });
+        const id = declaration[firstName]; need(id !== undefined); fields.push({ owner: name, start: firstToken.start, end: final.end, prefix: source.slice(firstToken.start, id.start), static: declaration.slice(0,firstName).some(row=>row.text==="static"), cells });
       }
       at = last + 1;
       if (tokens[at]?.text === ";") { at += 1; }
@@ -116,21 +116,27 @@ export function projectCurrentFootprintInverseNativeOnly(input: string): Current
   const retainSignature = (method: Method): void => { signatures.set(method.owner, [...(signatures.get(method.owner) ?? []), ...method.signature]); };
   for (const method of allMethods) { if (method.public) { retainSignature(method); } }
   const retained = new Set<Method>(); const kept = new Set<string>();
-  const names=new Set([...allMethods.map(row=>row.name),...allFields.flatMap(row=>row.cells.map(cell=>cell.name))]);for(const rows of graph.values()){for(let i=2;i<rows.length;i+=1){const token=rows[i];if(token?.kind==="string"&&rows[i-1]?.text==="("&&["GetField","GetMethod","GetProperty","InvokeMember"].includes(rows[i-2]?.text??"")){for(const name of names){need(token.text!==JSON.stringify(name));}}}}
+  const names=new Set([...allMethods.map(row=>row.name),...allFields.flatMap(row=>row.cells.map(cell=>cell.name))]);
   let changed = true;
   while (changed) {
     changed = false;
     for (const method of allMethods) { if (!retained.has(method) && referenced(method.owner, method.name, graph, true, true)) { retained.add(method); if (!method.public) { retainSignature(method); } graph.set(method.owner, [...(graph.get(method.owner) ?? []), ...method.uses]); changed = true; } }
     for (const field of allFields) { for (const cell of field.cells) { const key = `${field.owner  }:${  cell.name}`; if (!kept.has(key) && (referenced(field.owner, cell.name, graph, false,/\b(?:public|internal|protected)\b/u.test(field.prefix)) || referenced(field.owner, cell.name, signatures, false,/\b(?:public|internal|protected)\b/u.test(field.prefix)))) { kept.add(key); graph.set(field.owner, [...(graph.get(field.owner) ?? []), ...cell.uses]); changed = true; } } }
+    // Static initialization belongs to every retained static member and
+    // Instance constructor; its own dependencies join the same closure.
+    const initialized=new Set([...retained].filter(method=>method.static||method.name===method.owner).map(method=>method.owner));
+    for(const field of allFields){if(field.static&&field.cells.some(cell=>kept.has(`${field.owner}:${cell.name}`))){initialized.add(field.owner);}}
+    for(const method of allMethods){if(method.static&&method.name===method.owner&&initialized.has(method.owner)&&!retained.has(method)){retained.add(method);retainSignature(method);graph.set(method.owner,[...(graph.get(method.owner)??[]),...method.uses]);changed=true;}}
   }
+  // Newly retained method bodies, constructor bodies and initializer cells
+  // Must pass the same reflective-dependency refusal as the initial roots.
+  for(const rows of graph.values()){for(let i=2;i<rows.length;i+=1){const token=rows[i];if(token?.kind==="string"&&rows[i-1]?.text==="("&&["GetField","GetMethod","GetProperty","InvokeMember"].includes(rows[i-2]?.text??"")){for(const name of names){need(token.text!==JSON.stringify(name));}}}}
   const edits: { start: number; end: number; value: string }[] = []; const closedPublicMethods: string[] = []; let omittedFields = 0, omittedPrivateMethods = 0;
   for (const method of allMethods) { if (!retained.has(method)) { if (method.public) { edits.push({ start: method.bodyStart, end: method.bodyEnd, value: closed }); closedPublicMethods.push(`${method.owner  }.${  method.name}`); } else { edits.push({ start: method.start, end: method.end, value: "" }); omittedPrivateMethods += 1; } } }
   for(const field of allFields){
     const cells=field.cells.filter(cell=>kept.has(`${field.owner}:${cell.name}`));omittedFields+=field.cells.length-cells.length;
-    const needsDefault=cells.some(cell=>!cell.uses.some(token=>token.text==="="));
-    if(cells.length!==field.cells.length||needsDefault){
-      const type=tokenize(field.prefix).filter(token=>token.kind!=="space"&&token.kind!=="comment"&&!["public","private","protected","internal","static","readonly","volatile","const","new"].includes(token.text)).map(token=>token.text).join(" ");need(type.length>0);
-      const value=cells.length===0?"":`${field.prefix+cells.map(cell=>cell.uses.some(token=>token.text==="=")?cell.text:cell.text+"=default("+type+")").join(",")};`;
+    if(cells.length!==field.cells.length){
+      const value=cells.length===0?"":`${field.prefix+cells.map(cell=>cell.text).join(",")};`;
       edits.push({start:field.start,end:field.end,value});
     }
   }

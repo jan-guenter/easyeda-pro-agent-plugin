@@ -51,3 +51,31 @@ void test("native-only closed signatures retain qualified constant chains across
   assert.deepEqual(result.closedPublicMethods,["Owner.Closed","Limits.UnusedRoute"]);
   assert.equal(result.source.includes("int BodyOnly("),false);assert.equal(result.source.includes("Unused=99"),false);
 });
+
+void test("native-only closure refuses reflective member access introduced by a retained method",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+ const body='public static class Owner{static int secret=17;public static int Keep(){return(int)typeof(Owner).GetField("secret",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).GetValue(null);}public static int Touch(){return secret;}}';
+ assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ReflectionClosure\n${body}\n// END NATIVE ONLY CLOSED PUBLIC ReflectionClosure\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
+});
+void test("native-only static constructor and its dependencies belong to a retained qualified static call",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+ const body="public static class Owner{static int state;static Owner(){state=Initialize();}static int Initialize(){return 7;}public static int Keep(){return state;}public static int Closed(){return 99;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC StaticConstructor\n${body}\n// END NATIVE ONLY CLOSED PUBLIC StaticConstructor\n`);
+ for(const text of["static Owner(){state=Initialize();}","static int Initialize(){return 7;}","static int state;"]){assert.ok(result.source.includes(text),text);}
+ assert.deepEqual(result.closedPublicMethods,["Owner.Closed"]);assert.equal(result.source.includes("=default("),false);
+});
+void test("native-only field pruning preserves omitted initializers and their textual execution order",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+ const body="public static class Owner{static int seed=Initialize();public static int unused,value;static int Initialize(){value=7;return 5;}public static int Keep(){return seed+value;}public static int Closed(){return 99;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC InitializerOrder\n${body}\n// END NATIVE ONLY CLOSED PUBLIC InitializerOrder\n`);
+ assert.ok(result.source.includes("static int seed=Initialize();"));assert.ok(result.source.includes("public static int value;"));assert.equal(result.source.includes("unused"),false);assert.equal(result.source.includes("=default("),false);
+ assert.ok(result.source.indexOf("seed=Initialize()")<result.source.indexOf("int value;"));
+});
+
+void test("native-only static field access retains its constructor and transitive helper without a method root",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.State;}}\n";
+ const body="public static class Owner{public static int State;static Owner(){State=Initialize();}static int Initialize(){return 7;}public static int Closed(){return 99;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC StaticField\n${body}\n// END NATIVE ONLY CLOSED PUBLIC StaticField\n`);
+ for(const text of["static Owner(){State=Initialize();}","static int Initialize(){return 7;}","public static int State;"]){assert.ok(result.source.includes(text),text);}
+ assert.deepEqual(result.closedPublicMethods,["Owner.Closed"]);assert.equal(result.retainedMethods,2);
+});

@@ -57,3 +57,44 @@ Generated helpers, identities and bundles remain for the parent integration
 batch to regenerate and verify. No MCP/native connection, application operation,
 live DEL, persistence or cold-absence proof was performed. This leaf changes no
 historical profile, command count, native purpose or shared capacity limit.
+
+## Additional native review round
+
+A separate source-only correction based on public
+`d8f6d20386b094844f180eb9fbd23e2126de21bf` addresses the five subsequent
+native findings. No new tracked file or generated helper is part of this leaf.
+
+The native collateral ledger checks the after-round `argument0` against
+its corresponding retained tab or Storage proof before advancing its call
+counter or forwarding the fixed call. The existing matching before/after
+sequence remains valid. The original execution caller now joins its pending
+start before reading and joining the invocation settlement installed by that
+start. A retained asynchronous-submit regression covers both late request
+fulfillment and rejection after original exit; cleanup sends no new read.
+
+The closed native graph applies its reflective dependency refusal after the
+complete method/initializer closure. It records static membership and retains
+static constructors, including their transitive dependencies, when a retained
+static member or instance constructor needs class initialization. Field pruning
+preserves retained cells without adding explicit default assignments, so textual
+initializer order retains its original C# behavior.
+
+Seventeen focused source/Inspector cases pass with zero skips; both TypeScript
+projects, strict type-aware lint of the six affected source/test files, repository
+and all-skill validation pass with zero diagnostics. The facade-spawning MCP
+catalog smoke remains with parent integration. These checks cover the boundaries. Independently compiled
+inert C#5 fixtures prove an original reflective lookup returns 17 and its unsafe
+projection is refused; static-constructor original/projected results are both 7;
+field-initializer original/projected results are both 12. The same cases passed
+on Linux .NET 10 and in actual Windows PowerShell 5/.NET Framework with C#5,
+warning level 4 and warnings as errors, with zero compiler diagnostics.
+An additional inert ledger fixture compiles the exact emitted collateral
+`Control`/`Send` methods: matching proof handles complete the before/after
+sequence, and both foreign handles are refused before counters, encoding and
+forwarding. These are controlled language/ledger fixtures, with no native
+owner, Job, app, connection or persistence effect.
+
+Earlier compiler/codec results remain evidence for their exact earlier source.
+The changed production projector requires regeneration and revalidation before
+a new native helper can be sealed or admitted. The DEL continuation remains
+separate and unfinished.

@@ -1,10 +1,11 @@
+import {currentFootprintInverseNativeDeleteCollateralNativeSource as nativeSource}from "../src/current-footprint-inverse-native-delete-collateral-native.ts";
 /** Inert descriptor/Storage surrogates exercise the production fixed helpers.
  * These tests issue no Core origin, native owner, browser or DEL grant. */
 import assert from "node:assert/strict";
 import {test} from "node:test";
 import {Script,createContext,runInContext} from "node:vm";
 import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLLATERAL_PROGRAMS as P} from "../src/current-footprint-inverse-native-delete-collateral-programs.ts";
-import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLLATERAL_CALLS as CALLS,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLLATERAL_REQUESTS as R,currentFootprintInverseNativeDeleteCollateralCases as cases,currentFootprintInverseNativeDeleteCollateralTemplate as template,validateCurrentFootprintInverseNativeDeleteCollateralCommand as validate} from "../src/current-footprint-inverse-native-delete-collateral-protocol.ts";
+import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLLATERAL_CALLS as CALLS,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLLATERAL_REQUESTS as R,currentFootprintInverseNativeDeleteCollateralCases as cases,currentFootprintInverseNativeDeleteCollateralNativeFrame as nativeFrame,currentFootprintInverseNativeDeleteCollateralTemplate as template,validateCurrentFootprintInverseNativeDeleteCollateralCommand as validate,currentFootprintInverseNativeDeleteCollateralWire as wire} from "../src/current-footprint-inverse-native-delete-collateral-protocol.ts";
 import {CurrentFootprintInverseNativeDeleteCollateralCollector as Collector,assertOriginalCurrentFootprintInverseNativeDeleteCollateralCollector as original} from "../src/current-footprint-inverse-native-delete-collateral-collector.ts";
 
 function realm():ReturnType<typeof createContext>{
@@ -134,3 +135,17 @@ assert.equal(requests,1);
 assert.equal(exitChecks,2);
 }
 );
+
+void test("after-round proof arguments use the retained native slot before any counter or forwarding",()=>{
+ for(const command of cases().filter(candidate=>candidate.round==="after"&&candidate.method==="Runtime.callFunctionOn")){
+  assert.equal(command.method,"Runtime.callFunctionOn");if(command.method!=="Runtime.callFunctionOn"){throw new Error("fixed call expected");}
+  const proof=command.role==="tabReprove"?"original_tab":"original_storage";
+  const actual=validate({...command,params:{...command.params,arguments:[{objectId:proof}]}});
+  const text=JSON.stringify(wire(actual,79,"original_ui"));
+  const projected=nativeFrame(Buffer.from(`${text}\0`),actual,"original_ui");
+  assert.equal(projected["argument0"],proof);assert.equal(projected["round"],"after");assert.equal(Object.hasOwn(projected,"argument1"),false);
+ }
+ const code=nativeSource();const method=code.slice(code.indexOf("public void SendFootprintInverseNativeDeleteCollateral"));
+ const guard=method.indexOf('if(after&&fields["argument0"] as string!=(role=="tabReprove"?ndcTabProof:ndcStorageProof))');
+ assert.ok(guard!==-1);assert.ok(guard<method.indexOf("ndcCalls++;"));assert.ok(guard<method.indexOf("SendMessage("));
+});

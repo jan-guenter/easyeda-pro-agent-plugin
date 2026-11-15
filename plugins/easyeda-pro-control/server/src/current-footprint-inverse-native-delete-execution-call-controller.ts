@@ -319,7 +319,8 @@ this.#entryConsumed=true;
   public async settleAfterOriginalExit(): Promise<void> {
     this.#b.assertOriginalExit();
  this.#failed = true;
-    await Promise.allSettled([this.#pending, this.#settlement]);
+    await Promise.allSettled([this.#pending]);
+    await Promise.allSettled([this.#settlement]);
  this.#b.assertOriginalExit();
   }
 }
