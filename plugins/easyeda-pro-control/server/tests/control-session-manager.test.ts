@@ -4,7 +4,7 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmod, copyFile, lstat, mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { Writable } from "node:stream";
+import { Readable, Writable } from "node:stream";
 import { setTimeout as wait } from "node:timers/promises";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
@@ -108,7 +108,7 @@ const request = (value: unknown): string => JSON.stringify(value);
 const retire = (id: string, generation: number): string => request({ id, action: "retire", generation, confirmRetire: true });
 const loaded = (id: string): string => request({ id, tool: "easyeda_control_api", arguments: { request: { action: "loaded-facade" } } });
 
-const sdkModule = (path: string): string => JSON.stringify(pathToFileURL(join(pluginRoot, "node_modules/@modelcontextprotocol/sdk/dist/esm", path)).href);
+const sdkModule = (path: string): string => JSON.stringify(import.meta.resolve(`@modelcontextprotocol/sdk/${path}`));
 /** An inert metadata peer can exit without claiming native retirement. */
 function selfClosingMetadataPeer(): string {
   return `import {Server} from ${sdkModule("server/index.js")};
@@ -124,6 +124,30 @@ server.setRequestHandler(CallToolRequestSchema,async({params})=>{
  throw new Error('No retirement or native operation is implemented by this synthetic peer.');
 });await server.connect(new StdioServerTransport());`;
 }
+
+void test("pristine manager EOF retires only its original metadata child and closes evidence explicitly",{timeout:30_000},async()=>{
+ for(const touched of [false,true]){
+  const outputs:unknown[]=[],selected=await fixture();
+  await selectedProfile(selected.profilePath,async()=>{
+   const manager=new ForegroundSessionManager(async value=>{outputs.push(value);await Promise.resolve();});await manager.initialize(selected.root);
+   const pid=manager.inspect()["facadePid"];assert.equal(typeof pid,"number");
+   try{
+    if(touched){await manager.handle(loaded("metadata-was-caller-dispatched"));}
+    const input=Readable.from(Array.of<Buffer>());
+    assert.equal(await runManagerInput(manager,input),"input-closed");
+    assert.equal(await manager.closePristineInput(),!touched);
+    if(touched){assert.equal(manager.inspect()["stage"],"active");assert.equal(manager.inspect()["closure"],null);}
+    else{
+     assert.equal(manager.inspect()["stage"],"closed");assert.deepEqual(record(manager.inspect()["closure"]),{pid,exitObserved:true,closeObserved:true,exitCode:0,signal:null,stdinEof:true});
+     const retired=outputs.map(value=>record(value)).find(value=>value["id"]==="manager-pristine-eof-retirement");assert.ok(retired);assert.equal(retired["retired"],true);
+     assert.equal(await manager.closePristineInput(),false);
+    }
+   }finally{
+    if(manager.inspect()["stage"]!=="closed"){await manager.handle(retire("explicit-original-test-retirement",1));await manager.handle(request({id:"explicit-original-test-shutdown",action:"shutdown"}));}
+   }
+  });
+ }
+});
 
 void test("manager shutdown closes only itself after its original active child has already exited", { timeout: 15_000 }, async () => {
   const outputs: unknown[] = [], selected = await fixture(selfClosingMetadataPeer());
@@ -1718,4 +1742,92 @@ void test("original Component manager abort consumes once during the retained in
     await manager.handle(retire("component-retire", 1)); assert.equal(manager.inspect()["stage"], "between-facades");
     await manager.handle(request({ id: "component-shutdown", action: "shutdown" })); assert.equal(manager.inspect()["stage"], "closed");
   });
+});
+
+/** The actual SDK timeout loses its reply while the peer's callback still runs.
+ * This peer has no native methods and cannot open any application or user data. */
+function delayedFirstStatusPeer(): string {
+  return `import {Server} from ${sdkModule("server/index.js")};
+import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
+import {setTimeout as wait} from 'node:timers/promises';
+const server=new Server({name:'delayed-first-status-peer',version:'1.0.0'},{capabilities:{tools:{}}});
+let active=0,statusCalls=0,retired=false;
+const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
+const state=()=>({schema:'easyeda-pro-control.session-retirement.v1',state:retired?'retired':'active',activeCalls:active,liveAdmissionOpen:!retired,leaseReleaseAcknowledged:retired,replacementConnectionRequired:retired});
+server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_status','easyeda_control_session'].map(name=>({name,inputSchema:{type:'object'}}))}));
+server.setRequestHandler(CallToolRequestSchema,async({params})=>{
+ const action=params.arguments?.request?.action;
+ if(params.name==='easyeda_control_api'&&action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
+ if(params.name==='easyeda_control_status'){
+  if(++statusCalls!==1)throw new Error('status-replay');
+  active++;try{await wait(2500);return result({delayedMetadata:true});}finally{active--;}
+ }
+ if(params.name==='easyeda_control_session'&&action==='inspect')return result({result:state()});
+ if(params.name==='easyeda_control_session'&&action==='retire'){
+  if(active!==0||retired)throw new Error('peer-not-quiescent');retired=true;return result({result:state()});
+ }
+ throw new Error('unsupported-peer-operation');
+});setTimeout(()=>{void server.close();},4500).unref();await server.connect(new StdioServerTransport());`;
+}
+
+void test("first status timeout permits only original metadata settlement and retirement", {timeout:15_000},async()=>{
+ const outputs:unknown[]=[],selected=await fixture(delayedFirstStatusPeer());
+ await selectedProfile(selected.profilePath,async()=>{
+  const manager=new ForegroundSessionManager(async value=>{outputs.push(value);await Promise.resolve();});await manager.initialize(selected.root);
+  const pid=manager.inspect()["facadePid"];assert.equal(typeof pid,"number");
+  const originalId="first-status-timeout";
+  await manager.handle(request({id:originalId,tool:"easyeda_control_status",arguments:{},timeoutMs:1000}));
+  assert.equal(manager.inspect()["stage"],"blocked");assert.equal(record(manager.inspect()["interruptedRequest"])["cleanupAvailable"],true);
+  const observation=(id:string,generation=1,interruptedRequestId=originalId):string=>request({id,action:"observe-metadata-settlement",generation,interruptedRequestId});
+  await manager.handle(observation("wrong-generation",2));assert.equal(record(outputs.at(-1))["dispatched"],false);
+  await manager.handle(observation("wrong-original",1,"foreign-request"));assert.equal(record(outputs.at(-1))["dispatched"],false);
+  await manager.handle(request({id:"no-status-replay",tool:"easyeda_control_status",arguments:{}}));assert.equal(record(outputs.at(-1))["dispatched"],false);
+  await manager.handle(retire("not-yet-observed",1));assert.equal(record(outputs.at(-1))["dispatched"],false);
+  await manager.handle(observation("original-still-running"));
+  const pendingEnvelope=record(outputs.at(-1)),pendingResult=record(pendingEnvelope["result"]);
+  const pendingStructured=record(pendingResult["structuredContent"]);const pending=record(pendingStructured["result"]);
+  assert.ok(pending["activeCalls"]===0||pending["activeCalls"]===1);
+  if(pending["activeCalls"]===1){
+   await manager.handle(retire("not-yet-retirable",1));assert.equal(record(outputs.at(-1))["dispatched"],false);
+   await wait(1800);
+  }
+  await manager.handle(observation("original-has-settled"));
+  const settledEnvelope=record(outputs.at(-1)),settledResult=record(settledEnvelope["result"]);
+  const settledStructured=record(settledResult["structuredContent"]);const settled=record(settledStructured["result"]);assert.equal(settled["activeCalls"],0);
+  assert.equal(manager.inspect()["stage"],"blocked");assert.equal(record(manager.inspect()["interruptedRequest"])["outcome"],"unknown");
+  await manager.handle(retire("retire-original-after-settlement",1));assert.equal(manager.inspect()["stage"],"between-facades");
+  assert.deepEqual(record(manager.inspect()["closure"]),{pid,exitObserved:true,closeObserved:true,exitCode:0,signal:null,stdinEof:true});
+  await manager.handle(request({id:"metadata-manager-shutdown",action:"shutdown"}));assert.equal(manager.inspect()["stage"],"closed");
+ });
+});
+
+void test("metadata settlement refuses prior caller history and nonempty status arguments", {timeout:20_000},async context=>{
+ for(const scenario of["prior-caller","nonempty-arguments"]as const){
+  const outputs:unknown[]=[],selected=await fixture(delayedFirstStatusPeer());
+  await selectedProfile(selected.profilePath,async()=>{
+   const manager=new ForegroundSessionManager(async value=>{outputs.push(value);await Promise.resolve();});await manager.initialize(selected.root);
+   const pid=manager.inspect()["facadePid"];
+   context.after(async()=>{
+    if(manager.inspect()["stage"]==="closed"){return;}
+    await waitForObservedClosure(()=>manager.inspect()["closure"]!==null);
+    await manager.handle(request({id:`${scenario}-final-shutdown`,action:"shutdown"}));
+   });
+   if(scenario==="prior-caller"){await manager.handle(loaded(`${scenario}-earlier-read`));}
+   const originalId=`${scenario}-status`;
+   await manager.handle(request({id:originalId,tool:"easyeda_control_status",arguments:scenario==="nonempty-arguments"?{extra:true}:{},timeoutMs:1000}));
+   assert.equal(manager.inspect()["stage"],"blocked");assert.equal(record(manager.inspect()["interruptedRequest"])["cleanupAvailable"],false);
+   for(const command of[
+    {id:`${scenario}-observe`,action:"observe-metadata-settlement",generation:1,interruptedRequestId:originalId},
+    {id:`${scenario}-retire`,action:"retire",generation:1,confirmRetire:true},
+    {id:`${scenario}-replay`,tool:"easyeda_control_status",arguments:{}},
+   ]){await manager.handle(request(command));assert.equal(record(outputs.at(-1))["dispatched"],false);}
+   assert.equal(await manager.closePristineInput(),false);
+   const records=manager.inspect()["records"];assert.ok(Array.isArray(records));assert.equal(records.filter(row=>record(row)["kind"]==="original-cleanup-intent").length,0);
+   await waitForObservedClosure(()=>manager.inspect()["closure"]!==null);
+   const closure=record(manager.inspect()["closure"]);assert.equal(closure["pid"],pid);assert.equal(closure["signal"],null);assert.equal(closure["exitObserved"],true);assert.equal(closure["closeObserved"],true);
+   assert.equal(record(manager.inspect()["interruptedRequest"])["outcome"],"unknown");assert.equal(manager.inspect()["stage"],"blocked");
+   await manager.handle(request({id:`${scenario}-shutdown`,action:"shutdown"}));assert.equal(manager.inspect()["stage"],"closed");
+  });
+ }
 });

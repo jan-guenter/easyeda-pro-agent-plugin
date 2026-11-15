@@ -1,11 +1,6 @@
-import {
-  MachineProfileError,
-  loadMachineLaunchProfile,
-  machineInstallationFailureCodeSchema,
-  machineProfileLaunchConfiguration,
-  openVerifiedMachineNode,
-} from "./machine-profile.ts";
-import type { MachineInstallationFailureCode } from "./machine-profile.ts";
+import { WindowsWslLaunchError, configureWindowsWslLaunch, launchWindowsWslFacade, parseWindowsWslConfigurationArguments } from "./windows-wsl-launch.ts";
+import { MachineProfileError, machineInstallationFailureCodeSchema } from "./machine-profile-diagnostics.ts";
+import type { MachineInstallationFailureCode } from "./machine-profile-diagnostics.ts";
 
 export function parseMachineLauncherArguments(args: readonly string[]): { profilePath?: string } {
   if (args.length === 0) { return {}; }
@@ -25,7 +20,10 @@ export function parseOfflineLauncherArguments(args: readonly string[]): MachineI
 
 /** The trusted source wrapper or bundled entrypoint derives pluginRoot, never CLI arguments. */
 export async function launchMachine(args: readonly string[], pluginRoot: string): Promise<void> {
-  const runtime = await loadMachineLaunchProfile(parseMachineLauncherArguments(args));
+  const selected = parseMachineLauncherArguments(args);
+  if (process.platform === "win32") { await launchWindowsWslFacade(pluginRoot, selected.profilePath); return; }
+  const { loadMachineLaunchProfile, machineProfileLaunchConfiguration, openVerifiedMachineNode } = await import("./machine-profile.ts");
+  const runtime = await loadMachineLaunchProfile(selected);
   const configuration = machineProfileLaunchConfiguration(runtime.profile, pluginRoot);
   const entrypoint = configuration.args[0];
   if (entrypoint === undefined) { throw new MachineProfileError("machine-launcher-entrypoint-missing"); }
@@ -49,4 +47,15 @@ export async function launchMachine(args: readonly string[], pluginRoot: string)
   } finally {
     await node.close();
   }
+}
+
+/** Diagnostics expose only fixed machine-launch codes, never paths or raw errors. */
+export function machineLaunchFailureCode(error: unknown): string {
+  if (error instanceof MachineProfileError || error instanceof WindowsWslLaunchError) { return error.code; }
+  return "machine-launch-failed";
+}
+/** Provisioning is a separate standalone data operation and starts no facade. */
+export function configureWindowsWslMachine(args: readonly string[], pluginRoot: string): ReturnType<typeof configureWindowsWslLaunch> {
+  const request = parseWindowsWslConfigurationArguments(args);
+  return configureWindowsWslLaunch(pluginRoot, request.profile, request.replace);
 }
