@@ -348,3 +348,36 @@ failed or passing test result. The public patch and interruption evidence are
 retained independently. Further Linux launches are held during coordinated
 storage recovery. Exact new-head Linux CI, strict checks and actual follow-up
 review remain required before merge; no new-head passing result is claimed.
+
+
+## 2026-11-15 fixture strict-lint correction and completed local checks
+
+The actual CodeRabbit follow-up on `4ba1870dae3fe5d134c17482bb9e1e102577299a`
+reported no new actionable defect, but that head's `verify-build` failed three
+strict lint checks. The fixture's added crypto import raised the dependency
+count from ten to eleven, and two continuation comment lines began with
+lowercase letters. This failure remains separate from the earlier runtime-pin
+fixture failures and the interrupted dependency-materialization attempt.
+
+The fixture now computes the same SHA-256 with Node's built-in Web Crypto
+`subtle.digest`, retaining the exact byte capture without another module import.
+Both comments are complete capitalized sentences. No lint exception, runtime
+pin, test selection, platform skip, deadline or production code was changed.
+All three generated bundles and compatibility bytes remain unchanged from 4ba.
+
+On the healthy Linux public worktree, Node 24.18.0, npm 11.16.0 and soft core
+limit zero completed both facade TypeScript configurations, the whole affected
+ten-test file with zero failures/skips, and strict type-aware lint on its one
+changed test file with zero warnings/errors. Repository, isolated MCP catalog
+and all seven skill validators also pass. The catalog check uses private test
+configuration and a must-not-execute upstream; it is separate from an installed
+live-control connection. The affected fixture cases retain original child
+closure, exact EOF exit 23, wrong sandbox-hash refusal and same-packet positive
+control, all six captured namespace paths and cross-process configuration locks.
+
+The earlier local interruption did not pass these checks; this appended result
+records a later completed run without changing that earlier observation. Full
+suites/global lint/build were not repeated for this test/comment correction.
+Exact child-head CI and actual CodeRabbit follow-up remain required before
+merge. No installation, default-profile change, live application or native owner
+was part of this verification.

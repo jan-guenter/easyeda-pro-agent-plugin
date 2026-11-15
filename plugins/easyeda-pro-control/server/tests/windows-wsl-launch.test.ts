@@ -1,7 +1,6 @@
 /** Actual isolated Node/descriptor/byte handoff, never an EasyEDA owner. */
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
-import { createHash } from "node:crypto";
 import { chmod, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
@@ -25,7 +24,8 @@ async function packetFixture(): Promise<Readonly<{ root: string; packet: Windows
   // The CI workflow builds the reviewed Bubblewrap source for its own compiler.
   // This inert fixture binds those actual bytes, never the released machine pin.
   const sandboxCommand = await realpath("/usr/sbin/bwrap"); const sandboxBytes = await readFile(sandboxCommand);
-  const sandboxSha256 = createHash("sha256").update(sandboxBytes).digest("hex");
+  const sandboxDigest = await globalThis.crypto.subtle.digest("SHA-256", new Uint8Array(sandboxBytes));
+  const sandboxSha256 = Buffer.from(sandboxDigest).toString("hex");
   const compatibility = Buffer.from(JSON.stringify({ upstream: { launcher: { sandbox: { command: sandboxCommand, commandSha256: sandboxSha256 } } } }));
   for (const spec of windowsWslRuntimeFiles()) {
     const filename = join(root, spec.relativePath);
@@ -80,14 +80,14 @@ void test("a consistent six-file packet with the wrong sandbox hash refuses befo
   await writeFile(compatibilityPath, compatibility.replace(fixture.sandboxSha256, wrong));
   const profile = parseWindowsWslLaunchProfile({ schema: "easyeda-pro-control.windows-wsl-launch.v1", distribution: "synthetic",
     nodeExecutable: process.execPath, pluginRoot: fixture.root, machineProfilePath: fixture.packet.machineProfilePath });
-  // Capture again: all six byte hashes match, so refusal reaches the separate
-  // sandbox descriptor/hash check rather than a stale runtime-packet mismatch.
+  // Recapture every runtime file to keep all six packet hashes current.
+  // Refusal then reaches the separate sandbox descriptor/hash check.
   const packet = await captureWindowsWslRuntime(fixture.root, profile);
   const refused = await runFixtureNode(`process.argv=[process.execPath,"launch",${JSON.stringify(serializeWindowsWslRuntimePacket(packet))}];${windowsWslRuntimeProgram()}`);
   assert.equal(refused.code, 1); assert.equal(refused.signal, null); assert.equal(refused.stdout, "");
   assert.equal(refused.stderr, '{"ok":false,"error":"windows-wsl-runtime-refused"}\n');
-  // The otherwise identical correctly pinned packet must actually execute the
-  // inert entry, making an unrelated early refusal fail this negative control.
+  // Restore the original bytes and prove the inert entry executes.
+  // An unrelated early refusal must fail this positive control.
   await writeFile(compatibilityPath, compatibility);
   const accepted = await runFixtureNode(`process.argv=[process.execPath,"launch",${JSON.stringify(serializeWindowsWslRuntimePacket(fixture.packet))}];${windowsWslRuntimeProgram()}`);
   assert.equal(accepted.code, 0, accepted.stderr); assert.equal(accepted.signal, null); assert.equal(accepted.stdout, "fixed-fixture");
