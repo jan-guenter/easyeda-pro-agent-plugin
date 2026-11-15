@@ -30,3 +30,45 @@ are unchanged. These local checks do not replace exact-final-commit GitHub CI,
 CodeRabbit review, connected qualification or official installation. This review
 batch introduces no plugin version bump or installation request; release and
 installation remain part of the combined implementation update.
+
+
+## 2026-11-15 follow-up: six forward-writer review findings
+
+Reviewed the six non-release forward-writer threads against public PR head
+12997080e3a223f0560edc924d78bb6d2d6f9cb9. The changes retain the source-only
+foundation scope and grant no native writer or ordinary-project admission.
+
+- Branch and changed-history collectors hand the first failure to the retained
+  original host exactly once. Failed proof remains paused; the host must abort
+  its original generation and join/release its resources after observed exit.
+  The failed custody cannot issue remove/resume/release commands.
+- The allocated clock reserves physical producer IDs as well as its 78 logical
+  commands. Production uses all remaining normal-class producer capacity, with
+  a minimum of 57 producer messages from the fixed 135-physical-ID sequence.
+  Producer exhaustion or a failed send poisons the original clock.
+- Complete-only precreate-body control checks both body-bearing local codec
+  rows with maximum physical ID and handle/session lengths. It reserves raw and
+  JSON-escaped body sizes before the Create gate and bounds later body inputs.
+  A fixed-width UUID/time maximum is capacity data; actual source/structure
+  custody must still join the later real body. Integration must call this once
+  from its genuine precreate reservation and account for one additional control.
+- Live-cache metadata uses the branch comparator's validated original offset.
+- Both normal and helper own-data send failures latch failure; skipped sends
+  cannot contribute to a later ready/completion grant.
+
+Focused Node tests cover both actual custody/collector handoffs, numeric handles,
+maximum raw and escaped body envelopes, and branch offset preservation. A separate
+33,501-byte inert C# fixture compiled under actual Windows PowerShell 5 / C# 5
+with warnings treated as errors; clock headroom/exhaustion, fixed codec rows, both
+own-data failure branches and failed-producer clock poisoning passed. Its sender
+was an inert throwing fixture; no application, native owner or Job was allocated.
+This is offline source/protocol validation, not connected workflow proof.
+
+The failed-release finding is a separate versioned recovery joint. Existing v1
+records and unresolved-owner behavior remain unchanged in this batch. A retry
+must never follow an unknown acknowledgment or consumed native dispatch.
+
+Both TypeScript projects and strict lint on all thirteen source/test inputs
+passed. Nine focused tests passed without skips, along with repository,
+MCP-contract and all-skill validators. Generated native graphs and bundles were
+not changed in this source-only review leaf.

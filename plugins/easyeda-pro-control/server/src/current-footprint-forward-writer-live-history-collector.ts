@@ -27,6 +27,11 @@ export class CurrentFootprintForwardWriterLiveHistoryCollector {
   /** Each generation of this collector consumes exactly one real request. */
   public async observeHeld(frameId: string): Promise<CurrentFootprintInverseMainHistoryRows> {
     need(this.#point !== null && !this.#attempted); this.#attempted = true;
+    try { return await this.#observeHeld(frameId); }
+    catch (error) { this.#custody.failOriginalObservation(error); throw error; }
+  }
+  async #observeHeld(frameId: string): Promise<CurrentFootprintInverseMainHistoryRows> {
+    const point = this.#point; need(point !== null);
     const request = this.#custody.originalRequestObjectId();
     const frame = object.parse(await this.#custody.request({ phase: "inverse-main-history-frame", method: "Debugger.evaluateOnCallFrame",
       params: { ...FRAME, callFrameId: frameId, expression: SITE.expression } }, false)).result.objectId;
@@ -49,7 +54,7 @@ export class CurrentFootprintForwardWriterLiveHistoryCollector {
     }
     await this.#custody.request({ phase: "inverse-main-history-join", role: "value", method: "Runtime.callFunctionOn",
       params: { ...CALL, objectId: capture, functionDeclaration: PROGRAMS.value.program, arguments: [], returnByValue: true } }, false);
-    await this.#custody.request({ phase: "inverse-main-history-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#point } }, true);
+    await this.#custody.request({ phase: "inverse-main-history-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: point } }, true);
     await this.#custody.request({ phase: "inverse-main-history-step", method: "Debugger.resume", params: {} }, false);
     await this.#custody.request({ phase: "inverse-main-history-release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }, true);
     return this.#custody.result();

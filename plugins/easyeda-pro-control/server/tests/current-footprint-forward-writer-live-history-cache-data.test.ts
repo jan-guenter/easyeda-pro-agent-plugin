@@ -21,3 +21,9 @@ void test("full copy live cache preserves two headers, old peer fields and nativ
  assert.ok(result.headIndex.body.includes('"id":37'));assert.ok(result.headIndex.body.includes('"docs":'));assert.ok(Object.isFrozen(result));
  for(const changed of [{...input,body:input.body.replace('"FOOTPRINT"','"SYMBOL"')},{...input,postBranch:{...input.postBranch,sha256:"0".repeat(64)}},{...input,body:input.body+"x".repeat(8192)}]){assert.throws(()=>deriveCurrentFootprintForwardWriterLiveHistoryCacheData(changed))}
 });
+
+void test("live cache uses the comparator's original branch offset",()=>{
+ const input=fixture();const changed={...input,postBranch:{...input.postBranch,observedLocalOffsetMinutes:120}};
+ const result=deriveCurrentFootprintForwardWriterLiveHistoryCacheData(changed);
+ assert.equal(result.branch.importLocalOffsetMinutes,60);
+});

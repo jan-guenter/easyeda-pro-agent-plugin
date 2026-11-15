@@ -18,6 +18,7 @@ export type CurrentFootprintInverseMainHistoryRows = CurrentFootprintInverseMain
 export interface CurrentFootprintForwardWriterLiveHistoryExpectation { readonly projectUuid: string; readonly branchUuid: string; readonly historyUuid: string; readonly compare: (value: CurrentFootprintInverseMainHistoryRows) => CurrentFootprintInverseMainHistoryRows }
 export interface CurrentFootprintForwardWriterLiveHistoryHost {
   readonly scriptId: string; readonly sqlCaptureObjectId: string;
+  readonly fail: (cause: unknown) => void;
   readonly assertCurrent: () => void; readonly expected: () => CurrentFootprintForwardWriterLiveHistoryExpectation;
   readonly pause: () => CurrentPcbViaMainBeginPause; readonly pendingRequestId: () => number | null; readonly busy: () => boolean;
   readonly send: (command: Command, cleanup: boolean) => Promise<unknown>;
@@ -40,12 +41,25 @@ function need(value: boolean, reason: string): asserts value { if (!value) { thr
 const order = ["arm", "frame", "join-capture", "properties-packet", "properties-promise", "join-resolved", "properties-projectSql", "properties-table", "properties-branches", "join-value", "remove", "step", "release"] as const;
 export class CurrentFootprintForwardWriterLiveHistoryCustody {
   readonly #host: CurrentFootprintForwardWriterLiveHistoryHost;
+  #failureHandedOff = false;
   #stage = 0; #failed = false; #point: string | null = null; #frame: string | null = null; #capture: string | null = null;
   #requestCapture: string | null = null; #promise: string | null = null; #resolved: string | null = null;
   #expected: CurrentFootprintForwardWriterLiveHistoryExpectation | null = null; #value: CurrentFootprintInverseMainHistoryRows | null = null;
   readonly #functions = new Map<string, string>();
   #active: Readonly<{ command: Command; consumed: boolean }> | null = null;
   public constructor(host: CurrentFootprintForwardWriterLiveHistoryHost) { this.#host = host; Object.freeze(this); }
+  /** Failed proof never resumes Main. The retained original host must abort
+   * its own generation and join/release these resources after original exit. */
+  public failOriginalObservation(cause: unknown): void {
+    this.#failed = true;
+    if (!this.#failureHandedOff) {
+      this.#failureHandedOff = true;
+      try { this.#host.fail(cause); }
+      catch {
+        // Preserve the original failure. A failed handoff remains quarantined.
+      }
+    }
+  }
   #same(): void { need(!this.#failed, "FAILED"); this.#host.assertCurrent(); if (this.#expected !== null) { need(this.#host.expected() === this.#expected, "ORIGINAL_BASELINE"); } }
   public wantsReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation): boolean {
     if (this.#stage !== 1 || this.#expected === null) { return false; } this.#same(); const effect = this.#expected;
@@ -115,7 +129,7 @@ export class CurrentFootprintForwardWriterLiveHistoryCustody {
         }
       } else { z.strictObject({}).parse(reply); if (command.phase === "inverse-main-history-remove") { need(this.#point !== null, "ORIGINAL_POINT"); this.#host.removePoint(this.#point); } }
       this.#stage += 1; return reply;
-    } catch (caughtError) { this.#failed = true; throw caughtError; } finally { this.#active = null; }
+    } catch (caughtError) { this.failOriginalObservation(caughtError); throw caughtError; } finally { this.#active = null; }
   }
   public result(): CurrentFootprintInverseMainHistoryRows { this.#same(); need(this.#stage === order.length && this.#value !== null && this.#active === null, "ORIGINAL_COMPLETED_READ"); return this.#value; }
 }

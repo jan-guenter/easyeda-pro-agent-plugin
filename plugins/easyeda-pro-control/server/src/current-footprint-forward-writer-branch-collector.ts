@@ -27,6 +27,11 @@ export class CurrentFootprintForwardWriterBranchCollector {
   /** Each generation of this collector consumes exactly one real request. */
   public async observeHeld(frameId: string): Promise<CurrentFootprintForwardWriterBranchRows> {
     need(this.#point !== null && !this.#attempted); this.#attempted = true;
+    try { return await this.#observeHeld(frameId); }
+    catch (error) { this.#custody.failOriginalObservation(error); throw error; }
+  }
+  async #observeHeld(frameId: string): Promise<CurrentFootprintForwardWriterBranchRows> {
+    const point = this.#point; need(point !== null);
     const request = this.#custody.originalRequestObjectId();
     const frame = object.parse(await this.#custody.request({ phase: "forward-writer-branch-frame", method: "Debugger.evaluateOnCallFrame",
       params: { ...FRAME, callFrameId: frameId, expression: SITE.expression } }, false)).result.objectId;
@@ -42,7 +47,7 @@ export class CurrentFootprintForwardWriterBranchCollector {
       params: { ...CALL, objectId: capture, functionDeclaration: PROGRAMS.resolved.program, arguments: [{ objectId: resolved }], returnByValue: true } }, false);
     await this.#custody.request({ phase: "forward-writer-branch-join", role: "value", method: "Runtime.callFunctionOn",
       params: { ...CALL, objectId: capture, functionDeclaration: PROGRAMS.value.program, arguments: [], returnByValue: true } }, false);
-    await this.#custody.request({ phase: "forward-writer-branch-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#point } }, true);
+    await this.#custody.request({ phase: "forward-writer-branch-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: point } }, true);
     await this.#custody.request({ phase: "forward-writer-branch-step", method: "Debugger.resume", params: {} }, false);
     await this.#custody.request({ phase: "forward-writer-branch-release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }, true);
     return this.#custody.result();

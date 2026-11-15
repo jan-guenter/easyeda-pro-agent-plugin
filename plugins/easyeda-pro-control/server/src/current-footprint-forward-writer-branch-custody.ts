@@ -16,6 +16,7 @@ export interface CurrentFootprintForwardWriterBranchExpectation { readonly proje
 export type CurrentFootprintForwardWriterBranchRows = CurrentFootprintForwardWriterBranchData;
 export interface CurrentFootprintForwardWriterBranchHost {
   readonly scriptId: string; readonly sqlCaptureObjectId: string;
+  readonly fail: (cause: unknown) => void;
   readonly assertCurrent: () => void; readonly expected: () => CurrentFootprintForwardWriterBranchExpectation;
   readonly pause: () => CurrentPcbViaMainBeginPause; readonly pendingRequestId: () => number | null; readonly busy: () => boolean;
   readonly send: (command: Command, cleanup: boolean) => Promise<unknown>;
@@ -38,11 +39,24 @@ function need(value: boolean, reason: string): asserts value { if (!value) { thr
 const order = ["arm", "frame", "join-capture", "properties-packet", "properties-promise", "join-resolved", "join-value", "remove", "step", "release"] as const;
 export class CurrentFootprintForwardWriterBranchCustody {
   readonly #host: CurrentFootprintForwardWriterBranchHost;
+  #failureHandedOff = false;
   #stage = 0; #failed = false; #point: string | null = null; #frame: string | null = null; #capture: string | null = null;
   #requestCapture: string | null = null; #promise: string | null = null; #resolved: string | null = null;
   #expected: CurrentFootprintForwardWriterBranchExpectation | null = null; #value: CurrentFootprintForwardWriterBranchRows | null = null;
     #active: Readonly<{ command: Command; consumed: boolean }> | null = null;
   public constructor(host: CurrentFootprintForwardWriterBranchHost) { this.#host = host; Object.freeze(this); }
+  /** Failed proof never resumes Main. The retained original host must abort
+   * its own generation and join/release these resources after original exit. */
+  public failOriginalObservation(cause: unknown): void {
+    this.#failed = true;
+    if (!this.#failureHandedOff) {
+      this.#failureHandedOff = true;
+      try { this.#host.fail(cause); }
+      catch {
+        // Preserve the original failure. A failed handoff remains quarantined.
+      }
+    }
+  }
   #same(): void { need(!this.#failed, "FAILED"); this.#host.assertCurrent(); if (this.#expected !== null) { need(this.#host.expected() === this.#expected, "ORIGINAL_BASELINE"); } }
   public wantsReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation): boolean {
     if (this.#stage !== 1 || this.#expected === null) { return false; } this.#same(); const effect = this.#expected;
@@ -107,7 +121,7 @@ export class CurrentFootprintForwardWriterBranchCustody {
         }
       } else { z.strictObject({}).parse(reply); if (command.phase === "forward-writer-branch-remove") { need(this.#point !== null, "ORIGINAL_POINT"); this.#host.removePoint(this.#point); } }
       this.#stage += 1; return reply;
-    } catch (caughtError) { this.#failed = true; throw caughtError; } finally { this.#active = null; }
+    } catch (caughtError) { this.failOriginalObservation(caughtError); throw caughtError; } finally { this.#active = null; }
   }
   public result(): CurrentFootprintForwardWriterBranchRows { this.#same(); need(this.#stage === order.length && this.#value !== null && this.#active === null, "ORIGINAL_COMPLETED_READ"); return this.#value; }
 }
