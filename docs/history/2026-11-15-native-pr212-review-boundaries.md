@@ -295,3 +295,26 @@ repository and all-skill validation pass. Generated helper/bundle regeneration
 and exact final-head CI remain the parent integration batch's checks. These
 fixtures allocate no facade, native owner, Job or application and establish no
 connected or saved-result proof.
+
+## Combined final-dispatch and projection correction batch
+
+Both full reviews of 485dbb4d completed: six plus two reported issues, with
+150 selected files and no reported processing skips. All eight issues are
+addressed in the combined source, with the related bulk/dynamic reflection
+case also refused. Details and original counterexamples remain in the forward,
+projector and cursor sections. Full CI, all eight facade shards, build, history
+and Windows recovery passed for the preceding 485dbb4d head.
+
+The new combined source passes 48 affected focused cases with zero skips,
+both facade and bridge TypeScript projects, bridge lint and whole-repository
+strict type-aware lint over 4,778 files with zero warnings/errors. All generated
+helper checks, build, API coverage, compatibility and repository/MCP/skill checks
+pass. All three runtime bundles still reproduce their committed bytes; only
+source projection and review time refresh. Exact new-head CI and follow-up
+CodeRabbit review remain merge gates.
+
+The public scope remains unmounted foundations. In particular the preserved
+V1 release journal still refuses unresolved cleanup; the new V2 budget/schema
+and pure chain validator choose and encode the recovery contract, while the
+actual publisher and original opaque-proof binding remain separate owner
+integration. This batch claims no public runtime recovery or new live writer.

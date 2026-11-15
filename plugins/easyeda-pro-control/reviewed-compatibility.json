@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "20372fdddd5d62361d467b52a302bec873e81751698c02d1adec7b82607a4b77",
+      "sha256": "2976d3b8707316130f8cfb0c1bd9440eff29fadd5a77a7c413a47f5fb729005a",
       "fileCount": 2716,
       "files": [
         {
@@ -2084,7 +2084,7 @@
         {
           "relativePath": "current-footprint-forward-writer-startup-ws-protocol.ts",
           "bytes": 4240,
-          "sha256": "54402ff2853ba7a1a41236f1c7ddce19cba4c433a0a9c99523123ba6207a308a"
+          "sha256": "906fd02067211068b383d696c6ec770b4fdaa9a2624353d5cb01e089f58caeab"
         },
         {
           "relativePath": "current-footprint-forward-writer-sync-native.ts",
@@ -3343,8 +3343,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-clock-registration-cursor.ts",
-          "bytes": 6310,
-          "sha256": "83037b73d9ca791241bd3936a098a251874954aaa6157c6259818f589119e0f7"
+          "bytes": 6355,
+          "sha256": "02e1ee7037c32c80c0ba8b86dfc19c2d75e3dc94d69d60d9ca6330cbef5a4ac5"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-clock-registration-native.ts",
@@ -3388,8 +3388,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-execution-accept-cursor.ts",
-          "bytes": 6958,
-          "sha256": "8d1bfe689387de175b2708981ced926fe70cfd4d725ab4e99c5d0e5a2743a74b"
+          "bytes": 6988,
+          "sha256": "cbfc37b4720cd20593c8ba5797be68605150645cadef390ed96f33109e02d105"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-execution-accept-protocol.ts",
@@ -3968,8 +3968,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-next-book.ts",
-          "bytes": 3543,
-          "sha256": "4068a1a0aeff160fc5afda980297c08bdce276f50c533dbdbc6cfae46a25d285"
+          "bytes": 3763,
+          "sha256": "49789367289cef82376a3e96f5c2fb2270769d714691aa400e56f5fda8c8e4b5"
         },
         {
           "relativePath": "current-footprint-inverse-native-only-common-field-profile.ts",
@@ -3978,8 +3978,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-only-projection.ts",
-          "bytes": 22693,
-          "sha256": "1d4a5153ee513a9cc841d6046304f4c952d8708fdc7e0f7a420bfb03fcb8f7ff"
+          "bytes": 27552,
+          "sha256": "f1aeb3bbc9b89c98d07dac6309629df598494d7b8f9980d2022eb36d956299f1"
         },
         {
           "relativePath": "current-footprint-inverse-native-owner.ts",
@@ -13613,7 +13613,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-15T13:15:41.629Z",
+  "reviewedAt": "2026-11-15T14:14:06.225Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {
