@@ -8,10 +8,10 @@ const first = "public sealed partial class Owner{public int Native(){return Keep
 const fragment = 'public sealed partial class Owner{bool publicBound=false,unused=false;static readonly int[] Hidden=new[]{1,2};int Keep(){return Shared();}int Shared(){return 7;}int Omitted(){return Hidden[0];}public int PublicCall(){unused=true;return Omitted();}}public static class Codec{static readonly System.Collections.Generic.Dictionary<string,int> Map=new System.Collections.Generic.Dictionary<string,int>();static int Helper(){return Map.Count;}public static int Encode(){return Helper();}public static void Verify(){Encode();}}';
 const source = `${first  }// BEGIN NATIVE ONLY CLOSED PUBLIC PublicOne\n${  fragment  }\n// END NATIVE ONLY CLOSED PUBLIC PublicOne\n`;
 void test("native-only graph preserves reachable bodies, closes public entries and omits unused private state", () => {
-  const result = project(source); assert.ok(result.source.startsWith(first)); assert.equal(result.retainedMethods, 4); assert.equal(result.omittedPrivateMethods, 1); assert.equal(result.omittedFields, 2);
+  const result = project(source); assert.ok(result.source.startsWith(first)); assert.equal(result.retainedMethods, 4); assert.equal(result.omittedPrivateMethods, 1); assert.equal(result.omittedFields, 1);
   assert.deepEqual(result.closedPublicMethods, ["Owner.PublicCall", "Codec.Verify"]);
   for (const text of ["int Keep(){return Shared();}", "int Shared(){return 7;}", "static int Helper(){return Map.Count;}", "public static int Encode(){return Helper();}", "bool publicBound=false;"]) { assert.ok(result.source.includes(text), text); }
-  assert.equal(result.source.includes("Hidden"), false); assert.equal(result.source.includes("unused"), false); assert.equal(result.source.includes("int Omitted"), false);
+  assert.ok(result.source.includes("static readonly int[] Hidden=new[]{1,2};")); assert.equal(result.source.includes("unused"), false); assert.equal(result.source.includes("int Omitted"), false);
   assert.ok(result.source.includes('public int PublicCall(){throw new System.InvalidOperationException("native-only-public-route-closed");}'));
   assert.ok(result.source.includes("Dictionary<string,int> Map=new System.Collections.Generic.Dictionary<string,int>();"));
 });
@@ -116,4 +116,65 @@ void test("native-only diagnostic sinks omit locally shadowed writes and cells w
   const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC NotDefaultWriter\n${body}\n// END NATIVE ONLY CLOSED PUBLIC NotDefaultWriter\n`);
   assert.equal(result.source.includes("NativeOnlyUninitializedInstanceSink"),false);
  }
+});
+
+void test("retained constructor initializer arguments contribute method and field dependencies without declaration names",()=>{
+ const entry="public static class Entry{public static int Run(){return new Owner().Keep();}}\n";
+ const body="public sealed class Owner{int value;const int Offset=2;public Owner():this(Init()+Offset){}Owner(int input){value=input;}static int Init(){return Helper();}static int Helper(){return 7;}public int Keep(){return value;}public int Closed(int Dangerous=3){return Dangerous;}public int Dangerous(){return 99;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ConstructorArguments\n${body}\n// END NATIVE ONLY CLOSED PUBLIC ConstructorArguments\n`);
+ for(const text of["public Owner():this(Init()+Offset){}","Owner(int input){value=input;}","static int Init(){return Helper();}","static int Helper(){return 7;}","const int Offset=2;"]){assert.ok(result.source.includes(text),text);}
+ assert.deepEqual(result.closedPublicMethods,["Owner.Closed","Owner.Dangerous"]);
+});
+void test("unread active static and instance initializer effects join the exact original dependency closure",()=>{
+ for(const instance of[false,true]){
+  const entry=instance?"public static class Entry{public static int Run(){return new Owner().Keep();}}\n":"public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+  const body=instance?"public sealed class Owner{static int value;int seed=Init();static int Init(){value=7;return 5;}public int Keep(){return value;}public int Closed(){return 99;}}":"public static class Owner{static int seed=Init();static int value;static Owner(){}static int Init(){value=7;return 5;}public static int Keep(){return value;}public static int Closed(){return 99;}}";
+  const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC UnreadInitializer\n${body}\n// END NATIVE ONLY CLOSED PUBLIC UnreadInitializer\n`);
+  assert.ok(result.source.includes("seed=Init();"));assert.ok(result.source.includes("static int Init(){value=7;return 5;}"));assert.equal(result.source.includes("value=default("),false);
+  assert.deepEqual(result.closedPublicMethods,["Owner.Closed"]);
+ }
+});
+void test("inactive owner initializer methods remain closed and initializer reflection is refused after closure",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+ const body="public static class Owner{public static int Keep(){return 1;}public static int Closed(){return 99;}}public static class Inactive{static int seed=Init();static int Init(){throw new System.Exception();}public static int Closed(){return seed;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC InactiveInitializers\n${body}\n// END NATIVE ONLY CLOSED PUBLIC InactiveInitializers\n`);
+ assert.equal(result.source.includes("seed=Init()"),false);assert.equal(result.source.includes("static int Init()"),false);
+ const reflective='public static class Owner{static int seed=Init();static int value;static Owner(){}static int Init(){value=(int)typeof(Owner).GetField("secret",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).GetValue(null);return 5;}static int secret=7;public static int Keep(){return value;}public static int Closed(){return 99;}}';
+ assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC InitializerReflection\n${reflective}\n// END NATIVE ONLY CLOSED PUBLIC InitializerReflection\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
+});
+
+void test("closed public constructors keep executable base initializer arguments without reopening their bodies",()=>{
+ const entry="public class Parent{public static int Seen;public Parent(int value){Seen=value;}}public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+ const body="public sealed class Owner:Parent{public Owner():base(Make()){}static int Make(){return 9;}public static int Keep(){return 1;}public static int Closed(){return 99;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ClosedConstructor\n${body}\n// END NATIVE ONLY CLOSED PUBLIC ClosedConstructor\n`);
+ assert.ok(result.source.includes("static int Make(){return 9;}"));assert.ok(result.source.includes('public Owner():base(Make()){throw new System.InvalidOperationException("native-only-public-route-closed");}'));
+ assert.deepEqual(result.closedPublicMethods,["Owner.Owner","Owner.Closed"]);
+});
+void test("private field reads through an original typed receiver remain in their own owner graph",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.Read(new Owner());}}\n";
+ const body="public sealed class Owner{int value=7;public static int Read(Owner other){return other.value;}public static int Closed(){return 99;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC TypedPrivateRead\n${body}\n// END NATIVE ONLY CLOSED PUBLIC TypedPrivateRead\n`);
+ assert.ok(result.source.includes("int value=7;"));assert.ok(result.source.includes("public static int Read(Owner other){return other.value;}"));
+ assert.deepEqual(result.closedPublicMethods,["Owner.Closed"]);
+});
+
+void test("implicit original construction retains instance initializer effects observed by a static reader",()=>{
+ const entry="public static class Entry{public static int Run(){new Owner();return Owner.Keep();}}\n";
+ const body="public sealed class Owner{static int value;int seed=Init();static int Init(){value=7;return 5;}public static int Keep(){return value;}public static int Closed(){return 99;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ImplicitConstructor\n${body}\n// END NATIVE ONLY CLOSED PUBLIC ImplicitConstructor\n`);
+ assert.ok(result.source.includes("int seed=Init();"));assert.ok(result.source.includes("static int Init(){value=7;return 5;}"));
+});
+
+void test("initializer elision never treats a literal assigned through a user conversion as effect-free",()=>{
+ const entry="public struct Counter{public static implicit operator Counter(int input){Owner.Set(input);return new Counter();}}public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+ const body="public static class Owner{static Counter seed=7;static int value;static Owner(){}public static void Set(int input){value=input;}public static int Keep(){return value;}public static int Closed(){return 99;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC UserConversion\n${body}\n// END NATIVE ONLY CLOSED PUBLIC UserConversion\n`);
+ assert.ok(result.source.includes("static Counter seed=7;"));
+ const escaped=project(`${entry.replaceAll("Counter","@const")}// BEGIN NATIVE ONLY CLOSED PUBLIC EscapedType\n${body.replaceAll("Counter","@const")}\n// END NATIVE ONLY CLOSED PUBLIC EscapedType\n`);
+ assert.ok(escaped.source.includes("static @const seed=7;"));
+});
+void test("unsupported marked base-constructor layouts refuse before any initializer is omitted",()=>{
+ const entry="public static class Entry{public static int Run(){return new Owner().Keep();}}\n";
+ const body="public class Parent{protected Parent(){State=7;}protected int State;public int Closed(){return 99;}}public sealed class Owner:Parent{public Owner(){}public int Keep(){return State;}public int Closed(){return 99;}}";
+ assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC MarkedBase\n${body}\n// END NATIVE ONLY CLOSED PUBLIC MarkedBase\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
 });
