@@ -102,6 +102,13 @@ node plugins/easyeda-pro-control/scripts/verify-installed-payload.ts \
   /absolute/installed/plugin FULL_COMMIT_SHA
 ```
 
+For packages using the larger release envelope, append `--profile=v2`. This
+read-only profile checks up to8,192 entries and allows20MiB only for the exact
+`server/dist/server.mjs` path. Other installed files retain their16MiB limit,
+and the128MiB aggregate limit remains unchanged. The default verifier keeps
+the historical v1 limits and result schema. Both profiles compare every
+committed byte, path and mode; neither establishes runtime admission.
+
 Replace the path and commit placeholders with the observed installation and
 full release SHA. Repeat this comparison after a scoped official plugin list
 and confirm the intended version is installed and enabled. A same-HEAD no-op

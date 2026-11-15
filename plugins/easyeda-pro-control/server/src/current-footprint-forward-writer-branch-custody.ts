@@ -1,0 +1,113 @@
+/** Same-cursor original readonly DB return. A copied row or callback cannot
+ * manufacture this custody or authorize a worker/cache continuation. */
+import { z } from "zod";
+import { canonicalJson } from "./core.ts";
+import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CURRENT_FOOTPRINT_FORWARD_WRITER_BRANCH_SITE as SITE } from "./current-footprint-forward-writer-branch-source.ts";
+import { validateCurrentFootprintForwardWriterBranchCommand } from "./current-footprint-forward-writer-branch-protocol.ts";
+import type { CurrentFootprintForwardWriterBranchCommand as Command } from "./current-footprint-forward-writer-branch-protocol.ts";
+import type { CurrentPcbViaMainBeginPause } from "./current-pcb-via-main-begin-custody.ts";
+import type { CurrentSelectedFileMainRequestObservation } from "./current-selected-file-main-request-reader.ts";
+import type { CurrentFootprintForwardWriterBranchData } from "./current-footprint-forward-writer-branch-data.ts";
+
+const valueSchema = z.strictObject({ projectUuid: z.string().regex(/^[a-f\d]{64}$/u), branchUuid: z.string().regex(/^[a-f\d]{32}$/u), body: z.string().min(1).max(4096) });
+export interface CurrentFootprintForwardWriterBranchExpectation { readonly projectUuid: string; readonly branchUuid: string; readonly compare: (body: string) => CurrentFootprintForwardWriterBranchData }
+
+export type CurrentFootprintForwardWriterBranchRows = CurrentFootprintForwardWriterBranchData;
+export interface CurrentFootprintForwardWriterBranchHost {
+  readonly scriptId: string; readonly sqlCaptureObjectId: string;
+  readonly assertCurrent: () => void; readonly expected: () => CurrentFootprintForwardWriterBranchExpectation;
+  readonly pause: () => CurrentPcbViaMainBeginPause; readonly pendingRequestId: () => number | null; readonly busy: () => boolean;
+  readonly send: (command: Command, cleanup: boolean) => Promise<unknown>;
+  readonly registerPoint: (id: string, location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }>) => void;
+  readonly removePoint: (id: string) => void; readonly pointCurrent: (id: string) => boolean;
+  readonly resume: (identity: object, command: Command) => Promise<unknown>;
+}
+const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u), location = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
+const frameSchema = z.looseObject({ callFrameId: handle, functionName: z.string(), location, functionLocation: location });
+const pausedSchema = z.looseObject({ reason: z.literal("other"), hitBreakpoints: z.tuple([handle]), callFrames: z.array(frameSchema).min(1).max(64) });
+const propertyValue = z.looseObject({ type: z.string(), subtype: z.string().optional(), objectId: z.string().optional(), value: z.unknown().optional() });
+const property = z.looseObject({ name: z.string(), value: propertyValue.optional() });
+const internalValue = z.looseObject({ value: z.unknown().optional() }); const internalProperty = z.looseObject({ name: z.string(), value: internalValue });
+const properties = z.looseObject({ result: z.array(property), internalProperties: z.array(internalProperty).optional() });
+const byValue = z.strictObject({ result: z.strictObject({ type: z.literal("object"), value: z.unknown() }) });
+const promiseMember = z.looseObject({ name: z.string(), value: propertyValue });
+const promiseReply = z.strictObject({ result: z.array(property).max(32), internalProperties: z.array(promiseMember).length(3) });
+const remote = z.strictObject({ result: z.looseObject({ type: z.literal("object"), subtype: z.literal("array"), objectId: handle, description: z.string().optional() }) });
+function need(value: boolean, reason: string): asserts value { if (!value) { throw new Error(`FORWARD_WRITER_BRANCH_${reason}`); } }
+const order = ["arm", "frame", "join-capture", "properties-packet", "properties-promise", "join-resolved", "join-value", "remove", "step", "release"] as const;
+export class CurrentFootprintForwardWriterBranchCustody {
+  readonly #host: CurrentFootprintForwardWriterBranchHost;
+  #stage = 0; #failed = false; #point: string | null = null; #frame: string | null = null; #capture: string | null = null;
+  #requestCapture: string | null = null; #promise: string | null = null; #resolved: string | null = null;
+  #expected: CurrentFootprintForwardWriterBranchExpectation | null = null; #value: CurrentFootprintForwardWriterBranchRows | null = null;
+    #active: Readonly<{ command: Command; consumed: boolean }> | null = null;
+  public constructor(host: CurrentFootprintForwardWriterBranchHost) { this.#host = host; Object.freeze(this); }
+  #same(): void { need(!this.#failed, "FAILED"); this.#host.assertCurrent(); if (this.#expected !== null) { need(this.#host.expected() === this.#expected, "ORIGINAL_BASELINE"); } }
+  public wantsReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation): boolean {
+    if (this.#stage !== 1 || this.#expected === null) { return false; } this.#same(); const effect = this.#expected;
+    return packet.mode === "fetch" && packet.method === "GET" && packet.pathHeader === effect.projectUuid && packet.pureQuery === "" && packet.pureUrl === `/api/v4/projects/${effect.projectUuid}/branches/${effect.branchUuid}`;
+  }
+  public retainReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation, capture: string): void {
+    need(this.wantsReadonlyRequest(packet) && this.#requestCapture === null, "ONE_ORIGINAL_HISTORY_GET"); this.#requestCapture = handle.parse(capture);
+  }
+  public originalRequestObjectId(): string { this.#same(); need(this.#requestCapture !== null, "ORIGINAL_HISTORY_GET_REQUIRED"); return this.#requestCapture; }
+  #held(): CurrentPcbViaMainBeginPause {
+    const held = this.#host.pause(); const pause = pausedSchema.parse(captureCurrentPcbStringClockReply(held.raw).value); const first = pause.callFrames[0];
+    need(first !== undefined && held.frameId === first.callFrameId && held.sqlSite === null && held.pendingEvents === 0 && !held.resumed && !held.resumeAttempted &&
+      first.functionName === SITE.name && first.functionLocation.scriptId === this.#host.scriptId && first.functionLocation.lineNumber === SITE.lineNumber && first.functionLocation.columnNumber === SITE.functionColumn &&
+      first.location.scriptId === this.#host.scriptId && first.location.lineNumber === SITE.lineNumber && first.location.columnNumber === SITE.columnNumber && pause.hitBreakpoints[0] === this.#point, "ORIGINAL_YB_RETURN"); return held;
+  }
+  #expect(command: Command): void {
+    const suffix = command.phase.replace("forward-writer-branch-", ""); const selected = "role" in command ? `${suffix}-${command.role}` : suffix;
+    need(selected === order[this.#stage], "ONCE_ORDER");
+    if (this.#stage === 0) { need(command.phase === "forward-writer-branch-arm" && command.params.location.scriptId === this.#host.scriptId, "ORIGINAL_SCRIPT"); this.#expected = this.#host.expected(); return; }
+    if (this.#stage < 9) { const held = this.#held(); if (this.#stage < 7) { need(this.#point !== null && this.#host.pointCurrent(this.#point), "CURRENT_POINT"); }
+      if (command.phase === "forward-writer-branch-frame") { need(command.params.callFrameId === held.frameId, "ORIGINAL_FRAME"); }
+    }
+    if (command.phase === "forward-writer-branch-join") {
+      if (command.role === "capture") { need(command.params.objectId === this.#frame && command.params.arguments[0]?.objectId === this.#host.sqlCaptureObjectId && command.params.arguments[1]?.objectId === this.originalRequestObjectId(), "ORIGINAL_DATABASE_CAPTURE"); }
+      else { need(command.params.objectId === this.#capture && (command.role !== "resolved" || command.params.arguments[0]?.objectId === this.#resolved), "ORIGINAL_VALUE_PACKET"); }
+    } else if (command.phase === "forward-writer-branch-properties") {
+      let expected: string | null | undefined;
+      if (command.role === "packet") { expected = this.#capture; } else if (command.role === "promise") { expected = this.#promise; } else { throw new Error("FORWARD_WRITER_BRANCH_PROPERTY_ROLE"); }
+      need(command.params.objectId === expected, "ORIGINAL_MEMBER");
+    }
+    else if (command.phase === "forward-writer-branch-remove") { need(command.params.breakpointId === this.#point, "ORIGINAL_REMOVE"); }
+  }
+  public consume(command: Command, requestId: number): void {
+    this.#same(); const active = this.#active;
+    need(active !== null && !active.consumed && canonicalJson(active.command) === canonicalJson(command) && this.#host.pendingRequestId() === requestId && this.#host.busy(), "ORIGINAL_PENDING_REQUEST");
+    this.#active = { command: active.command, consumed: true };
+  }
+  public async request(input: Command, cleanup: boolean): Promise<unknown> {
+    this.#same(); const command = validateCurrentFootprintForwardWriterBranchCommand(input);
+    need(this.#active === null && cleanup === (command.phase === "forward-writer-branch-remove" || command.phase === "forward-writer-branch-release"), "REQUEST_LANE");
+    try {
+      this.#expect(command); this.#active = { command, consumed: false };
+      const reply = captureCurrentPcbStringClockReply(await (command.phase === "forward-writer-branch-step" ? this.#host.resume(this.#held().identity, command) : this.#host.send(command, cleanup))).value;
+      need(this.#active.consumed, "NATIVE_WRITE_ACK"); this.#same();
+      if (command.phase === "forward-writer-branch-arm") { const allocated = z.strictObject({ breakpointId: handle, actualLocation: location }).parse(reply); need(canonicalJson(allocated.actualLocation) === canonicalJson(command.params.location), "EXACT_POINT"); this.#point = allocated.breakpointId; this.#host.registerPoint(allocated.breakpointId, allocated.actualLocation); }
+      else if (command.phase === "forward-writer-branch-frame") { this.#frame = remote.parse(reply).result.objectId; }
+      else if (command.phase === "forward-writer-branch-join") {
+        if (command.role === "capture") { this.#capture = remote.parse(reply).result.objectId; }
+        else if (command.role === "resolved") { z.strictObject({ result: z.strictObject({ type: z.literal("boolean"), value: z.literal(true) }) }).parse(reply); }
+        else { const value = valueSchema.parse(byValue.parse(reply).result.value); const expected = this.#expected;
+          need(expected !== null && value.projectUuid === expected.projectUuid && value.branchUuid === expected.branchUuid, "ORIGINAL_BRANCH_RESPONSE"); this.#value = expected.compare(value.body);
+        }
+      } else if (command.phase === "forward-writer-branch-properties") {
+        const parsed = properties.parse(reply);
+        if (command.role === "packet") { need(parsed.result.length === 7 && parsed.result.filter(item => item.name === "length").length === 1 && parsed.result.find(item => item.name === "length")?.value?.value === 6, "PACKET_MEMBERS");
+          const promise = parsed.result.find(item => item.name === "4")?.value; need(promise?.type === "object" && promise.subtype === "promise" && typeof promise.objectId === "string", "ORIGINAL_DB_PROMISE"); this.#promise = handle.parse(promise.objectId);
+        } else if (command.role === "promise") {
+          const original = promiseReply.parse(reply); const state = original.internalProperties.filter(item => item.name === "[[PromiseState]]"); const results = original.internalProperties.filter(item => item.name === "[[PromiseResult]]");
+          need(state.length === 1 && results.length === 1 && original.internalProperties.filter(item => item.name === "[[Prototype]]").length === 1 && state[0]?.value.type === "string" && state[0].value.value === "fulfilled", "ORIGINAL_FULFILLED_DB_PROMISE");
+          const result = results[0]?.value;
+          need(result?.type === "object" && result.subtype === undefined && result.objectId !== undefined, "ORIGINAL_DB_PROMISE_RESULT"); this.#resolved = result.objectId;
+        }
+      } else { z.strictObject({}).parse(reply); if (command.phase === "forward-writer-branch-remove") { need(this.#point !== null, "ORIGINAL_POINT"); this.#host.removePoint(this.#point); } }
+      this.#stage += 1; return reply;
+    } catch (caughtError) { this.#failed = true; throw caughtError; } finally { this.#active = null; }
+  }
+  public result(): CurrentFootprintForwardWriterBranchRows { this.#same(); need(this.#stage === order.length && this.#value !== null && this.#active === null, "ORIGINAL_COMPLETED_READ"); return this.#value; }
+}

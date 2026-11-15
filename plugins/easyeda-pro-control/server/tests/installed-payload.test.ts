@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { describe, test } from "node:test";
 import { promisify } from "node:util";
 
-import { verifyInstalledPayload } from "../../scripts/installed-payload.ts";
+import { verifyInstalledPayload, verifyInstalledPayloadV2 } from "../../scripts/installed-payload.ts";
 
 // oxlint-disable-next-line typescript/strict-void-return -- promisify consumes execFile's completion callback.
 const execFileAsync = promisify(execFile);
@@ -104,4 +104,34 @@ void describe("installed committed payload comparison", () => {
     const head = await execFileAsync("/usr/bin/git", ["rev-parse", "HEAD"], options);
     await assert.rejects(verifyInstalledPayload({ ...input, commit: head.stdout.trim() }), /unsupported entry/u);
   });
+});
+
+
+void test("v2 compares the entire larger facade while the v1 byte bound remains unchanged", async () => {
+  const input = await fixture();
+  for (const root of [input.sourceRoot, input.installedRoot]) {
+    await mkdir(join(root, "server", "dist"), { recursive: true });
+    await chmod(join(root, "server"), 0o755); await chmod(join(root, "server", "dist"), 0o755);
+  }
+  const bytes = Buffer.alloc(16 * 1024 * 1024 + 4096, 32);
+  const source = join(input.sourceRoot, "server", "dist", "server.mjs");
+  const installed = join(input.installedRoot, "server", "dist", "server.mjs");
+  await writeFile(source, bytes); await chmod(source, 0o644); await writeFile(installed, bytes); await chmod(installed, 0o644);
+  const options = { cwd: input.repositoryRoot, timeout: 10_000 };
+  await execFileAsync("/usr/bin/git", ["add", "plugins"], options);
+  await execFileAsync("/usr/bin/git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "--no-gpg-sign", "--no-verify", "-m", "larger synthetic facade"], options);
+  const head = await execFileAsync("/usr/bin/git", ["rev-parse", "HEAD"], options); const selected = { ...input, commit: head.stdout.trim() };
+  await assert.rejects(verifyInstalledPayload(selected));
+  const result = await verifyInstalledPayloadV2(selected); assert.equal(result.schema, "easyeda-pro-control.installed-payload.v2");
+  assert.equal(result.fileCount, 4); assert.equal(result.bytes, bytes.length + 32); assert.equal(result.scope, "read-only-file-comparison;not-runtime-admission");
+  bytes[bytes.length - 1] = 33; await writeFile(installed, bytes); await assert.rejects(verifyInstalledPayloadV2(selected), /Installed file bytes/u);
+});
+void test("v2 keeps the old per-file bound for every other installed path", async () => {
+  const input = await fixture(); const bytes = Buffer.alloc(16 * 1024 * 1024 + 1, 32);
+  for (const root of [input.sourceRoot, input.installedRoot]) { const path = join(root, "other.mjs"); await writeFile(path, bytes); await chmod(path, 0o644); }
+  const options = { cwd: input.repositoryRoot, timeout: 10_000 };
+  await execFileAsync("/usr/bin/git", ["add", "plugins"], options);
+  await execFileAsync("/usr/bin/git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "--no-gpg-sign", "--no-verify", "-m", "oversized unrelated synthetic file"], options);
+  const head = await execFileAsync("/usr/bin/git", ["rev-parse", "HEAD"], options);
+  await assert.rejects(verifyInstalledPayloadV2({ ...input, commit: head.stdout.trim() }));
 });

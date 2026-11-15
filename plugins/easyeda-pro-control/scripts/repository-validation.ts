@@ -2,16 +2,17 @@ import { readFile } from "node:fs/promises";
 
 import { z } from "zod";
 import { portableMcpLaunchSchema } from "./plugin-contract.ts";
+import { REVIEWED_FACADE_BUNDLE_BYTES_V2 } from "./release-byte-budgets.ts";
 
 const stringSchema = z.string();
 const DEFAULT_REPOSITORY_FILE_BYTES = 8 * 1024 * 1024;
 const FACADE_BUNDLE_PATH = "plugins/easyeda-pro-control/server/dist/server.mjs";
-const FACADE_BUNDLE_BYTES = 16 * 1024 * 1024;
+const FACADE_BUNDLE_BYTES = REVIEWED_FACADE_BUNDLE_BYTES_V2;
 const reviewedBundleFileSchema = z.object({ relativePath: z.string(), bytes: z.int().nonnegative(), sha256: z.string().regex(/^[a-f0-9]{64}$/u) });
 const reviewedBundleFilesSchema = z.array(reviewedBundleFileSchema);
 
 /** Only the reproducible facade has a larger scan budget. Installed payload
- * verification independently caps every file at 16 MiB; ordinary files retain
+ * v2 verification independently permits this same exact facade path; ordinary files retain
  * 8 MiB. This is never an exemption from complete secret/privacy scanning.
  */
 export function repositoryFileByteLimit(relativePath: string): number {

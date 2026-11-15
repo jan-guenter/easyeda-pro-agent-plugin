@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 import { resolve } from "node:path";
 
-import { verifyInstalledPayload } from "./installed-payload.ts";
+import { verifyInstalledPayload, verifyInstalledPayloadV2 } from "./installed-payload.ts";
 
 async function main(): Promise<void> {
   const [installedRoot, commit, ...extra] = process.argv.slice(2);
-  if (installedRoot === undefined || commit === undefined || extra.length > 0) {
-    throw new Error("Usage: verify-installed-payload.ts /absolute/installed/plugin FULL_COMMIT_SHA");
+  if (installedRoot === undefined || commit === undefined || (extra.length > 0 && (extra.length !== 1 || extra[0] !== "--profile=v2"))) {
+    throw new Error("Usage: verify-installed-payload.ts /absolute/installed/plugin FULL_COMMIT_SHA [--profile=v2]");
   }
-  const result = await verifyInstalledPayload({ commit, installedRoot, repositoryRoot: resolve(import.meta.dirname, "../../..") });
+  const verify = extra.length === 0 ? verifyInstalledPayload : verifyInstalledPayloadV2;
+  const result = await verify({ commit, installedRoot, repositoryRoot: resolve(import.meta.dirname, "../../..") });
   process.stdout.write(`${JSON.stringify(result)}\n`);
 }
 
