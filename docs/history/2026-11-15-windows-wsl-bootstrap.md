@@ -87,3 +87,40 @@ proves deferred module initialization, not complete bundled import isolation.
 The initial missing schema import and fixture relocation failures are retained
 in private logs. Generated bundles will be refreshed against the final public
 base before publication. No default Windows profile was modified.
+
+
+## Rebased automation build verification
+
+The three linear Windows/manager commits `387e5c48`, `4d618a11` and `d6b2abf6`
+were replayed from their exact `7044fb46` boundary onto foundation candidate
+`0e234eeb`. They became `c5fa7f40`, `d8c1cde6` and `4ae578ae`. Before restoring
+only the three dirty generated paths, their complete bytes, physical modes and
+original binary diff were retained privately. Earlier interop evidence remains
+unchanged and belongs to its original source generation.
+
+Linux Node 24.18.0, npm 11.16.0, soft core limit zero and umask 022 were used.
+Package and lock bytes are unchanged. Main and bridge type checks, strict lint
+(4,782 plugin files and 61 bridge files), API coverage (855 methods), all build
+and fixed-generator checks, repository validation and seven packaged skills
+pass. The official skill validator also accepts all seven skills. The isolated
+catalog validator uses private temporary state and a must-not-execute upstream;
+its retained original child closes with exit zero after stdin EOF.
+
+All 75 focused Windows-bootstrap, machine launcher/profile/descriptor and
+manager cases pass without skips. This includes the original EOF/input,
+metadata settlement, timeout/ambiguous-publication cleanup and same-child
+retirement checks. No native owner, application or live control facade is
+allocated by this verification.
+
+A second actual build reproduces all three bundles byte-for-byte: facade
+16,457,622 bytes, supervisor 642,490 bytes and manager 1,830,087 bytes. Compatibility
+updates only facade source/bundle projections and review time; all external
+pins stay unchanged. The atomic builder's private facade/supervisor outputs
+remain mode 0600 in this development tree. They are not installed-runtime mode
+proof: installation must still verify packaged Unix 0644/0755 files and 0755
+directories from the final released commit. No cache permissions were patched.
+
+No version bump, publication, marketplace installation, default-profile change,
+new Windows interop claim or connected validation is part of this seal. The
+branch can be replayed after the foundation merge using the explicit
+`0e234eeb` boundary; generated identities must follow that final source.
