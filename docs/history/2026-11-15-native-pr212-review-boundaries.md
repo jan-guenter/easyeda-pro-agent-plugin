@@ -236,3 +236,22 @@ method pins, byte restoration and project-width admission. Both TypeScript
 projects, strict type-aware lint of the eleven source/test files, repository
 validation and all seven skill checks pass. No native owner, application or live
 facade was allocated for this audit/fix.
+
+## Final combined follow-up preparation
+
+All ten issues reported by the two reviews of c8c612de are integrated, with
+their correction details retained in this record and the companion forward
+and projector records. The additional ten-protocol physical-ID correction
+uses confirmed Int32 sender boundaries. No public writer route is mounted.
+
+The combined frozen source passes 47 focused follow-up tests with no skips,
+both facade and bridge TypeScript projects, bridge lint and whole-repository
+strict type-aware lint: 4,778 files, zero warnings and errors. API coverage,
+all generated-helper checks and build, compatibility, repository/MCP/all-skill
+validation and outgoing-history checks pass. All three rebuilt runtime bundles
+match their committed bytes. Only the facade source projection and review
+time change in compatibility. The prior clean dependency/signature/audit
+receipts apply to the unchanged package and lockfile. These are source/offline
+checks; complete exact-head CI and renewed full CodeRabbit review remain
+merge gates. The same eight previously skipped paths received independent
+review; that audit does not establish CodeRabbit coverage.
