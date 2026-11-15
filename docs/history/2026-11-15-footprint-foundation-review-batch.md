@@ -241,3 +241,43 @@ the existing native-tail test file and strict type-aware lint of both changed
 source/test files pass without skips or diagnostics. Initial fixture-comment
 lint errors remain in private evidence. This source-only change allocates no
 application or native owner and grants no complete workflow or retry capability.
+
+
+## 2026-11-15 follow-up: generation closure cannot be revived
+
+Review of `7ba18f3ce37b9354fe6cebd94ce59cd1ea321c7a` found that a
+no-allocation cleanup could be followed by normal allocation records, then
+misclassified as settled by the terminal/scanner path. The journal validator
+now records the start of cleanup separately for each generation and refuses
+live stage intents and late live stage results for that generation thereafter.
+This also covers close attempts, failed close sends and pending termination
+observations. Writer live stages run from opening through create-result; saved
+live stages run from saved-allocation through saved-read. Post-exit snapshots,
+closed-effect comparisons and saved checkpoints retain their original exit and
+release requirements. Cleanup of the unused saved generation does not stop
+remaining writer progress, but later saved allocation stays refused.
+
+The earlier byte-exact v1 validator statement above describes that earlier
+checkpoint. This correction deliberately strengthens validation of impossible
+chains; it does not change v1 or v2 record schemas, serialized facts, profiles,
+budgets or valid historical record bytes. Failed/ambiguous v1 release still
+quarantines its original operation and gains no retry. The public v2 pure chain
+projection uses this corrected validator for both its original failed-release
+prefix and the projected successor. Public v2 remains a data joint without a
+runtime publisher, coordinator or live proof issuer/consumer.
+
+Seven focused journal tests pass without skips. Counterchains cover both
+generations, allocation after no-allocation, successful allocation reclassified
+as resource-free, late results, close failure and pending termination. Matching
+chains preserve all four post-exit stages even when release precedes snapshot.
+An internally consistent malformed manifest and its real isolated artifacts
+are refused by the maintained reader, cached scanner and unresolved-owner guard
+instead of reporting a completed owner. These are synthetic historical records,
+not native allocation or closure receipts. The new scanner and chain regressions
+fail when loaded with the original validator; a partial intent-only guard still
+fails the late-result regression. Both TypeScript projects and strict type-aware
+lint of the two changed source/test files pass with zero diagnostics. Repository
+and all-skill validation pass. Initial fixture-only lint failures remain private.
+The parent integration batch owns generated bundle regeneration and exact-head
+CI/review. No facade, native owner, application, retry or live authority was
+created for this correction.

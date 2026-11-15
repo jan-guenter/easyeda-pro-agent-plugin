@@ -27,6 +27,12 @@ function core(value: Readonly<UnknownRecord>): string {
 type Stage = typeof NORMAL[number];
 type Generation = "writer" | "saved";
 type Cleanup = z.infer<typeof EVIDENCE["cleanup-intent"]>;
+/** Post-exit snapshots and comparisons use the ended generation's retained
+ * facts. Every other stage needs its own generation before cleanup starts. */
+function assertStageGenerationOpen(stage: Stage, cleanupStarted: Readonly<Record<Generation, boolean>>): void {
+  if (stage === "writer-snapshot" || stage === "closed-effect" || stage === "saved-snapshot" || stage === "saved-checkpoint") { return; }
+  need(!cleanupStarted[stage.startsWith("saved-") ? "saved" : "writer"], "GENERATION_CLEANUP_STARTED");
+}
 /** Validate the entire phase/hash chain. Fixed facts remain data, while the
  * original controller independently proves every native/SQL/source relation. */
 export function assertCurrentFootprintForwardWriterWorkflowChain(records: readonly Entry[]): void {
@@ -46,6 +52,7 @@ export function assertCurrentFootprintForwardWriterWorkflowChain(records: readon
   const terminated: Record<Generation, boolean> = { writer: false, saved: false };
   const observers: Record<Generation, boolean> = { writer: false, saved: false };
   const closed: Record<Generation, boolean> = { writer: false, saved: false };
+  const cleanupStarted: Record<Generation, boolean> = { writer: false, saved: false };
   for (const [index, input] of records.entries()) {
     const entry = currentFootprintForwardWriterWorkflowRecordSchema.parse(input);
     const bytes = Buffer.byteLength(`${JSON.stringify(entry)}\n`);
@@ -62,6 +69,7 @@ export function assertCurrentFootprintForwardWriterWorkflowChain(records: readon
     } else if (entry.kind === "stage-intent") {
       const value = EVIDENCE["stage-intent"].parse(entry.evidence);
       need(!failed && !aborted && cleanupPending === null && normalPending === null && value.stage === NORMAL[normalAt], "NORMAL_PREDECESSOR");
+      assertStageGenerationOpen(value.stage, cleanupStarted);
       if (value.stage === "writer-snapshot") { need(terminated.writer, "WRITER_EXIT_REQUIRED"); }
       if (value.stage === "saved-allocation") { need(terminated.writer && closed.writer, "WRITER_RELEASE_REQUIRED"); }
       if (value.stage === "saved-snapshot") { need(terminated.saved, "SAVED_EXIT_REQUIRED"); }
@@ -70,6 +78,7 @@ export function assertCurrentFootprintForwardWriterWorkflowChain(records: readon
     } else if (entry.kind === "stage-result") {
       const value = EVIDENCE["stage-result"].parse(entry.evidence);
       need(!failed && !aborted && cleanupPending === null && normalPending === value.stage && value.stage === NORMAL[normalAt], "ORIGINAL_STAGE_RESULT");
+      assertStageGenerationOpen(value.stage, cleanupStarted);
       normalPending = null; normalAt += 1;
     } else if (entry.kind === "failure") {
       need(!failed, "FAILURE_CONSUMED"); failed = true;
@@ -84,6 +93,7 @@ export function assertCurrentFootprintForwardWriterWorkflowChain(records: readon
       else if (value.action === "release") { need(terminated[value.generation] && observers[value.generation], "RELEASE_JOIN_REQUIRED"); }
       else if (value.action === "close" || value.action === "abort") { need(!terminated[value.generation] && (normalPending === null || failed || value.action === "abort"), "CLOSE_PREDECESSOR"); }
       else { need(!terminated[value.generation] && (value.generation === "writer" ? normalAt === 0 : normalAt <= NORMAL.indexOf("saved-allocation")), "UNALLOCATED_PREDECESSOR"); }
+      cleanupStarted[value.generation] = true;
       if (value.action === "abort") { aborted = true; }
       attempts.set(key, value.attempt); cleanupPending = value;
     } else if (entry.kind === "cleanup-result") {

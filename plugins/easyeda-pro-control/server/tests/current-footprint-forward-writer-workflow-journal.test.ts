@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { test } from "node:test";
 import { sha256Json } from "../src/core.ts";
+import { updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { CURRENT_FOOTPRINT_FORWARD_WRITER_WORKFLOW_STAGES as STAGES, currentFootprintForwardWriterWorkflowRecordSchema, currentFootprintForwardWriterWorkflowRequestSchema } from "../src/current-footprint-forward-writer-workflow-contract.ts";
 import type { CurrentFootprintForwardWriterWorkflowRecord as Entry, CurrentFootprintForwardWriterWorkflowPhase as Phase } from "../src/current-footprint-forward-writer-workflow-contract.ts";
 import { CurrentFootprintForwardWriterWorkflowJournal, assertCurrentFootprintForwardWriterWorkflowChain, assertNoUnresolvedCurrentFootprintForwardWriterWorkflows, readCurrentFootprintForwardWriterWorkflowHistory, scanCurrentFootprintForwardWriterWorkflowSummaries } from "../src/current-footprint-forward-writer-workflow-journal.ts";
@@ -15,9 +16,9 @@ import { assertCurrentFootprintForwardWriterWorkflowV2Chain } from "../src/curre
 function request(suffix = "chain"):ReturnType<typeof currentFootprintForwardWriterWorkflowRequestSchema.parse>{
  return currentFootprintForwardWriterWorkflowRequestSchema.parse({operationId:`footprint-forward-flow-${suffix}`,parentOperationId:`footprint-forward-writer-${suffix}`,confirmDisposableCopy:true,acceptUnsupportedInverse:true});
 }
-function append(records:Entry[],kind:Phase,evidence:Readonly<Record<string,unknown>>):void{
+function append(records:Entry[],kind:Phase,evidence:Readonly<Record<string,unknown>>,selected=request()):void{
  const previous=records.at(-1);
- const entry=currentFootprintForwardWriterWorkflowRecordSchema.parse({schema:"easyeda-pro-control.footprint-forward-flow-record.v1",operationId:request().operationId,sequence:records.length,previousSha256:records.length===0?null:sha256Json(previous),kind,evidence,executionAuthorized:false,saveAuthorized:false});records.push(entry);
+ const entry=currentFootprintForwardWriterWorkflowRecordSchema.parse({schema:"easyeda-pro-control.footprint-forward-flow-record.v1",operationId:selected.operationId,sequence:records.length,previousSha256:records.length===0?null:sha256Json(previous),kind,evidence,executionAuthorized:false,saveAuthorized:false});records.push(entry);
 }
 function cleanup(records:Entry[],generation:"writer"|"saved",action:string,outcome:string,attempt=1):void{
  append(records,"cleanup-intent",{generation,action,attempt});append(records,"cleanup-result",{generation,action,attempt,outcome,evidenceSha256:"a".repeat(64)});
@@ -55,6 +56,24 @@ void test("managed workflow publication blocks until original terminal facts and
  for(const generation of["writer","saved"]as const){await journal.append("cleanup-intent",{generation,action:"no-allocation",attempt:1});await journal.append("cleanup-result",{generation,action:"no-allocation",attempt:1,outcome:"no-resource",evidenceSha256:"a".repeat(64)});}
  await journal.append("terminal-failure",{originalOwnersClosed:true,originalPendingJoined:true,released:true});await journal.waitForCurrentPublication();await journal.settle();await assertNoUnresolvedCurrentFootprintForwardWriterWorkflows();
  const history=await readCurrentFootprintForwardWriterWorkflowHistory(selected.operationId);assert.equal(history.operation["state"],"completed");assert.equal(journal.retained().publicationPending,false);await assert.rejects(journal.reserve(),/RESERVATION_CONSUMED/u);
+ // The private root receives internally consistent, impossible historical metadata.
+ // Neither its unkeyed hash nor JSON owns a child.
+ const forgedRequest = request("scanner-closed"); const forgedJournal = new CurrentFootprintForwardWriterWorkflowJournal(forgedRequest);
+ await forgedJournal.reserve(); const reserved = await readCurrentFootprintForwardWriterWorkflowHistory(forgedRequest.operationId);
+ const source: Entry[] = []; append(source, "operation-intent", { request: request() });
+ cleanup(source, "writer", "no-allocation", "no-resource"); append(source, "stage-intent", { stage: "opening" });
+ append(source, "stage-result", { stage: "opening", evidenceSha256: "a".repeat(64), originalCompletionObserved: true });
+ append(source, "failure", { stage: "metadata", originalErrorRetained: true }); cleanup(source, "saved", "no-allocation", "no-resource");
+ append(source, "terminal-failure", { originalOwnersClosed: true, originalPendingJoined: true, released: true });
+ const invalid: Entry[] = [...reserved.records]; const artifacts = [...(reserved.operation.artifacts ?? [])];
+ for (const row of source.slice(1)) {
+  append(invalid, row.kind, row.evidence, forgedRequest); const entry = invalid.at(-1); assert.ok(entry);
+  artifacts.push(await writePhaseArtifact(forgedRequest.operationId, entry.sequence, entry.kind, entry));
+ }
+ await updateOperation({ ...reserved.operation, records: invalid, artifacts, state: "completed" });
+ await assert.rejects(scanCurrentFootprintForwardWriterWorkflowSummaries(), /GENERATION_CLEANUP_STARTED/u);
+ await assert.rejects(readCurrentFootprintForwardWriterWorkflowHistory(forgedRequest.operationId), /GENERATION_CLEANUP_STARTED/u);
+ await assert.rejects(assertNoUnresolvedCurrentFootprintForwardWriterWorkflows(), /GENERATION_CLEANUP_STARTED/u);
  const artifact=history.operation.artifacts?.[0];assert.ok(artifact);await writeFile(artifact.path,"corrupt isolated test artifact");await assert.rejects(journal.assertCurrent());
 });
 
@@ -101,4 +120,60 @@ void test("v2 recovery cannot erase invalid initial joins, pending acknowledgmen
  assert.throws(()=>{ assertCurrentFootprintForwardWriterWorkflowV2Chain(changed); },/ORIGINAL_CHAIN/u);
  assert.throws(()=>currentFootprintForwardWriterWorkflowV2RecordSchema.parse({...changed[0],kind:"cleanup-intent",evidence:{...evidence,attempt:3}}));
  assertCurrentFootprintForwardWriterWorkflowV2Chain(toV2(successful()));
+});
+
+
+function beforeStage(stage: typeof STAGES[number], pending = false): Entry[] {
+ const records = successful(); const index = records.findIndex(row => row.kind === "stage-intent" && row.evidence["stage"] === stage);
+ assert.ok(index > 0); return records.slice(0, index + Number(pending));
+}
+function assertBothRefuse(records: readonly Entry[], reason: RegExp): void {
+ assert.throws(() => { assertCurrentFootprintForwardWriterWorkflowChain(records); }, reason);
+ assert.throws(() => { assertCurrentFootprintForwardWriterWorkflowV2Chain(toV2(records)); }, reason);
+}
+void test("generation cleanup cannot be followed by allocating intents or late live results in v1 or v2", () => {
+ for (const generation of ["writer", "saved"] as const) {
+  const stage = generation === "writer" ? "opening" : "saved-allocation";
+  for (const pending of [false, true]) {
+   const records = beforeStage(stage, pending); cleanup(records, generation, "no-allocation", "no-resource");
+   assertCurrentFootprintForwardWriterWorkflowChain(records);
+   if (pending) { append(records, "stage-result", { stage, evidenceSha256: "a".repeat(64), originalCompletionObserved: true }); }
+   else { append(records, "stage-intent", { stage }); }
+   assertBothRefuse(records, /GENERATION_CLEANUP_STARTED/u);
+   append(records, "failure", { stage, originalErrorRetained: true });
+   if (generation === "writer") { cleanup(records, "saved", "no-allocation", "no-resource"); }
+   append(records, "terminal-failure", { originalOwnersClosed: true, originalPendingJoined: true, released: true });
+   assertBothRefuse(records, /GENERATION_CLEANUP_STARTED/u);
+  }
+  // A completed allocation cannot subsequently be reclassified resource-free.
+  const allocated = beforeStage(generation === "writer" ? "metadata" : "saved-cache");
+  cleanup(allocated, generation, "no-allocation", "no-resource");
+  assertBothRefuse(allocated, /UNALLOCATED_PREDECESSOR/u);
+  for (const [action, outcome] of [["close", "dispatched"], ["close", "failed"], ["termination", "pending"]] as const) {
+   const next = generation === "writer" ? "metadata" : "saved-cache";
+   const records = beforeStage(next); cleanup(records, generation, action, outcome);
+   append(records, "stage-intent", { stage: next }); assertBothRefuse(records, /GENERATION_CLEANUP_STARTED/u);
+  }
+  const pendingRead = beforeStage(generation === "writer" ? "metadata" : "saved-cache", true);
+  cleanup(pendingRead, generation, "termination", "pending");
+  append(pendingRead, "stage-result", { stage: generation === "writer" ? "metadata" : "saved-cache", evidenceSha256: "a".repeat(64), originalCompletionObserved: true });
+  assertBothRefuse(pendingRead, /GENERATION_CLEANUP_STARTED/u);
+ }
+});
+void test("closed generations retain post-exit snapshots and comparisons and independent-generation progress", () => {
+ const original = successful(); const records: Entry[] = [];
+ // Both original releases may precede the corresponding post-exit snapshots.
+ // These data records grant no owner.
+ const withoutRelease = original.filter(row => row.evidence["action"] !== "release" || (row.kind !== "cleanup-intent" && row.kind !== "cleanup-result"));
+ for (const row of withoutRelease) {
+  if (row.kind === "stage-intent" && (row.evidence["stage"] === "writer-snapshot" || row.evidence["stage"] === "saved-snapshot")) {
+   cleanup(records, row.evidence["stage"] === "writer-snapshot" ? "writer" : "saved", "release", "released");
+  }
+  append(records, row.kind, row.evidence);
+ }
+ const bytes = JSON.stringify(records); assertCurrentFootprintForwardWriterWorkflowChain(records);
+ assertCurrentFootprintForwardWriterWorkflowV2Chain(toV2(records)); assert.equal(JSON.stringify(records), bytes);
+ const savedClosed = beforeStage("metadata"); cleanup(savedClosed, "saved", "no-allocation", "no-resource");
+ append(savedClosed, "stage-intent", { stage: "metadata" }); append(savedClosed, "stage-result", { stage: "metadata", evidenceSha256: "a".repeat(64), originalCompletionObserved: true });
+ assertCurrentFootprintForwardWriterWorkflowChain(savedClosed); assertCurrentFootprintForwardWriterWorkflowV2Chain(toV2(savedClosed));
 });
