@@ -1,5 +1,13 @@
-// oxlint-disable import/max-dependencies -- The complete source locations, production program, original-return fixture and cursor refusal are direct subjects of this regression.
+// oxlint-disable import/max-dependencies -- The complete source locations, production program, original-return fixture and cursor refusal and native Int32 wire/frame boundaries are direct subjects of this regression.
 /** Actual-source and local cursor checks only; no native clock is authorized. */
+import { currentFootprintForwardWriterOwnDataCases as ownCases, currentFootprintForwardWriterOwnDataNativeFrame as ownFrame, currentFootprintForwardWriterOwnDataWire as ownWire } from "../src/current-footprint-forward-writer-own-data-protocol.ts";
+import { currentFootprintInverseNativeDeleteCollateralCases as collateralCases, currentFootprintInverseNativeDeleteCollateralNativeFrame as collateralFrame, currentFootprintInverseNativeDeleteCollateralWire as collateralWire } from "../src/current-footprint-inverse-native-delete-collateral-protocol.ts";
+import { currentFootprintInverseNativeDeleteExecutionAcceptCases as acceptCases, currentFootprintInverseNativeDeleteExecutionAcceptNativeFrame as acceptFrame, currentFootprintInverseNativeDeleteExecutionAcceptWire as acceptWire } from "../src/current-footprint-inverse-native-delete-execution-accept-protocol.ts";
+import { currentFootprintInverseNativeDeleteExecutionCallbackCases as callbackCases, currentFootprintInverseNativeDeleteExecutionCallbackNativeFrame as callbackFrame, currentFootprintInverseNativeDeleteExecutionCallbackWire as callbackWire } from "../src/current-footprint-inverse-native-delete-execution-callback-protocol.ts";
+import { currentFootprintInverseNativeDeleteExecutionDependenciesCases as dependenciesCases, currentFootprintInverseNativeDeleteExecutionDependenciesNativeFrame as dependenciesFrame, currentFootprintInverseNativeDeleteExecutionDependenciesWire as dependenciesWire } from "../src/current-footprint-inverse-native-delete-execution-dependencies-protocol.ts";
+import { currentFootprintInverseNativeDeleteExecutionManagerCases as managerCases, currentFootprintInverseNativeDeleteExecutionManagerNativeFrame as managerFrame, currentFootprintInverseNativeDeleteExecutionManagerWire as managerWire } from "../src/current-footprint-inverse-native-delete-execution-manager-protocol.ts";
+import { currentFootprintInverseNativeDeleteSerializationCases as serializationCases, currentFootprintInverseNativeDeleteSerializationNativeFrame as serializationFrame, currentFootprintInverseNativeDeleteSerializationWire as serializationWire } from "../src/current-footprint-inverse-native-delete-serialization-protocol.ts";
+import { currentFootprintInverseNativeDeleteExecutionSenderCases as executionCases, currentFootprintInverseNativeDeleteExecutionNativeFrame as executionFrame, currentFootprintInverseNativeDeleteExecutionWire as executionWire } from "../src/current-footprint-inverse-native-delete-execution-protocol.ts";
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { CurrentFootprintInverseNativeDeleteClockController as Controller } from "../src/current-footprint-inverse-native-delete-clock-controller.ts";
@@ -25,7 +33,7 @@ import { qualifyCurrentFootprintInverseClockWorkerSource as qualifyWorker } from
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_V2_SOURCE as UI, qualifyCurrentFootprintCopyClockRegistrationV2Source as qualifyUi } from "../src/current-footprint-copy-clock-registration-v2-source.ts";
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_CLOCK_SITES as SITES } from "../src/current-footprint-inverse-native-delete-clock-profile.ts";
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_CLOCK_PROGRAMS as PROGRAMS, CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_CLOCK_REGISTRATION_PROGRAMS as REGISTRATION } from "../src/current-footprint-inverse-native-delete-clock-programs.ts";
-import {  CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_CLOCK_REGISTRATION_FLAGS as FLAGS, CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_CLOCK_REGISTRATION_ORDER as REG_ORDER, currentFootprintInverseNativeDeleteClockRegistrationCases as registrationCases , currentFootprintInverseNativeDeleteClockRegistrationTemplate as registrationTemplate, validateCurrentFootprintInverseNativeDeleteClockRegistrationCommand as validate } from "../src/current-footprint-inverse-native-delete-clock-registration-protocol.ts";
+import {  CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_CLOCK_REGISTRATION_FLAGS as FLAGS, CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_CLOCK_REGISTRATION_ORDER as REG_ORDER, currentFootprintInverseNativeDeleteClockRegistrationCases as registrationCases, currentFootprintInverseNativeDeleteClockRegistrationNativeFrame as registrationFrame, currentFootprintInverseNativeDeleteClockRegistrationTemplate as registrationTemplate, currentFootprintInverseNativeDeleteClockRegistrationWire as registrationWire, validateCurrentFootprintInverseNativeDeleteClockRegistrationCommand as validate } from "../src/current-footprint-inverse-native-delete-clock-registration-protocol.ts";
 import { captureCurrentFootprintInverseNativeDeleteClockRegistrationReply as captureReply } from "../src/current-footprint-inverse-native-delete-clock-registration-collector.ts";
 import { CurrentFootprintInverseNativeDeleteClockRegistrationCursor as Cursor } from "../src/current-footprint-inverse-native-delete-clock-registration-cursor.ts";
 import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAssets } from "./helpers/installed-easyeda-source.ts";
@@ -208,4 +216,33 @@ void test("Inspector return fixture releases its original pause on early and lat
       requests: z.number().int().positive().max(18), nativeOwnerIssued: z.literal(false) }).parse(parsed);
     assert.match(proof.failure, new RegExp(failurePoint, "u"));
   }
+});
+
+
+function assertPhysicalIds<T>(commands: readonly T[], write: (input: T, id: number, session: string) => Readonly<{ id: number }>,
+  read: (bytes: Buffer, input: T, session: string) => Readonly<Record<string, string | number>>): void {
+  const command = commands[0]; assert.ok(command !== undefined);
+  const maximum = 2_147_483_647; const session = "original_session"; let sends = 0;
+  const accepted = write(command, maximum, session); assert.equal(accepted.id, maximum);
+  const deliver = (bytes: Buffer): void => {
+    const request = read(bytes, command, session); assert.equal(request["requestId"], maximum); sends += 1;
+  };
+  for (const id of [2_147_483_648, Number.MAX_SAFE_INTEGER]) {
+    assert.throws(() => write(command, id, session));
+    const bytes = Buffer.from(`${JSON.stringify({ ...accepted, id })}\0`);
+    assert.throws(() => { deliver(bytes); }); assert.equal(sends, 0);
+  }
+  const bytes = Buffer.from(`${JSON.stringify(accepted)}\0`); deliver(bytes); assert.equal(sends, 1);
+}
+void test("selected native physical request IDs fit both Int32 boundaries before fixture transport", () => {
+  assertPhysicalIds(cases(), wire, nativeFrame);
+  assertPhysicalIds(ownCases(), ownWire, ownFrame);
+  assertPhysicalIds(registrationCases(), registrationWire, registrationFrame);
+  assertPhysicalIds(collateralCases(), collateralWire, collateralFrame);
+  assertPhysicalIds(executionCases().map(command => ({ stage: "sender" as const, command })), executionWire, executionFrame);
+  assertPhysicalIds(acceptCases(), acceptWire, acceptFrame);
+  assertPhysicalIds(callbackCases(), callbackWire, callbackFrame);
+  assertPhysicalIds(dependenciesCases(), dependenciesWire, dependenciesFrame);
+  assertPhysicalIds(managerCases(), managerWire, managerFrame);
+  assertPhysicalIds(serializationCases(), serializationWire, serializationFrame);
 });

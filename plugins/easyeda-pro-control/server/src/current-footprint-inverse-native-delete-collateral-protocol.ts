@@ -47,14 +47,14 @@ const raw=z.strictObject({scriptSource:z.string().max(16_386)}).parse(capture(in
 need(program!==null&&raw.scriptSource===`(${program})`);
 }
 export function currentFootprintInverseNativeDeleteCollateralWire(input:CurrentFootprintInverseNativeDeleteCollateralCommand,id:number,sessionId:string):CurrentFootprintInverseNativeDeleteCollateralCommand&Readonly<{id:number;sessionId:string;inverseNativeDeleteCollateral:true}>{
-need(Number.isSafeInteger(id)&&id>0);
+need(Number.isSafeInteger(id)&&id>0&&id<=2_147_483_647);
 h.parse(sessionId);
 return freezeDeep({...validateCurrentFootprintInverseNativeDeleteCollateralCommand(input),id,sessionId,inverseNativeDeleteCollateral:true});
 }
 export function currentFootprintInverseNativeDeleteCollateralNativeFrame(bytes:Buffer,input:CurrentFootprintInverseNativeDeleteCollateralCommand,sessionId:string):Readonly<Record<string,string|number>>{
 need(bytes.length<=65_536&&bytes.at(-1)===0);
 const raw:unknown=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes.subarray(0,-1)));
-const id=z.looseObject({id:z.number().int().positive()}).parse(capture(raw)).id;
+const id=z.looseObject({id:z.number().int().positive().max(2_147_483_647)}).parse(capture(raw)).id;
 const c=validateCurrentFootprintInverseNativeDeleteCollateralCommand(input);
 need(bytes.toString("utf8")===`${JSON.stringify(currentFootprintInverseNativeDeleteCollateralWire(c,id,sessionId))}\0`);
 const fields:Record<string,string|number>={action:"footprint-inverse-native-delete-collateral",requestId:id,phase:c.phase,method:c.method,round:c.round};

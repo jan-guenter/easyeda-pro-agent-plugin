@@ -193,3 +193,46 @@ replayed or adopted. The complete receipt is retained privately. The repository
 validator separately refused a temporary top-level dependency symlink; that own
 link was unlinked without traversing its target. A real npm clean install under
 umask 022 supplies the final dependency tree.
+
+
+## Independent skipped-file audit and physical clock IDs
+
+An independent source review covered the eight paths omitted from both
+CodeRabbit reports on `c8c612de6427c9437e1bfc749ad6462c01a5a39e`: clock
+controller, observer, profile, programs and replies; immutable clock-method
+storage and native-only projection tests; and the condition fixture's main
+process. Their bytes were unchanged at audit head
+`48e544d4e40bb59b71e90eff90fe81d6fc32a33a`. This independent review does not
+establish CodeRabbit coverage; the eight processing/moderation skips remain.
+The four already-reported projector cases stay with their separate correction.
+
+Read-only qualification matched the pinned worker and UI sources and all seven
+clock locations. Independent restoration of the generated native table matched
+all four columns of its 129 original rows: 59,632 raw bytes and six reversible
+aliases. Review traced the 70 normal requests, 20 helper requests, six separate
+condition-source qualifications, seven resumes, held original producer, nine
+removed breakpoints and original-exit settlement. The condition fixture retains
+its original worker's exit; its paired worker settles its resume requests before
+disconnecting. These are source/contract observations, not live owner or saved
+content proof.
+
+The adjacent clock wire and frame reader accepted a physical ID of
+2,147,483,648 although their native sender requires Int32. A bounded inventory
+found the same mismatch in nine other selected protocol paths: forward own-data;
+clock registration; collateral; execution, accept, callback, dependencies and
+manager; and serialization. All ten sender mappings were checked against their
+native Int32 signatures and dispatch casts before changing those paths. Some
+execution handlers remain a separate integration batch; their public grammar
+changes mount no handler or owner.
+
+Both wire and raw-frame boundaries now refuse physical IDs above 2,147,483,647.
+One fixture accepts the maximum in every family and refuses oversized wire
+inputs and independent raw frames before its downstream transport is called.
+Natural RPC counters, clock/time scalars, command programs, the immutable native
+table, actual owner counters, control ID zero and stock profiles retain their
+existing ranges. Five focused source/protocol tests pass without skips,
+including all ten physical-ID boundaries, the complete clock roster, original
+method pins, byte restoration and project-width admission. Both TypeScript
+projects, strict type-aware lint of the eleven source/test files, repository
+validation and all seven skill checks pass. No native owner, application or live
+facade was allocated for this audit/fix.

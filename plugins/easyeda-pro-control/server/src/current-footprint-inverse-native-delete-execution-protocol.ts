@@ -64,7 +64,7 @@ need(program!==null&&source.scriptSource===program);
 }
 type Wire<T>=T extends CurrentFootprintInverseNativeDeleteExecutionCommand?T["command"]&Readonly<{stage:T["stage"];id:number;sessionId:string;inverseNativeDeleteExecution:true}>:never;
 export function currentFootprintInverseNativeDeleteExecutionWire(input:CurrentFootprintInverseNativeDeleteExecutionCommand,id:number,sessionId:string):Wire<CurrentFootprintInverseNativeDeleteExecutionCommand>{
-need(Number.isSafeInteger(id)&&id>0);
+need(Number.isSafeInteger(id)&&id>0&&id<=2_147_483_647);
 h.parse(sessionId);
 const c=validateCurrentFootprintInverseNativeDeleteExecutionCommand(input);
 return c.stage==="sender"?freezeDeep({...c.command,stage:c.stage,id,sessionId,inverseNativeDeleteExecution:true}):freezeDeep({...c.command,stage:c.stage,id,sessionId,inverseNativeDeleteExecution:true});
@@ -72,7 +72,7 @@ return c.stage==="sender"?freezeDeep({...c.command,stage:c.stage,id,sessionId,in
 export function currentFootprintInverseNativeDeleteExecutionNativeFrame(bytes:Buffer,input:CurrentFootprintInverseNativeDeleteExecutionCommand,sessionId:string):Readonly<Record<string,string|number>>{
 need(bytes.length<=65_536&&bytes.at(-1)===0);
 const raw:unknown=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes.subarray(0,-1)));
-const id=z.looseObject({id:z.number().int().positive()}).parse(capture(raw)).id;
+const id=z.looseObject({id:z.number().int().positive().max(2_147_483_647)}).parse(capture(raw)).id;
 const packet=validateCurrentFootprintInverseNativeDeleteExecutionCommand(input);
 const c=packet.command;
 need(bytes.toString("utf8")===`${JSON.stringify(currentFootprintInverseNativeDeleteExecutionWire(packet,id,sessionId))}\0`);

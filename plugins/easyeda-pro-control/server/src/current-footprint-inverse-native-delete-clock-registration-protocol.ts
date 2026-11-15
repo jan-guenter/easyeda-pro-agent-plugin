@@ -75,7 +75,7 @@ export function qualifyCurrentFootprintInverseNativeDeleteClockRegistrationHelpe
 
 /** The original pipe supplies the session and ID; matching JSON enrolls no Job. */
 export function currentFootprintInverseNativeDeleteClockRegistrationWire(input: CurrentFootprintInverseNativeDeleteClockRegistrationCommand, id: number, sessionId: string): CurrentFootprintInverseNativeDeleteClockRegistrationCommand & Readonly<{ id: number; sessionId: string; inverseNativeDeleteClockRegistration: true }> {
-  need(Number.isSafeInteger(id) && id > 0); handle.parse(sessionId);
+  need(Number.isSafeInteger(id) && id > 0 && id <= 2_147_483_647); handle.parse(sessionId);
   return freezeDeep({ ...validateCurrentFootprintInverseNativeDeleteClockRegistrationCommand(input), id, sessionId, inverseNativeDeleteClockRegistration: true });
 }
 const marker = (name: string): string => `__inverse_native_delete_clock_registration_${name}__`;
@@ -107,7 +107,7 @@ export function currentFootprintInverseNativeDeleteClockRegistrationTemplate(inp
 export function currentFootprintInverseNativeDeleteClockRegistrationNativeFrame(bytes: Buffer, input: CurrentFootprintInverseNativeDeleteClockRegistrationCommand, sessionId: string): Readonly<Record<string, string | number>> {
   need(bytes.length <= 65_536 && bytes.at(-1) === 0);
   const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, -1)));
-  const id = z.looseObject({ id: z.number().int().positive() }).parse(capture(raw)).id;
+  const id = z.looseObject({ id: z.number().int().positive().max(2_147_483_647) }).parse(capture(raw)).id;
   const command = validateCurrentFootprintInverseNativeDeleteClockRegistrationCommand(input);
   need(bytes.toString("utf8") === `${JSON.stringify(currentFootprintInverseNativeDeleteClockRegistrationWire(command, id, sessionId))}\0`);
   const result: Record<string, string | number> = { action: "footprint-inverse-native-delete-clock-registration", requestId: id, phase: command.phase, method: command.method };

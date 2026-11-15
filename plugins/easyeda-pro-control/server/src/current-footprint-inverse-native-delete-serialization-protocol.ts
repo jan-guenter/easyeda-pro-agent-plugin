@@ -69,7 +69,7 @@ const normal=[
 need(normal.length===53);
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_ORDER=Object.freeze(normal.flatMap(k=>k.startsWith("call/")||k.startsWith("frame/")?[k,`helper/${k}`]:[k]));
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_REQUESTS=Object.freeze({normal:53,helpers:16,cdpRequests:69,resumes:6,events:34,controls:84,uploadResumed:false,publicationComplete:false,saveAuthorized:false} as const);
-export function currentFootprintInverseNativeDeleteSerializationWire(input:CurrentFootprintInverseNativeDeleteSerializationCommand,id:number,sessionId:string):CurrentFootprintInverseNativeDeleteSerializationCommand&Readonly<{id:number;sessionId:string;inverseNativeDeleteSerialization:true}>{need(Number.isSafeInteger(id)&&id>0);handle.parse(sessionId);return freezeDeep({...validateCurrentFootprintInverseNativeDeleteSerializationCommand(input),id,sessionId,inverseNativeDeleteSerialization:true});}
+export function currentFootprintInverseNativeDeleteSerializationWire(input:CurrentFootprintInverseNativeDeleteSerializationCommand,id:number,sessionId:string):CurrentFootprintInverseNativeDeleteSerializationCommand&Readonly<{id:number;sessionId:string;inverseNativeDeleteSerialization:true}>{need(Number.isSafeInteger(id)&&id>0&&id<=2_147_483_647);handle.parse(sessionId);return freezeDeep({...validateCurrentFootprintInverseNativeDeleteSerializationCommand(input),id,sessionId,inverseNativeDeleteSerialization:true});}
 type Scalar=string|number;
 function scalarFields(c:CurrentFootprintInverseNativeDeleteSerializationCommand):Readonly<Record<string,Scalar>>{
  const f:Record<string,Scalar>={};
@@ -109,6 +109,6 @@ export function currentFootprintInverseNativeDeleteSerializationCases():readonly
  const checked=active.map(c=>validateCurrentFootprintInverseNativeDeleteSerializationCommand(c));return freezeDeep([...checked,...checked.filter(c=>currentFootprintInverseNativeDeleteSerializationProgram(c)!==null).map(c=>currentFootprintInverseNativeDeleteSerializationHelperCommand(c,"original_ref"))]);
 }
 export function currentFootprintInverseNativeDeleteSerializationNativeFrame(bytes:Buffer,input:CurrentFootprintInverseNativeDeleteSerializationCommand,sessionId:string):Readonly<Record<string,Scalar>>{
- need(bytes.length<=65_536&&bytes.at(-1)===0);const raw:unknown=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes.subarray(0,-1)));const id=z.looseObject({id:z.number().int().positive()}).parse(capture(raw)).id;const command=validateCurrentFootprintInverseNativeDeleteSerializationCommand(input);
+ need(bytes.length<=65_536&&bytes.at(-1)===0);const raw:unknown=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes.subarray(0,-1)));const id=z.looseObject({id:z.number().int().positive().max(2_147_483_647)}).parse(capture(raw)).id;const command=validateCurrentFootprintInverseNativeDeleteSerializationCommand(input);
  need(bytes.toString("utf8")===`${JSON.stringify(currentFootprintInverseNativeDeleteSerializationWire(command,id,sessionId))}\0`);return Object.freeze({action:"footprint-inverse-native-delete-serialization",requestId:id,phase:command.phase,method:command.method,role:command.role,...scalarFields(command)});
 }

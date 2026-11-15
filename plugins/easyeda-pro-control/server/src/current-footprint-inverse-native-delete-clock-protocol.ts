@@ -171,7 +171,7 @@ export function currentFootprintInverseNativeDeleteClockCases(): readonly Curren
   return freezeDeep([...checked, ...checked.filter(command => currentFootprintInverseNativeDeleteClockProgram(command) !== null).map(command => currentFootprintInverseNativeDeleteClockHelperCommand(command, "original_ref"))]);
 }
 export function currentFootprintInverseNativeDeleteClockWire(input: CurrentFootprintInverseNativeDeleteClockCommand, id: number, sessionId: string): CurrentFootprintInverseNativeDeleteClockCommand & Readonly<{ id: number; sessionId: string; inverseNativeDeleteClock: true }> {
-  need(Number.isSafeInteger(id) && id > 0); handle.parse(sessionId); return freezeDeep({ ...validateCurrentFootprintInverseNativeDeleteClockCommand(input), id, sessionId, inverseNativeDeleteClock: true });
+  need(Number.isSafeInteger(id) && id > 0 && id <= 2_147_483_647); handle.parse(sessionId); return freezeDeep({ ...validateCurrentFootprintInverseNativeDeleteClockCommand(input), id, sessionId, inverseNativeDeleteClock: true });
 }
 const marker = (name: string): string => `__inverse_native_delete_clock_${  name  }__`;
 type Scalar = string | number;
@@ -224,7 +224,7 @@ export function currentFootprintInverseNativeDeleteClockTemplate(input: CurrentF
 export function currentFootprintInverseNativeDeleteClockNativeFrame(bytes: Buffer, input: CurrentFootprintInverseNativeDeleteClockCommand, sessionId: string): Readonly<Record<string, Scalar>> {
   need(bytes.length <= 65_536 && bytes.at(-1) === 0);
   const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, -1)));
-  const id = z.looseObject({ id: z.number().int().positive() }).parse(capture(raw)).id; const command = validateCurrentFootprintInverseNativeDeleteClockCommand(input);
+  const id = z.looseObject({ id: z.number().int().positive().max(2_147_483_647) }).parse(capture(raw)).id; const command = validateCurrentFootprintInverseNativeDeleteClockCommand(input);
   need(bytes.toString("utf8") === `${JSON.stringify(currentFootprintInverseNativeDeleteClockWire(command, id, sessionId))  }\0`);
   return Object.freeze({ action: "footprint-inverse-native-delete-clock", requestId: id, phase: command.phase, method: command.method, realm: command.realm,
     ...("role" in command ? { role: command.role } : {}), ...scalarFields(command) });
