@@ -1,10 +1,11 @@
 /** Resume only the original serialization chain; stop before upload parsing. */
 import {z} from "zod";
+import {captureCurrentFootprintInversePreferenceReply as capture} from "./current-footprint-inverse-public-preferences-replies.ts";
 import type {DiagnosticEvent} from "./current-pcb-diagnostic-protocol.ts";
 import {decodeCurrentFootprintCopyClockRpcV2Array as array,currentFootprintCopyClockRpcV2ArrayObject as objectAt,decodeCurrentFootprintCopyClockRpcV2ArrayCapture as result} from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_PROGRAMS as PROGRAMS} from "./current-footprint-inverse-native-delete-serialization-programs.ts";
-import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_FLAGS as FLAGS,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_GROUP as GROUP, currentFootprintInverseNativeDeleteSerializationExpression as expression,validateCurrentFootprintInverseNativeDeleteSerializationCommand as validate} from "./current-footprint-inverse-native-delete-serialization-protocol.ts";
-import type {CurrentFootprintInverseNativeDeleteSerializationCommand as Command,currentFootprintInverseNativeDeleteSerializationExpectedSchema as ExpectedSchema} from "./current-footprint-inverse-native-delete-serialization-protocol.ts";
+import {currentFootprintInverseNativeDeleteSerializationExpectedSchema as ExpectedSchema,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_FLAGS as FLAGS, CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_GROUP as GROUP,currentFootprintInverseNativeDeleteSerializationExpression as expression,validateCurrentFootprintInverseNativeDeleteSerializationCommand as validate} from "./current-footprint-inverse-native-delete-serialization-protocol.ts";
+import type {CurrentFootprintInverseNativeDeleteSerializationCommand as Command} from "./current-footprint-inverse-native-delete-serialization-protocol.ts";
 import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_FRAME_LENGTHS as LENGTHS,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_ORDER as ROLES,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_SITES as SITES} from "./current-footprint-inverse-native-delete-serialization-profile.ts";
 import {currentFootprintInverseNativeDeleteSerializationNative as native,currentFootprintInverseNativeDeleteSerializationPause as pause,currentFootprintInverseNativeDeleteSerializationPromise as promise} from "./current-footprint-inverse-native-delete-serialization-replies.ts";
 
@@ -23,6 +24,7 @@ export interface CurrentFootprintInverseNativeDeleteSerializationData{
 }
 function need(ok:boolean):asserts ok{if(!ok){throw new Error("INVERSE_NATIVE_DELETE_SERIALIZATION_SEQUENCE");}}
 export async function observeCurrentFootprintInverseNativeDeleteSerialization(b:CurrentFootprintInverseNativeDeleteSerializationBindings,bodySha256:string):Promise<Readonly<CurrentFootprintInverseNativeDeleteSerializationData>>{
+ const expected=Object.freeze(ExpectedSchema.parse(capture(b.expected)));
  let helpers=0,normal=0;const points=new Map<Role,string>();const empty=z.strictObject({});
  const send=async(input:unknown):Promise<unknown>=>{b.current();const c=validate(input);need((normal += 1)<=53);const raw=await b.request(c);b.current();if(c.method==="Runtime.callFunctionOn"||c.method==="Debugger.evaluateOnCallFrame"){need((helpers += 1)<=16);await b.qualifyHelper(c);b.current();}return raw;};
  const props=(role:Extract<Command,{method:"Runtime.getProperties"}>["role"],objectId:string):Promise<unknown>=>send({phase:"inverse-native-delete-serialization-properties",role,method:"Runtime.getProperties",params:{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}});
@@ -33,7 +35,7 @@ export async function observeCurrentFootprintInverseNativeDeleteSerialization(b:
  return result(await send({phase:"inverse-native-delete-serialization-frame",role,method:"Debugger.evaluateOnCallFrame",params:{callFrameId:held.frame,expression:expression(role),objectGroup:GROUP,silent:true,generatePreview:false,throwOnSideEffect:true,returnByValue:false,includeCommandLineAPI:false}}),LENGTHS[role]);};
  const environment=await tuple("environment",b.intrinsics,[],8,"environment");
  for(const [index,role]of(["push","join","stringify","string","promise","then","self"]as const).entries()){native(await props(role,objectAt(environment.fields,index)),role);}
- const begin=await tuple("begin",await frame("begin",b.initial),[{objectId:b.accepted},{value:b.expected},{value:b.texts},{objectId:environment.id}],8,"begin");
+ const begin=await tuple("begin",await frame("begin",b.initial),[{objectId:b.accepted},{value:expected},{value:b.texts},{objectId:environment.id}],8,"begin");
  const originalPoint=async(role:"before"|"held"):Promise<void>=>{const site=SITES.uploadEntry;const location=z.strictObject({scriptId:z.literal(b.scriptId),lineNumber:z.literal(site.lineNumber),columnNumber:z.literal(site.columnNumber),type:z.literal("call")});z.strictObject({locations:z.tuple([location])}).parse(await send({phase:"inverse-native-delete-serialization-original-point",role,method:"Debugger.getPossibleBreakpoints",params:{start:{scriptId:b.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber},end:{scriptId:b.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber+1},restrictToFunction:true}}));};
  for(const role of ROLES){if(role==="uploadEntry"){await originalPoint("before");need(![...points.values()].includes(b.originalUploadPoint));points.set(role,b.originalUploadPoint);b.retainPoint(role,b.originalUploadPoint);}else{const site=SITES[role];const p=z.strictObject({breakpointId:z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u),actualLocation:z.strictObject({scriptId:z.literal(b.scriptId),lineNumber:z.literal(site.lineNumber),columnNumber:z.literal(site.columnNumber)})}).parse(await send({phase:"inverse-native-delete-serialization-arm",role,method:"Debugger.setBreakpoint",params:{location:{scriptId:b.scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber},condition:""}}));
  need(![...points.values()].includes(p.breakpointId));points.set(role,p.breakpointId);b.retainPoint(role,p.breakpointId);}}
@@ -52,5 +54,5 @@ export async function observeCurrentFootprintInverseNativeDeleteSerialization(b:
  }
  for(const role of ROLES){if(role==="uploadEntry"){await originalPoint("held");}else{const point=points.get(role);need(point!==undefined);empty.parse(await send({phase:"inverse-native-delete-serialization-remove",role,method:"Debugger.removeBreakpoint",params:{breakpointId:point}}));}}
  need(normal===53&&{helpers}.helpers===16&&uploadEvent!==null&&upload!==null&&caller!==null&&originalPromise!==null);await b.control("complete");b.current();
- return Object.freeze({uploadEvent,bundle:begin.id,upload,caller,retainedPromise:originalPromise,ticket:b.expected.maximumTicket+1,bodySha256,normal:53,helpers:16,resumes:6,originalDeleteStringPromiseFulfilled:true,uploadHeld:true,uploadResumed:false,publicationComplete:false,saveAuthorized:false});
+ return Object.freeze({uploadEvent,bundle:begin.id,upload,caller,retainedPromise:originalPromise,ticket:expected.maximumTicket+1,bodySha256,normal:53,helpers:16,resumes:6,originalDeleteStringPromiseFulfilled:true,uploadHeld:true,uploadResumed:false,publicationComplete:false,saveAuthorized:false});
 }

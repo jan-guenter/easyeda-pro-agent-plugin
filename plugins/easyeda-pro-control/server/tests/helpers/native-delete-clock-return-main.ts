@@ -1,6 +1,7 @@
 /** Standalone inert Inspector fixture: Node's test-runner Promise async-hook
  * symbols must not be confused with an application's uninstrumented Promise. */
 import assert from "node:assert/strict";
+import { z } from "zod";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Worker } from "node:worker_threads";
@@ -15,7 +16,8 @@ async function run(): Promise<void> {
   const intro = 'var wa=()=>({rpcCall(){return globalThis.__nativeClockInner=Promise.resolve(123456789)}}),oo=()=>({_TAB_ID_:"native_clock_fixture"});';
   let inert = source.replaceAll(/[^\r\n]/gu, " ");
   inert = intro + inert.slice(intro.length, qe.start) + source.slice(qe.start, qe.end) + inert.slice(qe.end);
-  const worker = new Worker(new URL("native-delete-clock-return-worker.ts", import.meta.url), { workerData: { source: inert, program: PROGRAMS.retainReturn } });
+  const failurePoint = z.enum(["before-frame-validation", "after-frame-validation", "after-capture"]).optional().parse(process.argv[2]);
+  const worker = new Worker(new URL("native-delete-clock-return-worker.ts", import.meta.url), { workerData: { source: inert, program: PROGRAMS.retainReturn, ...(failurePoint === undefined ? {} : { failurePoint }) } });
   const messages: unknown[] = []; worker.on("message", message => { messages.push(message); });
   // oxlint-disable-next-line promise/avoid-new -- This Promise joins the original fixture worker's exact exit event.
   const code = await new Promise<number>((resolve, reject) => { worker.once("error", reject); worker.once("exit", resolve); });

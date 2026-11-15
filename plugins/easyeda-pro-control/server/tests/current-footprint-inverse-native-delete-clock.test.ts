@@ -4,8 +4,9 @@ import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { CurrentFootprintInverseNativeDeleteClockController as Controller } from "../src/current-footprint-inverse-native-delete-clock-controller.ts";
 import assert from "node:assert/strict";
+import { currentDisposableOpenTargetSchema as targetSchema } from "../src/current-disposable-open.ts";
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_CLOCK_REQUESTS as LIMIT, CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_CLOCK_ORDER as ORDER,
-  currentFootprintInverseNativeDeleteClockCases as cases, currentFootprintInverseNativeDeleteClockNativeFrame as nativeFrame,
+  currentFootprintInverseNativeDeleteClockCases as cases, currentFootprintInverseNativeDeleteClockExpectedSchema as expectedSchema, currentFootprintInverseNativeDeleteClockNativeFrame as nativeFrame,
   currentFootprintInverseNativeDeleteClockTemplate as template, validateCurrentFootprintInverseNativeDeleteClockCommand as validateClock,
   currentFootprintInverseNativeDeleteClockWire as wire } from "../src/current-footprint-inverse-native-delete-clock-protocol.ts";
 import { currentFootprintInverseNativeClockBookNativeSource } from "../src/current-footprint-inverse-native-clock-book-storage.ts";
@@ -116,7 +117,7 @@ void test("shared native clock pool restores all original programs, packets and 
   assert.equal(matches.length, 1); const match = matches[0]; assert.ok(match !== undefined);
   const packed = Buffer.from(match[1] ?? "", "base64"); assert.equal(createHash("sha256").update(packed).digest("hex"), match[4]);
   // oxlint-disable-next-line node/no-sync -- Decode one immutable bounded codebook for comparison against the independent original programs/packet grammars.
-  const raw = gunzipSync(packed, { maxOutputLength: 60_000 }); assert.equal(raw.length, 59_649); assert.equal(raw.length, Number(match[2]));
+  const raw = gunzipSync(packed, { maxOutputLength: 60_000 }); assert.equal(raw.length, 59_632); assert.equal(raw.length, Number(match[2]));
   assert.equal(createHash("sha256").update(raw).digest("hex"), match[3]);
   const aliases = [
     ["~e~", '"silent":true,"generatePreview":false,"throwOnSideEffect":true,"returnByValue":false,"includeCommandLineAPI":false'],
@@ -164,7 +165,7 @@ void test("single-clock owner drift after the original bind await sends no rende
     poll: (): Promise<void> => Promise.reject(new Error("unexpected poll")),
     send: (): Promise<unknown> => { sends += 1; return Promise.resolve({}); },
     resume: (): Promise<unknown> => { resumes += 1; return Promise.resolve({}); }, consumeOriginalHold: (): void => { throw new Error("unexpected hold spend"); },
-    control: async (phase): Promise<void> => { assert.equal(phase, "bind"); await gate.promise; },
+    control: async (phase, fields): Promise<void> => { assert.equal(phase, "bind"); assert.deepEqual(fields, { uiScript: "ui_script" }); assert.equal(Object.isFrozen(fields), true); await gate.promise; },
   });
   for (let index = 0; index < 64; index += 1) { assert.equal(controller.observe({ method: "Runtime.consoleAPICalled", sessionId: "original_ui", params: {} }), false); }
   const pending = controller.start(); const rejected = assert.rejects(pending); current = false; gate.resolve(null); await rejected;
@@ -179,4 +180,32 @@ void test("actual Inspector conditions compile per evaluation and stay separate 
   const parsed: unknown = JSON.parse(result.stdout);
   assert.deepEqual(parsed, { conditionEvaluations: 10, falseEvaluations: 4, originalConditionSourcesQualified: 10, actualPauses: 6, actualResumes: 6,
     rendererRequests: 58, nativeOwnerIssued: false, applicationExecuted: false });
+});
+
+void test("native clock expected project UUID matches the original disposable target admission", () => {
+  const source = /projectUuid:text\(own\(selected\.project,"uuid"\),\/(\^\[a-f0-9\]\{64\}\$)\/\)/u.exec(PROGRAMS.expected);
+  assert.ok(source?.[1] !== undefined);
+  const admitted = new RegExp(source[1], "u");
+  const fields = { branchUuid: "b".repeat(32), targetUuid: "c".repeat(16), client: "d".repeat(16), maximumTicket: 7 };
+  for (const length of [0, 16, 32, 63, 64, 65]) {
+    const projectUuid = "a".repeat(length);
+    assert.equal(admitted.test(projectUuid), length === 64);
+    assert.equal(targetSchema.shape.projectUuid.safeParse(projectUuid).success, length === 64);
+    assert.equal(expectedSchema.safeParse({ ...fields, projectUuid }).success, length === 64);
+  }
+});
+
+void test("Inspector return fixture releases its original pause on early and late callback failure", async context => {
+  const sources = await readConfiguredEasyedaAssets(["pro-mgr/3.2.185.bf63a159/js/project-worker.js"]);
+  if (sources === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
+  // oxlint-disable-next-line typescript/strict-void-return -- The ChildProcess is joined through its original completion callback.
+  const execute = promisify(execFile);
+  for (const failurePoint of ["before-frame-validation", "after-frame-validation", "after-capture"]) {
+    const result = await execute(process.execPath, ["--import", fileURLToPath(new URL("../../scripts/test-isolation.ts", import.meta.url)),
+      fileURLToPath(new URL("helpers/native-delete-clock-return-main.ts", import.meta.url)), failurePoint], { maxBuffer: 4096, timeout: 10_000 });
+    const parsed: unknown = JSON.parse(result.stdout);
+    const proof = z.strictObject({ failure: z.string().min(1), originalPauseReleased: z.literal(true), resumeAttempted: z.literal(true),
+      requests: z.number().int().positive().max(18), nativeOwnerIssued: z.literal(false) }).parse(parsed);
+    assert.match(proof.failure, new RegExp(failurePoint, "u"));
+  }
 });

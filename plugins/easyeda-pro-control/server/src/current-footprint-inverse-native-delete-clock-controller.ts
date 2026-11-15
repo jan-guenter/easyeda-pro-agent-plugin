@@ -76,7 +76,7 @@ export class CurrentFootprintInverseNativeDeleteClockController {
   public start(): Promise<Readonly<Data>> {
     if (this.#pending !== null) { return this.#pending; }
     const result = Promise.withResolvers<Readonly<Data>>(); this.#pending = result.promise;
-    void (async (): Promise<void> => { try { this.#current(); this.#b.assertOriginalHeld(); await this.#control("bind");
+    void (async (): Promise<void> => { try { this.#current(); this.#b.assertOriginalHeld(); await this.#control("bind", Object.freeze({ uiScript: this.#b.scripts.ui }));
       const data = await observe({ ...this.#b, request: input => this.#read(input), qualifyHelper: input => this.#qualify(input),
         retainPoint: (role, point): void => { this.#current(); need(this.#arming === role && !this.#points.has(role) && ![...this.#points.values()].includes(point) && (this.#resolved === null || this.#resolved === point)); this.#points.set(role, point); this.#arming = null; this.#resolved = null; },
         resume: role => this.#resume(role), next: role => this.#next(role), control: phase => this.#control(phase) });

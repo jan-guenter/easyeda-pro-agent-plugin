@@ -83,7 +83,7 @@ array(this,4);const frame=own(this,"1"),retained=own(this,"2"),guard=own(this,"3
 const prototype=own(retained,"1"),constructor=own(retained,"2");if(constructor!==own(own(own(originalWorker,"4"),"1"),"0")||proto(originalPromise)!==prototype||own(prototype,"constructor")!==constructor||own(constructor,"prototype")!==prototype||Reflect.ownKeys(originalPromise).length!==0)bad();native(constructor,"Promise",1);verify();return true;}`,
   expected: `function(){${helpers}
 const selected=worker(this),bundle=own(this,"4"),original=own(bundle,"0"),state=own(original,"1");array(state,9);
-const result={projectUuid:text(own(selected.project,"uuid"),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),branchUuid:text(own(selected.project,"_branchUuid"),/^[a-f0-9]{32}$/),targetUuid:text(own(state,"7"),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/),client:text(own(state,"5"),/^[a-f0-9]{16}$/),maximumTicket:number(own(state,"6"))};
+const result={projectUuid:text(own(selected.project,"uuid"),/^[a-f0-9]{64}$/),branchUuid:text(own(selected.project,"_branchUuid"),/^[a-f0-9]{32}$/),targetUuid:text(own(state,"7"),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/),client:text(own(state,"5"),/^[a-f0-9]{16}$/),maximumTicket:number(own(state,"6"))};
 if(result.maximumTicket>Number.MAX_SAFE_INTEGER-2||own(selected.manager,"client")!==result.client||own(own(selected.project,"consistencyManager"),"client")!==result.client||own(own(selected.project,"consistencyManager"),"maxTicket")!==result.maximumTicket)bad();verify();return result;}`,
   worker: captureWorker, ui: projectWorker(RPC.ui.program), push: onePush,
   dispatch: projectWorker(RPC.dispatch.program), result: projectWorker(RPC.result.program), reply: projectWorker(RPC.reply.program),

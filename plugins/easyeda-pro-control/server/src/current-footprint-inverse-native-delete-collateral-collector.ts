@@ -14,6 +14,10 @@ import {z} from "zod";
 interface Bindings{
  readonly receipt:string;readonly uiScope:string;readonly sender:string;readonly uiScriptId:string;
  readonly current:()=>void;readonly assertBefore:()=>void;readonly assertAfter:()=>void;
+ /** For each Runtime.callFunctionOn, retain its original helper scriptParsed,
+  * issue Debugger.getScriptSource and qualify that exact fixed program before
+  * resolving. The next call or property census must never precede this join.
+  * Core supplies this helper transport; the collector counts normal reads only. */
  readonly request:(command:Command)=>Promise<unknown>;readonly assertOriginalExit:()=>void;
 }
 interface Tuple{readonly id:string;readonly values:readonly Remote[];readonly packets:readonly unknown[]}

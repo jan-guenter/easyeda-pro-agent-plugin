@@ -41,12 +41,12 @@ export function currentFootprintInverseNativeClockBookNativeSource(): string {
   const rows = original.map(row => row.map(value => { let stored = value; for (const [from, to] of aliases) { stored = stored.replaceAll(from, to); }
     let restored = stored; for (const [from, to] of aliases.toReversed()) { restored = restored.replaceAll(to, from); } need(restored === value); return stored; }));
   const raw = Buffer.from(rows.map(row => { need(row.length === 4 && row.every(value => !value.includes("\0") && !value.includes("\t"))); return row.join("\t"); }).join("\0"));
-  need(raw.length === 59_649 && raw.length <= 60_000);
+  need(raw.length === 59_632 && raw.length <= 60_000);
   // oxlint-disable-next-line node/no-sync -- Pack only fixed, byte-equivalent data; the existing decoder retains its unchanged bounds and both SHA checks.
   const packed = gzipSync(raw, { level: 9 });
   const restore = aliases.toReversed().map(([from, to]) => `.Replace(${quote(to)},${quote(from)})`).join("");
   return `public sealed partial class EasyedaDiagnosticOwner{
-static class NativeClockBookV1{internal static readonly string[][] Data=EasyedaDiagnosticFixedTable.Load(${quote(packed.toString("base64"))},59649,${quote(sha(raw))},${quote(sha(packed))},129,4);}
+static class NativeClockBookV1{internal static readonly string[][] Data=EasyedaDiagnosticFixedTable.Load(${quote(packed.toString("base64"))},59632,${quote(sha(raw))},${quote(sha(packed))},129,4);}
 static string NativeClockText(string text){return text${restore};}
 static string[][] NativeClockRows(string family){if(family!="c"&&family!="r")throw Error("inverse-native-clock-book-family");var result=new System.Collections.Generic.List<string[]>();string helper=NativeClockText(NativeClockBookV1.Data[0][3]);foreach(string[] row in NativeClockBookV1.Data)if(row[0].StartsWith(family+"/",StringComparison.Ordinal)){string kind=row[0].Substring(2),text=NativeClockText(row[3]);if(family=="c"&&kind=="program")text=text.Replace("__native_delete_clock_helpers_v1__",helper);result.Add(new[]{kind,NativeClockText(row[1]),NativeClockText(row[2]),text});}if(result.Count!=(family=="c"?102:26))throw Error("inverse-native-clock-book-roster");return result.ToArray();}
 }

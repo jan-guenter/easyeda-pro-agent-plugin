@@ -6,12 +6,12 @@ import { parentPort, workerData } from "node:worker_threads";
 import { z } from "zod";
 import { currentFootprintInverseNativeDeleteClockNative as qualifyNative, currentFootprintInverseNativeDeleteClockPromise as qualifyPromise } from "../../src/current-footprint-inverse-native-delete-clock-replies.ts";
 
-const input = z.strictObject({ source: z.string().max(2_181_308), program: z.string().max(4096) }).parse(workerData);
+const input = z.strictObject({ source: z.string().max(2_181_308), program: z.string().max(4096), failurePoint: z.enum(["before-frame-validation", "after-frame-validation", "after-capture"]).optional() }).parse(workerData);
 const nullablePort = parentPort; assert.ok(nullablePort !== null); const port = nullablePort;
 const session = new Session(); session.connectToMainThread();
 const keep = setInterval((): void => { port.ref(); }, 100);
 interface Retained { readonly cell: string; readonly promise: string }
-const work: { pending: Promise<Retained> | null; join: Promise<void> | null } = { pending: null, join: null };
+const work: { pending: Promise<Retained> | null; join: Promise<void> | null; invocation: Promise<Runtime.EvaluateReturnType> | null } = { pending: null, join: null, invocation: null };
 const finished = Promise.withResolvers<Retained>();
 let held = false;
 let resumeAttempted = false;
@@ -33,18 +33,21 @@ async function run(): Promise<void> {
   count(); const point = await session.post("Debugger.setBreakpoint", { location: { scriptId, lineNumber: 108, columnNumber: 9749 }, condition: "true" });
   assert.deepEqual(point.actualLocation, { scriptId, lineNumber: 108, columnNumber: 9749 });
   const onPaused = (notification: { params: Debugger.PausedEventDataType }): void => {
+    // This session receives its own inert invocation's pause. Retain cleanup
+    // Custody before any assertion can reject the callback.
+    held = true;
     const pending = (async (): Promise<Retained> => {
-      assert.equal(work.pending, null); const frame = notification.params.callFrames[0];
+      assert.equal(work.pending, null); assert.notEqual(input.failurePoint, "before-frame-validation"); const frame = notification.params.callFrames[0];
       assert.ok(frame !== undefined && frame.returnValue !== undefined); assert.equal(frame.functionName, "qe");
       assert.deepEqual(frame.location, { scriptId, lineNumber: 108, columnNumber: 9749 });
       assert.equal(frame.returnValue.type, "object"); assert.equal(frame.returnValue.subtype, "promise");
-      assert.equal(frame.returnValue.className, "Promise"); assert.ok(frame.returnValue.objectId !== undefined); held = true;
+      assert.equal(frame.returnValue.className, "Promise"); assert.ok(frame.returnValue.objectId !== undefined); assert.notEqual(input.failurePoint, "after-frame-validation");
       count(); const before = await session.post("Runtime.getProperties", { objectId: frame.returnValue.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
       qualifyPromise(before, "pending"); assert.equal(before.result.length, 0); assert.equal(before.internalProperties?.find(row => row.name === "[[PromiseState]]")?.value?.value, "pending");
       count(); const captured = await checked({ objectId: frame.returnValue.objectId, functionDeclaration: input.program,
         arguments: [], returnByValue: false, objectGroup: "inert-native-delete-clock-return", silent: true, generatePreview: false,
         awaitPromise: false });
-      assert.equal(captured.exceptionDetails, undefined); assert.equal(captured.result.description, "Array(3)"); assert.ok(captured.result.objectId !== undefined);
+      assert.notEqual(input.failurePoint, "after-capture"); assert.equal(captured.exceptionDetails, undefined); assert.equal(captured.result.description, "Array(3)"); assert.ok(captured.result.objectId !== undefined);
       const cell = captured.result.objectId;
       count(); const values = await session.post("Runtime.getProperties", { objectId: cell, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
       const promise = values.result.find(row => row.name === "0")?.value;
@@ -53,12 +56,23 @@ async function run(): Promise<void> {
       count(); qualifyNative(await session.post("Runtime.getProperties", { objectId: constructor.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false }), "constructor");
       const promiseId = promise.objectId; await resume(); return Object.freeze({ cell, promise: promiseId });
     })(); work.pending = pending;
-    work.join = (async (): Promise<void> => { try { finished.resolve(await pending); } catch (caughtError) { finished.reject(caughtError); } })();
+    work.join = (async (): Promise<void> => {
+      try { finished.resolve(await pending); } catch (caughtError) {
+        // Runtime.evaluate cannot settle while this original frame is paused.
+        // Release it here, before rejecting the Promise that joins evaluation.
+        try { if (held && !resumeAttempted) { await resume(); } } catch (cleanupError) {
+          finished.reject(new AggregateError([caughtError, cleanupError], "original pause release failed")); return;
+        }
+        finished.reject(caughtError);
+      }
+    })();
   };
   session.on("Debugger.paused", onPaused);
   try {
-    count(); const invocation = await session.post("Runtime.evaluate", { expression: "globalThis.__nativeClockOuter=qe()", awaitPromise: false, returnByValue: false });
-    const retained = await finished.promise; assert.ok(invocation.result.objectId !== undefined);
+    count(); work.invocation = session.post("Runtime.evaluate", { expression: "globalThis.__nativeClockOuter=qe()", awaitPromise: false, returnByValue: false });
+    // Attach both outcomes before awaiting either; callback failure must not
+    // Become an unhandled rejection or leave evaluation waiting on its pause.
+    const [invocation, retained] = await Promise.all([work.invocation, finished.promise]); assert.ok(invocation.result.objectId !== undefined);
     count(); const inner = await session.post("Runtime.evaluate", { expression: "globalThis.__nativeClockInner", returnByValue: false });
     assert.ok(inner.result.objectId !== undefined);
     count(); const matched = await checked({ objectId: retained.cell, functionDeclaration: "function(outer,inner){return [this[0]===outer,this[0]===inner]}",
@@ -81,9 +95,9 @@ try {
     // oxlint-disable-next-line node/no-top-level-await -- Only this fixture's own verified held pause can require original cleanup.
     await resume();
   }
-  port.postMessage({ failure: caughtError instanceof Error ? caughtError.message : "unknown" });
+  port.postMessage({ failure: caughtError instanceof Error ? caughtError.message : "unknown", originalPauseReleased: !held, resumeAttempted, requests, nativeOwnerIssued: false });
 } finally {
   // oxlint-disable-next-line node/no-top-level-await -- Join the exact callback and its settlement task before this fixture's session closes.
-  await Promise.allSettled([...(work.pending === null ? [] : [work.pending]), ...(work.join === null ? [] : [work.join])]);
+  await Promise.allSettled([...(work.pending === null ? [] : [work.pending]), ...(work.join === null ? [] : [work.join]), ...(work.invocation === null ? [] : [work.invocation])]);
   session.disconnect(); clearInterval(keep); port.close();
 }

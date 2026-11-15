@@ -34,7 +34,7 @@ export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_CLOCK_REGISTRATION_DISPATCH
           $base=@('action','id','helperInstance','jobId','rootPid','rootCreated','requestId','phase','method');foreach($n in $base){if(@($request.PSObject.Properties.Name) -cnotcontains $n){throw 'inverse-native-delete-clock-registration-field'}}
           if($request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])){throw 'inverse-native-delete-clock-registration-type'}
           $fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal);$role=$null;foreach($p in $request.PSObject.Properties){if($p.Name -ceq 'role'){$role=$p.Value;if($role -isnot [string]){throw 'inverse-native-delete-clock-registration-role'}}elseif($base -cnotcontains $p.Name){$fields.Add($p.Name,$p.Value)}}
-          if($request.method -ceq 'control'){if($request.requestId -ne 0 -or $null -ne $role){throw 'inverse-native-delete-clock-registration-control'};$owner.ControlNativeDeleteClockRegistration($request.phase,$fields)}else{$owner.SendNativeDeleteClockRegistration([int]$request.requestId,$request.phase,$role,$request.method,$fields)}
+          if($request.method -ceq 'control'){if($request.requestId -ne 0 -or $null -ne $role){throw 'inverse-native-delete-clock-registration-control'};$owner.ControlNativeDeleteClockRegistration($request.phase,$fields)}else{$nativeRole=if($null -eq $role){[System.Management.Automation.Language.NullString]::Value}else{$role};$owner.SendNativeDeleteClockRegistration([int]$request.requestId,$request.phase,$nativeRole,$request.method,$fields)}
           $result=@{written=$true}
         }
 `;
