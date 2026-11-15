@@ -266,8 +266,23 @@ profile on Windows x64. Configure the Linux machine profile first, and retain a
 verified Linux package with the same six runtime files as the Windows package:
 facade, supervisor, descriptor sanitizer, session manager, compatibility manifest
 and plugin manifest. The Linux files must have their packaged `0644` modes,
-except the sanitizer's `0755`; canonical paths and exact bytes are checked before
-the Linux entrypoint runs. Keep that selected package unchanged through cleanup.
+except the sanitizer's `0755`. The fixed bootstrap captures those bytes, verifies
+the compatibility-pinned Bubblewrap executable, and starts Node with a private
+read-only directory skeleton containing the six captured files at their original
+canonical paths. File writes, file replacement and replacement of their containing
+host directories cannot change that selected namespace view. The copied files
+retain single links and their required modes; setup descriptors close before Node.
+Unrelated sibling trees remain shared with the host and retain normal Linux
+admission. This is six-file handoff custody, not full-package ownership proof.
+Keep the selected package unchanged through cleanup and independently verify the
+full installed package. A runtime process check must read these six paths through
+`/proc/<facadePid>/root`, separately from the host installation.
+
+Use a separate configuration/control directory, such as the existing
+`~/.easyeda-pro-control`. A machine profile stored directly in a protected runtime
+ancestor, such as the plugin root or `server/dist`, is refused. Namespace planning
+also refuses more than256 protected directories,8,192 enumerated sibling entries
+or1MiB of mount arguments; it does not widen those bounds automatically.
 
 From the verified Windows plugin directory, provision its launcher with Windows
 Node (the transport has been exercised with Node24.10.0):
@@ -284,16 +299,24 @@ It creates `%USERPROFILE%\.easyeda-pro-control\windows-wsl-profile.json`.
 An identical configuration is a no-op. A different recognized launcher profile
 requires `--replace`; an unrecognized existing file is refused. Publication uses
 a sibling temporary file and atomic link/rename after rechecking existing bytes.
-This does not establish Windows ACL custody or exclude an unrelated concurrent
-local writer. Run only one provisioner against a trusted private directory.
+Cooperating provisioners serialize that final read and publication with a SQLite
+OS transaction lock in the publishing process. Case and canonical path aliases
+select the same lock. Its owned database is fully initialized before exclusive
+publication and never replaced; process death releases the OS lock without stale
+PID-file recovery. Busy, unknown-schema, wrong-path and changed-profile cases
+refuse with `windows-wsl-profile-changed`. Keep its reserved `.lock.sqlite` file;
+deleting it to force progress would bypass serialization. This does not establish
+Windows ACL custody or exclude an unrelated direct local writer. Use a trusted
+private configuration directory.
 
 The Windows launcher uses direct arguments to the system `wsl.exe`, forwards
 binary stdin and inherits stdout/stderr. Input EOF or its termination handler
 closes only the original WSL child's stdin, then observes that child's close.
 It sends no process signal. A wrapper exit supplies no native application,
 Windows Job or helper-release proof; complete those original Linux lifecycles
-before ending the connection. Byte checks are initial observations; the Linux
-machine/runtime admission remains authoritative. This launcher neither refreshes
+before ending the connection. The captured six-file namespace does not establish
+continuous full-package ownership; Linux machine/runtime admission remains
+authoritative. This launcher neither refreshes
 an existing Codex connection nor upgrades either package. After a package update,
 review the selected Linux package and replace the launcher profile if its path
 changed, using the supported retirement and replacement workflow.

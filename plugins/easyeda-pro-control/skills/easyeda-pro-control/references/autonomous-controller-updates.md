@@ -77,8 +77,17 @@ profile. Configure it with `--configure-wsl-launch`, a distribution, canonical
 Linux Node24.18.0/package/machine-profile paths and a matching verified package;
 see [Windows launcher setup](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/installation.md#starting-the-bundled-launcher-on-windows).
 Provisioning is readonly WSL verification followed by recognized Windows profile
-publication. Startup compares only its six fixed runtime files and their Linux
-modes before handing off to the existing machine launcher. It introduces no
+publication, with a crash-released SQLite OS transaction serializing cooperating
+publishers' final read and atomic publication. Busy or changed/unknown lock state
+refuses; never delete its reserved lock database to force progress.
+Startup captures its six fixed runtime files and their Linux modes, then retains
+them at the canonical paths in a private read-only directory skeleton through the
+existing machine launcher. Host file or containing-directory replacement cannot
+select different bytes there; unrelated sibling trees stay shared. Compare the
+actual facade's six paths through `/proc/<facadePid>/root` with the expected
+captures, separately from full host-installed package verification. Keep the
+machine profile/control directory separate from protected runtime ancestors.
+This bounded handoff is not continuous full-package ownership. It introduces no
 facade/native admission shortcut, updater or arbitrary program field. Keep both
 selected packages frozen until their original cleanup completes. Windows EOF
 and termination handlers close only that original WSL stdin and observe its

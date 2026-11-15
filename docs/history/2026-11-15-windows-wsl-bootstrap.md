@@ -201,3 +201,81 @@ The Windows automation batch awaits its own exact-head CI, CodeRabbit review
 and deliberate publication. Fresh installed Linux/Windows package verification,
 new CLI metadata-only process closure and any current desktop connection proof
 remain pending; no passing installation or connected result is claimed here.
+
+
+## 2026-11-15 PR213 publication and runtime-custody correction
+
+CodeRabbit review5911737113 on PR213 head
+`9518713ebfd0dd698e410f53157d32af6db271e0` reported two valid races:
+`r4579230385` allowed two replacing provisioners to pass the same final read,
+and `r4579230389` closed the six verified descriptors before a pathname-based
+execution handoff. The earlier single-provisioner/initial-observation limits
+above describe that earlier implementation, not the corrected handoff.
+
+Configuration now holds an in-process SQLite OS transaction across the final
+read and atomic publication. The reserved database is fully initialized in an
+exclusive temporary file before its one-time link, has an exact schema and
+canonical Windows case-folded profile binding, and is never replaced. Its
+recognized original filesystem identity remains bound through acquisition.
+Busy, unknown/rebound schema and stale profile state refuse. Process death
+releases the OS transaction; no stale PID marker, helper-owner recovery or
+control-lease mutation is involved. A crash between the initialization link
+and unlink may leave one harmless alias, accepted only for this metadata.
+Runtime and profile single-link guards remain unchanged.
+
+Runtime handoff now retains private verified Buffers and copies all six files
+into a private read-only Bubblewrap directory skeleton at their original
+canonical paths. Every containing path component is private; ordinary sibling
+trees remain shared host mounts. The reviewed compatibility pin selects and
+verifies the existing Bubblewrap binary; no caller executable field or new
+distribution dependency is added. Setup-only descriptors close before Node,
+there is no PID namespace, and original binary stdin/EOF/child-close custody
+continues without process signals. Linux package/runtime admission remains
+separate and authoritative. A profile/control directory overlapping a protected
+ancestor is refused; the documented bounded directory/entry/argument limits
+fail closed.
+
+Private inert namespace probes first rejected two tempting alternatives:
+`--ro-bind-data` produced link-count zero, and per-file mounts over mutable host
+parents lost selection after atomic file or containing-directory replacement.
+Those failures are retained. The final private skeleton retained the captured
+bytes through in-place, atomic-file, server-directory and whole-package-directory
+replacement. The public fixture checks all six hashes,0644/0755 modes, single
+links, EROFS write refusal and absence of leaked setup sockets after replacement.
+
+Nine focused Linux tests pass with zero skips. They include the minified
+production-helper closure, exact binary/EOF exit23, simultaneous original
+cross-process publications, process exits while holding the transaction and
+immediately after lock DB publication, and unknown/wrong-path/extra-schema
+refusal without changing either file. Both facade TypeScript projects and
+three-file strict type-aware lint pass with zero warnings. The first new
+minified run exposed an inferred generated naming helper; the serialized local
+callbacks were corrected and the failed receipt remains private.
+
+The actual minified module also ran on Windows Node24.10.0 through `wsl.exe`
+and Linux Node24.18.0 against six disposable matching files. NTFS
+`profile.json`/`PROFILE.JSON` replacement contenders produced exactly one
+winner and one `windows-wsl-profile-changed`. The fake Linux entry checked
+fixed argv, echoed131356 nontrivial bytes and exited23 on EOF with empty stderr.
+An independent original Linux pidfd remained held while the parent verified
+all six hashes/modes/single links through `/proc/<pid>/root`, both before and
+after host in-place replacement. Zero setup sockets remained in that Node.
+The original Windows wrapper, WSL watcher and all other fixture children reached
+observed close; the original Linux pidfd observed exit. No fixture resource
+remains live.
+
+The actual Windows attempt also caught an EPERM from fsync on a read-only owned
+temporary lock DB handle. Opening only that owned temp as read/write corrected
+Windows FlushFileBuffers access. That failed receipt is retained separately.
+A subsequent private watcher quoting failure reached no pidfd; its harness
+closed all original children by EOF before the corrected passing run. SQLite's
+experimental notice can still appear on stderr in configuration mode; source
+lazy initialization is not a claim of zero bundled SQLite imports.
+
+These are inert transport/configuration fixtures: no actual index, live MCP
+facade, bridge, native owner, application, Job or design was started. No default
+profile, installed cache or publication changed. Fresh official installation,
+full installed Linux v2 byte/mode/link proof and fresh CLI loaded-snapshot plus
+supported retirement/original-exit proof remain pending. Root will regenerate
+and validate final bundles/compatibility and obtain exact-head CI and follow-up
+CodeRabbit review after integrating this source correction.
