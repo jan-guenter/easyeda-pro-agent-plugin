@@ -1,0 +1,19 @@
+/** Before-Modify original parser module and selected tree ownership. */
+import {freezeDeep}from"./sqlite-inventory-core.ts";
+import {CURRENT_SCHEMATIC_WIRE_UI_PROVIDER_PROGRAMS as UI}from"./current-schematic-wire-ui-provider-programs.ts";
+import {CURRENT_SCHEMATIC_WIRE_COMPLETION_SOURCE as COMPLETION}from"./current-schematic-wire-completion-source.ts";
+
+const begin=UI.complete.indexOf('"use strict";'),boundary=UI.complete.indexOf("const current=()=>"),end=UI.complete.indexOf("dense(registry,13);");
+if(begin===-1||boundary<=begin||end<=boundary){throw new Error("WIRE_TREE_PREFLIGHT_ANCHOR");}
+const nativeGuard=UI.complete.slice(begin,boundary).replaceAll("WIRE_UI_PROVIDER","WIRE_TREE_PREFLIGHT");
+const current=UI.complete.slice(begin,end).replaceAll("WIRE_UI_PROVIDER","WIRE_TREE_PREFLIGHT");
+function scope(key:string,same=false):string{return `function(native${same?",expected":""}){${nativeGuard}const description=own(this,"description");if(description!=="Closure"&&description!=="Script"&&description!=="Module")return undefined;const d=get(own(this,"object"),"${key}");if(d===undefined)return undefined;if(!has(d,"value"))bad();${same?'if(d.value!==expected)bad();':""}return d.value;}`;}
+function seed(variant:0|1):string{return `function(native,holder,root,a,b){${current}const methodValue=method(root[4],"${COMPLETION[variant].rows.docParse.name}",false);return[methodValue[0],methodValue[1]];}`;}
+function complete(counter:"nee"|"kee"):string{return `function(native,holder,root,a,b,entry,project,on,scope,target,ticketScope){${current}dense(entry,10);const ast=entry[0],tree=entry[1],values=own(scope,"object"),field=entry[2];if(field!=="objectTreeManager"&&field!=="pageTreeManager"||own(ast,field)!==tree||own(ast,"event")!==tree||own(ast,"batchDepth")!==0||own(ast,"prjUuid")!==entry[4]||own(root[6],"leftTreeActiveTab")!==entry[8]||own(tree,"passContentData")!==entry[3]||method(ast,"getBatch",false)[0]!==entry[5]||method(ast,"getEvent",false)[0]!==entry[6]||method(ast,"passContentData",false)[0]!==entry[7]||own(values,"e")!==null||own(values,"t")!==null||own(values,"i")!==target||typeof on!=="function")bad();const build=own(project,"isBuild");if(typeof build!=="boolean")bad();const tickets=own(ticketScope,"object");const counter=own(tickets,"${counter}");if(typeof counter!=="number"||counter<0||counter>9007199254740990||counter%1!==0)bad();return[on,project,build,counter];}`;}
+export const CURRENT_SCHEMATIC_WIRE_TREE_PREFLIGHT_PROGRAMS=freezeDeep({
+ seed0:seed(0),seed1:seed(1),scopeHost:scope("C"),scopeSheet0:scope("km"),scopeSheet1:scope("Dg"),
+ scopeAst:scope("Ue"),scopeInfo:scope("Oi"),scopeTabs:scope("br"),scopeOn0:scope("On"),scopeOn1:scope("bn"),scopeCounter0:scope("nee"),scopeCounter1:scope("kee"),scopeProject:scope("Z"),scopeSameAst:scope("Ue",true),
+ ast:`function(native,holder,root,a,b,host,info,tabs){${current}const ast=this;if(host!==root[6]||info===null||typeof info!=="object"||proto(tabs)!==native[15]||own(tabs,"Object")!==0||own(tabs,"SYMBOLROOT")!==1||own(tabs,"NETROOT")!==2||own(tabs,"PAGES")!==3)bad();const tab=own(host,"leftTreeActiveTab");let field;if(tab===0)field="objectTreeManager";else if(tab===3)field="pageTreeManager";else bad();const tree=own(ast,field),wrapper=own(tree,"passContentData"),prjUuid=own(ast,"prjUuid");if(own(ast,"event")!==tree||own(ast,"batchDepth")!==0||typeof wrapper!=="function"||typeof prjUuid!=="string"||prjUuid.length===0||prjUuid.length>128)bad();return[ast,tree,field,wrapper,prjUuid,method(ast,"getBatch",false)[0],method(ast,"getEvent",false)[0],method(ast,"passContentData",false)[0],tab,info];}`,
+ serial:`function(native){${nativeGuard}const description=own(this,"description");if(description!=="Closure (Pc)"&&description!=="Closure (Dc)")bad();const values=own(this,"object");return[own(values,"e"),own(values,"t"),own(values,"r"),own(values,"i")];}`,
+ complete0:complete("nee"),complete1:complete("kee"),
+}as const);

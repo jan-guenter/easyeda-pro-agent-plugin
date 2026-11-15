@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import {Session} from "node:inspector/promises";
+import {test} from "node:test";
+import {runInThisContext} from "node:vm";
+import {Worker} from "node:worker_threads";
+import {CURRENT_SCHEMATIC_WIRE_PARSER_HELPERS as SOURCE} from "../src/current-schematic-wire-parser-source.ts";
+import {wireParserFixture} from "./helpers/current-schematic-wire-parser-fixture.ts";
+import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAsset} from "./helpers/installed-easyeda-source.ts";
+
+function object(value:unknown):object{assert.ok(value!==null&&typeof value==="object");return value;}
+for(const[variant,mode]of[[0,"complete"],[1,"complete"],[0,"wrong-path"],[0,"publication"],[0,"rpc-error"],[0,"idle-tab"]] as const){void test(`Wire original nested parser ${String(variant)} / ${mode}`,{timeout:25_000},async context=>{
+ const source=await readConfiguredEasyedaAsset(SOURCE[variant].relativePath);if(source===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
+ const key=`__wireParser${String(variant)}${mode.replaceAll("-","_")}`; const url=`${key}.js`;const session=new Session();session.connect();await session.post("Debugger.enable");let scriptId="";session.on("Debugger.scriptParsed",event=>{if(event.params.url===url){scriptId=event.params.scriptId}});const graph=object(runInThisContext(`${wireParserFixture(source,variant,mode)}\n//# sourceURL=${url}`));Object.defineProperty(globalThis,key,{value:graph,configurable:true});assert.ok(scriptId.length>0);session.disconnect();const done=Promise.withResolvers<unknown>();const worker=new Worker(new URL("helpers/current-schematic-wire-parser-worker.ts",import.meta.url),{workerData:{key,scriptId,variant}});context.after(async()=>{Reflect.deleteProperty(globalThis,key);await worker.terminate();});worker.on("error",done.reject);worker.on("message",(value:unknown)=>{const message=object(value);if("ready" in message){const drive:unknown=Reflect.get(graph,"drive");assert.ok(typeof drive==="function");assert.equal(Reflect.apply(drive,graph,[]),undefined);}else {done.resolve(value);}});
+ const result=object(await done.promise);if(mode==="complete"){assert.ok(!("error" in result),JSON.stringify(result));assert.equal(Reflect.get(result,"returns"),6);assert.equal(Reflect.get(result,"published"),true);assert.equal(Reflect.get(result,"settled"),true);assert.equal(Reflect.get(result,"helperReads"),23);assert.equal(Reflect.get(result,"sources"),20);assert.equal(Reflect.get(result,"pauses"),14);assert.equal(Reflect.get(result,"resumes"),14);assert.equal(Reflect.get(result,"parserCompleted"),false);assert.equal(Reflect.get(result,"childRpcJoined"),false);assert.equal(Reflect.get(result,"saveAuthorized"),false);context.diagnostic(JSON.stringify(result));const counts=object(Reflect.get(graph,"counts"));const rpc:unknown=Reflect.get(counts,"rpc");assert.deepEqual(rpc,[["isClosing",null],["i18n",["or clear."]]]);}else{assert.ok("error" in result,"unsafe parser context accepted");assert.match(String(Reflect.get(result,"error")),/SCH209_WIRE_PARSER_CONTEXT|SCHEMATIC_WIRE_PARSER_CURSOR/u);}
+});}
