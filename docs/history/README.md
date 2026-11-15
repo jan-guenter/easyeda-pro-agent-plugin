@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-15 Footprint continuation foundation review batch](2026-11-15-footprint-foundation-review-batch.md). Independently buildable typed primitives, exact local validation and explicit pending integration/release boundaries.
+
 - [2026-11-15 Versioned package-growth envelope](2026-11-15-versioned-package-growth-envelope.md). Explicit v2 verification preserves the original profile and exact per-path byte bounds.
 
 - [2026-11-09 Release CI and review corrections](2026-11-09-release-ci-and-review-corrections.md). Retained failed release checks, strict native compiler warning fixes, focused facade regressions, PR209 findings and documentation scope, and concrete review omissions before the requested post-merge break.
