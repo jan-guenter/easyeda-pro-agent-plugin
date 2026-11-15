@@ -318,3 +318,22 @@ V1 release journal still refuses unresolved cleanup; the new V2 budget/schema
 and pure chain validator choose and encode the recovery contract, while the
 actual publisher and original opaque-proof binding remain separate owner
 integration. This batch claims no public runtime recovery or new live writer.
+
+## Follow-up of the next complete review
+
+Review 5911291553 on 7ba18f3c completed after all exact-head CI jobs passed.
+Its six inline issues and one test assertion gap are corrected in this batch.
+The forward correction also covers the same state-transition class in eight
+renderer lanes; inherited static dispatch and marked-type metadata/layout
+activation refuse when the closed member graph cannot prove them. No broader
+reflection blacklist or shared bound increase is used. Serialization controls
+retain their required held/resumed role at the actual PowerShell boundary.
+
+The combined source passes 60 affected tests without skips, both facade and
+bridge TypeScript checks, bridge lint and full type-aware strict lint over
+4,778 files with zero warnings/errors. Current generation/build, API coverage,
+compatibility, repository/MCP/skill checks and outgoing-history checks pass.
+All three runtime bundles reproduce their committed bytes; compatibility
+changes only source projection and review time. Prior failed fixtures and the
+private-only test-merge repair remain separate evidence, not passing checks.
+Final new-head CI and CodeRabbit review remain required before merge.

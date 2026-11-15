@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "2976d3b8707316130f8cfb0c1bd9440eff29fadd5a77a7c413a47f5fb729005a",
+      "sha256": "c2b2c58a8da20799382ba94e4387495ef127803f905277d5eb8cfc8c916df228",
       "fileCount": 2716,
       "files": [
         {
@@ -1918,8 +1918,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-tail-native.ts",
-          "bytes": 41423,
-          "sha256": "7152984452963858fd8faa77a0a644c0abfa6c7571c37691f39e17d50ac4bb31"
+          "bytes": 42355,
+          "sha256": "a4a4e1bfc1fcdcb30e622d5ee0c587a262879bf71eef7f57b805fd5183c998ab"
         },
         {
           "relativePath": "current-footprint-forward-writer-control-contract.ts",
@@ -2093,8 +2093,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-ticket-timer-bindings.ts",
-          "bytes": 15289,
-          "sha256": "1cb261bf4e72a41a930b5545566bd7de9ec33c57df887b4910e5469d29f4940e"
+          "bytes": 15353,
+          "sha256": "6905167eac481aba2a4170576efebe8edcb1c7cef790b6cf68e4e6282d007b7d"
         },
         {
           "relativePath": "current-footprint-forward-writer-ticket-timer-native.ts",
@@ -2128,8 +2128,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-workflow-journal.ts",
-          "bytes": 18983,
-          "sha256": "b261f35311d239e88cb81b70d9252a620cfd369e72c71684f49b5f9683c18038"
+          "bytes": 19752,
+          "sha256": "f7c5f8b2f33232d0476e37a8601cf82ed86e0367e89bee0c0d9d70cb85507a4a"
         },
         {
           "relativePath": "current-footprint-forward-writer-workflow-v2-budget.ts",
@@ -3548,8 +3548,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-serialization-native.ts",
-          "bytes": 9784,
-          "sha256": "af4ce63184a08632be7ae37a4d1d9666e85455d4126e0f1b5f829474950e77f7"
+          "bytes": 10005,
+          "sha256": "554566de33f8e824d79e005a62d13f76b9da36fc38b58715cc979d912c25cf31"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-serialization-observer.ts",
@@ -3978,8 +3978,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-only-projection.ts",
-          "bytes": 27552,
-          "sha256": "f1aeb3bbc9b89c98d07dac6309629df598494d7b8f9980d2022eb36d956299f1"
+          "bytes": 28178,
+          "sha256": "7aef5f93b0c5b99ad86f16fc5ab5ad62ad5c6625a22485bfa63d6ee93da5fbf0"
         },
         {
           "relativePath": "current-footprint-inverse-native-owner.ts",
@@ -13613,7 +13613,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-15T14:14:06.225Z",
+  "reviewedAt": "2026-11-15T15:19:18.318Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {
