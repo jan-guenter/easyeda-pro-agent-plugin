@@ -28,3 +28,10 @@ The repository rules now make cleanup part of each workflow's responsibility.
 Large retained artifacts need a reason; source, unique evidence and unfinished
 owners must be preserved. This is an operating rule, not a claim that a generic
 host-temp purge or disk-management tool has been added.
+
+After both installations and original-process handoffs completed, the duplicate
+public recovery checkout also became unnecessary. Its Git head and clean tree
+were checked, its 6,011 files were inventoried without reparse points, and
+the closed 139,427,440-byte checkout went to the Windows Recycle Bin. Its
+provenance and terminal receipt remain private. The unique evidence and the
+managed installed packages remain in place.
