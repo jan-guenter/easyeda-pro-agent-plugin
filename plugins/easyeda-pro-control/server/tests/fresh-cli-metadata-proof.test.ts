@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import childProcess from "node:child_process";
 import fs from "node:fs";
-import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
@@ -96,4 +96,54 @@ void test("fatal UTF-8 streaming and EOF validation preserve physical close whil
       assert.deepEqual(await readFile(join(root, `evidence-${index}`, "app-server.stdout.jsonl")), bytes);
     } finally { peer.closeInput(); await peer.closed.promise; evidence.close(); }
   }
+});
+
+void test("original pidfd precedes inspect failure and missing custody never becomes a facade-exit claim", async () => {
+  for (const missingPidfd of [false, true]) {
+    const root = await createTestTemporaryDirectory("fresh-cli-custody-failure-"); const data = planData(root); const packageRoot = join(root, "package"); const files = [];
+    for (const [index, relativePath] of PATHS.entries()) {
+      const filename = join(packageRoot, relativePath); await mkdir(dirname(filename), { recursive: true });
+      const bytes = Buffer.from(relativePath === ".codex-plugin/plugin.json" ? '{"version":"0.3.0"}' : "inert fixture"); await writeFile(filename, bytes); await chmod(filename, index === 2 ? 0o755 : 0o644);
+      files.push({ relativePath, bytes: bytes.length, sha256: await digest(bytes), mode: index === 2 ? 0o755 : 0o644 });
+    }
+    await writeFile(join(packageRoot, ".mcp.json"), '{"mcpServers":{"easyeda_pro_control":{}}}');
+    const executable = join(root, "inert-cli"), marker = join(root, "inert-inspect-and-close.json");
+    const program = `#!${process.execPath}
+import {spawn} from 'node:child_process';import {readFileSync,writeFileSync} from 'node:fs';
+if(process.argv[2]==='--version'){console.log('codex-cli 0.168.0')}else{
+const facade=spawn(process.execPath,['--eval',"process.stdin.resume();process.stdin.on('end',()=>process.exit(0))"],{stdio:['pipe','ignore','inherit']});let observed={inspectReached:false};
+const send=(id,result)=>process.stdout.write(JSON.stringify({id,result})+'\\n');let buffer='';
+process.stdin.on('data',bytes=>{buffer+=bytes.toString();let at;while((at=buffer.indexOf('\\n'))>=0){const r=JSON.parse(buffer.slice(0,at));buffer=buffer.slice(at+1);if(!r.id)continue;
+if(r.method==='initialize')send(r.id,{});else if(r.method==='thread/start')send(r.id,{thread:{id:'inert-thread'}});else if(r.method==='mcpServerStatus/list')send(r.id,{data:[{name:'easyeda_pro_control',pluginId:'easyeda-pro-control@easyeda-pro-agent',tools:{easyeda_control_api:{},easyeda_control_session:{}}}],nextCursor:null});
+else if(r.params.arguments.request.action==='loaded-facade')send(r.id,{content:[],structuredContent:{result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:${missingPidfd ? "2147483647" : "facade.pid"},moduleUrl:${JSON.stringify(new URL(`file://${packageRoot}/server/dist/server.mjs`).href)},nodeVersion:'v24.18.0',admissionGranted:false}}});
+else{observed={inspectReached:true,pidfdBeforeInspect:readFileSync(${JSON.stringify(join(root, "evidence/linux-watcher.jsonl"))},'utf8').includes('linux-custody')};process.stdout.write(JSON.stringify({id:r.id,error:{code:-32603,message:'INERT_INSPECT_FAILURE'}})+'\\n')}}});
+process.stdin.on('end',()=>{facade.stdin.end();facade.once('close',code=>{writeFileSync(${JSON.stringify(marker)},JSON.stringify({...observed,originalInertFacadeCloseCode:code}));process.exit(0)})})}
+`;
+    await writeFile(executable, program, { mode: 0o755 }); await chmod(executable, 0o755);
+    data["files"] = files; data["linuxNodeSha256"] = await digest(await readFile(process.execPath)); data["cliExecutable"] = executable;
+    const plan = parseFreshCliMetadataPlan(JSON.stringify(data)); assert.equal(await proveFreshCliMetadata(plan), false);
+    const manifest: unknown = JSON.parse(await readFile(join(root, "evidence/cleanup-manifest.json"), "utf8")); assert.ok(manifest !== null && typeof manifest === "object" && "originalTransportsClosed" in manifest && "loadedFacadeExitUnknown" in manifest && "originalsClosed" in manifest);
+    assert.equal(manifest.originalTransportsClosed, true); assert.equal(manifest.loadedFacadeExitUnknown, missingPidfd); assert.equal(manifest.originalsClosed, !missingPidfd);
+    const observation: unknown = JSON.parse(await readFile(marker, "utf8")); assert.ok(observation !== null && typeof observation === "object" && "inspectReached" in observation && "originalInertFacadeCloseCode" in observation);
+    assert.equal(observation.inspectReached, !missingPidfd); assert.equal(observation.originalInertFacadeCloseCode, 0);
+    if (!missingPidfd) { assert.ok("pidfdBeforeInspect" in observation); assert.equal(observation.pidfdBeforeInspect, true); }
+  }
+});
+
+void test("original file/directory sync failures refuse before allocation or retain incomplete EOF settlement", async () => {
+  const root = await createTestTemporaryDirectory("fresh-cli-sync-failure-"); const originalSync = fs.fsyncSync; const beforeDescriptors = await readdir("/proc/self/fd"); const before = beforeDescriptors.length;
+  // oxlint-disable-next-line node/no-sync -- The injected synchronous syscall boundary distinguishes original directory FDs before any CLI allocation.
+  fs.fsyncSync = (fd): void => { if (fs.fstatSync(fd).isDirectory()) { throw new Error("INERT_DIRECTORY_SYNC_FAILURE"); } originalSync(fd); }; syncBuiltinESMExports();
+  try { await assert.rejects(createProofEvidence(join(root, "refused-evidence"), join(root, "refused-workspace")), /LOCAL_EVIDENCE_INITIALIZATION_FAILED/u); }
+  finally { fs.fsyncSync = originalSync; syncBuiltinESMExports(); }
+  const afterDescriptors = await readdir("/proc/self/fd"); assert.equal(afterDescriptors.length, before);
+  const evidence = await createProofEvidence(join(root, "evidence"), join(root, "workspace"));
+  const peer = new OwnedProofProcess(process.execPath, ["--eval", "console.log(JSON.stringify({kind:'inert-ready'}));process.stdin.resume();process.stdin.on('end',()=>process.exit(0))"], join(root, "workspace"), evidence.journal("app-server.stdout.jsonl"), evidence.journal("app-server.stderr.log"));
+  await peer.next(); fs.fsyncSync = (): never => { throw new Error("INERT_ORIGINAL_FILE_SYNC_FAILURE"); }; syncBuiltinESMExports();
+  try { assert.equal(evidence.state.put({ fixed: "unsynced original bytes" }), false); assert.equal(evidence.hasPending(), true); assert.equal(evidence.close(), false); peer.closeInput(); assert.deepEqual(await peer.closed.promise, { code: 0, signal: null }); }
+  finally { fs.fsyncSync = originalSync; syncBuiltinESMExports(); peer.closeInput(); await peer.closed.promise; }
+  assert.equal(evidence.failed(), true); assert.equal(evidence.flush(), true); assert.equal(evidence.hasPending(), false); assert.equal(evidence.close(), true);
+  const data = { ...planData(root), host: "windows", cliExecutable: "C:\\trusted\\codex.exe", hostPluginRoot: "C:\\trusted\\plugin", evidenceDirectory: "C:\\new-evidence", workspace: "C:\\new-workspace", windowsNodeExecutable: "C:\\trusted\\node.exe", windowsNodeSha256: "0".repeat(64) };
+  const windows = parseFreshCliMetadataPlan(JSON.stringify(data)); const preview = previewFreshCliMetadataProof(windows); assert.ok("durability" in preview);
+  await assert.rejects(proveFreshCliMetadata(windows), /WINDOWS_DURABLE_DIRECTORY_SYNC_UNAVAILABLE/u);
 });

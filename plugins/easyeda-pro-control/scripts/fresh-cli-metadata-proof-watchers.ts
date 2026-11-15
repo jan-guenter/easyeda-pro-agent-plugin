@@ -2,7 +2,7 @@
  * beyond the original connection returned to this retained coordinator. */
 export function linuxMetadataWatcherProgram(): string {
   return String.raw`import os,sys,json,hashlib,select,stat
-p=json.loads(sys.stdin.readline());pid=p['pid'];nonce=p['nonce'];held=[];links=[];pf=None
+p=json.loads(sys.stdin.readline());pid=p['pid'];nonce=p['nonce'];held=[];links=[];pf=None;bound=False
 
 def emit(v):
  try:print(json.dumps(v),flush=True)
@@ -36,7 +36,7 @@ def hash_fd(fd,limit):
   count+=len(b);assert count<=limit;h.update(b)
  return h.hexdigest(),count
 try:
- birth=start();pf=os.pidfd_open(pid);alive();root=os.open('/proc/'+str(pid)+'/root',os.O_PATH|os.O_DIRECTORY);held.append(root)
+ birth=start();pf=os.pidfd_open(pid);alive();bound=True;emit({'kind':'linux-custody','nonce':nonce,'pid':pid,'startTicks':birth,'pidfdHeld':True});root=os.open('/proc/'+str(pid)+'/root',os.O_PATH|os.O_DIRECTORY);held.append(root)
  exe=os.open('/proc/'+str(pid)+'/exe',os.O_RDONLY|os.O_CLOEXEC);held.append(exe);exe_before=os.fstat(exe);assert stat.S_ISREG(exe_before.st_mode);exe_hash,exe_count=hash_fd(exe,256*1024*1024);assert same(exe_before,os.fstat(exe)) and exe_count==exe_before.st_size
  assert exe_hash==p['nodeSha256'];assert os.readlink('/proc/'+str(pid)+'/exe')==p['nodeExecutable'];observed=[];files=[]
  for expected in p['files']:
@@ -55,9 +55,10 @@ try:
  emit({'kind':'linux-exited','nonce':nonce,'pid':pid,'startTicks':birth,'originalExitObserved':True,'exitCodeKnown':False})
  release=json.loads(sys.stdin.readline());assert release=={'kind':'release','nonce':nonce}
 except BaseException as error:
- emit({'kind':'linux-error','nonce':nonce,'code':type(error).__name__,'originalPidfdHeld':pf is not None})
- if pf is not None:
+ emit({'kind':'linux-error','nonce':nonce,'code':type(error).__name__,'originalPidfdHeld':bound})
+ if bound:
   while not select.select([pf],[],[],1)[0]:pass
+  emit({'kind':'linux-exited','nonce':nonce,'pid':pid,'startTicks':birth,'originalExitObserved':True,'exitCodeKnown':False,'proofComplete':False})
  sys.exit(1)
 finally:
  for fd in reversed(held):

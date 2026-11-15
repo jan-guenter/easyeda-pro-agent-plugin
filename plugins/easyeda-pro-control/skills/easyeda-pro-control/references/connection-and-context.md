@@ -745,7 +745,17 @@ node scripts/fresh-cli-metadata-proof.ts --prove /absolute/trusted/plan.json
 
 Omitting the mode defaults to preview, which starts no owner and creates no
 workspace/evidence. The equivalent npm entry is `fresh-cli:metadata-proof`.
-On Windows, use the explicitly selected reviewed host Node directly; no developer
+On Windows, only default/explicit preview is supported in this maintained helper.
+`--prove` refuses before allocating a CLI owner or creating workspace/evidence.
+The preview states this directory-durability omission explicitly. Microsoft lists
+supported [directory-handle operations](https://learn.microsoft.com/en-us/windows/win32/fileio/obtaining-a-handle-to-a-directory)
+and requires a writable file handle for [FlushFileBuffers](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers);
+file sync alone or a successful DrvFS call is not a supported NTFS namespace
+persistence proof. No privileged volume flush or storage setting change is used.
+Use a Linux fresh CLI/maintained manager, or preserve separately scoped Windows
+metadata observations with durable evidence captured by a Linux agent. A future
+fixed Linux evidence broker for a Windows driver remains unimplemented.
+Use the explicitly selected reviewed Windows host Node for preview; no developer
 node_modules is needed by these three builtin-only modules. Linux observation
 requires `/usr/bin/python3`; the Windows route also uses maintained WSL interop
 and Windows PowerShell/.NET, without a Get-FileHash module dependency.
@@ -763,8 +773,8 @@ Plan bytes and JSONL replies require fatal UTF-8 decoding, including the final
 EOF flush. Malformed text stops normal dispatch while retaining raw bytes and
 original EOF/settlement; physical close alone cannot make that proof successful.
 
-Full raw replies include structuredContent before formatting. An independent
-watcher holds the original returned facade PID's pidfd/start identity, exact Node
+Full raw replies include structuredContent before formatting. Immediately after loaded-facade, BEFORE inspect, an independent
+watcher acquires and reports its original pidfd custody, then holds the original returned facade PID's pidfd/start identity, exact Node
 executable descriptor and six descriptor-bound namespace file views before parent
 ACK and retirement. Windows additionally retains original CLI-descendant wrapper
 Node/wsl handles, matching start identity and host Node bytes. Retired state must
@@ -780,6 +790,11 @@ For example, append one UTF-8 line `{"nonce":"ORIGINAL_NONCE","action":"status"}
 to the original control file. Use a Node append writer on Windows to share an
 already-open file correctly. JSON cannot reconstruct the original handles.
 
+Linux evidence retains original no-follow directory FDs for the created workspace,
+evidence directory and their existing parents. All exclusive file/control FDs and
+those directories sync before any CLI allocation. Flush syncs each original file
+FD, then original directories; unsynced writes remain pending through failures.
+
 Evidence failure stops normal sends and still closes the original CLI stdin.
 Bounded unknown bytes remain in memory for retrying ONLY their original journal
 writes; the failed transport/calls are never replayed. Watcher settlement waits
@@ -794,7 +809,10 @@ closure/emptiness observations and eligibility for removing that empty directory
 AFTER the caller observes the original driver exit. The helper creates no runtime
 copies or clones and includes empty inventories for both. It offers no generic
 purge command; preserve raw/unknown evidence and remove only independently proved
-owned closed temporary artifacts. The manifest itself grants no ownership.
+owned closed temporary artifacts. The manifest itself grants no ownership. It separates original transport closure
+from original serving-facade exit. If initial pidfd acquisition fails, the result
+retains `loadedFacadeExitUnknown:true`, unresolved PID/custody facts and incomplete
+proof; transport closure grants no serving-process exit or cleanup eligibility.
 
 Keep full installed V2 proof, Windows byte/link observations, six-file namespace
 observations and original process exits separate. None proves NTFS ACL custody,

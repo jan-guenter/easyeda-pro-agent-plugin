@@ -49,3 +49,42 @@ preceding real npm ci, signature/attestation and zero-vulnerability audit receip
 Outgoing history privacy is checked before handoff. Combined release build/source
 projections and actual new-package admission remain the subsequent curated
 release's work.
+
+
+A bounded frozen-source review then identified two P2 gaps before publication.
+The original coordinator inspected before acquiring the serving facade's pidfd;
+an early inspect/capture failure could confuse closed transports with serving
+process exit. The watcher now acquires and reports original pidfd custody directly
+after loaded-facade, before inspect. Post-capture failure retains that same pidfd
+through its actual exit. Failed initial capture leaves an explicit unresolved
+facade exit, and the terminal manifest cannot claim all originals closed or allow
+workspace cleanup from CLI/watcher transport closure alone.
+
+The first journal refactor wrote and closed descriptors without file/parent
+directory sync. Linux now retains original no-follow directory FDs and syncs all
+exclusive journal/control files, created directories and their existing parents
+before any owner allocation. Later flushes retain pending unsynced state on a
+failed original file or directory sync, revoke normal dispatch, preserve EOF and
+join original transports/watchers before incomplete settlement. Descriptor-close
+failure remains incomplete; it cannot become a positive proof.
+
+Windows preview still starts no owner. Windows --prove now refuses BEFORE owner,
+workspace or evidence allocation: no supported unprivileged directory durability
+primitive was established for that route. File flush and DrvFS success are not
+claimed as NTFS namespace durability, and no volume flush or disk/global setting
+change is attempted. Earlier Windows metadata/handle observations retain their
+bounded storage scope and are not acceptance of this new durable helper. A fixed
+Linux evidence broker for a Windows driver is future work; Linux fresh CLI and
+maintained-manager routes remain available without a Codex desktop restart.
+
+Two additional focused inert cases cover original pidfd-before-inspect error,
+failed initial capture preserving unknown exit despite transport close 0, initial
+directory-sync refusal, and post-allocation file-sync failure retaining original
+EOF/close and pending sync state. These use fake CLI packets and an inert Node
+stdin child, never a real app-server, facade, upstream or native owner. Final
+checks for this correction: six focused tests pass with zero skips; both facade
+TypeScript projects pass; strict type-aware lint on the four affected source/test
+files reports zero warnings/errors; all seven skill validations pass. No additional
+whole-suite, runtime admission or Windows native probe was run. Outgoing privacy
+is checked before handoff; the combined release build remains the parent
+release coordinator's work.

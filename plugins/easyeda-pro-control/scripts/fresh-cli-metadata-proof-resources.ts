@@ -2,9 +2,9 @@
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash } from "node:crypto";
-import { closeSync, openSync, readSync, writeSync } from "node:fs";
+import { closeSync, constants, fstatSync, fsyncSync, lstatSync, openSync, readSync, realpathSync, writeSync } from "node:fs";
 import { lstat, mkdir, readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 export type ProofRecord = Record<string, unknown>;
 export type ProofMethod = "initialize" | "thread/start" | "mcpServerStatus/list" | "mcpServer/tool/call" | "thread/unsubscribe";
@@ -27,6 +27,7 @@ interface JournalState {
   retained: number;
   overflow: number;
   closed: boolean;
+  unsynced: boolean;
 }
 export interface ProofJournal {
   readonly append: (bytes: Buffer) => boolean;
@@ -34,6 +35,7 @@ export interface ProofJournal {
   readonly flush: () => boolean;
   readonly snapshot: () => ProofRecord;
 }
+export interface ProofFacadeClosure { readonly mayExist: boolean; readonly pid: number | null; readonly originalPidfdHeld: boolean; readonly originalExitObserved: boolean }
 export interface ProofEvidence {
   readonly controlFile: string;
   readonly failure: Promise<null>;
@@ -45,39 +47,58 @@ export interface ProofEvidence {
   readonly hasPending: () => boolean;
   readonly failed: () => boolean;
   readonly snapshots: () => readonly ProofRecord[];
-  readonly terminalWorkspaceManifest: (originalsClosed: boolean) => Promise<ProofRecord>;
+  readonly terminalWorkspaceManifest: (originalTransportsClosed: boolean, facade?: ProofFacadeClosure) => Promise<ProofRecord>;
   readonly close: () => boolean;
 }
 
 /** Allocate every evidence/control descriptor before any CLI owner exists.
  * Failed writes retain bounded original bytes and never throw through cleanup. */
 export async function createProofEvidence(evidenceDirectory: string, workspace: string): Promise<ProofEvidence> {
-  const opened: number[] = []; const journals = new Map<ProofJournalName, ProofJournal>(); const states: JournalState[] = [];
-  const failure = Promise.withResolvers<null>(); let failed = false; let controlOffset = 0; let finished = false;
+  proofNeed(process.platform === "linux", "WINDOWS_DURABLE_DIRECTORY_SYNC_UNAVAILABLE");
+  const opened: number[] = []; const directories: { readonly fd: number; readonly path: string; readonly dev: bigint; readonly ino: bigint }[] = []; const journals = new Map<ProofJournalName, ProofJournal>(); const states: JournalState[] = [];
+  const failure = Promise.withResolvers<null>(); let failed = false; let controlOffset = 0; let finished = false; let directorySyncPending = true;
   const markFailure = (): void => { failed = true; failure.resolve(null); };
-  await mkdir(evidenceDirectory, { recursive: false, mode: 0o700 });
+  const retainDirectory = (path: string, privateChild = false): number => {
+    const before = lstatSync(path, { bigint: true }); proofNeed(before.isDirectory() && !before.isSymbolicLink() && realpathSync(path) === path, "CANONICAL_DIRECTORY_REQUIRED");
+    const fd = openSync(path, constants.O_RDONLY + constants.O_DIRECTORY + constants.O_NOFOLLOW); opened.push(fd);
+    const current = fstatSync(fd, { bigint: true });
+    proofNeed(current.isDirectory() && current.dev === before.dev && current.ino === before.ino, "ORIGINAL_DIRECTORY_CHANGED");
+    if (privateChild) { proofNeed(current.mode % 512n === 0o700n && current.uid === BigInt(process.getuid?.() ?? -1), "PRIVATE_OWNED_DIRECTORY_REQUIRED"); }
+    directories.push({ fd, path, dev: current.dev, ino: current.ino }); return fd;
+  };
+  const syncDirectories = (): boolean => {
+    directorySyncPending = true;
+    try { for (const item of directories.toReversed()) { const current = fstatSync(item.fd, { bigint: true }), path = lstatSync(item.path, { bigint: true });
+      proofNeed(current.isDirectory() && current.dev === item.dev && current.ino === item.ino && path.isDirectory() && !path.isSymbolicLink() && path.dev === item.dev && path.ino === item.ino && realpathSync(item.path) === item.path, "ORIGINAL_DIRECTORY_CHANGED"); fsyncSync(item.fd); } directorySyncPending = false; return true;
+    } catch { markFailure(); return false; }
+  };
   let workspaceCreated = false;
   try {
-    await mkdir(workspace, { recursive: false, mode: 0o700 }); workspaceCreated = true;
-    const originalWorkspace = await lstat(workspace, { bigint: true });
-    proofNeed(originalWorkspace.isDirectory() && !originalWorkspace.isSymbolicLink(), "WORKSPACE_DIRECTORY_REQUIRED");
-    const controlFile = join(evidenceDirectory, "control.jsonl"); const controlFd = openSync(controlFile, "wx+", 0o600); opened.push(controlFd);
+    const evidenceParent = retainDirectory(dirname(evidenceDirectory)), workspaceParent = retainDirectory(dirname(workspace));
+    await mkdir(`/proc/self/fd/${evidenceParent}/${basename(evidenceDirectory)}`, { recursive: false, mode: 0o700 });
+    const evidenceFd = retainDirectory(evidenceDirectory, true);
+    await mkdir(`/proc/self/fd/${workspaceParent}/${basename(workspace)}`, { recursive: false, mode: 0o700 }); workspaceCreated = true;
+    const workspaceFd = retainDirectory(workspace, true); const originalWorkspace = fstatSync(workspaceFd, { bigint: true });
+    const controlFile = join(evidenceDirectory, "control.jsonl"); const controlFd = openSync(`/proc/self/fd/${evidenceFd}/control.jsonl`, "wx+", 0o600); opened.push(controlFd); let controlSyncPending = true;
+    const syncControl = (): boolean => { controlSyncPending = true; try { fsyncSync(controlFd); controlSyncPending = false; return true; } catch { markFailure(); return false; } };
+    proofNeed(syncControl(), "INITIAL_CONTROL_SYNC_REQUIRED");
     for (const name of JOURNALS) {
-      const fd = openSync(join(evidenceDirectory, name), "wx", 0o600); opened.push(fd);
+      const fd = openSync(`/proc/self/fd/${evidenceFd}/${name}`, "wx", 0o600); opened.push(fd);
       let limit = 2 * 1024 * 1024; if (name === "app-server.stdout.jsonl") { limit = 64 * 1024 * 1024; } else if (name.endsWith("stderr.log")) { limit = 4 * 1024 * 1024; }
       const state: JournalState = { fd, limit,
-        pending: [], hash: createHash("sha256"), received: 0, persisted: 0, retained: 0, overflow: 0, closed: false };
+        pending: [], hash: createHash("sha256"), received: 0, persisted: 0, retained: 0, overflow: 0, closed: false, unsynced: true };
       states.push(state);
       const flush = (): boolean => {
-        if (state.closed) { return state.pending.length === 0; }
+        if (state.closed) { return state.pending.length === 0 && !state.unsynced; }
         while (state.pending.length > 0) {
           const first = state.pending[0]; if (first === undefined) { break; }
           try {
             const count = writeSync(state.fd, first); proofNeed(count > 0, "EVIDENCE_WRITE_INCOMPLETE");
-            state.persisted += count; state.retained -= count;
+            state.persisted += count; state.retained -= count; state.unsynced = true;
             if (count === first.length) { state.pending.shift(); } else { state.pending[0] = first.subarray(count); }
           } catch { markFailure(); return false; }
         }
+        if (state.unsynced) { try { fsyncSync(state.fd); state.unsynced = false; } catch { markFailure(); return false; } }
         return true;
       };
       const append = (bytes: Buffer): boolean => {
@@ -93,9 +114,10 @@ export async function createProofEvidence(evidenceDirectory: string, workspace: 
       };
       const journal: ProofJournal = { append, flush,
         put(value): boolean { try { return append(Buffer.from(`${JSON.stringify(value)}\n`)); } catch { markFailure(); return false; } },
-        snapshot(): ProofRecord { return { name, receivedBytes: state.received, persistedBytes: state.persisted, retainedBytes: state.retained, overflowBytes: state.overflow, receivedSha256: state.hash.copy().digest("hex") }; } };
-      journals.set(name, journal);
+        snapshot(): ProofRecord { return { name, receivedBytes: state.received, persistedBytes: state.persisted, retainedBytes: state.retained, overflowBytes: state.overflow, originalFileSyncPending: state.unsynced, receivedSha256: state.hash.copy().digest("hex") }; } };
+      proofNeed(journal.flush(), "INITIAL_JOURNAL_SYNC_REQUIRED"); journals.set(name, journal);
     }
+    proofNeed(syncDirectories(), "INITIAL_DIRECTORY_SYNC_REQUIRED");
     const journal = (name: ProofJournalName): ProofJournal => { const item = journals.get(name); proofNeed(item !== undefined, "PREALLOCATED_JOURNAL_REQUIRED"); return item; };
     return { controlFile, failure: failure.promise, state: journal("state.jsonl"), cleanup: journal("cleanup-manifest.json"), journal,
       readControl(): Buffer {
@@ -103,20 +125,25 @@ export async function createProofEvidence(evidenceDirectory: string, workspace: 
           if (controlOffset > 64 * 1024) { markFailure(); return Buffer.alloc(0); } return bytes.subarray(0, count);
         } catch { markFailure(); return Buffer.alloc(0); }
       },
-      flush(): boolean { let complete = true; for (const item of journals.values()) { if (!item.flush()) { complete = false; } } return complete; },
-      hasPending(): boolean { return states.some(item => item.pending.length > 0); }, failed(): boolean { return failed; },
+      flush(): boolean { let complete = true; for (const item of journals.values()) { if (!item.flush()) { complete = false; } } const controlComplete = syncControl(); return syncDirectories() && controlComplete && complete; },
+      hasPending(): boolean { return directorySyncPending || controlSyncPending || states.some(item => item.pending.length > 0 || item.unsynced); }, failed(): boolean { return failed; },
       snapshots(): readonly ProofRecord[] { return [...journals.values()].map(item => item.snapshot()); },
-      async terminalWorkspaceManifest(originalsClosed): Promise<ProofRecord> {
-        try { const current = await lstat(workspace, { bigint: true }), entries = await readdir(workspace);
+      async terminalWorkspaceManifest(originalTransportsClosed, suppliedFacade): Promise<ProofRecord> {
+        const facade = suppliedFacade ?? { mayExist: false, pid: null, originalPidfdHeld: false, originalExitObserved: false };
+        const loadedFacadeExitUnknown = facade.mayExist && !facade.originalExitObserved; const originalsClosed = originalTransportsClosed && !loadedFacadeExitUnknown;
+        try { const current = await lstat(workspace, { bigint: true }), entries = await readdir(`/proc/self/fd/${workspaceFd}`);
           const same = current.isDirectory() && !current.isSymbolicLink() && current.dev === originalWorkspace.dev && current.ino === originalWorkspace.ino && current.birthtimeNs === originalWorkspace.birthtimeNs;
-          return { schema: "easyeda-pro-control.fresh-cli-closed-workspace.v1", workspace, createdByThisAttempt: true, originalsClosed, sameDirectoryIdentity: same,
+          return { schema: "easyeda-pro-control.fresh-cli-closed-workspace.v1", workspace, createdByThisAttempt: true, originalTransportsClosed, originalsClosed, loadedFacade: facade, loadedFacadeExitUnknown, sameDirectoryIdentity: same,
             entries: entries.length, eligibleForEmptyDirectoryRemovalAfterDriverExit: originalsClosed && same && entries.length === 0,
             createdRuntimeCopies: [], createdClones: [], recursiveDeletionPerformed: false, evidenceDirectory, evidencePreserved: true };
-        } catch { return { schema: "easyeda-pro-control.fresh-cli-closed-workspace.v1", workspace, createdByThisAttempt: true, originalsClosed, inspectionFailed: true,
+        } catch { return { schema: "easyeda-pro-control.fresh-cli-closed-workspace.v1", workspace, createdByThisAttempt: true, originalTransportsClosed, originalsClosed, loadedFacade: facade, loadedFacadeExitUnknown, inspectionFailed: true,
           eligibleForEmptyDirectoryRemovalAfterDriverExit: false, recursiveDeletionPerformed: false, evidenceDirectory, evidencePreserved: true }; }
       },
-      close(): boolean { if (finished) { return !failed; } finished = true; for (const item of states) { item.closed = true; }
-        for (const fd of opened.toReversed()) { try { closeSync(fd); } catch { markFailure(); } } return !failed; },
+      close(): boolean { if (finished) { return true; }
+        let durable = true; for (const item of journals.values()) { if (!item.flush()) { durable = false; } }
+        const controlComplete = syncControl(); if (!syncDirectories() || !controlComplete || !durable) { return false; }
+        finished = true; for (const item of states) { item.closed = true; }
+        for (const fd of opened.toReversed()) { try { closeSync(fd); } catch { markFailure(); } } return true; },
     };
   } catch (error) {
     // There is no CLI owner yet. Preserve partially created files/directories.
