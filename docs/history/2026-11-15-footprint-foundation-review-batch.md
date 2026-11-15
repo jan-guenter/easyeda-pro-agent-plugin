@@ -115,3 +115,45 @@ The v2 data leaf passed five focused tests without skips, both TypeScript
 projects, strict lint on its four source/test inputs, and the repository,
 MCP-contract and all-skill validators. The v1 budget/contract/journal diff against
 12997080e3a223f0560edc924d78bb6d2d6f9cb9 is empty.
+
+## 2026-11-15 follow-up: cache/frontier dispatch review
+
+Three additional forward-writer threads were checked against public foundation
+d8f6d203. This source-only leaf changes existing files and does not mount a
+writer, select a native graph or enable ordinary-project editing.
+
+Initial-cache settlement samples now advance only after the closed codec,
+request-budget and liveness checks succeed. A rejected field set cannot count
+as a settlement. Once dispatch is attempted, the request/sample/stage remain
+consumed; a send exception latches cache failure and prevents later completion.
+
+Startup-frontier arm, callback, timer and queue validation is now side-effect
+free. The validated attempt advances its state immediately before one send.
+The maintained native sender increments its request ID before WriteFile and can
+throw after a partial write, so restoring state or resending is unsafe. A send
+exception permanently quarantines the original frontier. Normal controls and
+completion cannot turn that consumed attempt into a retry; its original host
+must abort and join the generation through observed-exit cleanup. Rejected
+pre-dispatch validation leaves holds/counters unchanged and grants no resume.
+
+The renderer sender remains an unmounted fragment in this public foundation.
+Its new pure composition step requires exactly the original cold enum and adds
+ForwardWriterProducer once before the sender is appended. Missing, duplicate,
+already-composed or wrong-stage input refuses. A future genuine writer graph
+must call that step; the fragment alone supplies neither a complete compiled
+production graph nor native ownership.
+
+The two new ledger regressions fail against the original cache/frontier source.
+Five focused Node cases pass without skips, including the existing real inert
+Inspector breakpoint case and the new composition refusals. An independent
+58,050-byte fixture containing the actual emitted cache/frontier methods and
+codebooks compiled with C# language version 5 and warnings as errors under Linux
+.NET 10. It passed field/budget/liveness rejection, ambiguous partial-write
+failure, completion/no-replay, all fixed codebook checks and the composed enum.
+Only inert validation/write fixtures were used; this is not a Windows compiler,
+application, native-owner or connected workflow proof.
+
+Both TypeScript projects, strict type-aware lint on the four source/test inputs,
+and repository, MCP-contract and all-skill validators passed. No files were
+added, and native generated outputs, bundles and historical result schemas were
+unchanged.

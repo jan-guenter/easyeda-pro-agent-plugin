@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Exercise three independent emitted owner fragments and their fixed syntax without an authority adapter. */
 /** Fixed native rows and actual inert V8 breakpoint behavior; no owner, app or helper is issued. */
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
@@ -9,6 +10,8 @@ import {z} from "zod";
 import {CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS,currentFootprintForwardWriterCompleteTailDispatch,currentFootprintForwardWriterCompleteTailNativeSource} from "../src/current-footprint-forward-writer-complete-tail-native.ts";
 import {currentFootprintForwardWriterFrontierCases,currentFootprintForwardWriterFrontierTemplate} from "../src/current-footprint-forward-writer-frontier-protocol.ts";
 import {currentFootprintForwardWriterFrontierNativeSource} from "../src/current-footprint-forward-writer-frontier-native.ts";
+import {currentFootprintForwardWriterCacheNativeSource} from "../src/current-footprint-forward-writer-cache-native.ts";
+import {CURRENT_FOOTPRINT_FORWARD_WRITER_RENDERER_CLASS_NATIVE,currentFootprintForwardWriterRendererRoleSource} from "../src/current-footprint-forward-writer-renderer-class.ts";
 
 function table(name:string):readonly string[][]{
  const source=currentFootprintForwardWriterCompleteTailNativeSource(),start=source.indexOf(`internal static class ${name} {`);assert.notEqual(start,-1);
@@ -57,4 +60,81 @@ void test("ready native rows and complete-only dispatch preserve closed programs
  const native=currentFootprintForwardWriterCompleteTailNativeSource();assert.match(native,/\[A-Za-z0-9_.:-\]\{1,256\}/u);
  assert.match(native,/bool forwardWriterCompleteBirth=false,forwardWriterCompleteTimerBaseline=false,forwardWriterCompletePublishTimerComplete=false;/u);
  assert.match(native,/forward-complete-natural-timer-required/u);assert.doesNotMatch(native,/\bviaDrainRequests\b|\bviaPostSyncStep\b|\bpcbViaWrite209\b/u);
+});
+
+
+// Mechanically execute only the emitted ledger method bodies with inert
+// Validation/write fixtures. The separate C#5 check covers native syntax.
+function ownerMethod(source:string,name:string):string{
+ const start=source.indexOf(`${name}(`);assert.ok(start!==-1);const open=source.indexOf("{",start);let depth=1,end=open+1;
+ for(;end<source.length&&depth>0;end+=1){if(source[end]==="{"){depth+=1;}else if(source[end]==="}"){depth-=1;}}
+ assert.equal(depth,0);
+ return source.slice(open+1,end-1).replaceAll(' as string',"").replaceAll(/\b(?:int|string|bool) /gu,"let ")
+  .replaceAll(".Length",".length").replaceAll(".Substring(",".slice(").replaceAll(".StartsWith(",".startsWith(")
+  .replaceAll(",StringComparison.Ordinal","").replaceAll(".Count",".size").replaceAll(".Contains(",".has(").replaceAll(".Add(",".add(")
+  .replaceAll("catch{","catch(caughtError){").replaceAll("throw;","throw caughtError;");
+}
+void test("cache settlement records only validated attempts and failed dispatch cannot complete",()=>{
+ const failure=new Error("inert-write-or-validation"),source=currentFootprintForwardWriterCacheNativeSource();
+ for(const refusal of ["encode","work","live","write"] as const){
+  const state={forwardWriterProducerEnrolled:true,forwardWriterCacheJobs:2,forwardWriterCacheCompleted:false,forwardWriterCacheFailed:false,
+   forwardWriterCacheRequests:0,forwardWriterCacheStages:[6,6],forwardWriterCacheSamples:[0,1],forwardWriterCacheHeld:null,forwardWriterCacheSlot:-1,
+   footprintCopyWorkerSession:"original7"};let attempts=0;
+  const context=createContext({...state,RequireForwardWriterProducer:():void=>{assert.equal(state.forwardWriterCacheJobs,2);},Error:():Error=>failure,
+   EasyedaForwardWriterInitialCacheProtocol:{Observation:():boolean=>false,Encode:():string=>{if(refusal==="encode"){throw failure;}return "encoded";}},
+   CheckFootprintWork:():void=>{if(refusal==="work"){throw failure;}},AssertLive:():void=>{if(refusal==="live"){throw failure;}},
+   SendMessage:():never=>{attempts+=1;throw failure;}});
+  const send=`(function(id,phase,method,fields){${ownerMethod(source,"SendForwardWriterInitialCache")}})`;
+  const invoke=():unknown=>runInContext(`${send}(1,'inverse-initial-cache-settled-0','Runtime.getProperties',{})`,context);
+  let caught:unknown;try{invoke();}catch(error){caught=error;}assert.equal(caught,failure);assert.deepEqual([...state.forwardWriterCacheSamples],refusal==="write"?[1,1]:[0,1]);
+  assert.equal(context["forwardWriterCacheRequests"],refusal==="write"?1:0);assert.equal(attempts,refusal==="write"?1:0);
+  assert.equal(context["forwardWriterCacheFailed"],refusal==="write");
+  const complete=`(function(){${ownerMethod(source,"CompleteForwardWriterInitialCache")}})()`;
+  assert.throws(()=>runInContext(complete,context));assert.equal(context["forwardWriterCacheCompleted"],false);
+  if(refusal==="write"){assert.throws(invoke);assert.equal(attempts,1);}
+ }
+});
+void test("frontier validation preserves held state while a partial write permanently consumes the attempt",()=>{
+ const source=currentFootprintForwardWriterFrontierNativeSource();
+ for(const lane of ["callback","timer","queue","arm"] as const){
+  for(const refusal of ["encode","work","live","write"] as const){
+   const failure=new Error("inert-partial-or-validation");let attempts=0;
+   const state={forwardWriterFrontierRecords:1,forwardWriterFrontierComplete:false,forwardWriterFrontierFailed:false,footprintCreateClockBegun:false,
+    forwardWriterProducerEnrolled:lane!=="arm",forwardWriterProducerScript:"script7",forwardWriterProducerContext:"context8",footprintCopyWorkerSession:"session9",
+    forwardWriterFrontierCallbackHeld:lane==="callback"?"startupEntry":null,forwardWriterFrontierTimerHeld:lane==="timer"?"entry":null,
+    forwardWriterFrontierQueueOpened:lane==="queue",forwardWriterFrontierArms:new Set<string>(),forwardWriterFrontierCallbackRequests:0,
+    forwardWriterFrontierTimerStep:17,ForwardWriterFrontierTimerPhases:Array.from({length:28},()=>"sync-quiesce-resume-entry"),
+    forwardWriterFrontierQueueRequests:0,forwardWriterFrontierQueueSeen:false};
+   const context=createContext({...state,RequireForwardWriterProducer:():void=>{assert.equal(state.forwardWriterFrontierRecords,1);},Error:():Error=>failure,
+    ForwardWriterFrontierCallbackPhase:():boolean=>true,
+    EasyedaForwardWriterFrontierProtocol:{Encode:():string=>{if(refusal==="encode"){throw failure;}return "possibly-partial";}},
+    CheckFootprintWork:():void=>{if(refusal==="work"){throw failure;}},AssertLive:():void=>{if(refusal==="live"){throw failure;}},
+    SendMessage:():never=>{attempts+=1;throw failure;}});
+   runInContext(`globalThis.RequireForwardWriterFrontier=function(){${ownerMethod(source,"RequireForwardWriterFrontier")}}`,context);
+   const phase={callback:"project-save-structure-resume-startupEntry",timer:"sync-quiesce-resume-entry",queue:"inverse-startup-queue-empty",arm:"project-save-structure-arm-startupEntry"}[lane];
+   const method={arm:"Debugger.setBreakpoint",queue:"Runtime.callFunctionOn",timer:"Debugger.resume",callback:"Debugger.resume"}[lane];
+   const send=`(function(id,lane,phase,method,fields){${ownerMethod(source,"SendForwardWriterFrontier")}})`;
+   const invoke=():unknown=>runInContext(`${send}(1,${JSON.stringify(lane==="arm"?"callback":lane)},${JSON.stringify(phase)},${JSON.stringify(method)},{scriptId:'script7'})`,context);
+   let caught:unknown;try{invoke();}catch(error){caught=error;}assert.equal(caught,failure);const dispatched=refusal==="write";
+   assert.equal(context["forwardWriterFrontierFailed"],dispatched);assert.equal(attempts,dispatched?1:0);
+   assert.equal(context["forwardWriterFrontierCallbackRequests"],dispatched&&lane==="callback"?1:0);
+   assert.equal(context["forwardWriterFrontierCallbackHeld"],lane==="callback"&&!dispatched?"startupEntry":null);
+   assert.equal(context["forwardWriterFrontierTimerStep"],dispatched&&lane==="timer"?18:17);
+   assert.equal(context["forwardWriterFrontierTimerHeld"],lane==="timer"&&!dispatched?"entry":null);
+   assert.equal(context["forwardWriterFrontierQueueRequests"],dispatched&&lane==="queue"?1:0);
+   assert.equal(context["forwardWriterFrontierQueueSeen"],dispatched&&lane==="queue");
+   assert.equal(state.forwardWriterFrontierArms.size,dispatched&&lane==="arm"?1:0);
+   if(dispatched){assert.throws(invoke);assert.equal(attempts,1);}
+  }
+ }
+});
+void test("renderer fragment requires one explicit cold-enum composition and cannot grant a live writer",()=>{
+ const original="public class Owner { enum RendererWriteRole { Existing, ClockRpc, NativeCreate, ForwardCold } }";
+ const composed=currentFootprintForwardWriterRendererRoleSource(original);
+ assert.match(composed,/NativeCreate, ForwardCold, ForwardWriterProducer/u);
+ assert.match(CURRENT_FOOTPRINT_FORWARD_WRITER_RENDERER_CLASS_NATIVE,/RendererWriteRole.ForwardWriterProducer/u);
+ assert.throws(()=>currentFootprintForwardWriterRendererRoleSource(composed));
+ assert.throws(()=>currentFootprintForwardWriterRendererRoleSource(original+original));
+ assert.throws(()=>currentFootprintForwardWriterRendererRoleSource(original.replace(", ForwardCold","")));
+ assert.throws(()=>currentFootprintForwardWriterRendererRoleSource(original+CURRENT_FOOTPRINT_FORWARD_WRITER_RENDERER_CLASS_NATIVE));
 });

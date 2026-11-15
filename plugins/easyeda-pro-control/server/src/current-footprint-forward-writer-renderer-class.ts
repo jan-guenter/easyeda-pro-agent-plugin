@@ -1,3 +1,13 @@
+/** Required composition step for this currently unmounted public fragment.
+ * The genuine writer graph must apply this to its original cold enum before
+ * appending the sender below; this transform allocates no owner or permission. */
+export function currentFootprintForwardWriterRendererRoleSource(source: string): string {
+  const original = "enum RendererWriteRole { Existing, ClockRpc, NativeCreate, ForwardCold }";
+  if (source.split(original).length !== 2 || source.includes("RendererWriteRole.ForwardWriterProducer")) {
+    throw new Error("FORWARD_WRITER_RENDERER_ROLE_COMPOSITION");
+  }
+  return source.replace(original, "enum RendererWriteRole { Existing, ClockRpc, NativeCreate, ForwardCold, ForwardWriterProducer }");
+}
 /** Only the fixed full-writer producer/cache/sync/frontier senders enter this
  * private native bracket. Historical method-based classification stays exact. */
 export const CURRENT_FOOTPRINT_FORWARD_WRITER_RENDERER_CLASS_NATIVE = `public sealed partial class EasyedaDiagnosticOwner {
