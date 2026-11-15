@@ -1,5 +1,11 @@
 # Project history
 
+- [2026-11-15 Native-only projector review corrections](2026-11-15-native-only-projector-review.md). Instance receiver closure and surviving signature constants retain reachable code without reopening closed public bodies; focused regressions and inert C#5 execution remain separate from native admission.
+
+- [2026-11-15 Footprint continuation foundation review batch](2026-11-15-footprint-foundation-review-batch.md). Independently buildable typed primitives, exact local validation and explicit pending integration/release boundaries.
+
+- [2026-11-15 Versioned package-growth envelope](2026-11-15-versioned-package-growth-envelope.md). Explicit v2 verification preserves the original profile and exact per-path byte bounds.
+
 - [2026-11-09 Release CI and review corrections](2026-11-09-release-ci-and-review-corrections.md). Retained failed release checks, strict native compiler warning fixes, focused facade regressions, PR209 findings and documentation scope, and concrete review omissions before the requested post-merge break.
 
 - [2026-11-09 Composed control development](2026-11-09-composed-control-development.md). Exact frozen package and automatic controller handoff, four native inputs and 66 inert checks, the consumed Via q refusal and cleanup, and the scoped source checkpoints before the next PR/break boundary.
@@ -1257,3 +1263,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Original schematic publisher returns](2026-11-09-schematic-publisher-original-returns.md), source-ordered publisher/timer/loopback joins, distinct compiler-channel and native-bus naming, and the exact pre-batch field proof. Canvas delivery and Modify/Save completion remain closed.
 
 - [Startup config interleaving with the original stock script](2026-11-09-stock-startup-config-interleave.md), source-separated cookie cleanup, original-only read ownership and ordinary-budget resume while retaining the unchanged stock cursor and return proof.
+
+- [Native PR #212 boundary corrections](2026-11-15-native-pr212-review-boundaries.md), exact bind fields, UUID admission parity, PowerShell null roles, helper obligations, immutable serialization expectations and original Inspector failure settlement. Source/Inspector/PS5 checks only.

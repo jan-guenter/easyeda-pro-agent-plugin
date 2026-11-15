@@ -1,0 +1,47 @@
+/** Complete-writer same-realm native reflection bootstrap. All fields are actual
+ * private Inspector references; no caller intrinsic/global/boolean is admitted. */
+import { z } from "zod";
+import { captureCurrentFootprintInverseDeleteBindingReply as capture } from "./current-footprint-inverse-delete-binding-capture.ts";
+import { CURRENT_NATIVE_OWN_DATA_CHECK,CURRENT_NATIVE_OWN_DATA_BIND as bind,CURRENT_NATIVE_OWN_DATA_IDENTITIES as identities,CURRENT_NATIVE_OWN_DATA_LITERAL as literal,CURRENT_NATIVE_OWN_DATA_REPROVE as reprove } from "./current-native-own-data-intrinsics.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
+
+const rootJoin=`function(cacheTuple,project){"use strict";${CURRENT_NATIVE_OWN_DATA_CHECK}dense(cacheTuple,28);if(value(cacheTuple,"0")!==root||value(root,"PROJECT")!==project)bad();return true;}`;
+export const CURRENT_FOOTPRINT_FORWARD_WRITER_OWN_DATA_PROGRAMS=Object.freeze({literal,identities,bind,reprove,rootJoin});
+export const CURRENT_FOOTPRINT_FORWARD_WRITER_OWN_DATA_FLAGS=Object.freeze({objectGroup:"easyeda-footprint-forward-writer-own-data-v1",silent:true,generatePreview:false,throwOnSideEffect:true,awaitPromise:false,userGesture:false}as const);
+export const CURRENT_FOOTPRINT_FORWARD_WRITER_OWN_DATA_REQUESTS=Object.freeze({normal:20,helpers:5,cdpRequests:25,controls:27,events:5,cleanupAfterOriginalExit:0});
+const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u),ref=z.strictObject({objectId:handle});
+const flags={objectGroup:z.literal(CURRENT_FOOTPRINT_FORWARD_WRITER_OWN_DATA_FLAGS.objectGroup),silent:z.literal(true),generatePreview:z.literal(false),throwOnSideEffect:z.literal(true),awaitPromise:z.literal(false),userGesture:z.literal(false)};
+const propertyRoles=["literal","object-literal","function-literal","object-prototype","array-prototype","function-prototype","object-constructor","array-constructor"]as const;
+const props=z.strictObject({objectId:handle,ownProperties:z.literal(true),accessorPropertiesOnly:z.literal(false),generatePreview:z.literal(false)});
+const propertyPhases=[...propertyRoles.map(role=>`forward-writer-own-data-properties-${role}`as const),...Array.from({length:7},(_,index)=>`forward-writer-own-data-native-${String(index)}`as const)];
+/* oxlint-disable unicorn/max-nested-calls -- The finite bootstrap schema keeps each exact readonly native signature together. */
+const schema=z.union([
+ z.strictObject({phase:z.literal("forward-writer-own-data-literal"),method:z.literal("Runtime.callFunctionOn"),params:z.strictObject({...flags,uniqueContextId:handle,functionDeclaration:z.literal(literal),arguments:z.tuple([]),returnByValue:z.literal(false)})}),
+ ...(["identities","bind","reprove","rootJoin"]as const).map(role=>z.strictObject({phase:z.literal(`forward-writer-own-data-${role}`),method:z.literal("Runtime.callFunctionOn"),params:z.strictObject({...flags,objectId:handle,functionDeclaration:z.literal(CURRENT_FOOTPRINT_FORWARD_WRITER_OWN_DATA_PROGRAMS[role]),arguments:z.array(ref).max(11),returnByValue:z.literal(role!=="bind")})})),
+ ...propertyPhases.map(phase=>z.strictObject({phase:z.literal(phase),method:z.literal("Runtime.getProperties"),params:props})),
+ z.strictObject({phase:z.literal("forward-writer-own-data-helper"),method:z.literal("Debugger.getScriptSource"),params:z.strictObject({scriptId:handle})}),
+]);
+/* oxlint-enable unicorn/max-nested-calls */
+export type CurrentFootprintForwardWriterOwnDataCommand=Readonly<z.infer<typeof schema>>;
+function need(value:boolean):asserts value{if(!value){throw new Error("FORWARD_WRITER_OWN_DATA_PROTOCOL");}}
+function argumentCount(phase:string):number{if(phase==="forward-writer-own-data-rootJoin"){return 2;}if(phase==="forward-writer-own-data-bind"){return 11;}if(phase==="forward-writer-own-data-identities"){return 7;}return 0;}
+const properties=(phase:string):unknown=>({phase,method:"Runtime.getProperties",params:{objectId:"original_ref",ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}});
+export function validateCurrentFootprintForwardWriterOwnDataCommand(input:unknown):CurrentFootprintForwardWriterOwnDataCommand{const command=schema.parse(capture(input));if(command.method==="Runtime.callFunctionOn"){const count=argumentCount(command.phase);need(command.params.arguments.length===count);}return freezeDeep(command);}
+export function currentFootprintForwardWriterOwnDataProgram(command:CurrentFootprintForwardWriterOwnDataCommand):string|null{return command.method==="Runtime.callFunctionOn"?command.params.functionDeclaration:null;}
+export function qualifyCurrentFootprintForwardWriterOwnDataHelper(source:unknown,program:string):void{need(Object.values(CURRENT_FOOTPRINT_FORWARD_WRITER_OWN_DATA_PROGRAMS).some(value=>value===program)&&source===`(${program})`);}
+export function currentFootprintForwardWriterOwnDataWire(input:CurrentFootprintForwardWriterOwnDataCommand,id:number,sessionId:string):CurrentFootprintForwardWriterOwnDataCommand&Readonly<{id:number;sessionId:string;forwardWriterOwnData:true}>{need(Number.isSafeInteger(id)&&id>0&&id<=2_147_483_647);handle.parse(sessionId);return freezeDeep({...validateCurrentFootprintForwardWriterOwnDataCommand(input),id,sessionId,forwardWriterOwnData:true});}
+export function currentFootprintForwardWriterOwnDataNativeFrame(bytes:Buffer,input:CurrentFootprintForwardWriterOwnDataCommand,sessionId:string):Readonly<Record<string,string|number>>{need(bytes.length<=65_536&&bytes.at(-1)===0);const raw:unknown=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes.subarray(0,-1)));const id=z.looseObject({id:z.number().int().positive().max(2_147_483_647)}).parse(capture(raw)).id;const command=validateCurrentFootprintForwardWriterOwnDataCommand(input);need(bytes.toString("utf8")===`${JSON.stringify(currentFootprintForwardWriterOwnDataWire(command,id,sessionId))}\0`);const fields:Record<string,string|number>={action:"footprint-forward-own-data",requestId:id,phase:command.phase,method:command.method};if(command.method==="Debugger.getScriptSource"){fields["scriptId"]=command.params.scriptId;}else if(command.phase==="forward-writer-own-data-literal"){fields["uniqueContextId"]=command.params.uniqueContextId;}else{fields["objectId"]=command.params.objectId;if(command.method==="Runtime.callFunctionOn"){for(const[index,arg]of command.params.arguments.entries()){fields[`reference${String(index)}`]=arg.objectId;}}}return Object.freeze(fields);}
+export function currentFootprintForwardWriterOwnDataCases():readonly CurrentFootprintForwardWriterOwnDataCommand[]{return freezeDeep([
+ {phase:"forward-writer-own-data-literal",method:"Runtime.callFunctionOn",params:{...CURRENT_FOOTPRINT_FORWARD_WRITER_OWN_DATA_FLAGS,uniqueContextId:"original_context",functionDeclaration:literal,arguments:[],returnByValue:false}},
+ ...propertyPhases.map(phase=>properties(phase)),
+ ...(["identities","bind","reprove","rootJoin"]as const).map(role=>({phase:`forward-writer-own-data-${role}`,method:"Runtime.callFunctionOn",params:{...CURRENT_FOOTPRINT_FORWARD_WRITER_OWN_DATA_FLAGS,objectId:"original_ref",functionDeclaration:CURRENT_FOOTPRINT_FORWARD_WRITER_OWN_DATA_PROGRAMS[role],arguments:Array.from({length:argumentCount(`forward-writer-own-data-${role}`)},()=>({objectId:"original_ref"})),returnByValue:role!=="bind"}})),
+ {phase:"forward-writer-own-data-helper",method:"Debugger.getScriptSource",params:{scriptId:"original_ref"}},
+ ].map(input=>validateCurrentFootprintForwardWriterOwnDataCommand(input)));}
+export function currentFootprintForwardWriterOwnDataTemplate(input:CurrentFootprintForwardWriterOwnDataCommand):Readonly<{phase:string;method:string;names:readonly string[];template:string}>{const command=validateCurrentFootprintForwardWriterOwnDataCommand(input),names:string[]=[];const field=(name:string):string=>{need(!names.includes(name));names.push(name);return`__forward_writer_own_data_${name}__`;};const params:Record<string,unknown>={...command.params};if(command.method==="Debugger.getScriptSource"){params["scriptId"]=field("scriptId");}else if(command.phase==="forward-writer-own-data-literal"){params["uniqueContextId"]=field("uniqueContextId");params["functionDeclaration"]="__forward_writer_own_data_programliteral__";}else{params["objectId"]=field("objectId");if(command.method==="Runtime.callFunctionOn"){params["functionDeclaration"]=`__forward_writer_own_data_program${command.phase.slice("forward-writer-own-data-".length)}__`;params["arguments"]=command.params.arguments.map((_,index)=>({objectId:field(`reference${String(index)}`)}));}}return freezeDeep({phase:command.phase,method:command.method,names,template:JSON.stringify({method:command.method,params})});}
+
+/** Same fixed private channel bytes and scalar native selector, without an owner. */
+export function currentFootprintForwardWriterOwnDataFixedWire(input:unknown,id:number,sessionId:string):Readonly<{command:CurrentFootprintForwardWriterOwnDataCommand;request:Readonly<Record<string,string|number>>}>{
+ const command=validateCurrentFootprintForwardWriterOwnDataCommand(input),wire=currentFootprintForwardWriterOwnDataWire(command,id,sessionId);
+ const bytes=Buffer.from(`${JSON.stringify(wire)}\0`);
+ return Object.freeze({command,request:currentFootprintForwardWriterOwnDataNativeFrame(bytes,command,sessionId)});
+}

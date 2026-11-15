@@ -6,6 +6,8 @@ import { lstat, open, opendir, realpath } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 import { promisify } from "node:util";
 
+import { REVIEWED_FACADE_BUNDLE_BYTES_V2 } from "./release-byte-budgets.ts";
+
 // This is a read-only installation comparison, never runtime admission.
 const SUBTREE = "plugins/easyeda-pro-control";
 const MAX_ENTRIES = 5000;
@@ -75,11 +77,11 @@ async function canonicalDirectory(path: string): Promise<string> {
   return identity(information);
 }
 
-function parseTree(bytes: Buffer): Map<string, TreeEntry> {
+function parseTree(bytes: Buffer, maximumEntries: number): Map<string, TreeEntry> {
   const source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   if (!source.endsWith("\0")) { throw new Error("Git tree output is incomplete."); }
   const rows = source.slice(0, -1).split("\0");
-  if (rows.length === 0 || rows.length > MAX_ENTRIES) { throw new Error("Git tree exceeds the entry bound."); }
+  if (rows.length === 0 || rows.length > maximumEntries) { throw new Error("Git tree exceeds the entry bound."); }
   const entries = new Map<string, TreeEntry>();
   for (const row of rows) {
     const match = /^(040000|100644|100755) (tree|blob) ([a-f0-9]{40})\t(.+)$/u.exec(row);
@@ -94,7 +96,26 @@ function parseTree(bytes: Buffer): Map<string, TreeEntry> {
   return entries;
 }
 
+interface PayloadBudget { readonly maximumEntries: number; readonly facadeBytes: number }
+const LEGACY_BUDGET: PayloadBudget = Object.freeze({ maximumEntries: MAX_ENTRIES, facadeBytes: MAX_FILE_BYTES });
+const NATIVE_PACKAGE_BUDGET_V2: PayloadBudget = Object.freeze({ maximumEntries: 8192, facadeBytes: REVIEWED_FACADE_BUNDLE_BYTES_V2 });
+export interface InstalledPayloadV2Result extends Omit<InstalledPayloadResult, "schema"> {
+  readonly schema: "easyeda-pro-control.installed-payload.v2";
+}
+/** Historical entrypoint and result remain unchanged, including its original
+ *5000-entry and16MiB per-file refusal boundaries. */
 export async function verifyInstalledPayload(request: InstalledPayloadRequest): Promise<InstalledPayloadResult> {
+  const result = await compareInstalledPayload(request, LEGACY_BUDGET);
+  return { schema: "easyeda-pro-control.installed-payload.v1", ...result };
+}
+/** Current native-adapter package verification. Only the exact facade file
+ * may exceed16MiB; all entries still match original Git blobs and exact modes.
+ * This read-only result grants no runtime admission or native ownership. */
+export async function verifyInstalledPayloadV2(request: InstalledPayloadRequest): Promise<InstalledPayloadV2Result> {
+  const result = await compareInstalledPayload(request, NATIVE_PACKAGE_BUDGET_V2);
+  return { schema: "easyeda-pro-control.installed-payload.v2", ...result };
+}
+async function compareInstalledPayload(request: InstalledPayloadRequest, budget: PayloadBudget): Promise<Omit<InstalledPayloadResult, "schema">> {
   if (!HASH_PATTERN.test(request.commit)) { throw new Error("Expected a full lowercase SHA-1 commit ID."); }
   const repositoryIdentity = await canonicalDirectory(request.repositoryRoot);
   const installedIdentity = await canonicalDirectory(request.installedRoot);
@@ -127,7 +148,7 @@ export async function verifyInstalledPayload(request: InstalledPayloadRequest): 
   const treeBytes = await git(["rev-parse", "--verify", `${request.commit}:${SUBTREE}`]);
   const tree = treeBytes.toString("utf8").trim();
   if (!HASH_PATTERN.test(tree)) { throw new Error("The committed plugin subtree is unavailable."); }
-  const expected = parseTree(await git(["ls-tree", "-r", "-t", "-z", tree]));
+  const expected = parseTree(await git(["ls-tree", "-r", "-t", "-z", tree]), budget.maximumEntries);
   const seen = new Set<string>();
   const inventory: InventoryEntry[] = [];
   const samples = new Map<string, string>();
@@ -135,7 +156,8 @@ export async function verifyInstalledPayload(request: InstalledPayloadRequest): 
   let directoryCount = 0;
 
   async function inspectFile(path: string, entry: TreeEntry): Promise<void> {
-    const object = await git(["cat-file", "blob", entry.hash], MAX_FILE_BYTES);
+    const fileLimit = entry.path === "server/dist/server.mjs" ? budget.facadeBytes : MAX_FILE_BYTES;
+    const object = await git(["cat-file", "blob", entry.hash], fileLimit);
     totalBytes += object.length;
     if (totalBytes > MAX_TOTAL_BYTES) { throw new Error("Installed package exceeds its total byte bound."); }
     const file = await open(path, fsConstants.O_RDONLY + fsConstants.O_NOFOLLOW + fsConstants.O_NONBLOCK);
@@ -170,7 +192,7 @@ export async function verifyInstalledPayload(request: InstalledPayloadRequest): 
       const before = await handle.stat({ bigint: true });
       if (!before.isDirectory() || before.mode % 4096n !== 0o755n) { throw new Error("Installed directory must have mode 0755."); }
       directoryCount += 1;
-      if (directoryCount > MAX_ENTRIES) { throw new Error("Installed directory count exceeds its bound."); }
+      if (directoryCount > budget.maximumEntries) { throw new Error("Installed directory count exceeds its bound."); }
       const descriptorPath = `/proc/self/fd/${String(handle.fd)}`;
       const directory = await opendir(descriptorPath, { bufferSize: 64 });
       for await (const child of directory) {
@@ -201,7 +223,7 @@ export async function verifyInstalledPayload(request: InstalledPayloadRequest): 
   inventory.sort((left, right) => left.path < right.path ? -1 : Number(left.path > right.path));
   const directories = [...expected.values()].filter((entry) => entry.kind === "tree").map((entry) => entry.path).toSorted();
   return {
-    schema: "easyeda-pro-control.installed-payload.v1", scope: "read-only-file-comparison;not-runtime-admission",
+    scope: "read-only-file-comparison;not-runtime-admission",
     commit: request.commit, tree, installedRoot: request.installedRoot, fileCount: inventory.length,
     directoryCountIncludingRoot: directoryCount, bytes: totalBytes,
     inventorySha256: createHash("sha256").update(JSON.stringify({ directories: ["", ...directories], files: inventory })).digest("hex"),
