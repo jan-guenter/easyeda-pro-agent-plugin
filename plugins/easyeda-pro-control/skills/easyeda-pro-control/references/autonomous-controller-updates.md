@@ -83,6 +83,13 @@ facade/native admission shortcut, updater or arbitrary program field. Keep both
 selected packages frozen until their original cleanup completes. Windows EOF
 and termination handlers close only that original WSL stdin and observe its
 close; wrapper exit never proves native owner/Job/helper release.
+When launching from PowerShell through WSL, pass a bootstrap as `python3 -c`
+with a literal argument and preserve its inherited stdin for the Node manager.
+Piping the bootstrap into `python3 -` consumes that same input stream and leaves
+the manager at EOF. An untouched ready connection now uses supported retirement
+and closes its original child on EOF. Once a caller tool has been dispatched,
+EOF still preserves original ownership; it never signals, adopts, retries or
+claims native cleanup.
 
 Keep stdin open. For a foreground PTY, use `stty -icanon -echo` before launch;
 canonical terminal input can truncate long JSON requests. The manager publishes
@@ -532,3 +539,29 @@ abort before dispatch. Inspect the same operation, separately observe terminatio
 release its helper, then retire and observe the original facade. Abort grants no
 Save/discard claim or replacement owner. This selector does not apply to the
 older spatial purpose. The repository source record is `docs/history/2026-11-06-component-original-job-abort.md`.
+
+## Interrupted first status scan
+
+A strict empty-argument `easyeda_control_status` sent as the first caller tool
+can time out before its initial scan returns. In manager versions implementing
+`observe-metadata-settlement`, use that fixed command with the original
+`generation` and `interruptedRequestId`. It calls only the same facade's local
+session inspection. Wrong identities and normal tool calls remain rejected;
+there is no status retry or source/admission result reconstruction.
+
+If that original inspection still reports active calls, keep the connection
+blocked and observe later within the manager's cleanup budget. After it reports
+zero active calls, the manager admits only its original retirement preflight.
+Retirement still requires the facade's own settled native owners and journals,
+acknowledged lease release and original child exit. The timed-out result stays
+unknown; only a properly admitted replacement may perform new work.
+
+This lane is deliberately limited to the first caller status, before that
+connection has dispatched any other caller tool. It does not authorize cleanup
+of unknown earlier native owners. Older running managers lack this command;
+a source update cannot add it to an existing process or transfer its handles.
+Keep their frozen files and original custody, and use only an already supported
+closure route or an explicitly authorized bounded cleanup. For admission scans,
+retain the maintained request deadline unless measured evidence supports a
+shorter one; a caller-selected short timeout can consume an otherwise healthy
+read-only request.

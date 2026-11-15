@@ -66,6 +66,8 @@ const commandSchema = z.discriminatedUnion("action", [
   z.strictObject({ id: requestId, action: z.literal("retire"), generation: generationSchema, confirmRetire: z.literal(true) }),
   z.strictObject({ id: requestId, action: z.literal("start"), afterGeneration: generationSchema,
     pluginRoot: z.string().refine(root => isAbsolute(root) && resolve(root) === root) }),
+  z.strictObject({ id: requestId, action: z.literal("observe-metadata-settlement"), generation: generationSchema,
+    interruptedRequestId: requestId, responseFile: z.string().refine(isAbsolute).optional() }),
   z.strictObject({ id: requestId, action: z.literal("shutdown") }),
   z.strictObject({ id: requestId, action: z.literal("cleanup-startup"), confirmCloseOriginalStartup: z.literal(true) }),
   z.strictObject({ id: requestId, action: z.literal("cleanup-original"), generation: generationSchema,
@@ -79,6 +81,7 @@ type ManagerCallRequest = CallRequest & { readonly cleanup?: true };
 type ManagerRequest = z.infer<typeof commandSchema> | (CallInputRequest & { readonly cleanup?: true });
 type OriginalCleanupRequest = Extract<z.infer<typeof commandSchema>, { action: "cleanup-original" }>;
 type InFlightControlRequest = Extract<z.infer<typeof commandSchema>, { action: "in-flight-original" }>;
+type MetadataSettlementRequest = Extract<z.infer<typeof commandSchema>, { action: "observe-metadata-settlement" }>;
 type Emitter = (value: unknown) => Promise<void>;
 type Stage = "new" | "starting" | "active" | "retiring" | "closing" | "between-facades" | "blocked" | "closed";
 const toolResultSchema = z.looseObject({ isError: z.boolean().optional(), structuredContent: z.unknown().optional() });
@@ -202,6 +205,8 @@ interface InterruptedCall {
   readonly generation: number;
   readonly requestId: string | number;
   readonly tool: string;
+  readonly metadataStatus: boolean;
+  metadataStatusSettled?: true;
   readonly via: OriginalViaManagerRequest | null;
   readonly schematicDisplay: OriginalSchematicDisplayManagerRequest | null;
   readonly spatial: OriginalSpatialManagerRequest | null;
@@ -271,6 +276,7 @@ export class ForegroundSessionManager {
   private connection: Connection | undefined;
   private startingConnection: { client: Client; transport: ForegroundSessionTransport; pluginRoot: string } | undefined;
   private startupCleanupAttempted = false;
+  private pristineInputClosureAttempted = false;
   private readonly callerToolDispatches = new WeakSet<ForegroundSessionTransport>();
   private readonly records: RetainedRecord[] = [];
   private requestPending = false;
@@ -369,7 +375,7 @@ export class ForegroundSessionManager {
         generation: this.interrupted.generation, tool: this.interrupted.tool, action: this.interrupted.spatial?.action ?? this.interrupted.via?.action ?? this.interrupted.schematicDisplay?.action ?? this.interrupted.forwardAction, via: this.interrupted.via, schematicDisplay: this.interrupted.schematicDisplay, spatial: this.interrupted.spatial,
         ...(this.interrupted.originalCaptureRequestId === undefined ? {} : { originalCaptureRequestId: this.interrupted.originalCaptureRequestId }),
         forward: this.interrupted.forward ?? this.interrupted.inspectedLaunchBinding ?? null, outcome: "unknown", cleanupAvailable: this.stage === "blocked" &&
-          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null || this.interrupted.forwardSourceOperationId !== null || this.interrupted.sourceHistoricalRequest !== null || this.interrupted.via !== null || this.interrupted.schematicDisplay !== null || this.interrupted.spatial !== null) &&
+          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null || this.interrupted.forwardSourceOperationId !== null || this.interrupted.sourceHistoricalRequest !== null || this.interrupted.via !== null || this.interrupted.schematicDisplay !== null || this.interrupted.spatial !== null || this.interrupted.metadataStatus) &&
           this.interrupted.connection === this.connection && this.connection.client.transport === this.connection.transport &&
           this.connection.transport.hasUnclosedChild() && !this.evidenceFault && !this.publicationFault &&
           !this.records.some(row => Object.hasOwn(row, "unpublishedValue")) },
@@ -471,7 +477,7 @@ export class ForegroundSessionManager {
     if (this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue"))) { throw new Error("manager-evidence-unsettled"); }
     if (this.stage === "active") { return this.requireActive(); }
     const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true && interrupted.forwardSourceOperationId === null && interrupted.sourceHistoricalRequest === null && interrupted.via === null && interrupted.schematicDisplay === null && interrupted.spatial === null || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true && interrupted.forwardSourceOperationId === null && interrupted.sourceHistoricalRequest === null && interrupted.via === null && interrupted.schematicDisplay === null && interrupted.spatial === null && !(interrupted.metadataStatus && interrupted.metadataStatusSettled === true) || connection === undefined ||
         interrupted.connection !== connection || interrupted.generation !== this.generation ||
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild()) {
       throw new Error("manager-original-connection-required");
@@ -501,7 +507,8 @@ export class ForegroundSessionManager {
       request: currentFootprintForwardSourceRelinquishmentRequestSchema }) }).safeParse(request.arguments);
     const sourceHistoricalRequest = request.tool === "easyeda_control_pcb209_worker_startup" && historical.success ? Object.freeze(historical.data.request.request) : null;
     const spatial = captureOriginalSpatialManagerRequest(request.tool, request.arguments);
-    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, via: captureOriginalViaManagerRequest(request.tool, request.arguments), schematicDisplay: captureOriginalSchematicDisplayManagerRequest(request.tool, request.arguments), spatial, spatialRecovery: createOriginalSpatialManagerRecovery(spatial),
+    return { connection, generation: this.generation, requestId: request.id, tool: request.tool,
+      metadataStatus: !this.callerToolDispatches.has(connection.transport) && request.tool === "easyeda_control_status" && z.strictObject({}).safeParse(request.arguments).success, via: captureOriginalViaManagerRequest(request.tool, request.arguments), schematicDisplay: captureOriginalSchematicDisplayManagerRequest(request.tool, request.arguments), spatial, spatialRecovery: createOriginalSpatialManagerRecovery(spatial),
       forwardFamily: outer.success && request.tool === "easyeda_control_pcb209_worker_startup" ? outer.data.request.action : null,
       forward, forwardLaunchOperationId, forwardSourceOperationId, forwardCapture: selected?.action === "capture-project" || selected?.action === "capture-source", sourceHistoricalRequest,
       forwardAction: selected?.action ?? null, abortReservation: { attempted: false } };
@@ -907,6 +914,45 @@ export class ForegroundSessionManager {
     this.retirementUncertain = false;
   }
 
+  /** Only a strict first caller status can receive this observational lane.
+   * It grants neither status replay nor normal work on the blocked connection. */
+  private requireOriginalMetadata(request: MetadataSettlementRequest): Readonly<{ connection: Connection; interrupted: InterruptedCall }> {
+    const connection = this.connection, interrupted = this.interrupted;
+    if (this.stage !== "blocked" || connection === undefined || interrupted === undefined || !interrupted.metadataStatus ||
+        interrupted.tool !== "easyeda_control_status" || interrupted.connection !== connection || interrupted.generation !== this.generation ||
+        request.generation !== this.generation || request.interruptedRequestId !== interrupted.requestId ||
+        this.retirementUncertain || this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
+        connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild() || !connection.tools.has("easyeda_control_session")) {
+      throw new Error("manager-original-metadata-observation-required");
+    }
+    return { connection, interrupted };
+  }
+
+  /** Observe the original facade's counter after a metadata timeout. A zero
+   * counter admits only fresh retirement preflight; the lost outcome stays lost. */
+  private async observeMetadataSettlement(request: MetadataSettlementRequest): Promise<void> {
+    const { connection, interrupted } = this.requireOriginalMetadata(request);
+    delete interrupted.metadataStatusSettled;
+    const call: CallRequest = { id: request.id, tool: "easyeda_control_session", arguments: { request: { action: "inspect" } },
+      timeoutMs: SESSION_CALL_TIMEOUT_MS, ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
+    await this.retain("original-cleanup-intent", { id: request.id, interruptedRequestId: interrupted.requestId,
+      generation: this.generation, tool: call.tool, request: call.arguments }, "cleanup");
+    this.requireOriginalMetadata(request);
+    const result = await connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs });
+    const evidence = await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup");
+    const current = this.requireOriginalMetadata(request);
+    if (current.connection !== connection || current.interrupted !== interrupted) { throw new Error("manager-original-metadata-owner-changed"); }
+    const envelope = toolResultSchema.parse(result);
+    if (envelope.isError === true) { throw new TypeError("manager-original-metadata-inspection-refused"); }
+    const state = retirementEnvelopeSchema.parse(envelope.structuredContent).result;
+    if (state.state !== "active" || !state.liveAdmissionOpen || state.leaseReleaseAcknowledged || state.replacementConnectionRequired) {
+      throw new Error("manager-original-metadata-settlement-unproven");
+    }
+    if (state.activeCalls === 0) { interrupted.metadataStatusSettled = true; }
+    else { delete interrupted.metadataStatusSettled; }
+    await this.publishCallResult(call, result, evidence);
+  }
+
   /** Mark the exact child before caller dispatch and retain its result before
    * output publication. The cleanup marker selects bookkeeping capacity only;
    * facade admission and operation guards still govern the call. */
@@ -955,6 +1001,28 @@ export class ForegroundSessionManager {
   }
 
   private inputAdmission: Promise<null> = Promise.resolve(null);
+  /** EOF before any caller tool was dispatched owns only the original ready
+   * metadata connection. Retire it through the supported protocol; never signal,
+   * retry a failed attempt or apply this path after caller/native work. */
+  public async closePristineInput():Promise<boolean>{
+    const eligible=():Connection|undefined=>{
+      const connection=this.connection;
+      return this.stage==="active"&&!this.requestPending&&!this.evidenceFault&&!this.publicationFault&&!this.retirementUncertain&&
+        !this.pristineInputClosureAttempted&&this.startingConnection===undefined&&this.interrupted===undefined&&this.inFlight===undefined&&this.controlledCapture===undefined&&
+        connection!==undefined&&!this.callerToolDispatches.has(connection.transport)&&!this.records.some(row=>Object.hasOwn(row,"unpublishedValue"))?connection:undefined;
+    };
+    const original=eligible();if(original===undefined){return false;}
+    await this.evidenceTail;await this.publicationTail;if(eligible()!==original){return false;}
+    this.pristineInputClosureAttempted=true;
+    const closed=original.transport.inspectClosure();
+    if(closed===null){
+      await this.handle(JSON.stringify({id:"manager-pristine-eof-retirement",action:"retire",generation:this.generation,confirmRetire:true}));
+      if(this.stage!=="between-facades"||this.connection!==original||this.replacementFrom!==original){return false;}
+    }else if(closed.pid!==original.loadedFacade.pid||!closed.exitObserved||!closed.closeObserved){return false;}
+    await this.handle(JSON.stringify({id:"manager-pristine-eof-shutdown",action:"shutdown"}));
+    return this.stage==="closed";
+  }
+
   /** Wait only for local parsing and call admission. File reads must not hide
    * the original capture lane from the single stdin driver's scheduling check. */
   public async waitForInputAdmission(): Promise<void> { await this.inputAdmission; }
@@ -997,6 +1065,14 @@ export class ForegroundSessionManager {
       const request = input;
       if (request.action === "inspect") { await this.publish({ id, manager: this.inspect() }); return; }
       if (request.action === "in-flight-original") { throw new Error("manager-in-flight-original-not-authorized"); }
+      if (request.action === "observe-metadata-settlement") {
+        this.requireOriginalMetadata(request);
+        if (!sessionManagerCallBudgetAvailable(true, this.recordCounts.cleanup + 1, this.byteCounts.cleanup)) {
+          throw new Error("manager-cleanup-reserve-required");
+        }
+        failureBudget = "cleanup"; reserved = true;
+        await this.observeMetadataSettlement(request); return;
+      }
       if (request.action === "cleanup-original") {
         void (request.request.action === "settle-historical-metadata" ? this.requireHistoricalSettlement(request) : this.requireOriginalCleanup(request));
         // Reserve intent, largest possible result and a failure record without
@@ -1131,7 +1207,8 @@ export function createManagerOutputPublisher(output: Writable): Emitter {
 }
 
 /** Keep one foreground request loop through startup refusal and explicit cleanup.
- * Closing input cannot silently release an active or ambiguous original owner. */
+ * Initial metadata-only EOF uses supported retirement; caller/ambiguous owners
+ * remain retained and cannot silently close or release. */
 async function main(emitJson: Emitter): Promise<void> {
   const pluginRoot = process.argv[3];
   if (process.argv.length !== 4 || process.argv[2] !== "--plugin-root" || pluginRoot === undefined) {
@@ -1143,7 +1220,8 @@ async function main(emitJson: Emitter): Promise<void> {
     await emitJson({ error: "manager-initialization-failed", diagnostic: sessionFailureDiagnostic("connect", error), manager: manager.inspect() });
   }
   if (await runManagerInput(manager, process.stdin) === "closed") { return; }
-  // EOF during active/ambiguous ownership does not close or release the facade.
+  if(await manager.closePristineInput()){return;}
+  // After caller work, EOF preserves active or ambiguous original ownership.
   // The referenced original child keeps this manager alive for investigation.
   if (manager.inspect()["stage"] !== "between-facades") {
     await emitJson({ error: "manager-input-closed-with-retained-owner", manager: manager.inspect() });
