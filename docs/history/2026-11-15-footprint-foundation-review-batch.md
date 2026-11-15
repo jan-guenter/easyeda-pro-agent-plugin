@@ -222,3 +222,22 @@ created. Native request/control limits and persisted projections are unchanged.
 Both TypeScript projects, strict type-aware lint on the four source/test inputs,
 and repository, MCP-contract and all-skill validators pass. Existing files only
 are changed; native generated outputs and bundles remain untouched.
+
+## 2026-11-15 follow-up: startup read success custody
+
+The startup callback read sets its success flag only after the original sender
+returns. A pre-write ID refusal cannot satisfy the precreate gate. Existing
+SendMessage behavior remains intact: an attempted write consumes its physical
+ID, and a write exception poisons the original channel. Moving the success flag
+does not authorize replay after a partial write or unknown acknowledgment.
+
+The actual emitted startup and precreate method bodies are mechanically run
+with an inert sender at both failure cutoffs. A wrong-ID refusal leaves the
+flag false and permits correction only within that fixture's still-usable
+transport; an ambiguous write leaves the success flag false, the channel failed
+and all subsequent sends refused. Success enables the existing gate once. The
+new regression fails against the original source. All nine focused cases in
+the existing native-tail test file and strict type-aware lint of both changed
+source/test files pass without skips or diagnostics. Initial fixture-comment
+lint errors remain in private evidence. This source-only change allocates no
+application or native owner and grants no complete workflow or retry capability.

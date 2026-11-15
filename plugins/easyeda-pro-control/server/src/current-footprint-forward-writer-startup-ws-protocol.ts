@@ -25,7 +25,7 @@ export function currentFootprintForwardWriterStartupWsNativeSource():string{
 bool fullStartupWsConsumed;
 static string ForwardWriterStartupWsMessage(int id,string frame,string session){if(id<1||!ForwardWriterProducerHandle(frame)||!ForwardWriterProducerHandle(session))throw Error("forward-startup-ws-fields");string parameters=${literal}.Replace("\\"__frame__\\"",ForwardWriterCopyLocalQuote(frame));return "{\\"id\\":"+id.ToString(CultureInfo.InvariantCulture)+${prefix}+parameters+",\\"sessionId\\":"+ForwardWriterCopyLocalQuote(session)+"}\\0";}
 public void SendForwardWriterStartupWs(int id,string frame){RequireForwardWriterProducer();if(!forwardWriterCompleteBirth||fullStartupWsConsumed||footprintCreateClockBegun||!forwardWriterProducerEnrolled||forwardWriterFrontierComplete||forwardWriterFrontierCallbackHeld!="startupEntry"||forwardWriterFrontierCalls!=1||forwardWriterFrontierCallbackRequests!=0)throw Error("forward-startup-ws-original-first-callback");
-string text=ForwardWriterStartupWsMessage(id,frame,footprintCopyWorkerSession);fullStartupWsConsumed=true;SendForwardWriterNormalMessage(id,text);}
+string text=ForwardWriterStartupWsMessage(id,frame,footprintCopyWorkerSession);SendForwardWriterNormalMessage(id,text);fullStartupWsConsumed=true;}
 public static void VerifyForwardWriterStartupWsSmoke(){string text=ForwardWriterStartupWsMessage(79,"frame27","session29");using(var sha=System.Security.Cryptography.SHA256.Create())if(BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text))).Replace("-","").ToLowerInvariant()!=${JSON.stringify(golden)})throw Error("forward-startup-ws-golden");}
 }
 `;

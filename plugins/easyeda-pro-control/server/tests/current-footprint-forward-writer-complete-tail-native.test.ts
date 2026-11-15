@@ -11,6 +11,7 @@ import {CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS,currentFootprintF
 import {currentFootprintForwardWriterFrontierCases,currentFootprintForwardWriterFrontierTemplate} from "../src/current-footprint-forward-writer-frontier-protocol.ts";
 import {currentFootprintForwardWriterFrontierNativeSource} from "../src/current-footprint-forward-writer-frontier-native.ts";
 import {currentFootprintForwardWriterCacheNativeSource} from "../src/current-footprint-forward-writer-cache-native.ts";
+import {currentFootprintForwardWriterStartupWsNativeSource} from "../src/current-footprint-forward-writer-startup-ws-protocol.ts";
 import {currentFootprintForwardWriterSyncNativeSource} from "../src/current-footprint-forward-writer-sync-native.ts";
 import {currentFootprintForwardWriterTicketTimerNativeSource} from "../src/current-footprint-forward-writer-ticket-timer-native.ts";
 import {currentFootprintInverseMainHistoryNativeSource} from "../src/current-footprint-inverse-main-history-native.ts";
@@ -210,5 +211,38 @@ void test("initial sync failed sends consume their step but cannot advance or co
     assert.equal(context["forwardWriterInitialSyncComplete"],false);
    }
   }
+ }
+});
+
+void test("startup success follows the send; pre-dispatch refusal is correctable and ambiguous write stays consumed",()=>{
+ const source=currentFootprintForwardWriterStartupWsNativeSource(),tail=currentFootprintForwardWriterCompleteTailNativeSource();
+ for(const failureKind of ["none","before-write","partial-write"]as const){
+  const failure=new Error("inert-startup-send"),state={protocolFailed:false,nextRequest:2,writes:0};
+  const context=createContext({fullStartupWsConsumed:false,forwardWriterCompleteBirth:true,footprintCreateClockBegun:false,
+   forwardWriterProducerEnrolled:true,forwardWriterFrontierComplete:false,forwardWriterFrontierCallbackHeld:"startupEntry",
+   forwardWriterFrontierCalls:1,forwardWriterFrontierCallbackRequests:0,footprintCopyWorkerSession:"original7",
+   fullCopyBodyEscapedMaximum:1,fullTailStep:3,fullPublicationRecords:2,fullBranchMainStep:10,fullBranchWorkerStep:5,fullOwnDataReady:true,
+   forwardWriterCompleteTimerBaseline:true,forwardWriterCompleteTimerArms:3,RequireForwardWriterCompleteBase:():void=>{
+    // Other base invariants are fixed by this inert fixture.
+   },
+   RequireForwardWriterProducer:():void=>{
+    // Fixed admission here allocates no native producer.
+   },Error:():Error=>failure,ForwardWriterStartupWsMessage:():string=>"fixed-startup-read",
+   // The original sender checks its ID before write; a write attempt consumes
+   // The ID and a write exception permanently poisons its channel.
+   SendForwardWriterNormalMessage:(id:number):void=>{
+    if(state.protocolFailed||id!==state.nextRequest){throw failure;}state.nextRequest+=1;state.writes+=1;
+    if(failureKind==="partial-write"){state.protocolFailed=true;throw failure;}
+   }});
+  const send=`(function(id,frame){${ownerMethod(source,"SendForwardWriterStartupWs")}})`;
+  const invoke=(id:number):unknown=>runInContext(`${send}(${String(id)},'original-frame')`,context);
+  const precreate=():unknown=>runInContext(`(function(){${ownerMethod(tail,"RequireForwardWriterCompletePrecreate")}})()`,context);
+  if(failureKind==="none"){invoke(2);assert.equal(context["fullStartupWsConsumed"],true);precreate();}
+  else{
+   assert.throws(()=>invoke(failureKind==="before-write"?1:2));assert.equal(context["fullStartupWsConsumed"],false);assert.throws(precreate);
+   if(failureKind==="before-write"){assert.equal(state.writes,0);invoke(2);assert.equal(context["fullStartupWsConsumed"],true);precreate();}
+   else{assert.equal(state.writes,1);assert.throws(()=>invoke(3));assert.equal(context["fullStartupWsConsumed"],false);assert.equal(state.writes,1);assert.throws(precreate);}
+  }
+  assert.throws(()=>invoke(state.nextRequest));assert.equal(state.writes,1);
  }
 });
