@@ -88,3 +88,24 @@ files reports zero warnings/errors; all seven skill validations pass. No additio
 whole-suite, runtime admission or Windows native probe was run. Outgoing privacy
 is checked before handoff; the combined release build remains the parent
 release coordinator's work.
+
+## Curated release candidate
+
+The first reviewable release candidate is
+`0.3.0+codex.20261115233510`, based only on published
+`ced687c65e262859a95ee7e36c2c9374dd7d846c` and curated changes. Its frozen source
+parent is `d219d465a7f1b4660da699fa136d7846847dd89a`. Private working ancestry
+is excluded. Larger writer implementations remain separate reviewable work.
+
+The candidate passed real npm installation/tree/signature checks, 151 registry
+signatures and 42 attestations, a zero-vulnerability audit, and the unchanged
+sanitizer check. Both facade and bridge typechecks, bridge lint, API coverage,
+build, repository/MCP contracts and all seven skills passed. Global type-aware
+lint reports zero warnings/errors across 4,786 files. All seventeen focused
+Windows-bootstrap and metadata-helper tests passed without skips.
+
+Only facade source/bundle projections and review time changed in compatibility;
+upstream, application, installed bundle, bridge and dispatcher pins remain exact.
+All three bundles reproduce byte for byte. GitHub's complete exact-commit CI,
+CodeRabbit review, publication and actual installed acceptance remain pending.
+No new runtime admission, project edit or saved-result proof is inferred here.
