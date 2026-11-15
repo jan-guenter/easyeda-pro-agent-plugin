@@ -124,3 +124,80 @@ No version bump, publication, marketplace installation, default-profile change,
 new Windows interop claim or connected validation is part of this seal. The
 branch can be replayed after the foundation merge using the explicit
 `0e234eeb` boundary; generated identities must follow that final source.
+
+
+## PR212 merge and Windows automation replay
+
+[PR212](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/212) merged
+at 2026-11-15 16:03:58 UTC as
+`4590149ad9e5c6faa5fbe06b60dc5bb304c13c78`. All thirteen checks passed on its
+exact final head `75576519a30b8a8e807306b0cbd4202e6ead6523`, including all eight
+facade shards, aggregate build, Windows recovery and CodeRabbit. CodeRabbit's
+current-head walkthrough explicitly marked that exact commit reviewed and
+reported no new actionable comments. The final incremental pass selected
+fifteen files; it skipped the existing foundation history and compatibility
+manifest as similar to previous changes. This is the recorded review scope,
+not a claim that every file was scanned again. All forty-five review threads,
+including the eleven legacy threads, were resolved after source audits and
+recorded corrections. Dependency proposals
+[PR210](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/210) and
+[PR211](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/211) are closed.
+
+The release-recovery resolution preserves failed/ambiguous v1 quarantine.
+Public v2 contains the budget, facts schema and pure-chain validation joint;
+it does not contain a runtime publisher, coordinator or original-owner opaque
+proof issuer/consumer. Those remain a separate private integration batch. The
+generation-closure validator correction changes no persisted record format or
+retry authority. The legacy resolutions grant no runtime recovery or writer
+admission.
+
+The four Windows automation commits were replayed from the explicit old
+boundary `0e234eebe0f10dd5a5af100456d85c017af0c100` onto that actual merge.
+The sole compatibility conflict retained the merged manifest temporarily;
+original conflict bytes and prior5277 bundle bytes remain private. Source
+replay completed before regeneration began. The plugin-only cachebuster is
+`0.3.0+codex.20261115160744`; the base release remains `0.3.0`. No installed
+cache or default machine/launcher profile was changed.
+
+Fresh official installation, full installed Linux v2 byte/mode/link proof and
+the new CLI process's actual metadata-only loaded-snapshot/retirement/observed
+exit proof remain pending. Earlier disposable Windows-to-WSL fixtures and
+source checks establish their stated transport/configuration stages only; they
+do not establish a fresh installed desktop connection or connected admission.
+
+
+### Replayed package verification
+
+The frozen replay passes both facade TypeScript configurations, both bridge
+TypeScript configurations, bridge lint and whole-repository strict type-aware
+lint: 4,782 files, zero warnings or errors. API coverage remains855 methods.
+Real npm clean installation under umask022, the complete dependency tree and
+the full maintained generation/build checks pass. The exact package and lock
+bytes match the already verified signature/moderate-audit receipts; npm clean
+installation also reports zero vulnerabilities. All three runtime bundles
+reproduce byte-for-byte. Compatibility changes only its allowed facade source
+and bundle projections and review time; every external tuple pin is unchanged.
+
+All75 focused manager, Windows/WSL, machine-launcher/profile and paired-descriptor
+cases pass with zero skips. Their six runtime files remain byte-exact before
+and after the run. Repository, isolated MCP catalog and all-skill validators
+pass; all seven official skill quick checks pass. The catalog validator's
+original temporary stdio child receives only its isolated catalog/disabled-route
+checks and reaches observed close0 through stdin EOF; it is distinct from an
+installed live-control connection. No application or native route is used.
+
+Before that frozen campaign, replayed file modes inherited a private evidence
+umask. Only this owned source worktree's tracked modes were corrected, then
+the maintained builders were rerun under022 and all three bundle hashes
+matched. Initial object-availability, conflict-count and receipt-key assertions
+remain in private evidence. The facade and supervisor builders deliberately
+publish their private build outputs as0600; that is not installed-package mode
+proof. The official installed Linux v2 verifier must still establish the full
+644/755 file modes,755 directories, committed bytes and absence of links after
+installation. Windows byte/reparse checks are separate and establish neither
+NTFS ACL/ownership custody nor POSIX modes.
+
+The Windows automation batch awaits its own exact-head CI, CodeRabbit review
+and deliberate publication. Fresh installed Linux/Windows package verification,
+new CLI metadata-only process closure and any current desktop connection proof
+remain pending; no passing installation or connected result is claimed here.
