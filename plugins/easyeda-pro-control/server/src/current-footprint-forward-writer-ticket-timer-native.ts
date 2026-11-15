@@ -26,7 +26,7 @@ internal static string Phase(int step){Need(step>=0&&step<Rows.Length);return Ro
 internal static void VerifySmoke(){foreach(var row in Rows){var fields=new System.Collections.Hashtable();foreach(string name in row[2].Split(','))if(name.Length>0)fields.Add(name,"original27");string text=Encode(79,"session29",row[0],row[1],fields);Need(text.StartsWith("{\\"id\\":79,",StringComparison.Ordinal)&&text.EndsWith(",\\"sessionId\\":\\"session29\\"}\\0",StringComparison.Ordinal)&&!text.Contains("__ticket_"));bool refused=false;try{Encode(79,"session29",row[0],"Runtime.evaluate",fields);}catch(InvalidOperationException){refused=true;}Need(refused);}}
 }
 public sealed partial class EasyedaDiagnosticOwner{
-int fullTicketSetup,fullTicketHolds,fullTicketHeldStep,fullTicketSlots;bool fullTicketBound,fullTicketReady;string fullTicketRole;
+int fullTicketSetup,fullTicketHolds,fullTicketHeldStep,fullTicketSlots;bool fullTicketBound,fullTicketReady,fullTicketFailed;string fullTicketRole;
 static readonly string[] FullTicketRoles={"entry","returned","selfReturned"};
 public void ControlForwardWriterTicketTimer(string operation,string role,int ordinal){RequireForwardWriterCompleteBase();
 if(operation=="bind"){if(role!=null||ordinal!=0||footprintCreateClockBegun||!fullStartupWsConsumed||!fullOwnDataReady||fullTicketBound)throw Error("forward-ticket-bind");fullTicketBound=true;return;}
@@ -43,10 +43,10 @@ else{RequireForwardWriterCompleteCreated();if(!forwardWriterCompleteTimerBaselin
 if(phase!=EasyedaForwardWriterTicketTimerProtocol.Phase(index))throw Error("forward-ticket-fixed-order");if(phase.StartsWith("ticket-timer-arm-",StringComparison.Ordinal)&&(fields==null||fields["scriptId"] as string!=forwardWriterProducerScript))throw Error("forward-ticket-script");
 string text=EasyedaForwardWriterTicketTimerProtocol.Encode(id,footprintCopyWorkerSession,phase,method,fields);
 if(index<37){fullTicketSetup++;if(phase.StartsWith("ticket-timer-arm-",StringComparison.Ordinal))forwardWriterCompleteTimerArms++;}
-else if(index==37)forwardWriterCompleteTimerBaseline=true;
 else if(index==48)fullTicketSlots++;
-else{fullTicketHeldStep++;if(method=="Debugger.resume"){fullTicketRole=null;fullTicketHolds++;}}
-SendForwardWriterNormalMessage(id,text);
+else if(index!=37){fullTicketHeldStep++;if(method=="Debugger.resume"){fullTicketRole=null;fullTicketHolds++;}}
+try{SendForwardWriterNormalMessage(id,text);}catch{fullTicketFailed=true;throw;}
+if(index==37)forwardWriterCompleteTimerBaseline=true;
 }
 public static void VerifyForwardWriterTicketTimerSmoke(){EasyedaForwardWriterTicketTimerProtocol.VerifySmoke();var owner=CreateFootprintForwardWriter209();try{bool refused=false;try{owner.ControlForwardWriterTicketTimer("bind",null,0);}catch(InvalidOperationException){refused=true;}if(!refused||owner.fullTicketBound||owner.forwardWriterCompletePublishTimerComplete)throw Error("forward-ticket-unissued");}finally{owner.originalMain.Release();}}
 }

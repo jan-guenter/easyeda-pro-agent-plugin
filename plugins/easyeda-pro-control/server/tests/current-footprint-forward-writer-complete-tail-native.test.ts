@@ -7,10 +7,12 @@ import {test} from "node:test";
 import {createContext,runInContext} from "node:vm";
 import {gunzipSync} from "node:zlib";
 import {z} from "zod";
-import {CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS,currentFootprintForwardWriterCompleteTailDispatch,currentFootprintForwardWriterCompleteTailNativeSource} from "../src/current-footprint-forward-writer-complete-tail-native.ts";
+import {CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS,currentFootprintForwardWriterCompleteHistoryCodebookSource,currentFootprintForwardWriterCompleteTailDispatch,currentFootprintForwardWriterCompleteTailNativeSource} from "../src/current-footprint-forward-writer-complete-tail-native.ts";
 import {currentFootprintForwardWriterFrontierCases,currentFootprintForwardWriterFrontierTemplate} from "../src/current-footprint-forward-writer-frontier-protocol.ts";
 import {currentFootprintForwardWriterFrontierNativeSource} from "../src/current-footprint-forward-writer-frontier-native.ts";
 import {currentFootprintForwardWriterCacheNativeSource} from "../src/current-footprint-forward-writer-cache-native.ts";
+import {currentFootprintForwardWriterTicketTimerNativeSource} from "../src/current-footprint-forward-writer-ticket-timer-native.ts";
+import {currentFootprintInverseMainHistoryNativeSource} from "../src/current-footprint-inverse-main-history-native.ts";
 import {CURRENT_FOOTPRINT_FORWARD_WRITER_RENDERER_CLASS_NATIVE,currentFootprintForwardWriterRendererRoleSource} from "../src/current-footprint-forward-writer-renderer-class.ts";
 
 function table(name:string):readonly string[][]{
@@ -137,4 +139,47 @@ void test("renderer fragment requires one explicit cold-enum composition and can
  assert.throws(()=>currentFootprintForwardWriterRendererRoleSource(original+original));
  assert.throws(()=>currentFootprintForwardWriterRendererRoleSource(original.replace(", ForwardCold","")));
  assert.throws(()=>currentFootprintForwardWriterRendererRoleSource(original+CURRENT_FOOTPRINT_FORWARD_WRITER_RENDERER_CLASS_NATIVE));
+});
+
+void test("unmounted complete tail exposes its exact stateless Main history composition dependency",()=>{
+ const dependency=currentFootprintForwardWriterCompleteHistoryCodebookSource(),inverse=currentFootprintInverseMainHistoryNativeSource();
+ const marker="public sealed partial class EasyedaDiagnosticOwner {";
+ assert.equal(dependency,inverse.slice(0,inverse.indexOf(marker)).replaceAll("EasyedaFootprintInverseMainHistoryProtocol","EasyedaForwardWriterMainHistoryProtocol"));
+ assert.equal(dependency.split("public static class EasyedaForwardWriterMainHistoryProtocol {").length,2);
+ assert.doesNotMatch(dependency,/class EasyedaDiagnosticOwner|SendFootprintInverseMainHistory|footprintInverse209/u);
+ assert.match(currentFootprintForwardWriterCompleteTailNativeSource(),/EasyedaForwardWriterMainHistoryProtocol.Encode/u);
+ assert.doesNotMatch(currentFootprintForwardWriterCompleteTailNativeSource(),/class EasyedaForwardWriterMainHistoryProtocol/u);
+});
+void test("ticket baseline is successful-send-only and uncertain setup/held/slot sends block every later stage",()=>{
+ const source=currentFootprintForwardWriterTicketTimerNativeSource(),tail=currentFootprintForwardWriterCompleteTailNativeSource();
+ for(const role of ["baseline","setup","held","slot"]as const){
+  for(const failSend of [false,true]){
+   const failure=new Error("inert-partial-write");let attempts=0;
+   const state={fullTicketBound:true,fullTicketReady:role!=="setup",fullTicketFailed:false,forwardWriterCompletePublishTimerComplete:false,
+    footprintCreateClockBegun:role==="held"||role==="slot",fullTicketSetup:role==="setup"?0:37,
+    forwardWriterCompleteTimerBaseline:role!=="baseline",fullTicketRole:role==="held"?"entry":null,fullTicketHeldStep:0,fullTicketHolds:0,fullTicketSlots:0,
+    fullPublicationComplete:true,fullPostComplete:true,fullDrainComplete:true,forwardWriterCompleteTimerArms:3,
+    forwardWriterCompleteBirth:true,forwardWriterProducerEnrolled:true,forwardWriterCacheCompleted:true,forwardWriterInitialSyncComplete:true,
+    forwardWriterFrontierComplete:true,fullComplete:false,footprintCopyWorkerSession:"session7",forwardWriterProducerScript:"script8"};
+   const phase={baseline:"ticket-timer-call-before",setup:"setup-0",held:"held-38",slot:"ticket-timer-call-slot"}[role];
+   const method=role==="held"?"Debugger.resume":"Runtime.callFunctionOn";
+   const context=createContext({...state,Error:():Error=>failure,RequireForwardWriterProducer:():void=>{assert.equal(state.forwardWriterCompleteBirth,true);},
+    AssertLive:():void=>{assert.equal(state.forwardWriterCompleteBirth,true);},
+    RequireForwardWriterCompleteCreated:():void=>{assert.equal(state.footprintCreateClockBegun,true);},
+    EasyedaForwardWriterTicketTimerProtocol:{Phase:(index:number):string=>({0:"setup-0",37:"ticket-timer-call-before",38:"held-38",48:"ticket-timer-call-slot"})[index]??"wrong",Encode:():string=>"inert-frame"},
+    SendForwardWriterNormalMessage:():void=>{attempts+=1;if(failSend){throw failure;}}});
+   runInContext(`globalThis.RequireForwardWriterCompleteBase=function(){${ownerMethod(tail,"RequireForwardWriterCompleteBase")}}`,context);
+   const invoke=():unknown=>runInContext(`(function(id,phase,method,fields){${ownerMethod(source,"SendForwardWriterTicketTimer")}})(1,${JSON.stringify(phase)},${JSON.stringify(method)},{})`,context);
+   let caught:unknown;try{invoke();}catch(error){caught=error;}
+   assert.equal(caught,failSend?failure:undefined);assert.equal(attempts,1);assert.equal(context["fullTicketFailed"],failSend);
+   assert.equal(context["forwardWriterCompleteTimerBaseline"],role!=="baseline"||!failSend);
+   assert.equal(context["fullTicketSetup"],role==="setup"?1:37);
+   assert.equal(context["fullTicketHeldStep"],role==="held"?1:0);assert.equal(context["fullTicketSlots"],role==="slot"?1:0);
+   if(failSend){
+    assert.throws(invoke);assert.equal(attempts,1);
+    assert.throws(()=>runInContext(`(function(operation,role,ordinal){${ownerMethod(source,"ControlForwardWriterTicketTimer")}})('complete',null,0)`,context));
+    assert.equal(context["forwardWriterCompletePublishTimerComplete"],false);
+   }
+  }
+ }
 });

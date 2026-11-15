@@ -157,3 +157,43 @@ Both TypeScript projects, strict type-aware lint on the four source/test inputs,
 and repository, MCP-contract and all-skill validators passed. No files were
 added, and native generated outputs, bundles and historical result schemas were
 unchanged.
+
+## 2026-11-15 follow-up: c8 tail composition, literal body and timer failure
+
+Three further forward threads were verified against public c8c612de. No files
+or live writer routes are added by this correction.
+
+The seventh-role tail is an unmounted fragment with dependencies on other
+complete-writer roles. It now explicitly exposes its exact stateless Main
+history companion, derived from the maintained fixed inverse syntax after
+removing every inverse owner/dispatch field. A complete graph must compose
+that companion exactly once, or retain the byte-identical companion already
+supplied by its full history role. The fragment alone is not a compiled
+production graph. Its actual live-history caller and the companion compile
+and execute together in the inert C# fixture.
+
+Body-capacity substitution uses a callback, preserving literal dollar signs,
+dollar ampersands, dollar quotes and dollar backticks. An independent JSON-tree
+materialization checks both physical envelopes, including raw 8 KiB dollar-token
+bodies; replacement-string expansion can neither shrink nor inflate the bound.
+
+The ticket timer records its baseline only after a successful send. Setup,
+held and slot attempts remain consumed before transport; any send exception
+latches timer failure and the complete-owner guard blocks every later normal
+stage, including Create and timer completion. Neither a partial write nor a
+pre-write sender refusal restores a native step or permits a retry. Original
+abort/observed-exit cleanup remains the recovery path.
+
+The new literal-body and timer-failure regressions reject the original source.
+Twelve focused cases pass without skips. An independent 46,506-byte fixture
+compiled actual emitted timer code and all 49 codec rows, plus the actual Main
+live-history caller with its stateless 13-row companion, using C# language
+version 5 and warnings as errors on Linux .NET 10. It passed successful and
+uncertain setup/baseline/held/slot sends, sticky no-replay/completion refusals
+and all 13 live-history phases. Its validation/sender objects were inert; no
+Windows compiler, application, native owner or Job was allocated, and this
+establishes no connected workflow.
+
+Both TypeScript projects, strict type-aware lint on all five source/test inputs,
+and repository, MCP-contract and all-skill validators passed. Generated helpers,
+bundles, historical persisted shapes and request/control limits are unchanged.

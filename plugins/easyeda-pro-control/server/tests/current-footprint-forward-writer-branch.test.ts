@@ -17,7 +17,7 @@ import { CurrentFootprintForwardWriterLiveHistoryCustody } from "../src/current-
 import { CurrentFootprintForwardWriterLiveHistoryCollector } from "../src/current-footprint-forward-writer-live-history-collector.ts";
 import { CURRENT_FOOTPRINT_FORWARD_WRITER_BRANCH_SITE } from "../src/current-footprint-forward-writer-branch-source.ts";
 import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE } from "../src/current-pcb-via-main-live-history-source.ts";
-import { requireCurrentFootprintForwardWriterCopyLocalBodyCapacity } from "../src/current-footprint-forward-writer-copy-local-wire.ts";
+import { currentFootprintForwardWriterCopyLocalTemplates, requireCurrentFootprintForwardWriterCopyLocalBodyCapacity } from "../src/current-footprint-forward-writer-copy-local-wire.ts";
 
 function observe(scenario: string): unknown {
  return runInNewContext(`(()=>{let getters=0,applications=0;class SqlWrap{}class Sql{}class Database{}class Statement{};const sqlite={Database,Statement},util={types:{isProxy}},path="synthetic-selected",db=new Database,wrap=new SqlWrap,sql=new Sql;
@@ -79,4 +79,25 @@ void test("precreate copy capacity checks both escaped physical envelopes",()=>{
  const maximum='{"uuid":"ffffffffffffffff","clock":8640000000000000}';
  const actual='{"uuid":"aaaaaaaaaaaaaaaa","clock":1700000000000}';
  assert.ok(requireCurrentFootprintForwardWriterCopyLocalBodyCapacity(actual)<=requireCurrentFootprintForwardWriterCopyLocalBodyCapacity(maximum));
+});
+
+function materialize(value:unknown,body:string):unknown{
+  if(typeof value==="string"){
+   if(value==="__forward_copy_local_body__"){return body;}
+   if(value==="__forward_copy_local_key__"){return "https://client/upload/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?key=bbbbbbbbbbbbbbbb";}
+   return value.startsWith("__forward_copy_local_")?"a".repeat(256):value;
+  }
+  if(Array.isArray(value)){return value.map(item=>materialize(item,body));}
+  if(value!==null&&typeof value==="object"){return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,materialize(item,body)]));}
+  return value;
+ }
+void test("body capacity preserves literal dollar substitution tokens in both physical envelopes",()=>{
+
+ for(const body of ["$$","$&","$'",`$${String.fromCodePoint(96)}`,"$$".repeat(4096),"$&".repeat(4096),(`$${String.fromCodePoint(96)}`).repeat(100)]){
+  let count=0,expected=0;
+  for(const row of currentFootprintForwardWriterCopyLocalTemplates().filter(value=>value.fields.includes("body"))){const raw:unknown=JSON.parse(row.template);const params=materialize(raw,body);assert.ok(params!==null&&typeof params==="object"&&!Array.isArray(params));
+   const message=JSON.stringify({id:2_147_483_647,...params,sessionId:"a".repeat(256)})+String.fromCodePoint(0);expected=Math.max(expected,Buffer.byteLength(message));count+=1;
+  }
+  assert.equal(count,2);assert.equal(requireCurrentFootprintForwardWriterCopyLocalBodyCapacity(body),expected);
+ }
 });

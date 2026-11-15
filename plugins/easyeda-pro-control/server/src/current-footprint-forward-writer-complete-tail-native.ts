@@ -1,3 +1,4 @@
+import {currentFootprintInverseMainHistoryNativeSource} from "./current-footprint-inverse-main-history-native.ts";
 import {currentFootprintForwardWriterTicketTimerControlDispatch} from "./current-footprint-forward-writer-ticket-timer-native.ts";
 /** Complete-v2 fixed tail syntax and fresh original-instance ledgers. This
  * source never alters or grants the historical six-role writer birth. */
@@ -65,7 +66,7 @@ int fullLocalStep,fullUploadStep,fullBranchWorkerStep,fullBranchMainStep,fullLiv
 bool fullDeleteCallResumed,fullDeleteReturnedResumed,fullPostComplete,fullDrainComplete,fullComplete;
 string fullLocalBody,fullPostMerged;bool fullReplayBound;
 int fullCopyBodyEscapedMaximum,fullCopyBodyRawMaximum;
-void RequireForwardWriterCompleteBase(){RequireForwardWriterProducer();if(!forwardWriterCompleteBirth||!forwardWriterProducerEnrolled||!forwardWriterCacheCompleted||!forwardWriterInitialSyncComplete||!forwardWriterFrontierComplete||fullComplete)throw Error("forward-complete-original-owner");AssertLive();}
+void RequireForwardWriterCompleteBase(){RequireForwardWriterProducer();if(!forwardWriterCompleteBirth||!forwardWriterProducerEnrolled||!forwardWriterCacheCompleted||!forwardWriterInitialSyncComplete||!forwardWriterFrontierComplete||fullTicketFailed||fullComplete)throw Error("forward-complete-original-owner");AssertLive();}
 void RequireForwardWriterCompleteCreated(){RequireForwardWriterCompleteBase();var clock=footprintCreateClockLedger as EasyedaForwardWriterAllocatedClockLedger;if(!footprintCreateClockBegun||clock==null||clock.CreateId<1||clock.Failed)throw Error("forward-complete-original-create");}
 void RequireForwardWriterCompletePrecreate(){RequireForwardWriterCompleteBase();if(fullCopyBodyEscapedMaximum<1||footprintCreateClockBegun||fullTailStep!=3||fullPublicationRecords<2||fullBranchMainStep!=10||fullBranchWorkerStep<5||fullBranchWorkerStep>6||!fullStartupWsConsumed||!fullOwnDataReady||!forwardWriterCompleteTimerBaseline||forwardWriterCompleteTimerArms!=3)throw Error("forward-complete-before-create");}
 public void SendForwardWriterBranchQuery(int id,string phase,string method,System.Collections.IDictionary fields){RequireForwardWriterCompleteBase();if(footprintCreateClockBegun||fullBranchMainStep<1||fullBranchMainStep>10||fullBranchWorkerStep>=6||phase!=EasyedaForwardWriterBranchQueryProtocol.Phase(fullBranchWorkerStep))throw Error("forward-complete-branch-query-order");string text=EasyedaForwardWriterBranchQueryProtocol.Encode(id,footprintCopyWorkerSession,phase,method,fields);fullBranchWorkerStep++;SendForwardWriterNormalMessage(id,text);}
@@ -211,6 +212,17 @@ function dispatch():string{
 }
 
 
-/** The new complete graph alone appends this seventh role. */
+/** Stateless companion required by the live-history call in the tail below.
+ * A complete graph must compose this once, or retain its byte-identical full
+ * history role codebook. No inverse ledger, dispatch or owner enters the tail. */
+export function currentFootprintForwardWriterCompleteHistoryCodebookSource():string{
+ const marker="public sealed partial class EasyedaDiagnosticOwner {",source=currentFootprintInverseMainHistoryNativeSource();
+ if(!source.startsWith("public static class EasyedaFootprintInverseMainHistoryProtocol {")||source.split(marker).length!==2){throw new Error("FORWARD_COMPLETE_HISTORY_CODEBOOK_SOURCE");}
+ return source.slice(0,source.indexOf(marker)).replaceAll("EasyedaFootprintInverseMainHistoryProtocol","EasyedaForwardWriterMainHistoryProtocol");
+}
+/** The new complete graph alone appends this seventh role. This is a fragment,
+ * not a standalone graph: its Main live encoder requires the stateless
+ * companion above (already supplied by the separate full history role).
+ * Callers must compose that dependency exactly once before C# compilation. */
 export function currentFootprintForwardWriterCompleteTailNativeSource():string{return currentFootprintForwardWriterCopyTailCodecsNativeSource()+tables()+OWNER+currentFootprintForwardWriterOwnDataNativeSource()+currentFootprintForwardWriterStartupWsNativeSource();}
 export function currentFootprintForwardWriterCompleteTailDispatch():string{return dispatch();}

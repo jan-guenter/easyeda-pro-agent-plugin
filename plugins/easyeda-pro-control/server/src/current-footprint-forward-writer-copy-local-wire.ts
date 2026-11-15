@@ -26,7 +26,7 @@ export function requireCurrentFootprintForwardWriterCopyLocalBodyCapacity(body:s
     let value="a".repeat(256);
     if(name==="body"){value=body;}
     else if(name==="key"){value="https://client/upload/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?key=bbbbbbbbbbbbbbbb";}
-    text=text.replaceAll(JSON.stringify(`__forward_copy_local_${name}__`),JSON.stringify(value));
+    text=text.replaceAll(JSON.stringify(`__forward_copy_local_${name}__`),()=>JSON.stringify(value));
    }
    const message=`{"id":2147483647,${text.slice(1,-1)},"sessionId":${JSON.stringify("a".repeat(256))}}\0`;
    maximum=Math.max(maximum,Buffer.byteLength(message));checked+=1;
