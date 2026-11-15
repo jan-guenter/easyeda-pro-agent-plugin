@@ -153,3 +153,43 @@ after the inherited package-lock filter. The package version is unchanged;
 Windows bootstrap/manager automation and full workflow/runtime bindings form
 the next buildable batch. Final full CodeRabbit review and exact-head CI will
 be requested before merge. No installation or connected acceptance is claimed.
+
+
+## Serialization text snapshot follow-up
+
+The exact public review head `c8c612de6427c9437e1bfc749ad6462c01a5a39e`
+received [a further serialization issue](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/212#discussion_r4578320137).
+The observer now captures its own `texts` data descriptor and a bounded frozen
+three-string tuple before its first await. Begin and both fulfilled-Promise
+checks use that one snapshot. A changed caller array or replacement binding
+property cannot alter the original body comparison. Binding and array proxies,
+accessors, inherited text properties, sparse/exotic arrays, extra fields and
+invalid tuple bounds refuse before any callback or getter runs. Existing
+commands, expected-result schemas, request/helper counts, pause custody and
+original callback error propagation remain unchanged.
+
+A protocol surrogate drives the actual observer through its 53 normal steps,
+16 helper qualifications and six resumes, mutating both the retained source
+array and binding property before begin and during both Promise observations.
+It completes at the existing held-upload boundary without resuming upload or
+authorizing Save. The same regression fails against the original observer and
+against a partial fix that snapshots only begin but rereads the body later.
+The four focused snapshot tests pass without skips; both TypeScript projects
+and strict type-aware lint of the two source/test files pass with zero
+diagnostics. Initial synthetic-packet assertion/alias errors and strict-lint
+failures remain in private evidence. The regression fixtures allocate no native
+owner, facade or application and prove no live project effect or persistence.
+Generated package regeneration and exact final-head validation remain with the
+parent integration batch.
+
+Repository-mandated catalog validation ran with a private temporary data root
+and a must-not-execute upstream configuration. This isolated catalog child is
+distinct from an installed/live control connection. It received only catalog
+reads and two disabled-route checks. The validator retained its original child
+handle, closed stdin, observed that child's close, required exit zero without a
+signal, and completed its temporary-directory cleanup before returning success.
+No application/native route was called; the completed original child was not
+replayed or adopted. The complete receipt is retained privately. The repository
+validator separately refused a temporary top-level dependency symlink; that own
+link was unlinked without traversing its target. A real npm clean install under
+umask 022 supplies the final dependency tree.
