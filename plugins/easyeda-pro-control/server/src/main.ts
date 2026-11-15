@@ -2,7 +2,7 @@
 import { fileURLToPath } from "node:url";
 
 import { configureWindowsWslMachine, launchMachine, machineLaunchFailureCode, parseOfflineLauncherArguments } from "./machine-launch.ts";
-import { MachineProfileError } from "./machine-profile.ts";
+import { MachineProfileError } from "./machine-profile-diagnostics.ts";
 
 if (process.argv[2] === "--machine-launch") {
   try {

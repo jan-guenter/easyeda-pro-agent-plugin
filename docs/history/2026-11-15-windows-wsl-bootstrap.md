@@ -57,3 +57,33 @@ and byte recheck do not prove ACL custody or exclude another local writer; use a
 trusted private directory and one provisioner. A real Linux machine profile and
 reviewed matching package must already exist. Publication, installation and
 connected validation were not performed by this subtask.
+
+## Full entry and deferred profile follow-up
+
+The built complete server entry also ran on Windows Node24.10 in explicit
+configuration mode. Its first verification correctly refused source build
+files with private0600 modes. A six-runtime-file fixture materialized the same
+public bytes at package0644/0755 modes; the complete entry then verified WSL
+and published only a disposable Temp profile, exiting0. The original Windows
+child close was observed. This fixture grants no facade or native admission and
+is not an installation proof. The rejected and successful attempts remain
+separate private receipts. The bundle SHA256 was
+`d2cb7b9a4c025d77efd353f731bd5054411a525ae44498edb1282172e3c57953`.
+
+A subsequent source change extracts the existing shared error constructor and
+installation-code grammar into a small diagnostics module, preserving old
+exports. Windows selection now precedes Linux profile initialization. Malformed
+configuration returns the fixed Windows profile-invalid code. A real source
+entry test refuses any attempted Linux-profile/SQLite import and counts zero
+forbidden attempts; the existing Linux descriptor/profile launcher tests still
+exercise their original behavior. All27 focused checks, both TSprojects and
+seven-file strict lint passed. The relocated fixture imports the actual shared
+diagnostics module.
+
+Single-file ESM bundling can still hoist an external SQLite import. The observed
+full Windows bundle emitted Node24.10's SQLite experimental notice; this source
+change does not establish its absence in the rebuilt bundle. The source hook
+proves deferred module initialization, not complete bundled import isolation.
+The initial missing schema import and fixture relocation failures are retained
+in private logs. Generated bundles will be refreshed against the final public
+base before publication. No default Windows profile was modified.

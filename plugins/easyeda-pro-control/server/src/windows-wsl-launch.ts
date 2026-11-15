@@ -28,7 +28,8 @@ export class WindowsWslLaunchError extends Error {
 }
 /** Raw caller objects must not execute accessors while selecting an OS process. */
 export function parseWindowsWslLaunchProfile(input: unknown): WindowsWslLaunchProfile {
-  return Object.freeze(windowsWslLaunchProfileSchema.parse(captureCurrentPcbStringClockReply(input).value));
+  try { return Object.freeze(windowsWslLaunchProfileSchema.parse(captureCurrentPcbStringClockReply(input).value)); }
+  catch { throw new WindowsWslLaunchError("windows-wsl-profile-invalid"); }
 }
 export function windowsWslProfilePath(explicitPath?: string): string {
   const selected = explicitPath ?? process.env["EASYEDA_WINDOWS_WSL_PROFILE"] ??

@@ -9,7 +9,10 @@ import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { z } from "zod";
 
+import { MachineProfileError, machineInstallationFailureCodeSchema } from "./machine-profile-diagnostics.ts";
+import type { MachineInstallationFailureCode } from "./machine-profile-diagnostics.ts";
 import { openControlRootCapability } from "./control-root.ts";
+// oxlint-disable-next-line import/max-dependencies -- The profile retains its descriptor/process/control proofs plus the shared light diagnostics required by Windows startup.
 import { assertSelfSoftCoreLimitZero } from "./soft-core-limit.ts";
 
 // oxlint-disable-next-line typescript/strict-void-return -- Node execFile returns a child handle while promisify consumes its documented callback result.
@@ -54,30 +57,13 @@ export const machineProfileSchema = z.strictObject({
 });
 export type MachineProfile = z.infer<typeof machineProfileSchema>;
 
-export const machineInstallationFailureCodeSchema = z.enum([
-  "machine-installation-upstream-root-unavailable",
-  "machine-installation-upstream-package-unavailable",
-  "machine-installation-upstream-version-mismatch",
-  "machine-installation-upstream-entrypoint-unavailable",
-  "machine-installation-assets-root-unavailable",
-  "machine-installation-pcb-bundle-unavailable",
-  "machine-installation-api-implementation-unavailable",
-  "machine-installation-api-adapter-unavailable",
-  "machine-installation-api-declarations-unavailable",
-]);
-export type MachineInstallationFailureCode = z.infer<typeof machineInstallationFailureCodeSchema>;
+export { MachineProfileError, machineInstallationFailureCodeSchema } from "./machine-profile-diagnostics.ts";
+export type { MachineInstallationFailureCode } from "./machine-profile-diagnostics.ts";
 export type MachineInstallationReadiness =
   | { readonly ready: true }
   | { readonly ready: false; readonly code: MachineInstallationFailureCode };
 
-export class MachineProfileError extends Error {
-  public readonly code: string;
-  public constructor(code: string) {
-    super(code);
-    this.code = code;
-    this.name = "MachineProfileError";
-  }
-}
+
 
 export interface MachineProfileOptions {
   readonly pluginRoot: string;

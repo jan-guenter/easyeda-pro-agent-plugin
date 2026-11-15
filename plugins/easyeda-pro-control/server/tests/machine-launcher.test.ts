@@ -50,6 +50,7 @@ async function fixture(context: TestContext): Promise<LauncherFixture> {
   const launcherSource = await readFile(new URL("../../scripts/launch-machine.ts", import.meta.url), "utf8");
   const profileModuleUrl = new URL("../src/machine-profile.ts", import.meta.url).href;
   const launchModuleUrl = new URL("../src/machine-launch.ts", import.meta.url).href;
+  const diagnosticsModuleUrl = new URL("../src/machine-profile-diagnostics.ts", import.meta.url).href;
   // Only relocate internal imports; the wrapper and helper retain their exact current logic.
   await writeFile(launcher, launcherSource.replace(
     '"../server/src/machine-profile.ts"',
@@ -58,7 +59,8 @@ async function fixture(context: TestContext): Promise<LauncherFixture> {
   const main = join(pluginRoot, "server", "src", "main.ts");
   const mainSource = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
   await writeFile(main, mainSource.replace('"./machine-profile.ts"', JSON.stringify(profileModuleUrl))
-    .replace('"./machine-launch.ts"', JSON.stringify(launchModuleUrl)));
+    .replace('"./machine-launch.ts"', JSON.stringify(launchModuleUrl))
+    .replace('"./machine-profile-diagnostics.ts"', JSON.stringify(diagnosticsModuleUrl)));
   const indexMarker = join(root, "index-initialized");
   await writeFile(join(pluginRoot, "server", "src", "index.ts"), `
     import { writeFileSync } from "node:fs";

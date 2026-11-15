@@ -47,6 +47,7 @@ void test("WSL profile and packet selectors reject accessors, noncanonical paths
   assert.equal(parseWindowsWslConfigurationArguments(args).replace, false);
   assert.equal(parseWindowsWslConfigurationArguments([...args, "--replace"]).replace, true);
   assert.throws(() => parseWindowsWslConfigurationArguments([...args, "--replace", "--replace"]));
+  assert.throws(() => parseWindowsWslConfigurationArguments([]),/windows-wsl-profile-invalid/u);
 });
 void test("actual readonly WSL program verifies fixed bytes and refuses a changed package", async () => {
   const fixture = await packetFixture(), program = windowsWslRuntimeProgram();
@@ -101,4 +102,10 @@ process.stdin.pipe(process.stdout); process.stdin.once("end", () => { process.ex
   child.stdin.end(bytes);
   assert.deepEqual(await completion.promise, { code: 23, signal: null });
   assert.deepEqual(Buffer.concat(stdout), bytes); assert.equal(Buffer.concat(stderr).length, 0);
+});
+
+void test("standalone configuration refuses before importing Linux profile or SQLite modules",async()=>{
+ const entry=new URL("../src/main.ts",import.meta.url).href;
+ const script=`import {registerHooks} from 'node:module';let forbidden=0;registerHooks({resolve(specifier,context,next){if(specifier.endsWith('/machine-profile.ts')||specifier==='node:sqlite'){forbidden+=1;throw Error('Linux state imported before platform selection');}return next(specifier,context);}});process.argv=[process.execPath,${JSON.stringify(entry)},'--configure-wsl-launch','--distribution','synthetic','--node','/canonical/node','--plugin-root','/canonical/plugin','--machine-profile','/canonical/profile.json'];await import(${JSON.stringify(entry)});if(forbidden!==0)throw Error('Forbidden Linux import was attempted');if(process.exitCode!==1)throw Error('Unsupported platform was not refused');process.exitCode=0;process.stdout.write('standalone-refusal');`;
+ assert.equal(await runNode(["--input-type=module","--eval",script]),"standalone-refusal");
 });
