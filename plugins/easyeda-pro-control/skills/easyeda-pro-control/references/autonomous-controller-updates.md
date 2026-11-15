@@ -71,6 +71,19 @@ npm 11.16.0 and its reviewed dependencies installed. Its original command is
 Older packages without the standalone entry require that source path. A new
 file on disk cannot update an already-running frontend.
 
+The host's bundled `server/dist/server.mjs --machine-launch` also supports a
+Windows x64 transport with an explicitly configured `windows-wsl-launch.v1`
+profile. Configure it with `--configure-wsl-launch`, a distribution, canonical
+Linux Node24.18.0/package/machine-profile paths and a matching verified package;
+see [Windows launcher setup](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/installation.md#starting-the-bundled-launcher-on-windows).
+Provisioning is readonly WSL verification followed by recognized Windows profile
+publication. Startup compares only its six fixed runtime files and their Linux
+modes before handing off to the existing machine launcher. It introduces no
+facade/native admission shortcut, updater or arbitrary program field. Keep both
+selected packages frozen until their original cleanup completes. Windows EOF
+and termination handlers close only that original WSL stdin and observe its
+close; wrapper exit never proves native owner/Job/helper release.
+
 Keep stdin open. For a foreground PTY, use `stty -icanon -echo` before launch;
 canonical terminal input can truncate long JSON requests. The manager publishes
 its PID, generation, selected root, actual facade PID, tool catalog, offline

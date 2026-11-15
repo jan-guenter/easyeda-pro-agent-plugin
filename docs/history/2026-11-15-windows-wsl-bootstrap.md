@@ -1,0 +1,59 @@
+# Windows-to-WSL bootstrap validation
+
+Source base: `2f9652c763b41e9c4b2261d25b5766dfe013a3b8`. The source commit
+containing this record adds the Windows transport and standalone provisioner;
+generated bundles and release integration remain separate.
+
+The Windows x64 machine launcher uses a strict data-only WSL profile and direct
+system `wsl.exe` arguments. A fixed generated bootstrap verifies six matching
+runtime files, canonical Linux paths and exact Unix modes before the existing
+Linux machine launcher. Linux Node remains exactly24.18.0 and existing machine,
+package and runtime admission stays authoritative. Provisioning never starts a
+facade. Unknown profile data/accessors, extra programs and malformed selectors
+are refused. Input EOF and termination handlers close only original child stdin;
+they send no process signal and await the original WSL child's close.
+
+## Isolated results
+
+The minified production launcher module, built with the production identifier,
+syntax, whitespace and name settings, ran on Windows Node24.10.0 through actual
+`wsl.exe` and Linux Node24.18.0. Two disposable fixture roots contained identical
+six-file payloads. The fake Linux entrypoint checked fixed argv and exact Node,
+echoed131356 binary bytes (all256 byte values, NUL, Unicode and multiple pipe
+buffers), then exited23 on EOF. Output matched exactly; stderr was empty. The
+Windows harness retained its original child through close, the launcher awaited
+its original WSL child, and an independent original Linux pidfd observed exit.
+All fixture/watcher process close events were observed before returning.
+
+Actual Windows provisioning used only a disposable Temp profile. Creation,
+identical no-op, different-profile conflict, explicit recognized replacement and
+unrecognized-file refusal passed. Failure stdout was empty and stderr contained
+only fixed error JSON. A separate actual Windows provisioner case refused a
+Linux sanitizer with mode0644, reported `windows-wsl-verification-failed` with
+empty stdout, observed its original child close, and restored fixture mode0755.
+No actual facade, bridge, lease/native owner, application,
+Job, design or MCP connection was started by these fixtures.
+
+Four focused Linux regressions passed under Node24.18.0/npm11.16.0 with soft core
+limit0: strict/accessor selectors; actual byte/tamper verification; minified helper
+closure and Unix mode refusal; and fixed argv/binary stdin/EOF exit handoff.
+Both facade TypeScript projects and strict type-aware five-file lint passed with
+zero warnings. Full generated-package, CI, install, refresh and live admission
+are integration work, not claims of this source-only validation.
+
+The initial private fixture setup failed at Windows path conversion, before
+process launch. It created four new disposable files outside its intended Temp
+root; exact-file cleanup removed them. No existing user file was changed. The
+corrected harness validates its nonempty Temp-derived root before writing. Raw
+failure and passing results remain in private evidence outside the repository.
+
+## Limits
+
+The Windows transport's SIGTERM/SIGINT handlers are source-reviewed stdin-close
+paths; the retained actual interop case exercises EOF. No Windows OS signal,
+actual native owner cleanup or Codex connection refresh was claimed. The initial
+file observations are not continuous ownership proof. Atomic profile publication
+and byte recheck do not prove ACL custody or exclude another local writer; use a
+trusted private directory and one provisioner. A real Linux machine profile and
+reviewed matching package must already exist. Publication, installation and
+connected validation were not performed by this subtask.

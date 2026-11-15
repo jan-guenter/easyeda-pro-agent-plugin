@@ -259,6 +259,45 @@ The supported editing/runtime profile is Linux x86_64 under WSL controlling the 
 
 The checked-in [`.mcp.json`](../plugins/easyeda-pro-control/.mcp.json) runs `node server/dist/server.mjs --machine-launch` with an empty environment map. This bundled launcher needs no plugin `node_modules`; it loads the private machine profile, verifies its Node/install identities and starts the sole facade. `scripts/launch-machine.ts` remains a developer wrapper requiring the trusted checkout's pinned dependencies. Create a profile with `node scripts/configure-machine.ts --upstream-root /absolute/upstream --assets-root /mnt/drive/path/resources/app/assets` from that prepared checkout's plugin directory. Optional `--node`, `--control-dir`, `--pcb-version` and `--api-version` select explicit installation values. The default profile is `~/.easyeda-pro-control/machine-profile.json`; `EASYEDA_MACHINE_PROFILE` selects another existing private profile. Configuration finds paths and versions, not compatibility admission. A different tuple still needs deliberate review.
 
+### Starting the bundled launcher on Windows
+
+The same `--machine-launch` entry selects a separate Windows-to-WSL launcher
+profile on Windows x64. Configure the Linux machine profile first, and retain a
+verified Linux package with the same six runtime files as the Windows package:
+facade, supervisor, descriptor sanitizer, session manager, compatibility manifest
+and plugin manifest. The Linux files must have their packaged `0644` modes,
+except the sanitizer's `0755`; canonical paths and exact bytes are checked before
+the Linux entrypoint runs. Keep that selected package unchanged through cleanup.
+
+From the verified Windows plugin directory, provision its launcher with Windows
+Node (the transport has been exercised with Node24.10.0):
+
+```powershell
+node server/dist/server.mjs --configure-wsl-launch --distribution archlinux --node /absolute/linux/node --plugin-root /absolute/linux/plugin --machine-profile /absolute/linux/machine-profile.json
+```
+
+All three paths are canonical Linux paths. The Linux executable must be the
+machine profile's exact Node24.18.0. Provisioning runs only fixed readonly file
+verification in the named WSL distribution; it starts no facade or native owner.
+It creates `%USERPROFILE%\.easyeda-pro-control\windows-wsl-profile.json`.
+`EASYEDA_WINDOWS_WSL_PROFILE` selects another absolute Windows profile path.
+An identical configuration is a no-op. A different recognized launcher profile
+requires `--replace`; an unrecognized existing file is refused. Publication uses
+a sibling temporary file and atomic link/rename after rechecking existing bytes.
+This does not establish Windows ACL custody or exclude an unrelated concurrent
+local writer. Run only one provisioner against a trusted private directory.
+
+The Windows launcher uses direct arguments to the system `wsl.exe`, forwards
+binary stdin and inherits stdout/stderr. Input EOF or its termination handler
+closes only the original WSL child's stdin, then observes that child's close.
+It sends no process signal. A wrapper exit supplies no native application,
+Windows Job or helper-release proof; complete those original Linux lifecycles
+before ending the connection. Byte checks are initial observations; the Linux
+machine/runtime admission remains authoritative. This launcher neither refreshes
+an existing Codex connection nor upgrades either package. After a package update,
+review the selected Linux package and replace the launcher profile if its path
+changed, using the supported retirement and replacement workflow.
+
 The external upstream checkout must already contain its reviewed built `dist/index.js` and dependency tree. Configuration does not fetch, install or rebuild it. The same version label is insufficient: the runtime checks the pinned module graph and executable identities.
 
 Missing or invalid external installation files now select a restricted

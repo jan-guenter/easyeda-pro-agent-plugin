@@ -1265,3 +1265,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Startup config interleaving with the original stock script](2026-11-09-stock-startup-config-interleave.md), source-separated cookie cleanup, original-only read ownership and ordinary-budget resume while retaining the unchanged stock cursor and return proof.
 
 - [Native PR #212 boundary corrections](2026-11-15-native-pr212-review-boundaries.md), exact bind fields, UUID admission parity, PowerShell null roles, helper obligations, immutable serialization expectations and original Inspector failure settlement. Source/Inspector/PS5 checks only.
+
+- [Windows-to-WSL bootstrap](2026-11-15-windows-wsl-bootstrap.md) — 2026-11-15; strict transport/provisioning and disposable binary EOF interop.
