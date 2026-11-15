@@ -178,3 +178,57 @@ void test("unsupported marked base-constructor layouts refuse before any initial
  const body="public class Parent{protected Parent(){State=7;}protected int State;public int Closed(){return 99;}}public sealed class Owner:Parent{public Owner(){}public int Keep(){return State;}public int Closed(){return 99;}}";
  assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC MarkedBase\n${body}\n// END NATIVE ONLY CLOSED PUBLIC MarkedBase\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
 });
+
+void test("closed public this constructors retain their unambiguous original target and its dependencies",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+ const body="public sealed class Owner{public static int Seen;public Owner():this(1){}Owner(int input){Seen=Init(input);}static int Init(int input){return input+6;}public static int Keep(){return 7;}public static int Closed(){return 99;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ClosedThis\n${body}\n// END NATIVE ONLY CLOSED PUBLIC ClosedThis\n`);
+ for(const text of["Owner(int input){Seen=Init(input);}","static int Init(int input){return input+6;}"]){assert.ok(result.source.includes(text),text);}
+ assert.ok(result.source.includes('public Owner():this(1){throw new System.InvalidOperationException("native-only-public-route-closed");}'));
+ assert.deepEqual(result.closedPublicMethods,["Owner.Owner","Owner.Closed"]);
+ const overloaded=body.replace("Owner(int input){","Owner(string input){}Owner(int input){");
+ assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC AmbiguousThis\n${overloaded}\n// END NATIVE ONLY CLOSED PUBLIC AmbiguousThis\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
+});
+void test("reflection names follow C# ordinary and verbatim string values and original metadata identities",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+ const template='public static class Owner{static int @secret=7;public static int Keep(){return(int)typeof(Owner).GetField(NAME,System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).GetValue(null);}public static int Closed(){return secret;}}';
+ for(const name of['@"secret"',String.raw`"se\u0063ret"`,String.raw`"se\U00000063ret"`,String.raw`"se\x63ret"`]){
+  assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ReflectionNames\n${template.replace("NAME",name)}\n// END NATIVE ONLY CLOSED PUBLIC ReflectionNames\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u,name);
+ }
+ // A verbatim backslash is literal; \x consumes up to four hexadecimal digits.
+ for(const name of[String.raw`@"se\u0063ret"`,String.raw`"\x73ecret"`]){
+  assert.doesNotThrow(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC DifferentReflectionName\n${template.replace("NAME",name)}\n// END NATIVE ONLY CLOSED PUBLIC DifferentReflectionName\n`),name);
+ }
+});
+void test("member enumeration and unproved dynamic or compound reflection names refuse before pruning",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+ const template="public static class Owner{public static int secret=7;public static int Keep(){EXPR}public static int Closed(){return 99;}}";
+ const expressions=[
+  "return typeof(Owner).GetFields().Length;","return typeof(Owner).GetMethods().Length;",
+  "return typeof(Owner).GetProperties().Length;","return typeof(Owner).GetMembers().Length;",
+  "return typeof(Owner).GetConstructors().Length;",
+  'string name="secret";return typeof(Owner).GetField(name).Name.Length;',
+  'return typeof(Owner).GetField("se"+"cret").Name.Length;',
+  "System.Func<string,System.Reflection.FieldInfo> lookup=typeof(Owner).GetField;return lookup(Unknown()).Name.Length;",
+ ];
+ for(const expression of expressions){assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC UnprovedReflection\n${template.replace("EXPR",expression)}\n// END NATIVE ONLY CLOSED PUBLIC UnprovedReflection\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u,expression);}
+});
+void test("escaped identifier spelling joins fields methods owners and typed receiver identities without rewriting bytes",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.Keep(new @Owner());}}\n";
+ const body="public sealed class @Owner{int @value=7;public static int @Keep(Owner @other){return other.Read()+@other.@value;}int @Read(){return value;}public int Closed(){return 99;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC IdentifierIdentity\n${body}\n// END NATIVE ONLY CLOSED PUBLIC IdentifierIdentity\n`);
+ for(const text of["class @Owner","int @value=7;","int @Read(){return value;}","public static int @Keep(Owner @other){return other.Read()+@other.@value;}"]){assert.ok(result.source.includes(text),text);}
+ assert.deepEqual(result.closedPublicMethods,["Owner.Closed"]);
+ const keywordBody="public static class Owner{static int seed=@default();static int state;static Owner(){}static int @default(){state=7;return 3;}public static int Keep(){return state;}public static int Closed(){return 99;}}";
+ const keyword=project(`${entry.replace("Owner.Keep(new @Owner())","Owner.Keep()")}// BEGIN NATIVE ONLY CLOSED PUBLIC VerbatimKeyword\n${keywordBody}\n// END NATIVE ONLY CLOSED PUBLIC VerbatimKeyword\n`);
+ assert.ok(keyword.source.includes("static int seed=@default();"));assert.ok(keyword.source.includes("static int @default(){state=7;return 3;}"));
+});
+void test("unresolved inherited instance dispatch refuses including unmarked bases and partial inheritance declarations",()=>{
+ const base="public class Base{public int Run(){return Read();}protected virtual int Read(){return 1;}}public static class Entry{public static int Run(){return new Derived().Run()+Derived.Keep();}}\n";
+ const body="public sealed class Derived:Base{protected override int Read(){return 7;}public static int Keep(){return 1;}public int Closed(){return 99;}}";
+ assert.throws(()=>project(`${base}// BEGIN NATIVE ONLY CLOSED PUBLIC InheritedDispatch\n${body}\n// END NATIVE ONLY CLOSED PUBLIC InheritedDispatch\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
+ const explicit="public interface I{int Read();}public static class Entry{public static int Run(){I reader=new Derived();return reader.Read();}}\n";
+ assert.throws(()=>project(`${explicit}// BEGIN NATIVE ONLY CLOSED PUBLIC InterfaceDispatch\npublic sealed class Derived:I{public int Read(){return 7;}public static int Keep(){return 1;}}\n// END NATIVE ONLY CLOSED PUBLIC InterfaceDispatch\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
+ const partial="public class Base{public int Run(){return Read();}protected virtual int Read(){return 1;}}public sealed partial class Derived:Base{}public static class Entry{public static int Run(){return new Derived().Run()+Derived.Keep();}}\n";
+ assert.throws(()=>project(`${partial}// BEGIN NATIVE ONLY CLOSED PUBLIC PartialDispatch\n${body.replace("public sealed class Derived:Base","public sealed partial class Derived")}\n// END NATIVE ONLY CLOSED PUBLIC PartialDispatch\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
+});
