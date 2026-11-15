@@ -72,3 +72,46 @@ Both TypeScript projects and strict lint on all thirteen source/test inputs
 passed. Nine focused tests passed without skips, along with repository,
 MCP-contract and all-skill validators. Generated native graphs and bundles were
 not changed in this source-only review leaf.
+
+## 2026-11-15 follow-up: versioned release-recovery data joint
+
+The v1 budget, record parser, journal and no-replay semantics remain byte-exact.
+A failed or ambiguous v1 release stays unresolved; it cannot truthfully produce
+the existing released terminal fact. Three new data-only modules define v2
+budget, record and chain validation without publishing records or issuing any
+native retry.
+
+V2 reserves one additional release intent/result pair for each of the two
+generations: 43 normal plus 997 cleanup records, 1,040 total, 4 KiB per record,
+and a 13,377,536-byte manifest. This adds 16,384 artifact bytes and 51,200 manifest
+bytes, or 67,584 retained bytes, relative to v1. It adds no native request because
+its permitted recovery is limited to a positive original pre-native-work refusal.
+
+The second release requires a matching failed first release and explicit
+preDispatchProof facts with failedReleaseAttempt equal to 1, retained original
+owner/failure, originalReleaseNotDispatched and originalNativeActivityUnchanged
+all true, and a proof SHA-256. The identical projection repeated on attempt2's
+result still describes the failed first attempt. It does not claim attempt2
+was undispatched. Unknown acknowledgments, consumed dispatches, changed proof
+projections, missing original exit/observer joins and a third release refuse.
+
+The validator first checks the original complete v2 hash chain, raw record sizes
+and reservations. It applies the unchanged v1 stage/exit/join grammar to a pure
+in-memory validation projection that omits only the already-validated failed
+first pair when its recovery successor is encountered. Persisted records are
+never rewritten, replaced or replayed. A failed second attempt remains unresolved.
+
+Required integration joint: only the actual full owner's private registry may
+issue and consume the opaque positive pre-dispatch proof for the same owner,
+generation, failed first attempt and unchanged native-activity epoch. The live
+coordinator must retain that exact token through v2 retry intent publication,
+reprove it before dispatch and consume it once. Schema-valid facts, equal hashes,
+historical v1 records, old v2 execution-owner receipts and caller JSON cannot
+supply it. Selecting/publishing a current v2 journal and binding that original
+proof remain separate live-owner integration work; these modules alone admit
+no retry or complete workflow.
+
+The v2 data leaf passed five focused tests without skips, both TypeScript
+projects, strict lint on its four source/test inputs, and the repository,
+MCP-contract and all-skill validators. The v1 budget/contract/journal diff against
+12997080e3a223f0560edc924d78bb6d2d6f9cb9 is empty.

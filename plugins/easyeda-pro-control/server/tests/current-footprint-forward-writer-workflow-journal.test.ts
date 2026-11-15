@@ -8,6 +8,10 @@ import { CURRENT_FOOTPRINT_FORWARD_WRITER_WORKFLOW_STAGES as STAGES, currentFoot
 import type { CurrentFootprintForwardWriterWorkflowRecord as Entry, CurrentFootprintForwardWriterWorkflowPhase as Phase } from "../src/current-footprint-forward-writer-workflow-contract.ts";
 import { CurrentFootprintForwardWriterWorkflowJournal, assertCurrentFootprintForwardWriterWorkflowChain, assertNoUnresolvedCurrentFootprintForwardWriterWorkflows, readCurrentFootprintForwardWriterWorkflowHistory, scanCurrentFootprintForwardWriterWorkflowSummaries } from "../src/current-footprint-forward-writer-workflow-journal.ts";
 
+import { CURRENT_FOOTPRINT_FORWARD_WRITER_WORKFLOW_V2_BUDGET as V2_BUDGET,currentFootprintForwardWriterWorkflowV2RecordSchema } from "../src/current-footprint-forward-writer-workflow-v2-contract.ts";
+import type { CurrentFootprintForwardWriterWorkflowV2Record as V2Entry } from "../src/current-footprint-forward-writer-workflow-v2-contract.ts";
+import { assertCurrentFootprintForwardWriterWorkflowV2Chain } from "../src/current-footprint-forward-writer-workflow-v2-chain.ts";
+
 function request(suffix = "chain"):ReturnType<typeof currentFootprintForwardWriterWorkflowRequestSchema.parse>{
  return currentFootprintForwardWriterWorkflowRequestSchema.parse({operationId:`footprint-forward-flow-${suffix}`,parentOperationId:`footprint-forward-writer-${suffix}`,confirmDisposableCopy:true,acceptUnsupportedInverse:true});
 }
@@ -52,4 +56,49 @@ void test("managed workflow publication blocks until original terminal facts and
  await journal.append("terminal-failure",{originalOwnersClosed:true,originalPendingJoined:true,released:true});await journal.waitForCurrentPublication();await journal.settle();await assertNoUnresolvedCurrentFootprintForwardWriterWorkflows();
  const history=await readCurrentFootprintForwardWriterWorkflowHistory(selected.operationId);assert.equal(history.operation["state"],"completed");assert.equal(journal.retained().publicationPending,false);await assert.rejects(journal.reserve(),/RESERVATION_CONSUMED/u);
  const artifact=history.operation.artifacts?.[0];assert.ok(artifact);await writeFile(artifact.path,"corrupt isolated test artifact");await assert.rejects(journal.assertCurrent());
+});
+
+// These projections are synthetic history data, never live native receipts.
+const preDispatchProof=Object.freeze({schema:"easyeda-pro-control.footprint-forward-release-preflight-facts.v1",failedReleaseAttempt:1,
+ originalOwnerRetained:true,originalFailureRetained:true,originalReleaseNotDispatched:true,originalNativeActivityUnchanged:true,proofSha256:"d".repeat(64)});
+function appendV2(records:V2Entry[],kind:Phase,evidence:Readonly<Record<string,unknown>>):void{
+ const previous=records.at(-1);
+ const entry=currentFootprintForwardWriterWorkflowV2RecordSchema.parse({schema:"easyeda-pro-control.footprint-forward-flow-record.v2",operationId:request().operationId,sequence:records.length,
+  previousSha256:records.length===0?null:sha256Json(previous),kind,evidence,executionAuthorized:false,saveAuthorized:false});records.push(entry);
+}
+function recoveryBase(joined=true):Entry[]{
+ const records:Entry[]=[];append(records,"operation-intent",{request:request()});append(records,"stage-intent",{stage:"opening"});append(records,"failure",{stage:"opening",originalErrorRetained:true});
+ cleanup(records,"writer","abort","dispatched");if(joined){cleanup(records,"writer","termination","terminated");cleanup(records,"writer","observers","released");}
+ cleanup(records,"writer","release","failed");cleanup(records,"saved","no-allocation","no-resource");return records;
+}
+function toV2(records:readonly Entry[]):V2Entry[]{const converted:V2Entry[]=[];for(const record of records){appendV2(converted,record.kind,record.evidence);}return converted;}
+void test("v2 recovery preserves v1 failure quarantine and requires failed-first-release proof projection",()=>{
+ const original=recoveryBase();assertCurrentFootprintForwardWriterWorkflowChain(original);
+ const terminal=structuredClone(original);append(terminal,"terminal-failure",{originalOwnersClosed:true,originalPendingJoined:true,released:true});
+ assert.throws(()=>{ assertCurrentFootprintForwardWriterWorkflowChain(terminal); },/TERMINAL_FAILURE_PREDECESSOR/u);
+ const oldRetry={...original[0],kind:"cleanup-intent",evidence:{generation:"writer",action:"release",attempt:2}};
+ assert.throws(()=>currentFootprintForwardWriterWorkflowRecordSchema.parse(oldRetry));
+ const records=toV2(original);
+ const evidence={generation:"writer",action:"release",attempt:2,preDispatchProof};
+ appendV2(records,"cleanup-intent",evidence);appendV2(records,"cleanup-result",{...evidence,outcome:"released",evidenceSha256:"a".repeat(64)});
+ appendV2(records,"terminal-failure",{originalOwnersClosed:true,originalPendingJoined:true,released:true});
+ assertCurrentFootprintForwardWriterWorkflowV2Chain(records);
+ assert.equal(V2_BUDGET.records,1040);assert.equal(V2_BUDGET.cleanupRecords,997);assert.equal(V2_BUDGET.manifestBytes,13_377_536);
+ assert.throws(()=>currentFootprintForwardWriterWorkflowRecordSchema.parse(records[0]));
+ for(const proof of [{...preDispatchProof,failedReleaseAttempt:2},{...preDispatchProof,originalReleaseNotDispatched:false}]){
+  assert.throws(()=>currentFootprintForwardWriterWorkflowV2RecordSchema.parse({...records.at(-3),evidence:{...evidence,preDispatchProof:proof}}));
+ }
+});
+void test("v2 recovery cannot erase invalid initial joins, pending acknowledgments, raw hash drift or substituted retry proof",()=>{
+ const invalid=toV2(recoveryBase(false));const evidence={generation:"writer",action:"release",attempt:2,preDispatchProof};
+ appendV2(invalid,"cleanup-intent",evidence);assert.throws(()=>{ assertCurrentFootprintForwardWriterWorkflowV2Chain(invalid); },/RELEASE_JOIN_REQUIRED/u);
+ const pending=toV2(recoveryBase().slice(0,-3));appendV2(pending,"cleanup-intent",evidence);
+ assert.throws(()=>{ assertCurrentFootprintForwardWriterWorkflowV2Chain(pending); },/CLEANUP_PREDECESSOR/u);
+ const different=toV2(recoveryBase());appendV2(different,"cleanup-intent",evidence);
+ appendV2(different,"cleanup-result",{...evidence,preDispatchProof:{...preDispatchProof,proofSha256:"e".repeat(64)},outcome:"released",evidenceSha256:"a".repeat(64)});
+ assert.throws(()=>{ assertCurrentFootprintForwardWriterWorkflowV2Chain(different); },/ORIGINAL_RELEASE_PROOF_PROJECTION/u);
+ const changed=toV2(recoveryBase());const first=changed[0];assert.ok(first);changed[0]={...first,previousSha256:"f".repeat(64)};
+ assert.throws(()=>{ assertCurrentFootprintForwardWriterWorkflowV2Chain(changed); },/ORIGINAL_CHAIN/u);
+ assert.throws(()=>currentFootprintForwardWriterWorkflowV2RecordSchema.parse({...changed[0],kind:"cleanup-intent",evidence:{...evidence,attempt:3}}));
+ assertCurrentFootprintForwardWriterWorkflowV2Chain(toV2(successful()));
 });
