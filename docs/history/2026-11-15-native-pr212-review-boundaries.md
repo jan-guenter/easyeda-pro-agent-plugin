@@ -98,3 +98,28 @@ Earlier compiler/codec results remain evidence for their exact earlier source.
 The changed production projector requires regeneration and revalidation before
 a new native helper can be sealed or admitted. The DEL continuation remains
 separate and unfinished.
+
+### Projection-created uninitialized-field diagnostics
+
+Preserving the original uninitialized declarations exposed CS0649 after their
+original writer methods were pruned. The closed projector now emits an uncalled
+private instance or static diagnostic sink only for retained non-readonly,
+non-const, originally uninitialized cells with a lexically resolved pruned
+writer and no retained/root writer. It does not change declarations, initializer
+order, retained executable bodies, closed public methods, lexer forms, compiler
+options, warning policy or byte bounds. Both fixed sink names refuse a source
+collision before analysis. Local shadows and unrelated receivers cannot supply
+the direct assignment evidence. No original writer route is reopened.
+
+The 12 focused projection cases pass without skips; affected strict lint and both
+TypeScript projects pass. Actual Windows PowerShell 5/.NET Framework C#5 at
+warning level 4 with warnings as errors compiled and ran four original/projected
+pairs with zero diagnostics: static constructor 7, initializer order 12, combined
+instance/static default 0, and typed receiver default 0. A separate CS0219 fixture
+still fails the same compiler policy. The actual private continuation compiler
+input is 2,152,731 bytes, SHA-256
+`72c0d1b39b3986307f9c8381c6acbdf78301d4e50b26f67f925a2f0f2a0a6c8b`;
+its 18 affected fields occupy six private instance sinks. It compiled with zero
+diagnostics and all six static codebooks (555 packets) passed. These inert
+compiler/codec results allocate no native owner, Job or application and grant no
+DEL, persistence or saved-absence authority.

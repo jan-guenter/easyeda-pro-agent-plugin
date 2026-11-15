@@ -79,3 +79,41 @@ void test("native-only static field access retains its constructor and transitiv
  for(const text of["static Owner(){State=Initialize();}","static int Initialize(){return 7;}","public static int State;"]){assert.ok(result.source.includes(text),text);}
  assert.deepEqual(result.closedPublicMethods,["Owner.Closed"]);assert.equal(result.retainedMethods,2);
 });
+
+
+void test("native-only zero-initialization diagnostics use uncalled private sinks after original writer removal",()=>{
+ const entry="public sealed partial class Owner{public int Native(){return Read();}}\n";
+ const body="public sealed partial class Owner{int value,unused;static int staticValue;readonly int untouched=0;const int Constant=2;int Read(){return value+staticValue+untouched+Constant-2;}public void Closed(){value=7;staticValue=9;unused=3;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC DefaultWriters\n${body}\n// END NATIVE ONLY CLOSED PUBLIC DefaultWriters\n`);
+ assert.ok(result.source.includes("int value;"));assert.ok(result.source.includes("static int staticValue;"));
+ assert.ok(result.source.includes("private void NativeOnlyUninitializedInstanceSink(){value=default(int);}"));
+ assert.ok(result.source.includes("private static void NativeOnlyUninitializedStaticSink(){staticValue=default(int);}"));
+ assert.ok(result.source.includes('public void Closed(){throw new System.InvalidOperationException("native-only-public-route-closed");}'));
+ assert.equal(result.source.includes("unused"),false);assert.ok(result.source.includes("readonly int untouched=0;"));
+ assert.equal(result.source.split("NativeOnlyUninitializedInstanceSink").length,2);assert.equal(result.source.split("NativeOnlyUninitializedStaticSink").length,2);
+ assert.ok(result.source.indexOf("int value;")<result.source.indexOf("static int staticValue;"));
+ for(const collision of["NativeOnlyUninitializedInstanceSink","NativeOnlyUninitializedStaticSink"]){
+  assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC DefaultCollision\n${body.replace("public void Closed()",`private void ${collision}(){value=3;}public void Closed()`)}\n// END NATIVE ONLY CLOSED PUBLIC DefaultCollision\n`));
+ }
+});
+void test("native-only diagnostic sinks resolve typed original receivers and never retain a writer route",()=>{
+ const entry="public sealed partial class Owner{public int Native(){return new State().Read();}}\n";
+ const body="public sealed partial class Owner{public void Closed(State state){state.Value=7;}}public sealed class State{internal int Value;public int Read(){return Value;}public int AlsoClosed(){return 4;}}";
+ const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC TypedWriter\n${body}\n// END NATIVE ONLY CLOSED PUBLIC TypedWriter\n`);
+ assert.ok(result.source.includes("private void NativeOnlyUninitializedInstanceSink(){Value=default(int);}"));
+ assert.ok(result.source.includes('public void Closed(State state){throw new System.InvalidOperationException("native-only-public-route-closed");}'));
+ assert.deepEqual(result.closedPublicMethods,["Owner.Closed","State.AlsoClosed"]);
+ const shadowed="public sealed partial class Owner{State state;public void Closed(){Other state=new Other();state.Value=7;}}public sealed class State{internal int Value;public int Read(){return Value;}}public sealed class Other{internal int Value=1;}";
+ const refused=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC TypedShadow\n${shadowed}\n// END NATIVE ONLY CLOSED PUBLIC TypedShadow\n`);
+ assert.equal(refused.source.includes("NativeOnlyUninitializedInstanceSink"),false);
+});
+
+void test("native-only diagnostic sinks omit locally shadowed writes and cells with retained writers",()=>{
+ const entry="public sealed partial class Owner{public int Native(){return Read();}}\n";
+ for(const writer of["public void Closed(){int value=7;System.Console.Write(value);}","public void Closed(){value=7;}"]){
+  const retained=writer.includes("int value")?"int Read(){return value;}":"int Read(){value=3;return value;}";
+  const body=`public sealed partial class Owner{int value;${retained}${writer}}`;
+  const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC NotDefaultWriter\n${body}\n// END NATIVE ONLY CLOSED PUBLIC NotDefaultWriter\n`);
+  assert.equal(result.source.includes("NativeOnlyUninitializedInstanceSink"),false);
+ }
+});
