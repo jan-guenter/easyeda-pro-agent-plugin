@@ -232,10 +232,10 @@ export function projectCurrentFootprintInverseNativeOnly(input: string): Current
       if(markedOwners.has(identifier(owner.text))&&declarations.slice(i+2,open).some(row=>row.text===":")){inheritedOwners.add(identifier(owner.text));}
     }
   }
-  for(const method of allMethods){
-    need(!method.signature.some(token=>["override","virtual","abstract"].includes(token.text)));
-    if(method.name!==method.owner&&!method.static){need(!inheritedOwners.has(method.owner));}
-  }
+  // Static inherited calls also need base-name resolution. This generated
+  // Grammar supports no marked inheritance, including unmarked partial headers.
+  need(inheritedOwners.size===0);
+  for(const method of allMethods){need(!method.signature.some(token=>["override","virtual","abstract"].includes(token.text)));}
   const roots=uses(input,marked);const graph = new Map(roots); const signatures = new Map<string, readonly Token[]>();
   /* A closed public method keeps its declaration. Signature-only references
    * retain fields, never method bodies: the method/parameter declaration names
@@ -283,6 +283,14 @@ export function projectCurrentFootprintInverseNativeOnly(input: string): Current
   // Newly retained method bodies, constructor bodies and initializer cells
   // Must pass the same reflective-dependency refusal as the initial roots.
   refuseReflection(graph,names);
+  // Type metadata can observe omitted layout or activate a closed constructor
+  // Without calling any named reflection member. Its marked target refuses.
+  const typeOwners=new Set(classes.map(row=>row.owner));
+  for(const rows of [...graph.values(),...signatures.values()]){
+    for(let i=0;i<rows.length;i+=1){
+      if(rows[i]?.text==="typeof"){need(rows[i+1]?.text==="(");const end=closing(rows,i+1,"(",")");need(!rows.slice(i+2,end).some(token=>token.kind==="identifier"&&typeOwners.has(identifier(token.text))));i=end;}
+    }
+  }
   const edits: { start: number; end: number; value: string }[] = [...diagnosticSinks(allFields,allMethods,retained,kept,classes,roots)]; const closedPublicMethods: string[] = []; let omittedFields = 0, omittedPrivateMethods = 0;
   for (const method of allMethods) { if (!retained.has(method)) { if (method.public) { edits.push({ start: method.bodyStart, end: method.bodyEnd, value: closed }); closedPublicMethods.push(`${method.owner  }.${  method.name}`); } else { edits.push({ start: method.start, end: method.end, value: "" }); omittedPrivateMethods += 1; } } }
   for(const field of allFields){

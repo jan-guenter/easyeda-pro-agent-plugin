@@ -124,3 +124,50 @@ refusal remains evidence for its exact earlier source; it is not a compiler
 admission for this correction. Historical bounds, runtime owner/command guards
 and public result schemas are unchanged. No native owner, Job or application
 is allocated, and no DEL, persistence or cold-readback lifecycle is granted.
+
+## Static inheritance, type metadata and serialization control review on 7ba18f3c
+
+This separate correction starts at public
+`7ba18f3ce37b9354fe6cebd94ce59cd1ea321c7a`. Marked inheritance now
+refuses for static members too: an unqualified inherited static call cannot
+silently lose its base body. This deliberately narrows the closed grammar to
+no marked inheritance, including inheritance written on an unmarked partial
+declaration. The earlier concrete-base constructor fixture now correctly
+refuses; its historical compilation claim applies to its preceding source.
+
+A retained `typeof(markedType)` also refuses, including escaped names,
+nested type operands and constructor/signature dependencies. Type metadata can
+observe omitted field layout or activate a closed constructor without calling
+a named reflection API. An ordinary external `typeof(int)` remains valid.
+The escaped reflection-literal checks now use that external type so they still
+exercise decoding independently of this new refusal. The previously retained
+private readable graph has zero marked-type operands and only unmarked interface
+implementations; no exception or bound change is introduced here.
+
+The native serialization PowerShell dispatcher preserves the original role
+only for `held` and `resumed` controls, exactly as the unchanged C# ledger
+requires. Other control phases continue to reject a role. The execution cleanup
+regression independently counts both forbidden written checks and polls and
+requires zero after exit, rather than accepting any rejection as sufficient.
+
+All 37 focused cases pass without skips; both TypeScript projects and strict
+lint on the five changed source/test files pass. Actual Windows PowerShell 5
+and warning-level-4, warnings-as-errors C#5 compilation reports zero diagnostics.
+Inert original inherited-static and Marshal layout examples return 7 and 4;
+the corrected projector refuses both. The actual maintained PowerShell
+dispatcher and byte-exact C# control method accept fourteen controls (armed,
+six resumed, six held, complete) in an inert field-state fixture and refuse ten
+malformed controls, including missing, foreign, NullString, numeric and
+misplaced roles and a nonzero control request ID. This is a boundary fixture,
+not original native-owner or lifecycle proof. It allocates no facade, native
+owner, Job or application.
+
+The maintained boundary regression also executes the actual PowerShell
+dispatcher on Windows/WSL, with an explicit host-unavailable skip elsewhere;
+it forwards the two roles and refuses six malformed controls without an
+original owner. This host run has no skips.
+
+Repository/MCP static-contract, all-skill and all seven official quick skill
+checks pass. No generated helper, bundle, historical result schema, source
+pin or compiler/runtime bound changes. Integration regenerates and checks the
+exact combined candidate separately.

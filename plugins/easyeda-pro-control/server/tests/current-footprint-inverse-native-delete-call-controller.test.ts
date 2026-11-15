@@ -35,21 +35,21 @@ void test("a synthetic early invocation reply spoils the attempt before probes a
 void test("execution cleanup joins the original request installed by a still-pending submit after exit",async()=>{
  for(const rejects of[false,true]){
   const submitted=Promise.withResolvers<ExecutionInvocation>();const entered=Promise.withResolvers<null>();const request=Promise.withResolvers<unknown>();
-  let checks=0,closed=false,exited=false,requests=0,submits=0;
+  let checks=0,closed=false,exited=false,polls=0,requests=0,submits=0,writtenChecks=0;
   const controller=new ExecutionController({receipt:"original_ref",collateral:{tabProof:"original_tab",storageProof:"original_storage"},
    prepared:{roots:"r",context:"c",bus:"b",methods:"m",queue:"q",task:"t",members:"u",taskMethods:"v",prepared:"p",originalRpc:"rpc",callback:"callback",replyTopic:"reply",publicCallConsumed:false,applicationMethodInvoked:false,runtimeJobIssued:false,dispatchAuthorized:false},
    sessionId:"original_ui",contextId:1,uiScriptId:"ui",preparedScriptId:"prepared",
    current:():void=>{assert.ok(requests<=1);},beforeInvoke:():void=>{assert.equal(exited,false);},
    assertOriginalEvent:():never=>{throw new Error("no synthetic event accepted");},assertOriginalExit:():void=>{checks+=1;assert.equal(exited,true);},
-   poll:():never=>{throw new Error("exit cleanup polled the renderer");},send:():Promise<unknown>=>{requests+=1;return Promise.resolve({breakpointId:"original_point"});},
+   poll:():never=>{polls+=1;throw new Error("exit cleanup polled the renderer");},send:():Promise<unknown>=>{requests+=1;return Promise.resolve({breakpointId:"original_point"});},
    submit:():Promise<ExecutionInvocation>=>{submits+=1;entered.resolve(null);return submitted.promise;}
   });
   const pending=controller.start();const refused=assert.rejects(pending);
   await entered.promise;exited=true;
   const cleanup=controller.settleAfterOriginalExit();const joining=(async():Promise<void>=>{await cleanup;closed=true;})();
-  submitted.resolve({request:request.promise,written:Promise.resolve(),assertOriginalWritten:():never=>{throw new Error("exit resumed the invocation");}});
+  submitted.resolve({request:request.promise,written:Promise.resolve(),assertOriginalWritten:():never=>{writtenChecks+=1;throw new Error("exit resumed the invocation");}});
   await refused;await yieldQueue();assert.equal(closed,false);
   if(rejects){request.reject(new Error("original late request failed"));}else{request.resolve({result:{type:"undefined"}});}
-  await cleanup;await joining;assert.equal(closed,true);assert.equal(checks,2);assert.equal(requests,1);assert.equal(submits,1);assert.equal(controller.start(),pending);
+  await cleanup;await joining;assert.equal(closed,true);assert.equal(checks,2);assert.equal(requests,1);assert.equal(submits,1);assert.equal(writtenChecks,0);assert.equal(polls,0);assert.equal(controller.start(),pending);
  }
 });

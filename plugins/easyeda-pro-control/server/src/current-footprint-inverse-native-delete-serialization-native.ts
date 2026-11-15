@@ -52,7 +52,7 @@ export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_DISPATCH=Stri
  $base=@('action','id','helperInstance','jobId','rootPid','rootCreated','requestId','phase','method');foreach($n in $base){if(@($request.PSObject.Properties.Name) -cnotcontains $n){throw 'inverse-native-delete-serialization-field'}}
  if($request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])){throw 'inverse-native-delete-serialization-type'}
  $fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal);$role=$null;foreach($p in $request.PSObject.Properties){if($p.Name -ceq 'role'){$role=$p.Value;if($role -isnot [string]){throw 'inverse-native-delete-serialization-role'}}elseif($base -cnotcontains $p.Name){$fields.Add($p.Name,$p.Value)}}
- if($request.method -ceq 'control'){if($request.requestId -ne 0 -or $null -ne $role){throw 'inverse-native-delete-serialization-control'};$owner.ControlNativeDeleteTombstone($request.phase,$fields)}else{$owner.SendNativeDeleteTombstone([int]$request.requestId,$request.phase,$role,$request.method,$fields)}
+ if($request.method -ceq 'control'){if($request.requestId -ne 0){throw 'inverse-native-delete-serialization-control'};if($request.phase -ceq 'resumed' -or $request.phase -ceq 'held'){if($null -eq $role){throw 'inverse-native-delete-serialization-control'};$fields.Add('role',$role)}elseif($null -ne $role){throw 'inverse-native-delete-serialization-control'};$owner.ControlNativeDeleteTombstone($request.phase,$fields)}else{$owner.SendNativeDeleteTombstone([int]$request.requestId,$request.phase,$role,$request.method,$fields)}
  $result=@{written=$true}
         }
 `;

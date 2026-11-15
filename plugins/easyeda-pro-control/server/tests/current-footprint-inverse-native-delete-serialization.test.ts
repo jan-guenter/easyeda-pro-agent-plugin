@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- Actual source sites, byte restoration and mutable descriptor guards are the direct regression subjects. */
 /** Inert source/descriptor checks; no native owner or upload is allocated. */
 import assert from "node:assert/strict";
+import{access}from"node:fs/promises";
 import {CURRENT_PROJECT_SAVE_PRODUCER_GUARD_SITES as GUARDS} from "../src/current-project-save-producer-guard-source.ts";
 import {currentFootprintInverseNativeDeleteSerializationPause as paused} from "../src/current-footprint-inverse-native-delete-serialization-replies.ts";
 import {test} from "node:test";
@@ -16,7 +17,7 @@ import {gunzipSync} from "node:zlib";
 import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_INTRINSICS as INTRINSICS, CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_PROGRAMS as PROGRAMS} from "../src/current-footprint-inverse-native-delete-serialization-programs.ts";
 import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_BEGIN as BEGIN,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_SITES as SITES} from "../src/current-footprint-inverse-native-delete-serialization-profile.ts";
 import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_ORDER as ORDER,currentFootprintInverseNativeDeleteSerializationCases as cases,currentFootprintInverseNativeDeleteSerializationNativeFrame as frame,currentFootprintInverseNativeDeleteSerializationTemplate as template,validateCurrentFootprintInverseNativeDeleteSerializationCommand as validate,currentFootprintInverseNativeDeleteSerializationWire as wire} from "../src/current-footprint-inverse-native-delete-serialization-protocol.ts";
-import {currentFootprintInverseNativeDeleteSerializationNativeSource as native} from "../src/current-footprint-inverse-native-delete-serialization-native.ts";
+import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_DISPATCH as DISPATCH,currentFootprintInverseNativeDeleteSerializationNativeSource as native} from "../src/current-footprint-inverse-native-delete-serialization-native.ts";
 import {CURRENT_FOOTPRINT_INVERSE_DELETE_CALLEES as CALLEES,qualifyCurrentFootprintInverseDeleteBindingSource as qualify} from "../src/current-footprint-inverse-delete-binding-source.ts";
 import {CURRENT_FOOTPRINT_INVERSE_DELETE_ENCODER_CLASSES as CLASSES} from "../src/current-footprint-inverse-delete-encoder-source.ts";
 import {prepareCurrentFootprintDeletePlan as plan} from "../src/current-footprint-delete-plan.ts";
@@ -106,4 +107,39 @@ void test("serialization reuses the original producer upload point and keeps str
  const site=SITES.uploadEntry;const point="original_upload";const scriptId="original_script";const top={callFrameId:"original_frame",functionName:site.functionName,location:{scriptId,lineNumber:site.lineNumber,columnNumber:site.columnNumber},functionLocation:{scriptId,lineNumber:site.functionLine,columnNumber:site.functionColumn}};
  assert.equal(paused({method:"Debugger.paused",sessionId:"original_session",params:{reason:"other",hitBreakpoints:[point],callFrames:[top]}},"uploadEntry","original_session",scriptId,point).frame,"original_frame");
  assert.throws(()=>paused({method:"Debugger.paused",sessionId:"original_session",params:{reason:"other",hitBreakpoints:[point,"duplicate_upload"],callFrames:[top]}},"uploadEntry","original_session",scriptId,point));
+});
+
+
+void test("actual PowerShell serialization dispatch preserves held/resumed roles and refuses misplaced roles",async context=>{
+ const executable=process.platform==="win32"?"C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe":"/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
+ try{await access(executable);}catch{context.skip("Windows PowerShell 5 is unavailable for this inert dispatch fixture");return;}
+ const script=String.raw`$ErrorActionPreference='Stop'
+$FootprintInverseNativeLifecycle209=$true;$FootprintInverse209=$true;$launched=$true
+$script:seen=New-Object Collections.Generic.List[object]
+$owner=New-Object PSObject
+$owner|Add-Member ScriptMethod ControlNativeDeleteTombstone {param($phase,$fields)
+ $copy=[ordered]@{};foreach($key in $fields.Keys){$copy[$key]=$fields[$key]}
+ $script:seen.Add([ordered]@{phase=$phase;fields=$copy})
+}
+$dispatch=[ScriptBlock]::Create([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__DISPATCH__')))
+function Invoke-Dispatch($phase,$role,$includeRole){
+ $request=[pscustomobject][ordered]@{action='footprint-inverse-native-delete-serialization';id=1;helperInstance='inert';jobId='inert';rootPid=1;rootCreated='inert';requestId=0;phase=$phase;method='control'}
+ if($includeRole){$request|Add-Member NoteProperty role $role}
+ . $dispatch
+ if($result.written -ne $true){throw 'missing-write-receipt'}
+}
+Invoke-Dispatch 'resumed' 'begin' $true
+Invoke-Dispatch 'held' 'headReady' $true
+Invoke-Dispatch 'complete' $null $false
+$refused=0
+foreach($case in @(@('held',$null,$false),@('resumed',$null,$false),@('armed','begin',$true),@('complete','begin',$true),@('held',[NullString]::Value,$true),@('resumed',1,$true))){
+ $before=$seen.Count;$failed=$false
+ try{Invoke-Dispatch $case[0] $case[1] $case[2]}catch{$failed=$true}
+ if(-not $failed -or $seen.Count -ne $before){throw 'malformed-control-reached-owner'};$refused++
+}
+[ordered]@{seen=$seen.ToArray();refused=$refused;nativeOwnerIssued=$false;appLaunched=$false}|ConvertTo-Json -Depth 6 -Compress
+`.replace("__DISPATCH__",Buffer.from(`switch($request.action){\n${DISPATCH}\n}`).toString("base64"));
+ // oxlint-disable-next-line typescript/strict-void-return -- Promisify joins the original finite inert PowerShell process.
+ const execute=promisify(execFile);const result=await execute(executable,["-NoLogo","-NoProfile","-NonInteractive","-EncodedCommand",Buffer.from(script,"utf16le").toString("base64")],{windowsHide:true,maxBuffer:4096,timeout:20_000});
+ const value:unknown=JSON.parse(result.stdout.trim());assert.deepEqual(value,{seen:[{phase:"resumed",fields:{role:"begin"}},{phase:"held",fields:{role:"headReady"}},{phase:"complete",fields:{}}],refused:6,nativeOwnerIssued:false,appLaunched:false});
 });

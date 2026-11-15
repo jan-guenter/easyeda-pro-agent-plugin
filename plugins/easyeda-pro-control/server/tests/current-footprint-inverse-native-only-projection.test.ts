@@ -143,12 +143,10 @@ void test("inactive owner initializer methods remain closed and initializer refl
  assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC InitializerReflection\n${reflective}\n// END NATIVE ONLY CLOSED PUBLIC InitializerReflection\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
 });
 
-void test("closed public constructors keep executable base initializer arguments without reopening their bodies",()=>{
+void test("unresolved concrete base constructor targets refuse together with their marked inherited owner",()=>{
  const entry="public class Parent{public static int Seen;public Parent(int value){Seen=value;}}public static class Entry{public static int Run(){return Owner.Keep();}}\n";
  const body="public sealed class Owner:Parent{public Owner():base(Make()){}static int Make(){return 9;}public static int Keep(){return 1;}public static int Closed(){return 99;}}";
- const result=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ClosedConstructor\n${body}\n// END NATIVE ONLY CLOSED PUBLIC ClosedConstructor\n`);
- assert.ok(result.source.includes("static int Make(){return 9;}"));assert.ok(result.source.includes('public Owner():base(Make()){throw new System.InvalidOperationException("native-only-public-route-closed");}'));
- assert.deepEqual(result.closedPublicMethods,["Owner.Owner","Owner.Closed"]);
+ assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ClosedConstructor\n${body}\n// END NATIVE ONLY CLOSED PUBLIC ClosedConstructor\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
 });
 void test("private field reads through an original typed receiver remain in their own owner graph",()=>{
  const entry="public static class Entry{public static int Run(){return Owner.Read(new Owner());}}\n";
@@ -191,7 +189,7 @@ void test("closed public this constructors retain their unambiguous original tar
 });
 void test("reflection names follow C# ordinary and verbatim string values and original metadata identities",()=>{
  const entry="public static class Entry{public static int Run(){return Owner.Keep();}}\n";
- const template='public static class Owner{static int @secret=7;public static int Keep(){return(int)typeof(Owner).GetField(NAME,System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).GetValue(null);}public static int Closed(){return secret;}}';
+ const template='public static class Owner{static int @secret=7;public static int Keep(){return(int)typeof(int).GetField(NAME,System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).GetValue(null);}public static int Closed(){return secret;}}';
  for(const name of['@"secret"',String.raw`"se\u0063ret"`,String.raw`"se\U00000063ret"`,String.raw`"se\x63ret"`]){
   assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ReflectionNames\n${template.replace("NAME",name)}\n// END NATIVE ONLY CLOSED PUBLIC ReflectionNames\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u,name);
  }
@@ -231,4 +229,19 @@ void test("unresolved inherited instance dispatch refuses including unmarked bas
  assert.throws(()=>project(`${explicit}// BEGIN NATIVE ONLY CLOSED PUBLIC InterfaceDispatch\npublic sealed class Derived:I{public int Read(){return 7;}public static int Keep(){return 1;}}\n// END NATIVE ONLY CLOSED PUBLIC InterfaceDispatch\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
  const partial="public class Base{public int Run(){return Read();}protected virtual int Read(){return 1;}}public sealed partial class Derived:Base{}public static class Entry{public static int Run(){return new Derived().Run()+Derived.Keep();}}\n";
  assert.throws(()=>project(`${partial}// BEGIN NATIVE ONLY CLOSED PUBLIC PartialDispatch\n${body.replace("public sealed class Derived:Base","public sealed partial class Derived")}\n// END NATIVE ONLY CLOSED PUBLIC PartialDispatch\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
+});
+
+void test("unqualified inherited static calls refuse before a required base body can close",()=>{
+ const entry="public static class Entry{public static int Run(){return Derived.Keep();}}\n";
+ const body="public class Base{public static int Read(){return 7;}}public sealed class Derived:Base{public static int Keep(){return Read();}public static int Closed(){return 99;}}";
+ assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC InheritedStatic\n${body}\n// END NATIVE ONLY CLOSED PUBLIC InheritedStatic\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
+});
+void test("marked typeof layout metadata and implicit activation refuse without a reflection-name blacklist",()=>{
+ const entry="public static class Entry{public static int Run(){return Owner.Keep();}}\n";
+ const body="[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]public sealed class Owner{public int ignored=7;public static int Keep(){return System.Runtime.InteropServices.Marshal.SizeOf(typeof(Owner));}public static int Closed(){return 99;}}";
+ assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC TypeLayout\n${body}\n// END NATIVE ONLY CLOSED PUBLIC TypeLayout\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
+ const activation='public sealed class Owner{public Owner(){throw new System.Exception("original constructor");}public static int Keep(){return System.Activator.CreateInstance(typeof(@Owner))==null?0:1;}public static int Closed(){return 99;}}';
+ assert.throws(()=>project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC TypeActivation\n${activation}\n// END NATIVE ONLY CLOSED PUBLIC TypeActivation\n`),/INVERSE_NATIVE_ONLY_PROJECTION/u);
+ const external=project(`${entry}// BEGIN NATIVE ONLY CLOSED PUBLIC ExternalType\npublic static class Owner{public static int Keep(){return typeof(int).Name.Length;}public static int Closed(){return 99;}}\n// END NATIVE ONLY CLOSED PUBLIC ExternalType\n`);
+ assert.ok(external.source.includes("return typeof(int).Name.Length;"));
 });
