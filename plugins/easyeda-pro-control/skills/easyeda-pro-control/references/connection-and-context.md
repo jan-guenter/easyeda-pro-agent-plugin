@@ -96,6 +96,17 @@ after checking its local owners and reservations. Any admitted non-reference
 callback permanently consumes that status, even if the callback refuses.
 Callers cannot assert or restore it.
 
+For a source-only agent, obtain the ordinary facade's own PID with offline
+`easyeda_control_api` request `{"request":{"action":"loaded-facade"}}`,
+retain its original process handle or pidfd, then inspect the session. Ordinary
+session inspection has no PID. Do not call `easyeda_control_status` merely to
+find it: status can start the upstream, and its admitted callback consumes the
+source-only classification even if startup fails. This advice concerns an idle
+source-only connection; it does not replace the admission checks for live work.
+A startup-conflict stub has no ordinary API tool and uses its own session
+inspection PID instead, as described below. Preserve the complete reply,
+including `structuredContent`, before formatting it.
+
 After acknowledged retirement and all metadata callbacks have finished,
 `{"request":{"action":"close-retired","confirmCloseRetired":true}}`
 consumes one supported request to schedule the server's normal shutdown.

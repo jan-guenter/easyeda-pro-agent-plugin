@@ -30,6 +30,13 @@ calls and no-allocation proof must all remain valid. Foreign historical blockers
 stay intact and later live admission still checks them. This exception is not a
 way to retire an attempted native owner or turn unknown publication into release.
 
+For an eagerly allocated ordinary connection used only for source review,
+query offline `easyeda_control_api` action `loaded-facade` to identify its own
+PID before session inspection. Retain that original process through retirement
+and `close-retired`. Ordinary session inspection has no PID; an ordinary status
+request can start the upstream and consumes source-only classification even
+on failure. This differs from the startup-conflict stub's own inspection above.
+
 ## Establish one controller
 
 First query the current Codex connection's offline `loaded-facade`. Finish its

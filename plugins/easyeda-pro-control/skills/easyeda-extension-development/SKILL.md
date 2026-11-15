@@ -56,6 +56,13 @@ not grant permission to repair an unfinished production journal, restore a
 database or broaden external writes. A newer declaration package is research
 material until its installed implementation is deliberately admitted.
 
+Source-only agents may also receive an eagerly started MCP connection. Use
+offline `loaded-facade` to identify an ordinary facade before its supported
+retirement; use the stub's own inspection for a startup conflict. Follow the
+[connection cleanup contract](../easyeda-pro-control/references/connection-and-context.md#cooperative-retirement-and-update-handoff).
+An ordinary status call can start the upstream and is unnecessary for this PID
+inspection.
+
 For iterative adapter validation, the control skill's
 [foreground client](../easyeda-pro-control/references/connection-and-context.md#foreground-mcp-session)
 can target one verified installed snapshot or trusted frozen build while the
