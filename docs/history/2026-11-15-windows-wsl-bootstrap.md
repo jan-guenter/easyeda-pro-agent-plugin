@@ -16,7 +16,7 @@ they send no process signal and await the original WSL child's close.
 ## Isolated results
 
 The minified production launcher module, built with the production identifier,
-syntax, whitespace and name settings, ran on Windows Node24.10.0 through actual
+syntax, whitespace and name settings, ran on Windows Node 24.10.0 through actual
 `wsl.exe` and Linux Node24.18.0. Two disposable fixture roots contained identical
 six-file payloads. The fake Linux entrypoint checked fixed argv and exact Node,
 echoed131356 binary bytes (all256 byte values, NUL, Unicode and multiple pipe
@@ -60,7 +60,7 @@ connected validation were not performed by this subtask.
 
 ## Full entry and deferred profile follow-up
 
-The built complete server entry also ran on Windows Node24.10 in explicit
+The built complete server entry also ran on Windows Node 24.10 in explicit
 configuration mode. Its first verification correctly refused source build
 files with private0600 modes. A six-runtime-file fixture materialized the same
 public bytes at package0644/0755 modes; the complete entry then verified WSL
@@ -81,7 +81,7 @@ seven-file strict lint passed. The relocated fixture imports the actual shared
 diagnostics module.
 
 Single-file ESM bundling can still hoist an external SQLite import. The observed
-full Windows bundle emitted Node24.10's SQLite experimental notice; this source
+full Windows bundle emitted Node 24.10's SQLite experimental notice; this source
 change does not establish its absence in the rebuilt bundle. The source hook
 proves deferred module initialization, not complete bundled import isolation.
 The initial missing schema import and fixture relocation failures are retained
@@ -205,7 +205,7 @@ remain pending; no passing installation or connected result is claimed here.
 
 ## 2026-11-15 PR213 publication and runtime-custody correction
 
-CodeRabbit review5911737113 on PR213 head
+CodeRabbit review 5911737113 on PR213 head
 `9518713ebfd0dd698e410f53157d32af6db271e0` reported two valid races:
 `r4579230385` allowed two replacing provisioners to pass the same final read,
 and `r4579230389` closed the six verified descriptors before a pathname-based
@@ -252,7 +252,7 @@ three-file strict type-aware lint pass with zero warnings. The first new
 minified run exposed an inferred generated naming helper; the serialized local
 callbacks were corrected and the failed receipt remains private.
 
-The actual minified module also ran on Windows Node24.10.0 through `wsl.exe`
+The actual minified module also ran on Windows Node 24.10.0 through `wsl.exe`
 and Linux Node24.18.0 against six disposable matching files. NTFS
 `profile.json`/`PROFILE.JSON` replacement contenders produced exactly one
 winner and one `windows-wsl-profile-changed`. The fake Linux entry checked
@@ -279,3 +279,32 @@ full installed Linux v2 byte/mode/link proof and fresh CLI loaded-snapshot plus
 supported retirement/original-exit proof remain pending. Root will regenerate
 and validate final bundles/compatibility and obtain exact-head CI and follow-up
 CodeRabbit review after integrating this source correction.
+
+
+### Final combined review-fix verification
+
+The two findings from full review 5911737113 on 9518713e are corrected. A
+bounded independent source review also corrected case/short-name alias lock
+selection and preserved the recognized lock identity through transaction
+acquisition. All nine cases in the affected Windows suite pass without skips.
+The transaction lock releases on process exit; fully initialized publication
+and both tested crash points recover without deleting a stale lock.
+
+The combined public payload passes facade and bridge types, bridge lint,
+whole-repository type-aware strict lint over 4,782 files with zero warnings or
+errors, API inventory of 855 methods, complete maintained build, compatibility and
+repository/MCP/all-skill checks. All three bundles reproduce their committed
+bytes after regeneration; only allowed facade projections and review time
+change in compatibility.
+
+An actual Windows Node 24.10 full rebuilt bundle also completed standalone
+configuration using only a disposable profile and matching Linux runtime
+copies. Stdout was the exact fixed configuration result; stderr contained
+only the known experimental SQLite notice. The original Windows process and
+its original WSL verification child both closed with code zero. Six runtime
+bytes and the existing Linux machine profile remained unchanged. The bundle
+SHA-256 is
+`d528175c984511f4dc2af208a263f8d634f873332a0d6cd86e1536742911febb`.
+This was verification/configuration only; it started no real index, facade,
+native owner or application. Official installation, fresh serving-process
+proof, final-head review and complete CI remain separate release gates.
