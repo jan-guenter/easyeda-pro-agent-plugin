@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "1051d8fe236929e50a927a226383af9589a4d5257949e16a2298220bc9391da8",
-      "fileCount": 2713,
+      "sha256": "7a874dd8ed2b0d86ed391db381f796a0144e55a0252f05ef44969fba60fd57f2",
+      "fileCount": 2716,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -1833,13 +1833,13 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-branch-collector.ts",
-          "bytes": 5128,
-          "sha256": "065cabc04c6a17c228cdab6dde84d9892f2e3e55093a6ea94ca097e38e0b750a"
+          "bytes": 5403,
+          "sha256": "8eca03682e3e624bc23b80a080a25d360ff6b8e847e4bbd9dd04955226980e8c"
         },
         {
           "relativePath": "current-footprint-forward-writer-branch-custody.ts",
-          "bytes": 12506,
-          "sha256": "4ab02ecdd2b463341ab9acd998486255f31f04b7ff44db676ab31e3a439ffc50"
+          "bytes": 13062,
+          "sha256": "0f420415d6c6caef9e0ca1097a36d0f08c70f7a3d936e251b56fbbe200da390f"
         },
         {
           "relativePath": "current-footprint-forward-writer-branch-data.ts",
@@ -1893,13 +1893,13 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-cache-native.ts",
-          "bytes": 4828,
-          "sha256": "2868e47fc2cfb43ae2eb8a695846b5b00e21ec641b4ebf3bbb19fc5c116b840c"
+          "bytes": 5048,
+          "sha256": "556ec4165adb994d0e00e9d311ab49d635e3e379ddeecccba812ea61ec2f746e"
         },
         {
           "relativePath": "current-footprint-forward-writer-clock-native.ts",
-          "bytes": 4962,
-          "sha256": "c2873cee14cd91a355c44f85e602521b0be0481bac9b5a0fcc6258848a70b239"
+          "bytes": 6357,
+          "sha256": "64da2e4f56019e92f6e6bbd36ab1fd7c71a469f61e8c82a3c894f8744c0f20c8"
         },
         {
           "relativePath": "current-footprint-forward-writer-clock-preparation-budget.ts",
@@ -1918,8 +1918,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-tail-native.ts",
-          "bytes": 39391,
-          "sha256": "b76006ae6885a63b9b2a3032517664b06a1d940bebc6489574d01005a9573eb8"
+          "bytes": 40264,
+          "sha256": "036f8a8055830b42a9cd42c1a710e29cb2c71868e1fc6c002119c3df3222e9f9"
         },
         {
           "relativePath": "current-footprint-forward-writer-control-contract.ts",
@@ -1938,8 +1938,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-copy-local-native.ts",
-          "bytes": 4915,
-          "sha256": "1c523df690b8e04255c0a4c2ac04bba2048ab75bfc7f57cdf00019028825487a"
+          "bytes": 5635,
+          "sha256": "1403798371eae796c18217f964abcee7dc66866e065661de9b3f8b813db503cf"
         },
         {
           "relativePath": "current-footprint-forward-writer-copy-local-programs.ts",
@@ -1953,8 +1953,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-copy-local-wire.ts",
-          "bytes": 2418,
-          "sha256": "f3f70eff0ba91e989db4048e2e9d18efcfa1dee087632bb42a1a40279fc648ea"
+          "bytes": 3561,
+          "sha256": "764e787579479f6dfc86a2cf1afa03e8cf3ba45a333ab06b2b222159119cbd06"
         },
         {
           "relativePath": "current-footprint-forward-writer-copy-post-native.ts",
@@ -1993,8 +1993,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-frontier-native.ts",
-          "bytes": 11819,
-          "sha256": "4d59ed32b4b4a0fd1e8135f0ccdd3654b14329159ba90da9920584255b8e854f"
+          "bytes": 12379,
+          "sha256": "164825f189b83818a921c0872d65a0a513b2b5f45a48c851f40a76f9c3091503"
         },
         {
           "relativePath": "current-footprint-forward-writer-frontier-protocol.ts",
@@ -2008,18 +2008,18 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-live-history-cache-data.ts",
-          "bytes": 8069,
-          "sha256": "641cacda0d1c2bde6fd29faf8b3caea6044993ddc3a7e204ce3c313d06d78ce8"
+          "bytes": 8090,
+          "sha256": "8e7d3967704ef50fd07e88135e13cfeb375a93e954c0be535603d50ec1b7abe5"
         },
         {
           "relativePath": "current-footprint-forward-writer-live-history-collector.ts",
-          "bytes": 5839,
-          "sha256": "ab4c7fb75c522e0b73a49b3ec01054164e7a79aa06f1bb8b3262c4cc8e18b79f"
+          "bytes": 6113,
+          "sha256": "6cf2052328e2f38e0e869ed08ca422f9c34631f89cd5eb09d8339284429001a9"
         },
         {
           "relativePath": "current-footprint-forward-writer-live-history-custody.ts",
-          "bytes": 13617,
-          "sha256": "6c48ee14e26ccd2cfb4649bb75356b0e1adcd55994edd3484ca9045c120b9a90"
+          "bytes": 14173,
+          "sha256": "6e0d821d51a944da8459c5862815429d0ef2790cb3ae3d55252a8924a23e1d0a"
         },
         {
           "relativePath": "current-footprint-forward-writer-live-history-limits.ts",
@@ -2043,8 +2043,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-own-data-native.ts",
-          "bytes": 6040,
-          "sha256": "83e99d05b51ea1b621bf51d2db90f9c51ef6ec868cbf1e56497479133be0ceff"
+          "bytes": 6137,
+          "sha256": "9ea78517f76cda95df8c3b85b99ceef3cafbef492dd898831f2988f0b6df7adc"
         },
         {
           "relativePath": "current-footprint-forward-writer-own-data-protocol.ts",
@@ -2073,8 +2073,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-renderer-class.ts",
-          "bytes": 2543,
-          "sha256": "b63189bdedc0897a23632a2dcea025a90b863369a3e081fdbc5c5269b194827f"
+          "bytes": 3317,
+          "sha256": "c36125385a6d6cb45d7373ca5a6d91553cdb9502dcac94c34fdf88e6a849e6ab"
         },
         {
           "relativePath": "current-footprint-forward-writer-startup-nonprivate-source.ts",
@@ -2130,6 +2130,21 @@
           "relativePath": "current-footprint-forward-writer-workflow-journal.ts",
           "bytes": 18983,
           "sha256": "b261f35311d239e88cb81b70d9252a620cfd369e72c71684f49b5f9683c18038"
+        },
+        {
+          "relativePath": "current-footprint-forward-writer-workflow-v2-budget.ts",
+          "bytes": 743,
+          "sha256": "ca29a0d57fe5a820bcd01f050e72fc966e1db8f8037093e8549243c2c0eb30d2"
+        },
+        {
+          "relativePath": "current-footprint-forward-writer-workflow-v2-chain.ts",
+          "bytes": 5178,
+          "sha256": "1e7b3ce4e5aa82f233f873a1767337796275d96fb80c99c239fddfe1fb48ff3a"
+        },
+        {
+          "relativePath": "current-footprint-forward-writer-workflow-v2-contract.ts",
+          "bytes": 3436,
+          "sha256": "38b94b7afe0c7e6fda6edc3cb5546b301a75193b28acd8e69e967d1b849eb999"
         },
         {
           "relativePath": "current-footprint-head-age-cdp-exception.ts",
@@ -3269,7 +3284,7 @@
         {
           "relativePath": "current-footprint-inverse-native-clock-book-storage.ts",
           "bytes": 5766,
-          "sha256": "fd6289e39a8ba5fb4c22a07b54c3584ad1a5f28ca65d8e58c511aacc4b6100a6"
+          "sha256": "694e9ba7041927b3b85a511151acf0451dc2afdaddc33c276584b4c2cb2f4cff"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-bootstrap-collector.ts",
@@ -3293,8 +3308,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-clock-controller.ts",
-          "bytes": 16538,
-          "sha256": "cb67e3a08588c1031b364b82746e0cfd2a559d096b17469fc58aa659d059abb9"
+          "bytes": 16587,
+          "sha256": "e2878c456cb8b1edcdf377ff6bc9dfdda2f2125edafcb49b1c7588ae8ab6f600"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-clock-native.ts",
@@ -3313,8 +3328,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-clock-programs.ts",
-          "bytes": 13286,
-          "sha256": "7fd87ba75dc9bce765418bdefad1c5ce9e6f4e3383b5227505e78bd1ee70fd63"
+          "bytes": 13269,
+          "sha256": "bb4321d7991857192c85497b4f345abb3d35fc77cefcbbd8ab80da2706bcb67a"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-clock-protocol.ts",
@@ -3333,8 +3348,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-clock-registration-native.ts",
-          "bytes": 6843,
-          "sha256": "1bcd22bad02a051ab9df518fce07cf5d7b4ab497e110c831aaccee51b8e1e00a"
+          "bytes": 6951,
+          "sha256": "7468e92dd59f62e892dd969b610a78630a26c871e56c07536904f7f70e363e4f"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-clock-registration-protocol.ts",
@@ -3348,13 +3363,13 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-collateral-collector.ts",
-          "bytes": 13583,
-          "sha256": "d780e637563a997633548d10a3c4779c6ef6f1e22817a347dd999b62c08a366b"
+          "bytes": 13903,
+          "sha256": "0f36464e5c19edf79df8df8c254b6bc8cf5a3d5046c357402763eba7ae567ce3"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-collateral-native.ts",
-          "bytes": 7774,
-          "sha256": "9c81cadcecfaa9960ac94af32c47dfc2d4960ded6e113bba6b02f70a7fe9bab9"
+          "bytes": 7927,
+          "sha256": "837679d9c91cc2678d1b8787fea85f7fad18db07360ac04eff4e41026bf0aa39"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-collateral-programs.ts",
@@ -3383,8 +3398,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-execution-call-controller.ts",
-          "bytes": 17574,
-          "sha256": "a3301e855df14cb895194f250ed30723282b0c9bf75742c1bdff7540924c65c1"
+          "bytes": 17606,
+          "sha256": "389149d4bcce7d9e79d109a1a6bf1f47e10e9d06cc295ea7b6df62b1fc962011"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-execution-callback-programs.ts",
@@ -3538,8 +3553,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-serialization-observer.ts",
-          "bytes": 9420,
-          "sha256": "da0c8547f732a1946600013c96da00b0833563dd9a49fafb156fb262151f6cae"
+          "bytes": 9622,
+          "sha256": "5bb90a05fdbbc69fd973aa9b34266f3699b1579c334e626eb46cad63b5c11dc7"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-serialization-profile.ts",
@@ -3963,8 +3978,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-only-projection.ts",
-          "bytes": 12980,
-          "sha256": "265f8945fd7e258db36b10ee22b7800277c47bf9e76f8292b590730184779b0d"
+          "bytes": 18482,
+          "sha256": "77391651b8684bc18125811b9c558aeb95f351fd2c516129f71153764b06fecf"
         },
         {
           "relativePath": "current-footprint-inverse-native-owner.ts",
@@ -13598,7 +13613,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-15T08:20:44.782Z",
+  "reviewedAt": "2026-11-15T11:50:09.116Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

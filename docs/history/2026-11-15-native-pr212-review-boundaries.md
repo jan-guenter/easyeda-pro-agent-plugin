@@ -123,3 +123,33 @@ its 18 affected fields occupy six private instance sinks. It compiled with zero
 diagnostics and all six static codebooks (555 packets) passed. These inert
 compiler/codec results allocate no native owner, Job or application and grant no
 DEL, persistence or saved-absence authority.
+
+## Combined public review preparation
+
+Both review passes are integrated in this public branch, including the original
+first-submit cleanup join, collateral proof continuity, full retained C# closure
+and exact initialization semantics. The field-pruning follow-up preserves
+uninitialized declarations and uses uncalled private diagnostic sinks only for
+original writers removed by closure; its real PS5/C#5 compile has zero diagnostics
+and all555 static packets pass. Other compiler warnings remain errors.
+
+The clock-storage regression retains twelve unchanged guard-method hashes and
+the corrected64-digit smoke hash. Its earlier32-digit smoke hash remains in a
+comment; this is the independently compiled admission correction, not a guard
+relaxation or a changed historical result. The stale smoke expectation and the
+first installed-source run without its assets environment are retained privately.
+
+Final focused validation passed89 tests across20 files with zero skips. Both
+facade TSprojects, strict changed-leaf lint, source/API coverage, complete build,
+compatibility and repository/MCP/all-skill validation passed. The preceding
+whole-repository strict pass had zero warnings/errors; final-head lint, bundle
+reproduction and exact-commit complete CI remain publication/merge checks.
+The source tree and review time are the only compatibility changes; runtime
+bundles reproduce the existing public payload and expose no new mounted writer.
+All seven official skill checks passed.
+
+This preparation changes151 files versus publicmain, of which150 are reviewable
+after the inherited package-lock filter. The package version is unchanged;
+Windows bootstrap/manager automation and full workflow/runtime bindings form
+the next buildable batch. Final full CodeRabbit review and exact-head CI will
+be requested before merge. No installation or connected acceptance is claimed.

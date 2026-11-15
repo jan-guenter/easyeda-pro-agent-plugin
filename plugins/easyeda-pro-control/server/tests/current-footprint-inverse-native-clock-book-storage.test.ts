@@ -6,7 +6,10 @@ import { currentPcbDiagnosticCSharpLexicalTokens as tokenize } from "../src/curr
 import { currentFootprintInverseNativeDeleteClockNativeSource as clock } from "../src/current-footprint-inverse-native-delete-clock-native.ts";
 import { currentFootprintInverseNativeDeleteClockRegistrationNativeSource as registration } from "../src/current-footprint-inverse-native-delete-clock-registration-native.ts";
 
-const original = [
+// Twelve production method pins are unchanged. The smoke pin now admits the
+// Correct 64-digit original project domain, independently compiled with C#5.
+// Prior smoke: d89a89b44e894c1317ccb878cd57372d3b5fcd8c8777c2a19bfc5b8089da7459.
+const expectedMethods = [
   [
     "DncOrderValues",
     "fae2488042201d6992040b8e096e8ddcc85591caebb713c9b8b2cab20582c6ff"
@@ -33,7 +36,7 @@ const original = [
   ],
   [
     "VerifyNativeDeleteClockSmoke",
-    "d89a89b44e894c1317ccb878cd57372d3b5fcd8c8777c2a19bfc5b8089da7459"
+    "babab516e05a6b4b2c36e4a2252f57dd914dcfe3d86db682c1d3591373741800"
   ],
   [
     "AssertDncr",
@@ -76,11 +79,11 @@ function methodAt(active: readonly Token[], index: number): readonly (readonly [
   while (["public", "private", "static", "internal", "protected"].includes(active[begin - 1]?.text ?? "")) { begin -= 1; }
   return active.slice(begin, end + 1).map(value => [value.kind, value.text] as const);
 }
-void test("native clock storage preserves all thirteen original ledger and codec method token streams", () => {
+void test("native clock storage preserves twelve original guard methods and the corrected 64-digit smoke", () => {
   const source = (clock() + registration()).replaceAll(/DncE\("([a-z-]+)"\)/gu, 'Error("inverse-native-delete-clock-$1")')
     .replaceAll(/DncrE\("([a-z-]+)"\)/gu, 'Error("inverse-native-delete-clock-registration-$1")');
   const active = tokenize(source).filter(token => token.kind !== "space" && token.kind !== "comment");
-  for (const [name, expected] of original) {
+  for (const [name, expected] of expectedMethods) {
     const found = active.flatMap((token, index) => {
       if (token.text !== name || active[index + 1]?.text !== "(") { return []; }
       const method = methodAt(active, index); return method === null ? [] : [method];
