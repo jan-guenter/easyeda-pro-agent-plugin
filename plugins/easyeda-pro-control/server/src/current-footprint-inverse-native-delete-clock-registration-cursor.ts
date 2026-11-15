@@ -29,7 +29,7 @@ export class CurrentFootprintInverseNativeDeleteClockRegistrationCursor {
     const result = run(); this.#runs.push(result); return result;
   }
   async #send(command: Command): Promise<unknown> {
-    await this.#current(); if (program(command) !== null) { const helper = this.#helper; need(helper !== null && helper.command === command && !helper.issued); helper.issued = true; }
+    await this.#current(); this.#guard(); this.#b.assertOriginalHeld(); if (program(command) !== null) { const helper = this.#helper; need(helper !== null && helper.command === command && !helper.issued); helper.issued = true; }
     const request = this.#b.request(command); need(types.isPromise(request));
     this.#issued.push(request); const raw = await request; await this.#current(); return raw;
   }

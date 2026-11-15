@@ -255,3 +255,43 @@ receipts apply to the unchanged package and lockfile. These are source/offline
 checks; complete exact-head CI and renewed full CodeRabbit review remain
 merge gates. The same eight previously skipped paths received independent
 review; that audit does not establish CodeRabbit coverage.
+
+
+## Final dispatch custody and complete next-book role roster
+
+The review of exact public head
+`485dbb4d220ce127bb95d7290593d3a8a5b369eb` reported final-microtask gaps in
+[clock registration](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/212#discussion_r4578604518)
+and the
+[accepted-event cursor](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/212#discussion_r4578604523),
+and an incomplete
+[next-book role roster](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/212#discussion_r4578604526).
+Both cursor families now check their sticky failure/completion state
+synchronously after the awaited current-owner check and immediately before
+normal or helper transport. Registration additionally checks the original
+held-UI callback at that dispatch boundary. Their spent slots, original pending
+Promises, original-error propagation and failed cleanup stay unchanged; no
+request is replayed and no owner or binding API is widened.
+
+A bounded inventory of the selected new native cursors found these two classes
+with an externally invoked failure transition across the awaited verification.
+The two forward cursors have no equivalent external failure transition and
+retain their one serialized run; this correction does not change them. The
+next-book generator requires every kind to have exactly the same own role-key
+set before factoring, so extra, missing and substituted roles refuse. Matching
+sets in a different property order preserve the same output and four-column
+restoration.
+
+Eight focused source/protocol tests pass without skips, including original
+clock pins, all ten physical-ID families, both final-microtask dispatch lanes,
+original-hold loss and full next-book row restoration. Counterfactual module
+loads of the unchanged base implementations fail the new tests: registration
+dispatches once after failure, accepted-event transport occurs after its failure
+marker, and the extra next-book role is silently omitted. Both TypeScript
+projects and strict type-aware lint of all five changed source/test files pass
+with zero diagnostics. Early fixture-only lint failures remain private. A real
+clean dependency install under umask 022 completes with zero audit findings;
+repository and all-skill validation pass. Generated helper/bundle regeneration
+and exact final-head CI remain the parent integration batch's checks. These
+fixtures allocate no facade, native owner, Job or application and establish no
+connected or saved-result proof.

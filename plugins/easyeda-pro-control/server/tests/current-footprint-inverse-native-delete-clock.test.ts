@@ -8,6 +8,7 @@ import { currentFootprintInverseNativeDeleteExecutionDependenciesCases as depend
 import { currentFootprintInverseNativeDeleteExecutionManagerCases as managerCases, currentFootprintInverseNativeDeleteExecutionManagerNativeFrame as managerFrame, currentFootprintInverseNativeDeleteExecutionManagerWire as managerWire } from "../src/current-footprint-inverse-native-delete-execution-manager-protocol.ts";
 import { currentFootprintInverseNativeDeleteSerializationCases as serializationCases, currentFootprintInverseNativeDeleteSerializationNativeFrame as serializationFrame, currentFootprintInverseNativeDeleteSerializationWire as serializationWire } from "../src/current-footprint-inverse-native-delete-serialization-protocol.ts";
 import { currentFootprintInverseNativeDeleteExecutionSenderCases as executionCases, currentFootprintInverseNativeDeleteExecutionNativeFrame as executionFrame, currentFootprintInverseNativeDeleteExecutionWire as executionWire } from "../src/current-footprint-inverse-native-delete-execution-protocol.ts";
+import { CurrentFootprintInverseNativeDeleteExecutionAcceptCursor as AcceptCursor } from "../src/current-footprint-inverse-native-delete-execution-accept-cursor.ts";
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { CurrentFootprintInverseNativeDeleteClockController as Controller } from "../src/current-footprint-inverse-native-delete-clock-controller.ts";
@@ -245,4 +246,48 @@ void test("selected native physical request IDs fit both Int32 boundaries before
   assertPhysicalIds(dependenciesCases(), dependenciesWire, dependenciesFrame);
   assertPhysicalIds(managerCases(), managerWire, managerFrame);
   assertPhysicalIds(serializationCases(), serializationWire, serializationFrame);
+});
+
+
+/** Callback/microtask surrogates exercise the actual cursors without a Job. */
+async function registrationDispatchGap(lane: "request" | "helper", loss: "fail" | "hold"): Promise<void> {
+  const command = registrationCases()[0]; assert.ok(command !== undefined);
+  const event = { method: "Debugger.scriptParsed", sessionId: "native_ui", params: { url: "", scriptId: "original_helper", executionContextId: 7 } };
+  const cause = new Error("original synthetic UI hold lost"); let armed = lane === "request"; let checks = 0; let held = true; let sends = 0;
+  const cursor = new Cursor({ sessionId: "native_ui", contextId: 7, current: (): Promise<void> => Promise.resolve(),
+    assertOriginalHeld: (): void => {
+      if (!held) { throw cause; }
+      if (armed && (checks += 1) === 2) { queueMicrotask((): void => { if (loss === "hold") { held = false; } else { cursor.fail(); } }); }
+    }, assertOriginalEvent: (actual): void => { assert.equal(actual, event); },
+    request: (): Promise<unknown> => { sends += 1; if (!armed) { assert.equal(cursor.observe(event), true); } return Promise.resolve({}); } });
+  if (lane === "helper") { await cursor.request(command); armed = true; }
+  const baseline = sends; const pending = lane === "helper" ? cursor.qualifyHelper(command) : cursor.request(command);
+  await assert.rejects(pending, error => loss === "hold" ? error === cause : error instanceof Error && error.message === "INVERSE_NATIVE_DELETE_CLOCK_REGISTRATION_CURSOR");
+  assert.equal(sends, baseline); assert.throws(() => cursor.request(command)); assert.throws(() => cursor.qualifyHelper(command));
+  await cursor.settleAfterOriginalExit(); assert.equal(sends, baseline);
+}
+void test("registration cursor rechecks failure and the original hold in the final dispatch microtask", async () => {
+  for (const lane of ["request", "helper"] as const) { for (const loss of ["fail", "hold"] as const) { await registrationDispatchGap(lane, loss); } }
+});
+async function acceptDispatchGap(lane: "request" | "helper"): Promise<void> {
+  const command = acceptCases()[0]; assert.ok(command !== undefined);
+  const event = { method: "Debugger.scriptParsed", sessionId: "worker", params: { url: "", scriptId: "original_helper", executionContextId: 7 } };
+  let armed = lane === "request"; let sends = 0; const trace: string[] = [];
+  const cursor = new AcceptCursor({ sessionId: "worker", contextId: 7,
+    current: (): Promise<void> => {
+      if (!armed) { return Promise.resolve(); }
+      // oxlint-disable-next-line promise/avoid-new -- Resolve the original verification before queuing the separate failure at its dispatch gap.
+      return new Promise<void>(resolve => {
+        queueMicrotask((): void => { trace.push("verification-resolved"); resolve(); queueMicrotask((): void => { trace.push("failed"); cursor.fail(); }); });
+      });
+    }, assertOriginalEvent: (actual): void => { assert.equal(actual, event); },
+    request: (): Promise<unknown> => { sends += 1; if (armed) { trace.push("transport"); } else { assert.equal(cursor.observe(event), true); } return Promise.resolve({}); } });
+  if (lane === "helper") { await cursor.request(command); armed = true; }
+  const baseline = sends; const pending = lane === "helper" ? cursor.qualifyHelper(command) : cursor.request(command);
+  await assert.rejects(pending, /INVERSE_NATIVE_DELETE_EXECUTION_ACCEPT_CURSOR/u);
+  assert.deepEqual(trace, ["verification-resolved", "failed"]); assert.equal(sends, baseline);
+  await assert.rejects(cursor.request(command)); await assert.rejects(cursor.qualifyHelper(command)); assert.equal(sends, baseline);
+}
+void test("accepted-event cursor rechecks sticky failure before normal and helper transport", async () => {
+  await acceptDispatchGap("request"); await acceptDispatchGap("helper");
 });

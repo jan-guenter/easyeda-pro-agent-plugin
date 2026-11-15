@@ -2,6 +2,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
+import { gunzipSync } from "node:zlib";
+import { currentFootprintInverseNativeNextBook as nextBook } from "../src/current-footprint-inverse-native-next-book.ts";
 import { currentPcbDiagnosticCSharpLexicalTokens as tokenize } from "../src/current-pcb-diagnostic-csharp-spacing.ts";
 import { currentFootprintInverseNativeDeleteClockNativeSource as clock } from "../src/current-footprint-inverse-native-delete-clock-native.ts";
 import { currentFootprintInverseNativeDeleteClockRegistrationNativeSource as registration } from "../src/current-footprint-inverse-native-delete-clock-registration-native.ts";
@@ -90,4 +92,26 @@ void test("native clock storage preserves twelve original guard methods and the 
     });
     assert.equal(found.length, 1); assert.equal(createHash("sha256").update(JSON.stringify(found[0])).digest("hex"), expected, name);
   }
+});
+
+
+void test("native next books reject extra, missing and substituted roles without changing matching output", () => {
+  const cases = { a: [{ method: "Runtime.callFunctionOn", params: {} }], b: [{ method: "Runtime.callFunctionOn", params: {} }] };
+  const templates = [{ key: "call", method: "Runtime.callFunctionOn", names: [], template: '{"method":"Runtime.callFunctionOn","params":{}}' }];
+  const programs = { a: { read: "read-body", write: "write-a" }, b: { read: "read-body", write: "write-b" } };
+  const actual = nextBook("Fixture", programs, cases, templates);
+  assert.deepEqual(nextBook("Fixture", { a: programs.a, b: { write: "write-b", read: "read-body" } }, cases, templates), actual);
+  for (const b of [{ read: "read-body", write: "write-b", extra: "extra-body" }, { read: "read-body" }, { read: "read-body", replaced: "write-b" }]) {
+    assert.throws(() => nextBook("Fixture", { a: programs.a, b }, cases, templates), /INVERSE_NATIVE_NEXT_BOOK_ROSTER/u);
+  }
+  const rows: string[][] = [];
+  for (const match of actual.source.matchAll(/EasyedaDiagnosticFixedTable\.Load\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})",(\d+),4\)/gu)) {
+    const packed = Buffer.from(match[1] ?? "", "base64"); assert.equal(createHash("sha256").update(packed).digest("hex"), match[4]);
+    // oxlint-disable-next-line node/no-sync -- Restore only this bounded immutable build-time fixture, with no native compilation or owner.
+    const raw = gunzipSync(packed, { maxOutputLength: 60_000 }); assert.equal(raw.length, Number(match[2]));
+    assert.equal(createHash("sha256").update(raw).digest("hex"), match[3]);
+    const part = raw.toString("utf8").split("\0").map(row => row.split("\t")); assert.equal(part.length, Number(match[5])); rows.push(...part);
+  }
+  assert.deepEqual(rows, [["program", "read", "", '"read-body"'], ["program", "a:write", "", '"write-a"'],
+    ["program", "b:write", "", '"write-b"'], ["call", "Runtime.callFunctionOn", "", templates[0]?.template]]);
 });
