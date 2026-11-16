@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "155e0cdd5d7a019d9dc9c1ade933803ed2707ad9bb9eb49c8fcdfedc14925f47",
+      "sha256": "c2d8ab5b11f422a920ad95dbea8c3a0f9b18d3c66ccb2bf03ce368010e9bfff3",
       "fileCount": 2817,
       "files": [
         {
@@ -11193,8 +11193,8 @@
         },
         {
           "relativePath": "current-schematic-wire-classic-rpc-driver.ts",
-          "bytes": 28512,
-          "sha256": "aca9fd3b38da3acbe1b7031a7e726431fe5240f9849997ab64949de2dd9ccead"
+          "bytes": 28830,
+          "sha256": "e3a0c166acd6e4489914d8af17feb0a1e3d32690d2074aa54c2e7d9523105149"
         },
         {
           "relativePath": "current-schematic-wire-classic-rpc-origin.ts",
@@ -11403,8 +11403,8 @@
         },
         {
           "relativePath": "current-schematic-wire-parser-driver.ts",
-          "bytes": 28264,
-          "sha256": "ea1bf64477ad6c534058c05d2deffc20c918656e6e0814d416812ee0f70c28bb"
+          "bytes": 28638,
+          "sha256": "5b30be295aebc7c07aef5528f48f793c41b2c3b6a36ec21388505e0f410a957b"
         },
         {
           "relativePath": "current-schematic-wire-parser-helper-cursor.ts",
@@ -11433,13 +11433,13 @@
         },
         {
           "relativePath": "current-schematic-wire-parser-rpc-coordinator.ts",
-          "bytes": 17249,
-          "sha256": "2a90af66c08c7c61db6f71f36490014fdcf3dff431e1b08dd584b8b279df0cbd"
+          "bytes": 17481,
+          "sha256": "b0d30d03cb53707730f36c07cccaa60f0c2459b3a89627e5c130220178a4b0f6"
         },
         {
           "relativePath": "current-schematic-wire-parser-service-coordinator.ts",
-          "bytes": 32336,
-          "sha256": "dc20b1cff1c97ec254dca5c648c7fcc4a53f31622f05e68c6f909e1d318666ad"
+          "bytes": 32850,
+          "sha256": "8a62d8828592d34fdd9c9919955b7ac13595312baa096c5c9287316d1543e51e"
         },
         {
           "relativePath": "current-schematic-wire-parser-source.ts",
@@ -11518,8 +11518,8 @@
         },
         {
           "relativePath": "current-schematic-wire-service-driver.ts",
-          "bytes": 25800,
-          "sha256": "806035216c585a7b15bf24f13135c66d008141e9f7ad026d5c11f2e9b08c902b"
+          "bytes": 26091,
+          "sha256": "ae995e258de1982e79a18c45425eb735d54d918f2bf7557187b592055bedad00"
         },
         {
           "relativePath": "current-schematic-wire-service-invocation-cursor.ts",
@@ -11573,8 +11573,8 @@
         },
         {
           "relativePath": "current-schematic-wire-title-driver.ts",
-          "bytes": 30705,
-          "sha256": "3063338eff5980954c0a1aaf3585a6e857a6714e47253ad8d78be6e46a3d30cf"
+          "bytes": 31614,
+          "sha256": "f18fe2486a4d45a0a5079f689c59d810a6744848a799f2f0e44a5277aa6abf41"
         },
         {
           "relativePath": "current-schematic-wire-title-ft-preflight.ts",
@@ -11638,8 +11638,8 @@
         },
         {
           "relativePath": "current-schematic-wire-tree-runtime-driver.ts",
-          "bytes": 24966,
-          "sha256": "077ee68ad9506d0e8d6741260217d605a225182ce794049f945c823425dbaa49"
+          "bytes": 25280,
+          "sha256": "738a884bf19ee7fc27010c0d49ff8bb4c7f92250f4d3487c3ad3905a9a6c8c85"
         },
         {
           "relativePath": "current-schematic-wire-tree-runtime-programs.ts",
@@ -11678,8 +11678,8 @@
         },
         {
           "relativePath": "current-schematic-wire-ui-runtime-driver.ts",
-          "bytes": 19839,
-          "sha256": "7c29e58c5d8bac405ccfe46bd58bef3e605d8af23af6c1bc122e4c83e50cc9b1"
+          "bytes": 20153,
+          "sha256": "190f05c8ff730a820018caddc2911fad60a1f13fd4708abcc1c44a163ac68005"
         },
         {
           "relativePath": "current-schematic-wire-ui-runtime-programs.ts",
@@ -14118,7 +14118,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-16T09:02:23.432Z",
+  "reviewedAt": "2026-11-16T09:57:30.724Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

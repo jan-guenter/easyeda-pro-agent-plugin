@@ -238,3 +238,51 @@ production regressions pass again against the complete corrections; the
 separate final 67-case leaf is accepted for its exact unchanged source bytes.
 Complete final-head CI and current CodeRabbit review are still required.
 
+
+## Final late-acknowledgment lifecycle review corrections
+
+The actual review at `0a81d87346f937cc55d4a370abb8d3345d59f212`
+reported one inline issue and two outside-diff issues. All three are accepted.
+The correction also covers the same allocation ordering in the other five
+breakpoint drivers and both coordinator routing maps. Each original allocation
+ACK is retained before fallible owner reproof, so retirement cannot hide an
+acknowledged point. The original child receives that same ACK before coordinator
+reproof; no transport substitution, normal write replay or allocation retry is
+added. Malformed, missing and duplicate allocations remain uncertain; location
+mismatch preserves known cleanup custody and uncertainty.
+
+Title retirement joins original tasks before independently starting any missing
+callback and FT cleanup. It dispatches nothing for an unarmed owner, and retains
+both cleanup failures when the original transport is unavailable. The service
+router now waits for both the original resume ACK and resumed event before
+handing the next resume to its original owner, matching the RPC router.
+
+The frozen source passed 105 focused cases without failures, skips or
+cancellations: 61 lifecycle regressions and 44 directly affected existing cases.
+Both TypeScript configurations and strict type-aware lint on all nine changed
+TypeScript files pass with zero warnings or errors. A counterfactual against
+reviewed 0a81 source completed 52 cases with 20 expected failures, 32 passes and
+no skips; nine further uncertainty cases were added afterward. Earlier fixture
+and lint failures remain private evidence. These are production-constructor,
+local Inspector and prerequisite-substituted method tests, not connected native
+execution. Released result/inspect projections, fixed programs and budgets are
+preserved. The source leaf's exact tree was compared before its test/type proof
+was reused for public curation.
+
+All thirteen CI checks passed at the preceding 0a81 head. That result is historical;
+aggregate local checks and exact final-head CI/review still precede merge of this
+additional correction. The immutable candidate stamp remains 16085829. The
+original metadata facade was retired and closed through supported routes with
+pidfd-observed exit. Successful fixture caches and empty control roots were
+removed after original test settlement; failure evidence is retained.
+
+The final aggregate local payload passes clean pinned dependencies, full
+dependency listing, registry signatures, zero-vulnerability audit and sanitizer
+identity. Global strict type-aware lint reports zero warnings/errors. Full
+build, all bridge/API/repository/MCP/skill phases and all seven official skill
+quick validators pass. Both facade TypeScript projects and all 105 focused cases
+are accepted from the exact compared source tree. Repeated server/manager builds
+reproduce all three installed PR215 bundle bytes; compatibility changes only
+source-tree files/count/hash and review time. Complete local suites are not
+duplicated; exact final-head CI and actual CodeRabbit findings remain the merge
+gates. This records local source validation, not publication or live execution.
