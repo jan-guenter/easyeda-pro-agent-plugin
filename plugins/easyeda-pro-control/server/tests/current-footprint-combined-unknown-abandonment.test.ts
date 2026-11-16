@@ -2,13 +2,14 @@
  * installation/process observations. No Windows process or application is launched. */
 /* oxlint-disable import/max-dependencies -- Join exact historical schemas, managed publication, global blockers and the separate recovery coordinator in one provenance regression. */
 import assert from "node:assert/strict";
-import { readFile, stat, writeFile } from "node:fs/promises";
+import { readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
+import { historicalRootNamespaceAvailable, runHistoricalReadOnlyNamespace } from "./helpers/historical-owner-namespace-fixture.ts";
 import { controlDataDirectory } from "../src/artifacts.ts";
 import { sha256Json } from "../src/core.ts";
 import { currentFootprintCombinedAbandonUnknownRequestSchema } from "../src/current-footprint-combined-validation.ts";
-import { CURRENT_FOOTPRINT_COMBINED_HISTORICAL_PRODUCER, currentFootprintCombinedHistoricalIntentSchema } from "../src/current-footprint-combined-abandonment-contract.ts";
+import { CURRENT_FOOTPRINT_COMBINED_ABANDONMENT_DIRECTORY, CURRENT_FOOTPRINT_COMBINED_HISTORICAL_PRODUCER, currentFootprintCombinedHistoricalIntentSchema } from "../src/current-footprint-combined-abandonment-contract.ts";
 import { CurrentFootprintCombinedUnknownAbandonment } from "../src/current-footprint-combined-unknown-abandonment.ts";
 import { publishCurrentFootprintCombinedAbandonment, readCurrentFootprintCombinedAbandonment,
   readCurrentFootprintCombinedHistoricalSnapshot, requireCurrentFootprintCombinedHistoricalSnapshot } from "../src/current-footprint-combined-abandonment-journal.ts";
@@ -95,6 +96,28 @@ void test("retained owners and process presence refuse before publication; retai
   await assert.rejects(assertNoUnresolvedCurrentPcbDiagnosticLaunches(), /UNRESOLVED_LAUNCH/u);
   await f.recovery.run(f.request); assert.equal(f.state.windows, windows); assert.equal(f.state.linux, linux); await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
 });
+void test("complete Combined v1 historical read crosses only the exact owner namespace while incomplete and publisher paths stay raw", async context => {
+  if (!historicalRootNamespaceAvailable()) { context.skip("Requires the actual root-to-one parent UID/GID mapping."); return; }
+  const operationId = "footprint-combined-historical-namespace";
+  const f = await fixture(operationId);
+  await f.recovery.run(f.request);
+  const directory = join(controlDataDirectory(), CURRENT_FOOTPRINT_COMBINED_ABANDONMENT_DIRECTORY, operationId);
+  const intentPath = join(directory, "intent.json"), resultPath = join(directory, "abandoned.json");
+  const before = await Promise.all([f.originalPath, intentPath, resultPath].map(path => readFile(path)));
+  const resultBytes = before[2]; assert.ok(resultBytes !== undefined); context.after(() => writeFile(resultPath, resultBytes, { mode: 0o600 }));
+  const result: unknown = JSON.parse(resultBytes.toString("utf8"));
+  const module = new URL("../src/current-footprint-combined-abandonment-journal.ts", import.meta.url).href;
+  const program = `import assert from "node:assert/strict"; import {readCurrentFootprintCombinedHistoricalSnapshot as snapshot,readCurrentFootprintCombinedAbandonment as read,publishCurrentFootprintCombinedAbandonment as publish} from ${JSON.stringify(module)};
+    const token=await snapshot(${JSON.stringify(operationId)}),receipt=await read(token); assert.deepEqual(receipt.result,${JSON.stringify(result)});
+    await assert.rejects(publish(token,"abandoned.json",receipt.result),/JOURNAL_REFUSED/u); process.stdout.write(JSON.stringify(receipt.result));`;
+  assert.deepEqual(JSON.parse(await runHistoricalReadOnlyNamespace(program)), result);
+  assert.deepEqual(await Promise.all([f.originalPath, intentPath, resultPath].map(path => readFile(path))), before);
+  const refusalProgram = `import assert from "node:assert/strict"; import {readCurrentFootprintCombinedHistoricalSnapshot as snapshot,readCurrentFootprintCombinedAbandonment as read} from ${JSON.stringify(module)};
+    const token=await snapshot(${JSON.stringify(operationId)}); await assert.rejects(read(token),/JOURNAL_REFUSED/u); process.stdout.write("historical-reader-refusal-verified");`;
+  assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram, "2"), "historical-reader-refusal-verified");
+  await unlink(resultPath); assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram), "historical-reader-refusal-verified");
+});
+
 void test("warm startup admission rereads the complete original byte and identity binding", async () => {
   const f = await fixture("footprint-combined-historical-tamper"); await f.recovery.run(f.request); await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
   // Deliberately tamper only this isolated synthetic fixture after completion.

@@ -10,6 +10,7 @@ import { controlDataDirectory, controlRootCapability, operationPath, publishMana
 import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { HistoricalOwnerReadQualification } from "./historical-owner-read-qualification.ts";
 import { readCurrentFootprintForwardExecutionOpeningHistory } from "./current-footprint-forward-execution-opening-journal.ts";
 import { currentFootprintForwardExecutionOpeningIdSchema, currentFootprintForwardExecutionOpeningRequestSchema } from "./current-footprint-forward-execution-opening-contract.ts";
 import { currentFootprintForwardOpeningFileProofInputSchema } from "./current-footprint-forward-opening-relinquishment-file-proof.ts";
@@ -85,6 +86,8 @@ export interface CurrentFootprintForwardSourceHistoricalOriginal {
   readonly fileInput: CurrentFootprintForwardOpeningFileProofInput; readonly historySemanticSha256: string;
 }
 const originals = new WeakMap<object, CurrentFootprintForwardSourceHistoricalOriginal>();
+interface OriginalIdentityComparison { readonly manifest: string; readonly directory: string; readonly files: readonly Readonly<{ name: string; identity: string }>[] }
+const historicalIdentityComparisons = new WeakMap<CurrentFootprintForwardSourceHistoricalOriginal, OriginalIdentityComparison>();
 /** Require the externally reviewed whole raw manifest and all 23 original
  * artifacts, then reuse the maintained complete Source chain validator. */
 async function readOriginal(operationId: string): Promise<CurrentFootprintForwardSourceHistoricalOriginal> {
@@ -115,10 +118,12 @@ async function readOriginal(operationId: string): Promise<CurrentFootprintForwar
   });
   const storedHash = history.operation["journalSha256"]; need(typeof storedHash === "string", "STORED_HASH");
   need(sameSlot(manifestSlot, await readSlot(parent, [filename], "selected")) && sameSlot(artifacts, await readSlot(directory, names, "exact")), "ORIGINAL_CHANGED");
-  return freezeDeep({ operationId, originalManifestSha256: PROFILE.manifestSha256, originalCanonicalManifestSha256: PROFILE.canonicalManifestSha256,
+  const original = freezeDeep({ operationId, originalManifestSha256: PROFILE.manifestSha256, originalCanonicalManifestSha256: PROFILE.canonicalManifestSha256,
     originalRosterSha256: PROFILE.rosterSha256, originalStoredJournalSha256: storedHash, originalIntentSha256: sha256Json(records[0]),
     originalBindingSha256: sha256Json(records[6]), originalIdentitySha256: sha256Json({ manifest: manifest.identity, directory: artifacts.identity, files: fileIdentities }),
     externallyReviewedSourceCodeTuple: PROFILE.code, fileInput, historySemanticSha256: prepared.checkpoint.targetEvidence.historySemanticSha256 });
+  historicalIdentityComparisons.set(original, freezeDeep({ manifest: manifest.identity, directory: artifacts.identity, files: fileIdentities }));
+  return original;
 }
 /** Mint custody of original historical bytes only; copied token fields cannot recover it. */
 export async function readCurrentFootprintForwardSourceHistoricalSnapshot(operationId: string): Promise<CurrentFootprintForwardSourceHistoricalSnapshot> {
@@ -139,6 +144,30 @@ function matches(record: Intent | Result, original: CurrentFootprintForwardSourc
   return (["operationId", "originalManifestSha256", "originalCanonicalManifestSha256", "originalRosterSha256", "originalStoredJournalSha256", "originalIntentSha256", "originalBindingSha256", "originalIdentitySha256"] as const)
     .every(key => record[key] === original[key]) && canonicalJson(record.externallyReviewedSourceCodeTuple) === canonicalJson(original.externallyReviewedSourceCodeTuple);
 }
+/** Compare only complete historical receipts with the old namespace's owner
+ * representation. The raw v1 snapshot, encoder and publisher stay unchanged. */
+async function matchesCompleteHistoricalOwnerRead(token: CurrentFootprintForwardSourceHistoricalSnapshot, intent: Intent, result: Result | null): Promise<boolean> {
+  if (result === null) { return false; }
+  const original = requireCurrentFootprintForwardSourceHistoricalSnapshot(token);
+  const comparison = historicalIdentityComparisons.get(original);
+  if (comparison === undefined) { return false; }
+  let qualification: HistoricalOwnerReadQualification | undefined;
+  try {
+    qualification = await HistoricalOwnerReadQualification.open();
+    await assertCurrentFootprintForwardSourceHistoricalSnapshot(token);
+    const project = (value: string): string => {
+      const fields = value.split(":"); need(fields.length === 8 && fields.every(field => /^(?:0|[1-9][0-9]*)$/u.test(field)), "IDENTITY_COMPARISON");
+      const uid = fields[3]; need(uid !== undefined && qualification !== undefined, "IDENTITY_COMPARISON");
+      fields[3] = String(qualification.originalUid(BigInt(uid))); return fields.join(":");
+    };
+    const originalIdentitySha256 = sha256Json({ manifest: project(comparison.manifest), directory: project(comparison.directory),
+      files: comparison.files.map(file => ({ name: file.name, identity: project(file.identity) })) });
+    const historical = { ...original, originalIdentitySha256 };
+    const matched = matches(intent, historical) && matches(result, historical);
+    await assertCurrentFootprintForwardSourceHistoricalSnapshot(token); await qualification.assertCurrent(); return matched;
+  } catch { return false; }
+  finally { await qualification?.close(); }
+}
 /** Partial or contradictory sidecars never clear a blocker. Their data joins
  * the original full snapshot and proof input, without restoring native custody. */
 export async function readCurrentFootprintForwardSourceRelinquishment(token: CurrentFootprintForwardSourceHistoricalSnapshot): Promise<Readonly<{ intent: Intent; result: Result | null }> | null> {
@@ -153,11 +182,21 @@ export async function readCurrentFootprintForwardSourceRelinquishment(token: Cur
     await assertCurrentFootprintForwardSourceHistoricalSnapshot(token); return null;
   }
   const intentBytes = slot.files.get("intent.json")?.bytes; need(intentBytes !== undefined, "INTENT_REQUIRED");
-  const intent = currentFootprintForwardSourceRelinquishmentIntentSchema.parse(parseBytes(intentBytes)); need(matches(intent, original), "INTENT_BINDING");
+  const intent = currentFootprintForwardSourceRelinquishmentIntentSchema.parse(parseBytes(intentBytes));
   const bytes = slot.files.get("relinquished.json")?.bytes;
+  const directIntent = matches(intent, original);
+  // Preserve the original intent refusal before result decoding. A mapped
+  // Comparison can consider only an already complete, strictly valid result.
+  let candidate: Result | null = null;
+  if (!directIntent && bytes !== undefined) {
+    try { candidate = currentFootprintForwardSourceRelinquishmentResultSchema.parse(parseBytes(bytes)); }
+    catch { candidate = null; }
+  }
+  const historicalOwnerRead = !directIntent && await matchesCompleteHistoricalOwnerRead(token, intent, candidate);
+  need(directIntent || historicalOwnerRead, "INTENT_BINDING");
   const result = bytes === undefined ? null : currentFootprintForwardSourceRelinquishmentResultSchema.parse(parseBytes(bytes));
   const input = original.fileInput;
-  need(result === null || matches(result, original) && result.relinquishmentIntentSha256 === sha256Json(intent) &&
+  need(result === null || (matches(result, original) || historicalOwnerRead) && result.relinquishmentIntentSha256 === sha256Json(intent) &&
     result.fileProof.projectUuid === input.target.projectUuid && result.fileProof.branchUuid === input.target.branchUuid && result.fileProof.documentUuid === input.target.documentUuid &&
     result.fileProof.rawSourceSha256 === input.target.expectedSourceSha256 && result.fileProof.oldCheckpointSha256 === input.preparationCheckpoint.sha256 &&
     result.fileProof.oldCheckpointReceiptSha256 === input.checkpointReceiptSha256 && result.fileProof.beforeSqlSha256 === input.beforeSqlSha256 &&

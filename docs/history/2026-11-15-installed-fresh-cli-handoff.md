@@ -58,3 +58,239 @@ Source-only guidance now obtains an ordinary connection's PID from offline
 loaded-facade, rather than starting upstream status merely to find a PID. The
 startup-conflict stub instead returns its own PID from its session inspection.
 The two contracts retain their own supported closure paths.
+
+
+## 2026-11-16 pre-dispatch status retirement correction
+
+A subsequent installed Windows-client status refused in the existing read-only
+journal-admission preflight, before diagnostic scanning, upstream startup or
+its status handler. The original facade's native-owner retirement guard passed,
+but the earlier status callback had permanently ended both existing reference
+classifications. Retirement therefore unnecessarily reached unrelated historical
+journal qualification. The refusal and its original cleanup evidence remain
+retained privately; this correction does not reinterpret those journals.
+
+The source correction adds a separate monotonic private callback classification.
+Only source references and status callbacks whose original fixed admission
+preflight refuses retain this local retirement route. Every admitted or queued
+callback must settle first. Successful preflight revokes eligibility before any
+diagnostic, upstream or status-handler work; missing, repeated, detached or
+reentrant preflight hooks and every other non-reference callback remain strict.
+The prior reference and historical-metadata classifications are never restored,
+and the existing historical coordinator route is unchanged. Native custody is
+still checked before the local retirement decision. Status and CAD admission,
+errors, result schemas, authority-close ordering and lease acknowledgments are
+unchanged; failed retirement does not authorize connection closure.
+
+Focused isolated regressions cover the actual SDK callback and status wrapper,
+queued and pending callbacks, native-first retirement, foreign callback history,
+strict journal fallback and normal retired closure with independent original-child
+exit observation. The original unreadable design and unrelated future diagnostic
+journals remain byte-identical. These are source and isolated-process proofs,
+not connected native/runtime admission. Facade and bridge TypeScript checks and
+strict type-aware lint accompany the focused checks; final payload build, pins,
+complete CI and installation remain the enclosing release workflow's work.
+
+The two focused files passed all 33 cases on Linux x86_64 with Node 24.18.0,
+npm 11.16.0 and soft core limit zero. Both facade and bridge TypeScript checks
+passed, and the four changed TypeScript files had zero type-aware lint warnings
+or errors. An earlier passing run used Node 26.13.1/npm 12.2.2 and is retained
+only as non-target evidence; it does not satisfy the pinned-runtime checks.
+
+## 2026-11-16 PR 214 installation and maintained proofs
+
+[PR 214](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/214)
+merged as a72ddc622e6cc3a756688a23bbe164e7c725d98e. Its tree is identical to
+reviewed head 291bbf62c1763977180006cee5472dc02feef7a7, which passed all 13
+checks. CodeRabbit's final review covered that head with no actionable issues;
+all reported inline and outside-diff issues were addressed. The merged remote
+feature branch was removed after checking its exact head. No PR remained open
+at that point.
+
+Both hosts used the official upgrade scoped to easyeda-pro-agent and retained
+the [Git marketplace](https://github.com/jan-guenter/easyeda-pro-agent-plugin.git).
+The installed stamp is 0.3.0+codex.20261115233510. The trusted merged checkout
+verified all 5,079 Linux installed files, 47 directories including the root and
+98,433,360 bytes with the full V2 byte/mode/link comparison. Independent Windows
+verification covered the same files and bytes, all 46 descendant directories,
+reparse-free root ancestry/entries and single-link original file-handle hashes.
+That Windows proof claims neither POSIX modes, NTFS ACL custody nor directory
+durability. The maintained recognized-profile replacement selected the exact
+new Linux root; no installed cache or authentication file was patched.
+
+The maintained installed Linux V1 and actual Windows V2 metadata helpers both
+completed successfully. The Windows driver used the original Linux evidence
+broker and file/directory synchronization acknowledgments. Each fresh CLI used
+only the four fixed metadata actions, retained full replies and its original
+facade pidfd before inspection, then observed original facade, watcher and
+driver closure. Windows also retained and observed its original CLI-lineage
+handles. These runs needed no model turn, desktop restart or manual app action.
+Their selected empty workspaces were removed separately on each platform after
+original closure; raw evidence remains private.
+
+The later fresh Windows-host connection loaded the expected snapshot, but its
+single ordinary Status refused historical abandonment qualification before
+upstream startup. Retirement then failed the Source historical intent binding.
+Its complete settled callback history and installed source showed no native,
+application or Job allocation. After supported retirement failed, the existing
+metadata-only cleanup exception was applied: exact original start/executable,
+module, all six namespace views, original pidfd custody and no descendants were
+rechecked, a single SIGTERM intent was synchronized, and exactly one pidfd
+SIGTERM targeted that facade. Both retained pidfds observed original exit and
+the original watcher completed. The lease path was subsequently absent. This
+is fallback exit evidence, not an acknowledged MCP retirement or native closure.
+
+Read-only comparisons then reproduced the identity mismatch: the unchanged
+Source intent matches all nine bindings outside the UID-one namespace; inside
+it only the stat-owner identity hash differs. Both original Symbol abandonment
+profiles qualify outside and reject their recorded-copy owner identity inside.
+No journal, sidecar or saved design was rewritten. The namespace qualification
+correction and the supported retirement correction belong to the following
+batched release. Installed upstream startup, capsule-fix acceptance and bridge
+or CAD admission remain unproved by this case.
+
+
+## 2026-11-16 historical owner representation correction
+
+Read-only comparison isolated another boundary introduced by the reviewed outer
+root-to-one capsule. The complete original Source sidecar bindings match outside
+the capsule, but its v1 file-identity digest includes the namespace-relative UID.
+The unchanged files report owner zero outside and owner one inside. Two existing
+closed-symbol abandonment receipts similarly refused their unchanged retained
+raw-copy UID/GID identity. Their original refusal and comparison evidence remain
+retained privately; no journal, sidecar or project bytes were rewritten.
+
+A separate private, versioned read qualification retains the original user
+namespace descriptor. It requires exactly one `1 0 1` range in both current maps,
+all real/effective/saved/filesystem UID/GID columns equal to one and all five
+capability sets zero. It rechecks those facts and the retained namespace across
+asynchronous comparison boundaries. Unsupported maps, credentials and ownership
+remain refused. Local file ownership, modes and complete current-view identities
+are checked independently; all non-owner identity fields and byte hashes remain
+exact. The qualification supplies no native owner or cached admission.
+
+Only a complete existing Source intent/result pair may additionally compare the
+old owner-zero identity representation. Both must bind the same projected digest
+and retain every original manifest, roster, chain, result-to-intent and file-proof
+binding. Raw v1 snapshot and publisher projections are unchanged; an incomplete
+old pair cannot use this read comparison to resume or publish. Symbol reuse is
+restricted to the abandonment reader and its separately named fixed baseline
+cold reader. The ordinary recorded-copy reader keeps its original strict identity
+comparison. Every existing result shape and fixed authority flag is unchanged.
+
+Actual inert read-only user-namespace fixtures preserve byte-identical v1 records,
+prove historical reads under the exact mapping, and prove that ordinary reads
+and Source publication remain strict. Negative cases cover different UID/GID
+maps, capability and credential fields, copied/closed qualification state,
+non-owner identity drift, inconsistent complete Source digests and incomplete
+sidecars. The first implementation diagnostic passed 34 of 35 cases; the sole
+failure was the test bundler's Go RE2 rejection of a JavaScript Unicode regex
+flag. Its correction changes only the test fixture. These proofs use synthetic
+managed histories and inert Node readers, not connected native/runtime admission;
+complete public-payload build, checks, installation and real-history read-only
+qualification remain the enclosing release workflow's work.
+
+After freezing the correction, all 35 cases in the three focused files passed
+with no skips on Linux x86_64, Node 24.18.0, npm 11.16.0 and soft core limit zero.
+The nine changed TypeScript files passed strict type-aware lint with zero
+warnings and errors. No whole-project suite or lint campaign was repeated for
+this second leaf; the enclosing final-payload verification remains required.
+
+
+The integrated correction also passed a read-only check of the three actual
+unchanged historical records. Fresh Linux namespaces with UID/GID zero and one
+both used a read-only root and no capabilities. Both Symbol profiles qualified
+historical abandonment, and the complete Source receipt qualified. Execution,
+authority restoration, completion and replay flags remained false. This proves
+the historical read correction on the existing bytes, separately from later
+installed upstream, bridge and CAD admission.
+
+## 2026-11-16 complete diagnostic historical-read inventory
+
+Before publication, the expanded read-only diagnostic preflight found additional
+namespace-sensitive identities that the preceding three-record proof did not
+cover. Independent inspection of all 94 diagnostic lifecycles identified four
+complete historical receipts: one Combined abandonment, two Forward Opening
+versions and one generated closed Pad reader. Each passed under inert UID zero
+and refused under the exact UID-one mapping. The earlier Source and Symbol
+proofs remain valid for their stated scope; they were not a full diagnostic
+preflight proof. Original refusals and complete before/after evidence are retained
+privately without rewriting any original journal or sidecar.
+
+The full admission call-graph inventory distinguishes these boundaries:
+
+| Historical path | Persisted local owner identity | Treatment |
+| --- | --- | --- |
+| Source, Combined, Forward Opening v1/v2, generated closed Pad | Eight-field raw fstat tuple including UID | Complete-pair private namespace read qualification only |
+| Closed-symbol pre-navigation abandonment | Full recorded raw-copy UID/GID identity | Prior separate fixed baseline historical read qualification |
+| Closed-symbol baseline and current-symbol baseline abandonment | Managed byte/hash descriptors | Existing fresh local authority remains strict |
+| Via and schematic display abandonment, Via pre-opening relinquishment | Managed byte/hash descriptors and complete journal bindings | Existing fresh local authority remains strict |
+| Ordinary launch abandonment | Intent/receipt hashes and fresh descriptor identity | Unchanged |
+| Held-cache, head-age and dormant String exclusions | Fresh descriptor/roster checks | Unchanged; no historical owner promotion |
+| Locked and aged Symbol terminal readers | Separate complete terminal/closure identity contracts | Ordinary and terminal readers remain strict |
+
+The three additional diagnostic families now retain their raw original tuple in
+private comparison maps. Only a complete existing intent/result pair can compare
+the owner-zero representation through the previously qualified original user
+namespace. Both records must match the same projected identity and every other
+original digest, producer, installation, intent link and file-proof field. Raw
+snapshot outputs and publishers are unchanged; incomplete, unknown or mismatched
+histories remain blocked. The namespace tuple helper accepts only the fixed
+bounded eight-field representation after original current-owner proof.
+
+The fixed Status preflight now includes both its general journal observation
+and its first diagnostic exclusion scan. Those call graphs perform read-only
+metadata work and bounded in-memory bookkeeping. Eligibility ends immediately
+before the first upstream tool-list request; a refusal in the later diagnostic
+scan or any upstream/handler path remains strict. Pending calls, unknown hooks,
+other non-reference history and native-first retirement guards are unchanged.
+No public result shape, old reference classification or authority flag changes.
+
+New inert namespace regressions cover unchanged Combined and both Forward
+Opening receipt versions, strict raw publishers, incomplete pairs and incorrect
+UID/GID mappings. Registration tests distinguish a refusal in the first metadata
+scan from the diagnostic scan after upstream dispatch. Early fixture failures
+exposed shared deliberately damaged histories and a comparison against the
+coordinator's display envelope instead of its raw persisted receipt; the fixtures
+now preserve those distinctions and their original private failure evidence.
+The generated reader's actual complete retained chain is included independently
+in the full read-only preflight proof. No ordinary Status, native application,
+bridge, CAD operation, journal write or process signal is involved in that proof.
+
+Namespace-changed locked or aged terminal proofs remain outside this historical
+abandonment qualification. They require a separately named historical-terminal
+read composition and full closure regression coverage; their branded runtime
+lease and original closure models are not widened here. The actual general
+operation scan had zero blockers under both UID zero and UID one, so no such
+terminal history is hidden behind the current diagnostic refusals. This correction
+grants no generic cross-namespace ordinary replay or owner adoption.
+
+The final seven affected regression files passed all 54 cases with no skips on
+Linux x86_64, Node 24.18.0, npm 11.16.0 and soft core limit zero. Facade and bridge
+TypeScript checks passed; narrow strict type-aware lint found zero warnings or
+errors in all nine changed TypeScript files. No whole-project suite or lint run
+was repeated for this leaf.
+
+On the same frozen production source, the actual existing histories passed all
+four additional complete-receipt inspections and all eight read-only guards
+under both inert UID zero and exact UID one. The general scan returned zero
+blockers in both runs. All four returned persisted v1/v2 records exactly match
+the pre-change UID-zero observations, including every existing authority and
+outcome field. The complete 94-lifecycle inventory and full engine/ordinary
+preflight were checked before sealing this correction. The inert processes
+exited normally; no upstream, native owner, bridge, ordinary Status call,
+production journal write or signal was used. This establishes the read-only
+historical preflight boundary, not connected runtime/native admission or later
+execution authority. Final payload build, compatibility pins, CI, review and
+installation remain the enclosing release workflow's work.
+## 2026-11-16 CodeRabbit namespace-test correction
+
+The full PR review identified a false-positive risk in negative child-process
+checks: Node's execFile error can include the program text containing the very
+error pattern being matched. The namespace negatives now assert the expected
+reader refusal inside the child and require its successful exit and exact
+confirmation in the parent. The same correction covers Combined, Forward
+Opening, Source, Symbol and namespace-qualification cases. The two reported
+test files pass all 12 cases; the three directly related namespace cases pass
+on the corrected child assertion path. Production source, bundles, compatibility
+pins and the unpublished candidate stamp are unchanged by this test correction.

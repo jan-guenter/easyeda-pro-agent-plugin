@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
+import { historicalRootNamespaceAvailable, runHistoricalReadOnlyNamespace } from "./helpers/historical-owner-namespace-fixture.ts";
 import type { TestContext } from "node:test";
 import { controlDataDirectory, operationPath, writePhaseArtifact } from "../src/artifacts.ts";
 import { createCheckpoint } from "../src/checkpoint.ts";
@@ -315,4 +316,30 @@ void test("baseline abandonment rejects a mere success flag and any later close 
   assert.deepEqual(await readFile(window.path), windowBytes);
   await writeFile(window.path, "changed diagnostic\n");
   await assert.rejects(inspectClosedSymbolBaselineAbandonment(diagnostic.journal.operationId));
+});
+
+void test("root-owned Symbol abandonment v1 survives the inert UID-one read without relaxing the ordinary recorded-copy reader", { timeout: 60_000 }, async context => {
+  if (!historicalRootNamespaceAvailable()) { context.skip("Requires the actual root-to-one parent UID/GID mapping."); return; }
+  const value = await fixture();
+  const result = await abandonClosedSymbolBeforeNavigation(value.journal.operationId);
+  const before = await retainedBytes(value);
+  const runtime = await syntheticSqlRuntime(), sidecar = await readFile(result.artifact.path);
+  const historicalModule = new URL("../src/closed-symbol-abandonment.ts", import.meta.url).href;
+  const strictModule = new URL("../src/closed-symbol-recorded-copy.ts", import.meta.url).href;
+  const program = `
+    import assert from "node:assert/strict";
+    import { inspectClosedSymbolAbandonment } from ${JSON.stringify(historicalModule)};
+    import { inspectRecordedClosedCopy } from ${JSON.stringify(strictModule)};
+    await assert.rejects(inspectRecordedClosedCopy({ operationId: ${JSON.stringify(value.journal.operationId)}, phase: "baseline-copy", runtime: ${JSON.stringify(runtime)} }), /artifact identity changed/u);
+    const result = await inspectClosedSymbolAbandonment(${JSON.stringify(value.journal.operationId)});
+    assert.deepEqual(result, ${JSON.stringify(result)}); process.stdout.write(JSON.stringify(result));
+  `;
+  assert.deepEqual(JSON.parse(await runHistoricalReadOnlyNamespace(program)), result);
+  assert.deepEqual(await retainedBytes(value), before); assert.deepEqual(await readFile(result.artifact.path), sidecar);
+  const refusalProgram = `import assert from "node:assert/strict"; import { inspectClosedSymbolAbandonment } from ${JSON.stringify(historicalModule)};
+    await assert.rejects(inspectClosedSymbolAbandonment(${JSON.stringify(value.journal.operationId)}),/recorded copy identity changed/u); process.stdout.write("historical-symbol-refusal-verified");`;
+  assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram, "2"), "historical-symbol-refusal-verified");
+  const paths = await baselinePaths(value), raw = await stat(paths.raw);
+  await utimes(paths.raw, raw.atime, new Date(raw.mtimeMs + 1000));
+  assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram), "historical-symbol-refusal-verified");
 });

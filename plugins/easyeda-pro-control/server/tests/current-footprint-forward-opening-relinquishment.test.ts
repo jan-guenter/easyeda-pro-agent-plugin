@@ -5,12 +5,13 @@ import assert from "node:assert/strict";
 import { readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
+import { historicalRootNamespaceAvailable, runHistoricalReadOnlyNamespace } from "./helpers/historical-owner-namespace-fixture.ts";
 import { controlDataDirectory } from "../src/artifacts.ts";
 import { sha256Json, sha256Text } from "../src/core.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE } from "../src/current-footprint-copy-main-backend-source.ts";
 import { CURRENT_FOOTPRINT_FORWARD_OPENING_190023_INSTALLATION, CURRENT_FOOTPRINT_FORWARD_OPENING_190023_PRODUCER,
-  CURRENT_FOOTPRINT_FORWARD_OPENING_INSTALLATION, CURRENT_FOOTPRINT_FORWARD_OPENING_PRODUCER,
+  CURRENT_FOOTPRINT_FORWARD_OPENING_INSTALLATION, CURRENT_FOOTPRINT_FORWARD_OPENING_PRODUCER, CURRENT_FOOTPRINT_FORWARD_OPENING_RELINQUISHMENT_DIRECTORY,
   currentFootprintForwardOpening190023HistoricalIntentSchema, currentFootprintForwardOpening190023RelinquishmentIntentSchema,
   currentFootprintForwardOpening190023RelinquishmentResultSchema, currentFootprintForwardOpeningHistoricalIntentSchema,
   currentFootprintForwardOpeningKnownHistoricalIntentSchema, currentFootprintForwardOpeningRelinquishmentIntentSchema,
@@ -266,6 +267,30 @@ void test("one resolver settles two distinct original histories after exact resu
   await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
 });
 
+for (const profile of ["v1", "190023"] as const) {
+  void test(`complete Forward Opening ${profile} historical reads preserve namespace ownership without normalizing publishers`, async context => {
+    if (!historicalRootNamespaceAvailable()) { context.skip("Requires the actual root-to-one parent UID/GID mapping."); return; }
+    const operationId = `footprint-copy-qualify-namespace-${profile}`;
+    const f = await fixture(operationId, profile);
+    await f.recovery.run(f.request);
+    const directory = join(controlDataDirectory(), CURRENT_FOOTPRINT_FORWARD_OPENING_RELINQUISHMENT_DIRECTORY, operationId);
+    const intentPath = join(directory, "intent.json"), resultPath = join(directory, "relinquished.json");
+    const before = await Promise.all([f.originalPath, intentPath, resultPath].map(path => readFile(path)));
+    const resultBytes = before[2]; assert.ok(resultBytes !== undefined); context.after(() => writeFile(resultPath, resultBytes, { mode: 0o600 }));
+    const result: unknown = JSON.parse(resultBytes.toString("utf8"));
+    const module = new URL("../src/current-footprint-forward-opening-relinquishment-journal.ts", import.meta.url).href;
+    const program = `import assert from "node:assert/strict"; import {readCurrentFootprintForwardOpeningHistoricalSnapshot as snapshot,readCurrentFootprintForwardOpeningRelinquishment as read,publishCurrentFootprintForwardOpeningRelinquishment as publish} from ${JSON.stringify(module)};
+      const token=await snapshot(${JSON.stringify(operationId)}),receipt=await read(token); assert.deepEqual(receipt.result,${JSON.stringify(result)});
+      await assert.rejects(publish(token,"relinquished.json",receipt.result),/JOURNAL_REFUSED/u); process.stdout.write(JSON.stringify(receipt.result));`;
+    assert.deepEqual(JSON.parse(await runHistoricalReadOnlyNamespace(program)), result);
+    assert.deepEqual(await Promise.all([f.originalPath, intentPath, resultPath].map(path => readFile(path))), before);
+    const refusalProgram = `import assert from "node:assert/strict"; import {readCurrentFootprintForwardOpeningHistoricalSnapshot as snapshot,readCurrentFootprintForwardOpeningRelinquishment as read} from ${JSON.stringify(module)};
+      const token=await snapshot(${JSON.stringify(operationId)}); await assert.rejects(read(token),/JOURNAL_REFUSED/u); process.stdout.write("historical-reader-refusal-verified");`;
+    assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram, "1", "2"), "historical-reader-refusal-verified");
+    await unlink(resultPath); assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram), "historical-reader-refusal-verified");
+  });
+}
+
 void test("caller JSON cannot supply original or observation authority and guard rereads immutable historical bytes", async () => {
   const f = await fixture("footprint-copy-qualify-relinquishment-original");
   assert.equal(currentFootprintForwardOpeningRelinquishmentRequestSchema.safeParse({ ...f.request, observation: {} }).success, false);
@@ -281,4 +306,3 @@ void test("caller JSON cannot supply original or observation authority and guard
   await writeFile(f.originalPath, `${originalText.trim()} \n`);
   await assert.rejects(assertNoUnresolvedCurrentPcbDiagnosticLaunches(), /JOURNAL_REFUSED/u);
 });
-

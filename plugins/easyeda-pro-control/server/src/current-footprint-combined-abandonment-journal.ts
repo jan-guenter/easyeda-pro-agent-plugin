@@ -6,6 +6,7 @@ import { join } from "node:path";
 import type { z } from "zod";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
+import { HistoricalOwnerReadQualification } from "./historical-owner-read-qualification.ts";
 import { CURRENT_FOOTPRINT_COMBINED_ABANDONMENT_DIRECTORY, currentFootprintCombinedAbandonmentIntentSchema,
   currentFootprintCombinedAbandonmentResultSchema, currentFootprintCombinedHistoricalIntentSchema } from "./current-footprint-combined-abandonment-contract.ts";
 import type { CurrentFootprintCombinedAbandonmentIntent, CurrentFootprintCombinedAbandonmentResult } from "./current-footprint-combined-abandonment-contract.ts";
@@ -53,6 +54,8 @@ interface Original {
   readonly originalInstallationSha256: string; readonly intent: z.infer<typeof currentFootprintCombinedHistoricalIntentSchema>;
 }
 const originals = new WeakMap<object, Original>();
+interface HistoricalIdentityComparison { readonly directory: string; readonly file: string }
+const historicalIdentityComparisons = new WeakMap<Original, HistoricalIdentityComparison>();
 async function readOriginal(operationId: string): Promise<Original> {
   currentFootprintCombinedHistoricalIntentSchema.shape.operationId.parse(operationId);
   const slot = await readSlot(join(controlDataDirectory(), ORIGINAL_DIRECTORY, operationId), ["intent.json"], false);
@@ -60,10 +63,12 @@ async function readOriginal(operationId: string): Promise<Original> {
   const decoded = new TextDecoder("utf-8", { fatal: true }).decode(file.bytes);
   const intent = currentFootprintCombinedHistoricalIntentSchema.parse(JSON.parse(decoded) as unknown); need(intent.operationId === operationId);
   const rawSha256 = sha256Text(file.bytes.toString("utf8"));
-  return Object.freeze({ operationId, originalIntentSha256: sha256Json(intent),
+  const original: Original = Object.freeze({ operationId, originalIntentSha256: sha256Json(intent),
     originalRosterSha256: sha256Json([{ name: "intent.json", bytes: file.bytes.length, sha256: rawSha256 }]),
     originalIdentitySha256: sha256Json({ directory: slot.identity, file: file.identity }),
     originalProducerFacadeSha256: intent.facadeSha256, originalInstallationSha256: intent.installationSha256, intent: Object.freeze(intent) });
+  historicalIdentityComparisons.set(original, Object.freeze({ directory: slot.identity, file: file.identity }));
+  return original;
 }
 export async function readCurrentFootprintCombinedHistoricalSnapshot(operationId: string): Promise<CurrentFootprintCombinedHistoricalSnapshot> {
   const original = await readOriginal(operationId);
@@ -81,6 +86,23 @@ function matchingOriginal(record: Original | CurrentFootprintCombinedAbandonment
   return (["operationId", "originalIntentSha256", "originalRosterSha256", "originalIdentitySha256", "originalProducerFacadeSha256", "originalInstallationSha256"] as const)
     .every(key => record[key] === original[key]);
 }
+/** A complete old pair may compare the original namespace owner only.
+ * Raw v1 snapshots, publishers, incomplete records and every other binding stay strict. */
+async function matchesCompleteHistoricalOwnerRead(token: CurrentFootprintCombinedHistoricalSnapshot, intent: CurrentFootprintCombinedAbandonmentIntent, result: CurrentFootprintCombinedAbandonmentResult | null): Promise<boolean> {
+  if (result === null) { return false; }
+  const original = requireCurrentFootprintCombinedHistoricalSnapshot(token);
+  const comparison = historicalIdentityComparisons.get(original); if (comparison === undefined) { return false; }
+  let qualification: HistoricalOwnerReadQualification | undefined;
+  try {
+    qualification = await HistoricalOwnerReadQualification.open(); await assertCurrentFootprintCombinedHistoricalSnapshot(token);
+    const qualified = qualification;
+    const originalIdentitySha256 = sha256Json({ directory: qualified.originalUidTuple(comparison.directory), file: qualified.originalUidTuple(comparison.file) });
+    const historical = { ...original, originalIdentitySha256 };
+    const matched = matchingOriginal(intent, historical) && matchingOriginal(result, historical);
+    await assertCurrentFootprintCombinedHistoricalSnapshot(token); await qualification.assertCurrent(); return matched;
+  } catch { return false; }
+  finally { await qualification?.close(); }
+}
 export async function readCurrentFootprintCombinedAbandonment(token: CurrentFootprintCombinedHistoricalSnapshot): Promise<Readonly<{
   intent: CurrentFootprintCombinedAbandonmentIntent; result: CurrentFootprintCombinedAbandonmentResult | null;
 }> | null> {
@@ -89,10 +111,16 @@ export async function readCurrentFootprintCombinedAbandonment(token: CurrentFoot
   const slot = await readSlot(join(controlDataDirectory(), CURRENT_FOOTPRINT_COMBINED_ABANDONMENT_DIRECTORY, original.operationId), ["intent.json", "abandoned.json"], true);
   if (slot === null) { return null; }
   const intentBytes = slot.files.get("intent.json")?.bytes; need(intentBytes !== undefined);
-  const intent = currentFootprintCombinedAbandonmentIntentSchema.parse(JSON.parse(intentBytes.toString("utf8")) as unknown); need(matchingOriginal(intent, original));
+  const intent = currentFootprintCombinedAbandonmentIntentSchema.parse(JSON.parse(intentBytes.toString("utf8")) as unknown);
   const resultBytes = slot.files.get("abandoned.json")?.bytes;
+  const directIntent = matchingOriginal(intent, original); let candidate: CurrentFootprintCombinedAbandonmentResult | null = null;
+  if (!directIntent && resultBytes !== undefined) {
+    try { candidate = currentFootprintCombinedAbandonmentResultSchema.parse(JSON.parse(resultBytes.toString("utf8")) as unknown); } catch { candidate = null; }
+  }
+  const historicalOwnerRead = !directIntent && await matchesCompleteHistoricalOwnerRead(token, intent, candidate);
+  need(directIntent || historicalOwnerRead);
   const result = resultBytes === undefined ? null : currentFootprintCombinedAbandonmentResultSchema.parse(JSON.parse(resultBytes.toString("utf8")) as unknown);
-  need(result === null || matchingOriginal(result, original) && result.abandonmentIntentSha256 === sha256Json(intent));
+  need(result === null || (matchingOriginal(result, original) || historicalOwnerRead) && result.abandonmentIntentSha256 === sha256Json(intent));
   await assertCurrentFootprintCombinedHistoricalSnapshot(token); return Object.freeze({ intent, result });
 }
 export async function publishCurrentFootprintCombinedAbandonment(token: CurrentFootprintCombinedHistoricalSnapshot,

@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive, verifyExactManagedArtifact } from "./artifacts.ts";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
+import { HistoricalOwnerReadQualification } from "./historical-owner-read-qualification.ts";
 // oxlint-disable-next-line import/no-cycle -- Lazy historical checks share the original chain validator without initialization-time calls.
 import { readCurrentPcbDiagnosticLifecycles } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import type { DiagnosticLifecycleRecords } from "./current-pcb-diagnostic-lifecycle-journal.ts";
@@ -61,6 +62,8 @@ export interface GeneratedReaderHistoricalOriginal {
   readonly originalProducerFacadeSha256: typeof GENERATED_READER_KNOWN_FACADE_SHA256;
 }
 const issued = new WeakMap<GeneratedReaderHistoricalSnapshot, GeneratedReaderHistoricalOriginal>();
+interface HistoricalIdentityComparison { readonly directory: string; readonly files: readonly Readonly<{ name: string; identity: string }>[] }
+const historicalIdentityComparisons = new WeakMap<GeneratedReaderHistoricalOriginal, HistoricalIdentityComparison>();
 export const GENERATED_READER_ORIGINAL_RECORDS = Object.freeze([
   "binding.json", "browser-intent.json", "browser-result.json", "close-acknowledged.json", "close-intent.json",
   "frames-intent.json", "frames-result.json", "generated-closed-capture-intent.json", "generated-closed-capture-result.json", "intent.json",
@@ -97,9 +100,11 @@ async function readOriginal(operationId: string): Promise<GeneratedReaderHistori
   const after = await readSlot(directory, GENERATED_READER_ORIGINAL_RECORDS, false);
   need(after !== null && after.identity === slot.identity && [...slot.files].every(([name, file]) =>
     after.files.get(name)?.identity === file.identity && after.files.get(name)?.bytes.equals(file.bytes) === true));
-  return Object.freeze({ operationId, records: Object.freeze(records), originalRosterSha256: GENERATED_READER_KNOWN_ROSTER_SHA256,
+  const original: GeneratedReaderHistoricalOriginal = Object.freeze({ operationId, records: Object.freeze(records), originalRosterSha256: GENERATED_READER_KNOWN_ROSTER_SHA256,
     originalIdentitySha256: sha256Json({ directory: slot.identity, files: identities }), originalIntentSha256: sha256Json(intent),
     originalCaptureSha256: sha256Json(captured), originalProducerFacadeSha256: GENERATED_READER_KNOWN_FACADE_SHA256 });
+  historicalIdentityComparisons.set(original, Object.freeze({ directory: slot.identity, files: identities }));
+  return original;
 }
 export async function readGeneratedReaderHistoricalSnapshot(operationId: string): Promise<GeneratedReaderHistoricalSnapshot> {
   const original = await readOriginal(operationId);
@@ -115,6 +120,23 @@ function matches(record: GeneratedReaderRelinquishmentIntent | GeneratedReaderRe
   return (["operationId", "originalRosterSha256", "originalIdentitySha256", "originalIntentSha256", "originalCaptureSha256", "originalProducerFacadeSha256"] as const)
     .every(key => record[key] === original[key]);
 }
+/** A complete old pair may compare the original namespace owner only.
+ * Raw v1 snapshots, publishers, incomplete records and every other binding stay strict. */
+async function matchesCompleteHistoricalOwnerRead(token: GeneratedReaderHistoricalSnapshot, intent: GeneratedReaderRelinquishmentIntent, result: GeneratedReaderRelinquishmentResult | null): Promise<boolean> {
+  if (result === null) { return false; }
+  const original = requireGeneratedReaderHistoricalSnapshot(token);
+  const comparison = historicalIdentityComparisons.get(original); if (comparison === undefined) { return false; }
+  let qualification: HistoricalOwnerReadQualification | undefined;
+  try {
+    qualification = await HistoricalOwnerReadQualification.open(); await assertGeneratedReaderHistoricalSnapshot(token);
+    const qualified = qualification;
+    const originalIdentitySha256 = sha256Json({ directory: qualified.originalUidTuple(comparison.directory), files: comparison.files.map(file => ({ name: file.name, identity: qualified.originalUidTuple(file.identity) })) });
+    const historical = { ...original, originalIdentitySha256 };
+    const matched = matches(intent, historical) && matches(result, historical);
+    await assertGeneratedReaderHistoricalSnapshot(token); await qualification.assertCurrent(); return matched;
+  } catch { return false; }
+  finally { await qualification?.close(); }
+}
 export async function readGeneratedReaderRelinquishment(token: GeneratedReaderHistoricalSnapshot): Promise<Readonly<{
   intent: GeneratedReaderRelinquishmentIntent; result: GeneratedReaderRelinquishmentResult | null;
 }> | null> {
@@ -125,7 +147,8 @@ export async function readGeneratedReaderRelinquishment(token: GeneratedReaderHi
   const intent = currentGeneratedReaderRelinquishmentIntentSchema.parse(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(first.bytes)) as unknown);
   const last = slot.files.get("relinquished.json");
   const result = last === undefined ? null : currentGeneratedReaderRelinquishmentResultSchema.parse(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(last.bytes)) as unknown);
-  need(matches(intent, original) && (result === null || matches(result, original) && result.relinquishmentIntentSha256 === sha256Json(intent)));
+  const historicalOwnerRead = !matches(intent, original) && await matchesCompleteHistoricalOwnerRead(token, intent, result);
+  need((matches(intent, original) || historicalOwnerRead) && (result === null || (matches(result, original) || historicalOwnerRead) && result.relinquishmentIntentSha256 === sha256Json(intent)));
   await assertGeneratedReaderHistoricalSnapshot(token); return Object.freeze({ intent, result });
 }
 export async function publishGeneratedReaderRelinquishment(token: GeneratedReaderHistoricalSnapshot,

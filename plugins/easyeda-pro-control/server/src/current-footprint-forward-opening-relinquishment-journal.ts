@@ -9,6 +9,7 @@ import { readCurrentPcbDiagnosticLifecycles } from "./current-pcb-diagnostic-lif
 import type { DiagnosticLifecycleRecords } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
+import { HistoricalOwnerReadQualification } from "./historical-owner-read-qualification.ts";
 import { CURRENT_FOOTPRINT_FORWARD_OPENING_RELINQUISHMENT_DIRECTORY, currentFootprintForwardOpeningHistoricalIntentSchema,
   currentFootprintForwardOpeningKnownHistoricalIntentSchema, currentFootprintForwardOpeningKnownRelinquishmentIntentSchema,
   currentFootprintForwardOpeningKnownRelinquishmentResultSchema } from "./current-footprint-forward-opening-relinquishment-contract.ts";
@@ -64,6 +65,8 @@ export interface CurrentFootprintForwardOpeningOriginal {
   readonly relinquishmentVersion: 1 | 2;
 }
 const originals = new WeakMap<object, CurrentFootprintForwardOpeningOriginal>();
+interface HistoricalIdentityComparison { readonly directory: string; readonly files: readonly Readonly<{ name: string; identity: string }>[] }
+const historicalIdentityComparisons = new WeakMap<CurrentFootprintForwardOpeningOriginal, HistoricalIdentityComparison>();
 /** Every opening stage must be present and no later result, route or cleanup
  * may be inferred absent from a subset of the original directory. */
 export const CURRENT_FOOTPRINT_FORWARD_OPENING_ORIGINAL_RECORDS = Object.freeze([
@@ -98,11 +101,13 @@ async function readOriginal(operationId: string): Promise<CurrentFootprintForwar
   const after = await readSlot(directory, CURRENT_FOOTPRINT_FORWARD_OPENING_ORIGINAL_RECORDS, false);
   need(after !== null && after.identity === slot.identity && [...slot.files].every(([name, file]) =>
     after.files.get(name)?.identity === file.identity && after.files.get(name)?.bytes.equals(file.bytes) === true));
-  return Object.freeze({ operationId, records: Object.freeze(records), opening: Object.freeze(opening),
+  const original: CurrentFootprintForwardOpeningOriginal = Object.freeze({ operationId, records: Object.freeze(records), opening: Object.freeze(opening),
     originalIntentSha256: sha256Json(intent), originalBindingSha256: sha256Json(binding), originalOpeningIntentSha256: sha256Json(opening),
     originalRosterSha256: sha256Json(roster), originalIdentitySha256: sha256Json({ directory: slot.identity, files: identities }),
     originalProducerFacadeSha256: intent.facadeSha256, originalInstallationSha256: intent.installationSha256, intent: Object.freeze(intent),
     relinquishmentVersion: currentFootprintForwardOpeningHistoricalIntentSchema.safeParse(intent).success ? 1 : 2 });
+  historicalIdentityComparisons.set(original, Object.freeze({ directory: slot.identity, files: identities }));
+  return original;
 }
 /** Mint an opaque token only after validating every original byte, identity and chain predecessor. */
 export async function readCurrentFootprintForwardOpeningHistoricalSnapshot(operationId: string): Promise<CurrentFootprintForwardOpeningHistoricalSnapshot> {
@@ -125,6 +130,23 @@ function matchingOriginal(record: CurrentFootprintForwardOpeningOriginal | Curre
     .every(key => record[key] === original[key]);
 }
 /** A partial or contradictory sidecar cannot relinquish the original launch blocker. */
+/** A complete old pair may compare the original namespace owner only.
+ * Raw v1 snapshots, publishers, incomplete records and every other binding stay strict. */
+async function matchesCompleteHistoricalOwnerRead(token: CurrentFootprintForwardOpeningHistoricalSnapshot, intent: CurrentFootprintForwardOpeningKnownRelinquishmentIntent, result: CurrentFootprintForwardOpeningKnownRelinquishmentResult | null): Promise<boolean> {
+  if (result === null) { return false; }
+  const original = requireCurrentFootprintForwardOpeningHistoricalSnapshot(token);
+  const comparison = historicalIdentityComparisons.get(original); if (comparison === undefined) { return false; }
+  let qualification: HistoricalOwnerReadQualification | undefined;
+  try {
+    qualification = await HistoricalOwnerReadQualification.open(); await assertCurrentFootprintForwardOpeningHistoricalSnapshot(token);
+    const qualified = qualification;
+    const originalIdentitySha256 = sha256Json({ directory: qualified.originalUidTuple(comparison.directory), files: comparison.files.map(file => ({ name: file.name, identity: qualified.originalUidTuple(file.identity) })) });
+    const historical = { ...original, originalIdentitySha256 };
+    const matched = matchingOriginal(intent, historical) && matchingOriginal(result, historical);
+    await assertCurrentFootprintForwardOpeningHistoricalSnapshot(token); await qualification.assertCurrent(); return matched;
+  } catch { return false; }
+  finally { await qualification?.close(); }
+}
 export async function readCurrentFootprintForwardOpeningRelinquishment(token: CurrentFootprintForwardOpeningHistoricalSnapshot): Promise<Readonly<{
   intent: CurrentFootprintForwardOpeningKnownRelinquishmentIntent; result: CurrentFootprintForwardOpeningKnownRelinquishmentResult | null;
 }> | null> {
@@ -133,10 +155,16 @@ export async function readCurrentFootprintForwardOpeningRelinquishment(token: Cu
   const slot = await readSlot(join(controlDataDirectory(), CURRENT_FOOTPRINT_FORWARD_OPENING_RELINQUISHMENT_DIRECTORY, original.operationId), ["intent.json", "relinquished.json"], true);
   if (slot === null) { return null; }
   const intentBytes = slot.files.get("intent.json")?.bytes; need(intentBytes !== undefined);
-  const intent = currentFootprintForwardOpeningKnownRelinquishmentIntentSchema.parse(JSON.parse(intentBytes.toString("utf8")) as unknown); need(matchingOriginal(intent, original));
+  const intent = currentFootprintForwardOpeningKnownRelinquishmentIntentSchema.parse(JSON.parse(intentBytes.toString("utf8")) as unknown);
   const resultBytes = slot.files.get("relinquished.json")?.bytes;
+  const directIntent = matchingOriginal(intent, original); let candidate: CurrentFootprintForwardOpeningKnownRelinquishmentResult | null = null;
+  if (!directIntent && resultBytes !== undefined) {
+    try { candidate = currentFootprintForwardOpeningKnownRelinquishmentResultSchema.parse(JSON.parse(resultBytes.toString("utf8")) as unknown); } catch { candidate = null; }
+  }
+  const historicalOwnerRead = !directIntent && await matchesCompleteHistoricalOwnerRead(token, intent, candidate);
+  need(directIntent || historicalOwnerRead);
   const result = resultBytes === undefined ? null : currentFootprintForwardOpeningKnownRelinquishmentResultSchema.parse(JSON.parse(resultBytes.toString("utf8")) as unknown);
-  need(result === null || matchingOriginal(result, original) && result.relinquishmentIntentSha256 === sha256Json(intent) &&
+  need(result === null || (matchingOriginal(result, original) || historicalOwnerRead) && result.relinquishmentIntentSha256 === sha256Json(intent) &&
     result.fileProof.projectUuid === original.opening.target.projectUuid && result.fileProof.branchUuid === original.opening.target.branchUuid &&
     result.fileProof.documentUuid === original.opening.target.documentUuid && result.fileProof.rawSourceSha256 === original.opening.target.expectedSourceSha256 &&
     result.fileProof.oldCheckpointSha256 === original.opening.preparationCheckpoint.sha256 &&
