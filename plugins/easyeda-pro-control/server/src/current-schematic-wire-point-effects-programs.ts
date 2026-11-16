@@ -26,3 +26,6 @@ export const CURRENT_SCHEMATIC_WIRE_POINT_EFFECT_PROGRAMS=Object.freeze({
  byteTuple:`function(native){${BASE}if(typeof this!=="function")bad();return[this];}`,
  byteScope:`function(native){${BASE}const d=get(own(this,"object"),"Uint8Array");if(d===undefined)return undefined;if(!has(d,"value")||typeof d.value!=="function")bad();return d.value;}`
 });
+
+// Shared unchanged guard; later effect programs do not replace released comparators.
+export {common as CURRENT_SCHEMATIC_WIRE_POINT_EFFECT_BASE_GUARD};
