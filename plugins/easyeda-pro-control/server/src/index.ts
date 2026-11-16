@@ -1399,8 +1399,11 @@ function serializedStatusGuarded<Input>(
 ): (input: Input) => Promise<CallToolResult> {
   return guarded((input) =>
     runFacadeGate(async () => {
-      const admission = await facadeSession.runStatusAdmissionPreflight(() => engine.observeStatusAdmission());
-      await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+      const admission = await facadeSession.runStatusAdmissionPreflight(async () => {
+        const observedAdmission = await engine.observeStatusAdmission();
+        await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+        return observedAdmission;
+      });
       await upstream.listTools();
       await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
       const lifecycle = upstream.bridgeSessionLifecycle();

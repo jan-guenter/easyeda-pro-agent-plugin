@@ -19,7 +19,7 @@ type Handler = (input: object) => Promise<Record<string, unknown>>;
 
 /** Register the actual status wrapper in an inert VM and expose controlled connection, admission and diagnostic outcomes. */
 async function registeredStatus(options: { connectDuringProbe?: boolean; disconnected?: boolean; failureStage?: "list-tools" | "status"; diagnosticsThrow?: boolean;
-  facadeMode?: "legacy-reviewed" | "calculation-only"; diagnosticBlocked?: boolean } = {}): Promise<{
+  facadeMode?: "legacy-reviewed" | "calculation-only"; diagnosticBlocked?: boolean; diagnosticBlockedAfterUpstream?: boolean } = {}): Promise<{
   calls: string[]; invoke: Handler; refuseAdmission: () => void; session: FacadeSessionRetirement;
   implementation: Awaited<ReturnType<typeof controlImplementationFingerprint>>;
 }> {
@@ -56,7 +56,7 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
       return value;
     },
     assertNoUnresolvedCurrentPcbDiagnosticLaunches: (): Promise<void> => {
-      if (options.diagnosticBlocked === true) { calls.push("diagnostic-block"); return Promise.reject(new Error("unresolved diagnostic launch")); }
+      if (options.diagnosticBlocked === true || options.diagnosticBlockedAfterUpstream === true && calls.includes("list-tools")) { calls.push("diagnostic-block"); return Promise.reject(new Error("unresolved diagnostic launch")); }
       return Promise.resolve();
     },
     bridgeGate: { run: (task: () => unknown): unknown => task() },
@@ -279,10 +279,22 @@ void test("only a refusal in the actual registered status preflight retains loca
   assert.equal(refused.session.isUnusedSourceMetadataOnly(), false);
   assert.equal(refused.session.isReferenceOrRefusedStatusOnly(), true);
   assert.deepEqual(refused.calls, ["admission"]);
-  for (const options of [{}, { diagnosticBlocked: true }, { failureStage: "list-tools" }, { failureStage: "status" }] as const) {
+  for (const options of [{}, { diagnosticBlockedAfterUpstream: true }, { failureStage: "list-tools" }, { failureStage: "status" }] as const) {
     const admitted = await registeredStatus(options);
     try { await admitted.invoke({}); }
     catch (error) { assert.match(String(error), /unresolved diagnostic launch/u); }
     assert.equal(admitted.session.isReferenceOrRefusedStatusOnly(), false);
   }
+});
+
+void test("the first readonly diagnostic refusal preserves metadata retirement while the post-upstream guard stays strict", async () => {
+  const before = await registeredStatus({ diagnosticBlocked: true });
+  await assert.rejects(before.invoke({}), /unresolved diagnostic launch/u);
+  assert.equal(before.session.isReferenceOrRefusedStatusOnly(), true);
+  assert.equal(before.session.isSourceReferenceOnly(), false); assert.equal(before.session.isUnusedSourceMetadataOnly(), false);
+  assert.deepEqual(before.calls, ["admission", "diagnostic-block"]);
+  const after = await registeredStatus({ diagnosticBlockedAfterUpstream: true });
+  await assert.rejects(after.invoke({}), /unresolved diagnostic launch/u);
+  assert.equal(after.session.isReferenceOrRefusedStatusOnly(), false);
+  assert.deepEqual(after.calls, ["admission", "list-tools", "diagnostic-block"]);
 });

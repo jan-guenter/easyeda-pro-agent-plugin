@@ -58,6 +58,14 @@ export class HistoricalOwnerReadQualification {
   public originalUid(value: bigint): bigint { need(!this.#closed && value === 1n); return 0n; }
   public originalGid(value: bigint): bigint { need(!this.#closed && value === 1n); return 0n; }
 
+  /** Project only the fixed eight-field historical fstat tuple after its
+   * original reader has proved current local ownership and complete identity. */
+  public originalUidTuple(value: string): string {
+    need(!this.#closed && value.length <= 1024);
+    const fields = value.split(":"); need(fields.length === 8 && fields.every(field => /^(?:0|[1-9][0-9]{0,63})$/u.test(field)));
+    const uid = fields[3]; need(uid !== undefined); fields[3] = String(this.originalUid(BigInt(uid))); return fields.join(":");
+  }
+
   /** Prove the retained namespace and exact credentials/maps on both sides of
    * asynchronous reads. All capabilities remain absent, including the bound. */
   public async assertCurrent(): Promise<void> {

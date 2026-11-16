@@ -204,3 +204,82 @@ historical abandonment, and the complete Source receipt qualified. Execution,
 authority restoration, completion and replay flags remained false. This proves
 the historical read correction on the existing bytes, separately from later
 installed upstream, bridge and CAD admission.
+
+## 2026-11-16 complete diagnostic historical-read inventory
+
+Before publication, the expanded read-only diagnostic preflight found additional
+namespace-sensitive identities that the preceding three-record proof did not
+cover. Independent inspection of all 94 diagnostic lifecycles identified four
+complete historical receipts: one Combined abandonment, two Forward Opening
+versions and one generated closed Pad reader. Each passed under inert UID zero
+and refused under the exact UID-one mapping. The earlier Source and Symbol
+proofs remain valid for their stated scope; they were not a full diagnostic
+preflight proof. Original refusals and complete before/after evidence are retained
+privately without rewriting any original journal or sidecar.
+
+The full admission call-graph inventory distinguishes these boundaries:
+
+| Historical path | Persisted local owner identity | Treatment |
+| --- | --- | --- |
+| Source, Combined, Forward Opening v1/v2, generated closed Pad | Eight-field raw fstat tuple including UID | Complete-pair private namespace read qualification only |
+| Closed-symbol pre-navigation abandonment | Full recorded raw-copy UID/GID identity | Prior separate fixed baseline historical read qualification |
+| Closed-symbol baseline and current-symbol baseline abandonment | Managed byte/hash descriptors | Existing fresh local authority remains strict |
+| Via and schematic display abandonment, Via pre-opening relinquishment | Managed byte/hash descriptors and complete journal bindings | Existing fresh local authority remains strict |
+| Ordinary launch abandonment | Intent/receipt hashes and fresh descriptor identity | Unchanged |
+| Held-cache, head-age and dormant String exclusions | Fresh descriptor/roster checks | Unchanged; no historical owner promotion |
+| Locked and aged Symbol terminal readers | Separate complete terminal/closure identity contracts | Ordinary and terminal readers remain strict |
+
+The three additional diagnostic families now retain their raw original tuple in
+private comparison maps. Only a complete existing intent/result pair can compare
+the owner-zero representation through the previously qualified original user
+namespace. Both records must match the same projected identity and every other
+original digest, producer, installation, intent link and file-proof field. Raw
+snapshot outputs and publishers are unchanged; incomplete, unknown or mismatched
+histories remain blocked. The namespace tuple helper accepts only the fixed
+bounded eight-field representation after original current-owner proof.
+
+The fixed Status preflight now includes both its general journal observation
+and its first diagnostic exclusion scan. Those call graphs perform read-only
+metadata work and bounded in-memory bookkeeping. Eligibility ends immediately
+before the first upstream tool-list request; a refusal in the later diagnostic
+scan or any upstream/handler path remains strict. Pending calls, unknown hooks,
+other non-reference history and native-first retirement guards are unchanged.
+No public result shape, old reference classification or authority flag changes.
+
+New inert namespace regressions cover unchanged Combined and both Forward
+Opening receipt versions, strict raw publishers, incomplete pairs and incorrect
+UID/GID mappings. Registration tests distinguish a refusal in the first metadata
+scan from the diagnostic scan after upstream dispatch. Early fixture failures
+exposed shared deliberately damaged histories and a comparison against the
+coordinator's display envelope instead of its raw persisted receipt; the fixtures
+now preserve those distinctions and their original private failure evidence.
+The generated reader's actual complete retained chain is included independently
+in the full read-only preflight proof. No ordinary Status, native application,
+bridge, CAD operation, journal write or process signal is involved in that proof.
+
+Namespace-changed locked or aged terminal proofs remain outside this historical
+abandonment qualification. They require a separately named historical-terminal
+read composition and full closure regression coverage; their branded runtime
+lease and original closure models are not widened here. The actual general
+operation scan had zero blockers under both UID zero and UID one, so no such
+terminal history is hidden behind the current diagnostic refusals. This correction
+grants no generic cross-namespace ordinary replay or owner adoption.
+
+The final seven affected regression files passed all 54 cases with no skips on
+Linux x86_64, Node 24.18.0, npm 11.16.0 and soft core limit zero. Facade and bridge
+TypeScript checks passed; narrow strict type-aware lint found zero warnings or
+errors in all nine changed TypeScript files. No whole-project suite or lint run
+was repeated for this leaf.
+
+On the same frozen production source, the actual existing histories passed all
+four additional complete-receipt inspections and all eight read-only guards
+under both inert UID zero and exact UID one. The general scan returned zero
+blockers in both runs. All four returned persisted v1/v2 records exactly match
+the pre-change UID-zero observations, including every existing authority and
+outcome field. The complete 94-lifecycle inventory and full engine/ordinary
+preflight were checked before sealing this correction. The inert processes
+exited normally; no upstream, native owner, bridge, ordinary Status call,
+production journal write or signal was used. This establishes the read-only
+historical preflight boundary, not connected runtime/native admission or later
+execution authority. Final payload build, compatibility pins, CI, review and
+installation remain the enclosing release workflow's work.

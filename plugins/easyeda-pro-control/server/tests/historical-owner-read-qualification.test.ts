@@ -40,6 +40,8 @@ void test("actual inert namespace qualification retains one original descriptor 
     const qualification = await HistoricalOwnerReadQualification.open();
     await qualification.assertCurrent(); assert.equal(qualification.originalUid(1n), 0n); assert.equal(qualification.originalGid(1n), 0n);
     assert.throws(() => qualification.originalUid(65534n), /qualification refused/u);
+    assert.equal(qualification.originalUidTuple("10:20:33152:1:1:100:200:300"), "10:20:33152:0:1:100:200:300");
+    for (const value of ["10:20:33152:0:1:100:200:300", "10:20:33152:65534:1:100:200:300", "10:20:33152:1:1:100:200", "10:20:33152:1:1:100:200:bad"]) { assert.throws(() => qualification.originalUidTuple(value), /qualification refused/u); }
     const copied = Object.create(HistoricalOwnerReadQualification.prototype);
     await assert.rejects(copied.assertCurrent(), TypeError);
     await qualification.close(); await assert.rejects(qualification.assertCurrent(), /qualification refused/u);
