@@ -118,6 +118,9 @@ Open questions are not requirements.
 - Use `npm test` or focused Node `--import ./scripts/test-isolation.ts`. The builtin-only
   preload allocates private control/credential/upstream roots before static imports.
   Never test on live control data, alter real journals or broadly delete failure roots.
+  For durable Linux evidence-broker fixtures, set `TMPDIR` to a private test-owned
+  parent on `ext4`, `xfs` or `btrfs`. Memory-backed `tmpfs`, DrvFS and unsupported
+  filesystems deliberately refuse this profile; do not relax its storage checks.
 - Keep strict TypeScript and pedantic type-aware Oxlint at zero warnings. Explain
   narrow inline exceptions; globally relax a rule only when necessary.
 - Materialize package-check worktrees with umask022 inside a private parent;

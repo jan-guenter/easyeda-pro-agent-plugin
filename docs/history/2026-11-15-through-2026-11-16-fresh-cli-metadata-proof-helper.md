@@ -109,3 +109,53 @@ upstream, application, installed bundle, bridge and dispatcher pins remain exact
 All three bundles reproduce byte for byte. GitHub's complete exact-commit CI,
 CodeRabbit review, publication and actual installed acceptance remain pending.
 No new runtime admission, project edit or saved-result proof is inferred here.
+
+## Full PR review and batched Windows backend
+
+PR [214](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/214) received
+both an automatic review and the explicitly requested full review. All seven
+reported issues were accepted: cleanup commit provenance, the CI-provisioned
+Bubblewrap path, successful inert proof coverage, safe local refusal diagnostics,
+fatal installed-JSON UTF-8 decoding, durable pre-dispatch action intents and a
+deterministic split inside a multibyte character. Original CLI EOF still precedes
+classification and fallible logging. The inert successful lifecycle verifies
+all four actions, original facade exit, watcher/CLI closure, unsubscribe and the
+terminal manifest; failed intent sync prevents retirement dispatch.
+
+Before publication, the same candidate also incorporated the separate
+[Windows driver/Linux evidence broker](2026-11-16-windows-linux-evidence-broker.md).
+V1 Windows execution remains refused; V2 explicitly selects durable Linux
+evidence rather than claiming NTFS directory durability. The fixed broker owns
+original preallocated descriptors and serial bounded byte/flush/control messages.
+Every normal coordinator boundary awaits durability; failure preserves original
+EOF and closure. An accepted setup abort is sticky before broker EOF and cannot
+return an unusable adapter after an already-received ready acknowledgment.
+
+This is one combined release candidate, not an installed or connected proof.
+The original CI run failed on the provisioned Bubblewrap path; that failure is
+retained. The path correction passed all eleven local focused bootstrap checks.
+Combined final validation and the subsequent exact-head CI/review remain separate
+from actual installed Linux/Windows acceptance and live CAD admission.
+
+Final combined local checks passed both facade TypeScript projects, strict
+type-aware lint on all seven affected source/test files with zero warnings or
+errors, build, unchanged compatibility, all 855 API inventory entries, repository
+and MCP contracts, and all seven skills. The three bundles reproduced byte for
+byte against the preceding candidate. An independent static review of the four
+script modules and two metadata test files found no concrete new bug.
+
+The focused run passed all twenty bootstrap/metadata checks; its three broker
+cases correctly failed setup on the host's memory-backed `/tmp`. That failure
+remains recorded. Only those three cases were rerun in a private test-owned
+`TMPDIR` on the existing XFS filesystem, and all passed with zero skips. No
+filesystem profile was broadened, disk was moved or host setting changed. The
+lasting test instructions now state this storage prerequisite. Windows Node
+24.10.0 also completed the combined maintained V2 default preview with exit 0,
+empty stderr, no owner/workspace allocation and original process-handle closure.
+Actual V2 Windows execution remains unrun.
+
+The earlier installation, dependency tree/signature/attestation/audit, global
+lint and unchanged bridge checks remain applicable; no dependency lock or bridge
+source changed during these review corrections. Final outgoing-history scan,
+exact-head public CI/CodeRabbit review, merge and both installed acceptance
+checks are still pending at this local handoff.
