@@ -28,7 +28,7 @@ for (const [variant, mode] of [[0, "complete"], [1, "complete"], [0, "wrong-path
         const drive: unknown = Reflect.get(graph, "drive"); assert.ok(typeof drive === "function"); assert.equal(Reflect.apply(drive, graph, []), undefined);
       } else { done.resolve(value); }
     });
-    const result = object(await done.promise); assert.ok(!("fixtureError" in result), JSON.stringify(result));
+    const result = object(await done.promise); assert.ok(!("fixtureCleanupError" in result), JSON.stringify(result)); assert.ok(!("fixtureError" in result), JSON.stringify(result));
     if (mode === "complete") {
       assert.ok(!("error" in result), JSON.stringify(result));
       for (const name of ["sources", "removed", "released", "sameAst", "settled"]) { assert.equal(Reflect.get(result, name), true); }

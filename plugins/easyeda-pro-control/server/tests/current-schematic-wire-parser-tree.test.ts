@@ -19,7 +19,7 @@ for(const variant of[0,1]as const){for(const role of["objectContent","pageConten
  const graph:unknown=runInThisContext(`${wireParserTreeFixture(source,variant,uiKey,role)}\n//# sourceURL=${key}.js`);assert.ok(graph!==null&&typeof graph==="object");Object.defineProperty(globalThis,key,{value:graph,configurable:true});session.disconnect();
  const done=Promise.withResolvers<unknown>(),worker=new Worker(new URL("helpers/current-schematic-wire-parser-tree-worker.ts",import.meta.url),{workerData:{key,scriptId,busScriptId,source,busSource:uiSource,variant}});
  context.after(async()=>{Reflect.deleteProperty(globalThis,key);Reflect.deleteProperty(globalThis,uiKey);await worker.terminate();});worker.on("error",done.reject);worker.on("message",(raw:unknown)=>{assert.ok(raw!==null&&typeof raw==="object");if("ready"in raw){const drive:unknown=Reflect.get(graph,"drive");assert.ok(typeof drive==="function");Reflect.apply(drive,graph,[]);}else{done.resolve(raw);}});
- const result=await done.promise;assert.ok(result!==null&&typeof result==="object");
+ const result=await done.promise;assert.ok(result!==null&&typeof result==="object");assert.ok(!("fixtureCleanupError"in result),JSON.stringify(result));
  assert.ok(!("error"in result)&&!("fixtureError"in result)&&!("fixtureTimeout"in result),JSON.stringify(result));assert.equal(Reflect.get(result,"completed"),true);assert.equal(Reflect.get(result,"pauses"),77);
  for(const field of["serviceDeliveryJoined","parserCompleted","saveAuthorized"]){assert.equal(Reflect.get(result,field),false);}
  const counts:unknown=Reflect.get(graph,"counts");assert.ok(counts!==null&&typeof counts==="object");assert.equal(Reflect.get(counts,"tree"),1);assert.equal(Reflect.get(counts,"annotation"),1);assert.equal(Reflect.get(counts,"titleData"),"{}");context.diagnostic(JSON.stringify(result));
@@ -32,7 +32,7 @@ void test("Wire unsupported idle tree tab refuses before any observation or muta
  const graph:unknown=runInThisContext(`${wireParserTreeFixture(source,0,uiKey).replace("C.leftTreeActiveTab=0","C.leftTreeActiveTab=2")}\n//# sourceURL=${key}.js`);Object.defineProperty(globalThis,key,{value:graph,configurable:true});session.disconnect();
  const done=Promise.withResolvers<unknown>(),worker=new Worker(new URL("helpers/current-schematic-wire-parser-tree-worker.ts",import.meta.url),{workerData:{key,scriptId,busScriptId,source,busSource:uiSource,variant:0}});
  context.after(async()=>{Reflect.deleteProperty(globalThis,key);Reflect.deleteProperty(globalThis,uiKey);await worker.terminate();});worker.on("error",done.reject);worker.on("message",done.resolve);
- const result=await done.promise;assert.ok(result!==null&&typeof result==="object"&&"fixtureError"in result,JSON.stringify(result));assert.equal(Reflect.get(result,"armedRequests"),0);assert.equal(Reflect.get(result,"resumes"),0);
+ const result=await done.promise;assert.ok(result!==null&&typeof result==="object"&&"fixtureError"in result,JSON.stringify(result));assert.ok(!("fixtureCleanupError"in result),JSON.stringify(result));assert.equal(Reflect.get(result,"armedRequests"),0);assert.equal(Reflect.get(result,"resumes"),0);
 });
 
 

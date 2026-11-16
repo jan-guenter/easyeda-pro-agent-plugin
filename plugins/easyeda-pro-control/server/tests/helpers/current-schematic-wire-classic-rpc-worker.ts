@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Session } from "node:inspector/promises";
 import { parentPort,workerData } from "node:worker_threads";
 import { z } from "zod";
+import { wireFixtureCallQueue } from "./current-schematic-wire-worker-lifecycle.ts";
 import { CurrentSchematicWireClassicRpcReplySelector } from "../../src/current-schematic-wire-classic-rpc-selector.ts";
 import { CurrentSchematicWireClassicRpcCursor } from "../../src/current-schematic-wire-classic-rpc-cursor.ts";
 import type { CurrentSchematicWireClassicRpcData,CurrentSchematicWireClassicRpcInput } from "../../src/current-schematic-wire-classic-rpc-cursor.ts";
@@ -21,13 +22,18 @@ const order:Role[]=["closing","titles","language"];let started=0;let preparing:R
 let holder="";let native="";let active:string|null=null;let activeScripts:string[]=[];let reads=0;let sources=0;let pauses=0;let resumes=0;let stopped=false;
 const settlements:Promise<void>[]=[];const retained:CurrentSchematicWireClassicRpcData[]=[];const stages:Record<string,number[]>={};
 session.on("Debugger.scriptParsed",event=>{if(active!==null&&event.params.url===""&&event.params.length===active.length+2){activeScripts.push(event.params.scriptId);}});
-async function post(method:string,params:unknown):Promise<unknown>{
+const attributedCall=wireFixtureCallQueue();
+async function dispatch(method:string,params:unknown):Promise<unknown>{
  let program:string|null=null;
  if(method==="Runtime.callFunctionOn"){const value:unknown=params!==null&&typeof params==="object"?Reflect.get(params,"functionDeclaration"):null;assert.equal(typeof value,"string");assert.ok(typeof value==="string");program=value;active=program;activeScripts=[];}
  const pending:unknown=Reflect.apply(session.post.bind(session),session,[method,params]);const raw:unknown=await pending;
  if(raw!==null&&typeof raw==="object"&&"exceptionDetails"in raw){throw new Error(JSON.stringify(Reflect.get(raw,"exceptionDetails")));}
  if(program!==null){assert.equal(activeScripts.length,1);const id=activeScripts[0];assert.ok(id!==undefined);active=null;const actual=await session.post("Debugger.getScriptSource",{scriptId:id});assert.equal(actual.scriptSource,`(${program})`);sources+=1;}
  return raw;
+}
+function post(method:string,params:unknown):Promise<unknown>{
+ // Detached settlement keeps its timing; only generated source attribution waits.
+ return method==="Runtime.callFunctionOn"?attributedCall(()=>dispatch(method,params)):dispatch(method,params);
 }
 async function collect(input:CurrentSchematicWireClassicRpcInput):Promise<CurrentSchematicWireClassicRpcData>{
  if(input.stage!=="entry"){assert.throws(()=>new CurrentSchematicWireClassicRpcCursor({...input,previous:structuredClone(input.previous)}));}
