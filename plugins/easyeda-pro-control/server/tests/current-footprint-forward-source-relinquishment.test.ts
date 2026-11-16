@@ -308,11 +308,19 @@ void test("complete root-owned Source v1 receipt reads unchanged in the inert UI
   const program = `await import(${JSON.stringify(pathToFileURL(entry).href)});`;
   assert.deepEqual(JSON.parse(await runHistoricalReadOnlyNamespace(program)), result);
   assert.deepEqual(await Promise.all([f.path, intentPath, resultPath].map(path => readFile(path))), before);
-  await assert.rejects(runHistoricalReadOnlyNamespace(program, "2"), /INTENT_BINDING/u);
+  const refusalEntry = await compileSyntheticHistoricalSourceReader(`
+    import assert from "node:assert/strict";
+    import { readCurrentFootprintForwardSourceHistoricalSnapshot, readCurrentFootprintForwardSourceRelinquishment } from "../src/current-footprint-forward-source-relinquishment-journal.ts";
+    const token = await readCurrentFootprintForwardSourceHistoricalSnapshot(${JSON.stringify(f.operationId)});
+    await assert.rejects(readCurrentFootprintForwardSourceRelinquishment(token), /INTENT_BINDING/u);
+    process.stdout.write("historical-source-refusal-verified");
+  `, f.syntheticProfile);
+  const refusalProgram = `await import(${JSON.stringify(pathToFileURL(refusalEntry).href)});`;
+  assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram, "2"), "historical-source-refusal-verified");
   await writeFile(resultPath, `${JSON.stringify({ ...result, originalIdentitySha256: "e".repeat(64) })}\n`);
-  await assert.rejects(runHistoricalReadOnlyNamespace(program), /INTENT_BINDING/u);
+  assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram), "historical-source-refusal-verified");
   const resultBytes = before[2]; assert.ok(resultBytes !== undefined); await writeFile(resultPath, resultBytes);
   await unlink(resultPath);
-  await assert.rejects(runHistoricalReadOnlyNamespace(program), /INTENT_BINDING/u);
+  assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram), "historical-source-refusal-verified");
   assert.deepEqual(await readFile(intentPath), before[1]); assert.deepEqual(await readFile(f.path), before[0]);
 });

@@ -48,6 +48,8 @@ void test("actual inert namespace qualification retains one original descriptor 
     process.stdout.write("qualified-and-closed");
   `;
   assert.equal(await runHistoricalReadOnlyNamespace(program), "qualified-and-closed");
-  await assert.rejects(runHistoricalReadOnlyNamespace(program, "2"), /qualification refused/u);
-  await assert.rejects(runHistoricalReadOnlyNamespace(program, "1", "2"), /qualification refused/u);
+  const refusalProgram = `import assert from "node:assert/strict"; import { HistoricalOwnerReadQualification } from ${JSON.stringify(module)};
+    await assert.rejects(HistoricalOwnerReadQualification.open(),/qualification refused/u); process.stdout.write("historical-owner-refusal-verified");`;
+  assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram, "2"), "historical-owner-refusal-verified");
+  assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram, "1", "2"), "historical-owner-refusal-verified");
 });

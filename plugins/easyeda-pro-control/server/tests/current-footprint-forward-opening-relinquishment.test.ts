@@ -284,8 +284,10 @@ for (const profile of ["v1", "190023"] as const) {
       await assert.rejects(publish(token,"relinquished.json",receipt.result),/JOURNAL_REFUSED/u); process.stdout.write(JSON.stringify(receipt.result));`;
     assert.deepEqual(JSON.parse(await runHistoricalReadOnlyNamespace(program)), result);
     assert.deepEqual(await Promise.all([f.originalPath, intentPath, resultPath].map(path => readFile(path))), before);
-    await assert.rejects(runHistoricalReadOnlyNamespace(program, "1", "2"), /JOURNAL_REFUSED/u);
-    await unlink(resultPath); await assert.rejects(runHistoricalReadOnlyNamespace(program), /JOURNAL_REFUSED/u);
+    const refusalProgram = `import assert from "node:assert/strict"; import {readCurrentFootprintForwardOpeningHistoricalSnapshot as snapshot,readCurrentFootprintForwardOpeningRelinquishment as read} from ${JSON.stringify(module)};
+      const token=await snapshot(${JSON.stringify(operationId)}); await assert.rejects(read(token),/JOURNAL_REFUSED/u); process.stdout.write("historical-reader-refusal-verified");`;
+    assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram, "1", "2"), "historical-reader-refusal-verified");
+    await unlink(resultPath); assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram), "historical-reader-refusal-verified");
   });
 }
 

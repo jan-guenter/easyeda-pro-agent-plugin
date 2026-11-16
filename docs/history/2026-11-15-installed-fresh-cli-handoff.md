@@ -283,3 +283,14 @@ production journal write or signal was used. This establishes the read-only
 historical preflight boundary, not connected runtime/native admission or later
 execution authority. Final payload build, compatibility pins, CI, review and
 installation remain the enclosing release workflow's work.
+## 2026-11-16 CodeRabbit namespace-test correction
+
+The full PR review identified a false-positive risk in negative child-process
+checks: Node's execFile error can include the program text containing the very
+error pattern being matched. The namespace negatives now assert the expected
+reader refusal inside the child and require its successful exit and exact
+confirmation in the parent. The same correction covers Combined, Forward
+Opening, Source, Symbol and namespace-qualification cases. The two reported
+test files pass all 12 cases; the three directly related namespace cases pass
+on the corrected child assertion path. Production source, bundles, compatibility
+pins and the unpublished candidate stamp are unchanged by this test correction.

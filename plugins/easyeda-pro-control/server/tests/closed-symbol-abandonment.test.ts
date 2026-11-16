@@ -336,8 +336,10 @@ void test("root-owned Symbol abandonment v1 survives the inert UID-one read with
   `;
   assert.deepEqual(JSON.parse(await runHistoricalReadOnlyNamespace(program)), result);
   assert.deepEqual(await retainedBytes(value), before); assert.deepEqual(await readFile(result.artifact.path), sidecar);
-  await assert.rejects(runHistoricalReadOnlyNamespace(program, "2"), /recorded copy identity changed/u);
+  const refusalProgram = `import assert from "node:assert/strict"; import { inspectClosedSymbolAbandonment } from ${JSON.stringify(historicalModule)};
+    await assert.rejects(inspectClosedSymbolAbandonment(${JSON.stringify(value.journal.operationId)}),/recorded copy identity changed/u); process.stdout.write("historical-symbol-refusal-verified");`;
+  assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram, "2"), "historical-symbol-refusal-verified");
   const paths = await baselinePaths(value), raw = await stat(paths.raw);
   await utimes(paths.raw, raw.atime, new Date(raw.mtimeMs + 1000));
-  await assert.rejects(runHistoricalReadOnlyNamespace(program), /recorded copy identity changed/u);
+  assert.equal(await runHistoricalReadOnlyNamespace(refusalProgram), "historical-symbol-refusal-verified");
 });
