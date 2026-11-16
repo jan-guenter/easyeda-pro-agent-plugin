@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "7a1aec7f961cb21776ddccc71f4e78f6d510f3e7cfb4e405cccde2e1ee8d476f",
-      "fileCount": 2720,
+      "sha256": "3dbef4351190c233cba503e6d3d50133e0dd7f923e58fd9ae96cce8a5df8d7f2",
+      "fileCount": 2817,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -11147,6 +11147,161 @@
           "sha256": "e1b0c63903aa693b47475b382bfce9a5271b66aa05bde666114530aced2b6834"
         },
         {
+          "relativePath": "current-schematic-wire-async-replies.ts",
+          "bytes": 2676,
+          "sha256": "7c105ea7db494b8947454f012a252288519517402da80601207e4479a821deee"
+        },
+        {
+          "relativePath": "current-schematic-wire-async-source.ts",
+          "bytes": 15260,
+          "sha256": "3258ea7cbdfc2dc5609181343962f82cd9aa4f2d8bf179039295602f45edacf4"
+        },
+        {
+          "relativePath": "current-schematic-wire-bbox-cursor.ts",
+          "bytes": 11949,
+          "sha256": "120ef1f58a7038430c8040090032857b17971c9b70b5608aff1a408c5ec2ea2a"
+        },
+        {
+          "relativePath": "current-schematic-wire-bbox-programs.ts",
+          "bytes": 5489,
+          "sha256": "27985bf935408ed3e0d954e8e7e3cd74193d6eb86161b96c6ce925dcb4283be2"
+        },
+        {
+          "relativePath": "current-schematic-wire-bbox-protocol.ts",
+          "bytes": 6155,
+          "sha256": "03a0c3e761d8db70a47e8d7cd521c6cd2f28cad062834173f76ea76b2735c130"
+        },
+        {
+          "relativePath": "current-schematic-wire-bbox-source.ts",
+          "bytes": 1190,
+          "sha256": "ef63285796b1bb679e8fa35ac2b1edf3dbe4e177cd1b774ee1adbccda51625f8"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-census.ts",
+          "bytes": 5859,
+          "sha256": "14276177c6c433cb998b19775559d1d72380f22fa83805da0b1e3b9e8c541ad3"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-cursor.ts",
+          "bytes": 16579,
+          "sha256": "2ef1abc86dea31ebff12b68235581f58a002a9fd94e0acabc8509ec769504af1"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-driver-protocol.ts",
+          "bytes": 4921,
+          "sha256": "f12fbaa178ee78c30be31e60c29aab847bbabfb83bd0866338d5012f148b51ba"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-driver.ts",
+          "bytes": 28203,
+          "sha256": "f064b07cb9f02411956204b4c4af2aed42bc614d6774031e4d512c1d516cdf85"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-origin.ts",
+          "bytes": 2637,
+          "sha256": "c0784b8b885cdee1b34a6e41e1bd7863b8c755004822fd0c9deed5bf2a4eaca2"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-programs.ts",
+          "bytes": 21195,
+          "sha256": "4e4b221ed5731c3e2aeca14466b5ad775c3c8dd224065a503f80fc28a3c6a284"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-promise.ts",
+          "bytes": 2756,
+          "sha256": "888c01d1d81cd743e33ddb32e09ef19c633e6df4f55cbcea2c14d5be36c55fa7"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-protocol.ts",
+          "bytes": 4463,
+          "sha256": "a3d26f6d7fa52081e468303516986d5104a1dec1d8b3e80801783de1ca99552f"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-selector.ts",
+          "bytes": 4327,
+          "sha256": "29875156e2aa3c7e70fc5d724e98b2a53b2204a0e7a1844873103d0ea48e5ef6"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-shared-census.ts",
+          "bytes": 6071,
+          "sha256": "3920a37c84996b561d842fd7aee7232d3c31689c49d78df4f7bcfb683442121c"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-shared-cursor.ts",
+          "bytes": 18765,
+          "sha256": "ed663c08c48db21b3c3b41118dbfca0ffc416d46853ff5415956977fc272f662"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-shared-programs.ts",
+          "bytes": 28559,
+          "sha256": "9b53b638ae969a33a82482793c3275036c9cd387780b01d876d69e89b1630120"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-shared-protocol.ts",
+          "bytes": 4983,
+          "sha256": "1b8f4ab3db9d89bff6405d0c302fef02da5d2885daa7736b09c30e305190cdc2"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-shared-selector.ts",
+          "bytes": 4557,
+          "sha256": "3693273358414e7edb18fb186a40fa7ec5ad616f366e669a54826112a2ed9c83"
+        },
+        {
+          "relativePath": "current-schematic-wire-classic-rpc-source.ts",
+          "bytes": 71503,
+          "sha256": "2ff31af86991868bd84cd3d83a293d5b541464761742dfcf0aed610f2f073b97"
+        },
+        {
+          "relativePath": "current-schematic-wire-cm-publication-census.ts",
+          "bytes": 3854,
+          "sha256": "c72a82c762dcfcf1c304a963020d26ad93123bc3b5bb36acaab8c396e1febca5"
+        },
+        {
+          "relativePath": "current-schematic-wire-cm-publication-cursor.ts",
+          "bytes": 10518,
+          "sha256": "0930991f60c551fc7205045d961351fb77165c623c42f59ad4a14dc5538e0d7a"
+        },
+        {
+          "relativePath": "current-schematic-wire-cm-publication-programs.ts",
+          "bytes": 4535,
+          "sha256": "c64b0e419557e6acb78e4b15826afe4a102352288aced12f79baf9bd1870c982"
+        },
+        {
+          "relativePath": "current-schematic-wire-cm-publication-protocol.ts",
+          "bytes": 6286,
+          "sha256": "0408e0458a78b97606b8292b87d82f8334024a89480ce98f116febb22cef87ba"
+        },
+        {
+          "relativePath": "current-schematic-wire-cm-publication-source.ts",
+          "bytes": 5296,
+          "sha256": "a473cc13030b11f4eb6cd32e4b1d5db0adbab99b4b70dc6ed9cd6643a2792edf"
+        },
+        {
+          "relativePath": "current-schematic-wire-completion-data-packed.ts",
+          "bytes": 4288,
+          "sha256": "f4a68a7929d65335358e2e1294772971f8ada924f4862a9f2cf5b51b8b3d056f"
+        },
+        {
+          "relativePath": "current-schematic-wire-completion-source.review.ts",
+          "bytes": 29737,
+          "sha256": "05ba17636ee1812186a642c7aa7627cd2a15b8da642c80ee5aacd735729de4fa"
+        },
+        {
+          "relativePath": "current-schematic-wire-completion-source.ts",
+          "bytes": 7468,
+          "sha256": "be8e4d8cefa46a8125c984e3296820add7e1a5f91cb0fa6ab1b6f9f1265946f4"
+        },
+        {
+          "relativePath": "current-schematic-wire-construct-cursor.ts",
+          "bytes": 6745,
+          "sha256": "0702fea9087f2fe1aa5fb657cf1e49f483f3b2b95ac021c5aca0796cc1318a11"
+        },
+        {
+          "relativePath": "current-schematic-wire-construct-protocol.ts",
+          "bytes": 5861,
+          "sha256": "6ff152d09e77c5a60be8ad3f4b375a01f50c4a8edb5fe8b96859fb885a1c5b14"
+        },
+        {
           "relativePath": "current-schematic-wire-edit-native-command.ts",
           "bytes": 5505,
           "sha256": "019a5b9faf0e38a88d9f93e00e8d7281306d2fb7690661b694a97dac80444173"
@@ -11180,6 +11335,21 @@
           "relativePath": "current-schematic-wire-edit-protocol.ts",
           "bytes": 5100,
           "sha256": "f998708e586f50b12c443eb249ad2d22a1a77dade1b8ffd7cc26789a93c36dfc"
+        },
+        {
+          "relativePath": "current-schematic-wire-event-observer.ts",
+          "bytes": 7853,
+          "sha256": "4623b0aa27e9545d5a5a814e88478e53f76844a4b221bd6d3be39c1889ff0200"
+        },
+        {
+          "relativePath": "current-schematic-wire-frontier-cursor.ts",
+          "bytes": 12734,
+          "sha256": "909ad0a10a70d54df96775a57ba604e20d41eadcc2e9e7b8079ec1ec37ccdaf6"
+        },
+        {
+          "relativePath": "current-schematic-wire-frontier-protocol.ts",
+          "bytes": 10055,
+          "sha256": "8c0b7f0b575d08fab3f756edc53121d8f53499cb75ca21aa601ee804545c5d87"
         },
         {
           "relativePath": "current-schematic-wire-intent-native.ts",
@@ -11217,6 +11387,91 @@
           "sha256": "f317e2d2f57e8aa7efec55d92cbd009a9f99fcc6a65191fdc77cf33a6feeb24c"
         },
         {
+          "relativePath": "current-schematic-wire-parser-census.ts",
+          "bytes": 3816,
+          "sha256": "5e405695c6ea4e65c36035709fd58601b86b474c8f902e36370b6931fa3b2ebe"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-cursor.ts",
+          "bytes": 15300,
+          "sha256": "eed78436af5936f40f87725b1d8ddd60f8cc2a5d4c67dc2493d683b53cc6dc41"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-driver-protocol.ts",
+          "bytes": 6006,
+          "sha256": "746ce80890dbf708afc950731c09cc546f5f6183ef69c5de189ba76732f6f7e6"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-driver.ts",
+          "bytes": 28076,
+          "sha256": "7d27935835e06df37e31b224cb2403e0d389c011377f19e1c922c79911bddc02"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-helper-cursor.ts",
+          "bytes": 6704,
+          "sha256": "2dfeff07a6f0f2121b9b808a3db8dd1abe10913f4fc6a98fbf93d48171273eb5"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-helper-protocol.ts",
+          "bytes": 4131,
+          "sha256": "e08f5b4bbac72c8170a52cf1cd0907d4f9004a4912239006be6ab440f3c6f618"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-programs.ts",
+          "bytes": 23203,
+          "sha256": "56718413fe3511ea072fa824ed42688701dcf55502bfadf192c8df0df580db4b"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-promise.ts",
+          "bytes": 2650,
+          "sha256": "08c1a8e7759593a583efac96269053aeecf1be68762f2c893a88c199e2d45dbf"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-protocol.ts",
+          "bytes": 6055,
+          "sha256": "2f90cf7ab48790c8bffa8f44f63b9b8ee438f6e8f66a2679e90239da5adb4725"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-rpc-coordinator.ts",
+          "bytes": 16967,
+          "sha256": "670d5532b1fc95f1f42a301a89bbccc84a0dd68c1384c19130715d7d13805f5b"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-service-coordinator.ts",
+          "bytes": 32273,
+          "sha256": "da1d94d23be75e15bbaca03a0763d071b324f310b8b3379c1a3f44b1c0a67b12"
+        },
+        {
+          "relativePath": "current-schematic-wire-parser-source.ts",
+          "bytes": 31733,
+          "sha256": "e5cf8c6b449429bcc8c09c3c591f8bd8210add405cdc4239f5274ec652ca6307"
+        },
+        {
+          "relativePath": "current-schematic-wire-pending-batch-census.ts",
+          "bytes": 3833,
+          "sha256": "4c368d150b32b3c6a195ad3f71a28ce33dcce11fdaecfa460c8a6088b825f8a1"
+        },
+        {
+          "relativePath": "current-schematic-wire-pending-batch-cursor.ts",
+          "bytes": 14611,
+          "sha256": "dc2224c0450cc7df335cbed3815f19bf5981d607920cb9302369e856725b799c"
+        },
+        {
+          "relativePath": "current-schematic-wire-pending-batch-programs.ts",
+          "bytes": 8007,
+          "sha256": "e6218892e197f5d7d7b12b33981eaf2d8f72abf911a1f17cd7a94359c52d7c4b"
+        },
+        {
+          "relativePath": "current-schematic-wire-pending-batch-protocol.ts",
+          "bytes": 6859,
+          "sha256": "4af6fa14a7f0dd1f9db8b74972485ffbdf22bcf38fdec0ec0e0e028378628fc9"
+        },
+        {
+          "relativePath": "current-schematic-wire-pending-batch-source.ts",
+          "bytes": 4632,
+          "sha256": "24fc4a8d2d4866d4ee88bb650d1b501f3a9f9b25bb9748a1df021bfade9f0401"
+        },
+        {
           "relativePath": "current-schematic-wire-prefix-cursor.ts",
           "bytes": 4104,
           "sha256": "35ee912a847c65969358b7af8d4fafa1b2588247e7fc51ab23e5a1ec8b965c79"
@@ -11242,9 +11497,234 @@
           "sha256": "71b75d391bed36a12b27f37454207f8d48e9a470ab7bd23db095e8d8f24d1303"
         },
         {
+          "relativePath": "current-schematic-wire-publication-source.ts",
+          "bytes": 4492,
+          "sha256": "0efdde5dcd153335c1a457267aaf31a2a2bab6856c4448176ca62eab1dff967e"
+        },
+        {
+          "relativePath": "current-schematic-wire-publication-values.ts",
+          "bytes": 1351,
+          "sha256": "18919d348207a6c47bee6fe0d45ca4b987e80214c53de0ebeebfb7692a6ad4c4"
+        },
+        {
           "relativePath": "current-schematic-wire-raw-cursor.ts",
           "bytes": 16386,
           "sha256": "d62861c4a4448f5d3cad407a3b8248c259ddad519c556ca9b7ab966c6656ace3"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-driver-protocol.ts",
+          "bytes": 2065,
+          "sha256": "4b64c800507776352b103cbaf3973501cdc8e89a82989949703da76c922281e2"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-driver.ts",
+          "bytes": 25542,
+          "sha256": "40c38a16981fba50b68b068fd422419bfcb8f6659a08f9064b3d1b3cc8f2068d"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-invocation-cursor.ts",
+          "bytes": 20991,
+          "sha256": "86bda32cf3eff51eb4fd4a649dbc3a65793fb7b9195e41ef84b214d006375f2c"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-invocation-programs.ts",
+          "bytes": 8617,
+          "sha256": "a40e4bb2e5cc34ab95930ef887d84048fe805771ff9264e64fb5f216e10b9835"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-invocation-protocol.ts",
+          "bytes": 5243,
+          "sha256": "947a6b27256cde7cd5f85328c8a303922c962f5bc47861c6873ca37edd73591b"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-invocation-root.ts",
+          "bytes": 2180,
+          "sha256": "e1adbc828c7d458b23e9419273b13be75398dc9e3c1d0f5f3165193c3f849431"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-invocation-source.ts",
+          "bytes": 10646,
+          "sha256": "4c1af04510dc3e286d20e4e7468fedc0c646cf0106157371655f46bdb41597f5"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-registration-cursor.ts",
+          "bytes": 13037,
+          "sha256": "9d62b351f3f8ab8ac4462e81b6a13fd0d00982dcd4d80dd7e1dfa0bc83d76c01"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-registration-programs.ts",
+          "bytes": 4748,
+          "sha256": "5a41eed10013ebd7e1cedbc287a0224932402b61c654ead8daa5a68f7c48f1a1"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-registration-protocol.ts",
+          "bytes": 2296,
+          "sha256": "37393fa90d3962aa869beac7ce045ee6288524763c348359e597daddeb36206f"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-request-receipt.ts",
+          "bytes": 4670,
+          "sha256": "bef74e8b1cb10e7a863db83b5000efb7d6f56063edc98e692d8a1f052e489fcc"
+        },
+        {
+          "relativePath": "current-schematic-wire-service-source.ts",
+          "bytes": 28626,
+          "sha256": "09e2d7601a7e552dd0753bf4558fc515ebef13c7c5095d5914b6d92aba75ddb2"
+        },
+        {
+          "relativePath": "current-schematic-wire-title-driver.ts",
+          "bytes": 30396,
+          "sha256": "0f09c6b24c9745809bcdbc06b7e4b90b3ba735bdcf67ce53fb896c258387ce0e"
+        },
+        {
+          "relativePath": "current-schematic-wire-title-ft-preflight.ts",
+          "bytes": 5607,
+          "sha256": "4e7996be30f29e04d49691711cc3f02939ca238fa0bc0e093fe3830f777124f0"
+        },
+        {
+          "relativePath": "current-schematic-wire-title-ft-protocol.ts",
+          "bytes": 8236,
+          "sha256": "c39aa9fa92d63205ccf8b5d37d294495f0144437dd5c120f0b20c74bfeb7517c"
+        },
+        {
+          "relativePath": "current-schematic-wire-title-preflight.ts",
+          "bytes": 11200,
+          "sha256": "212a8ba4f7fe29b42d2f666c2d0f68e42806c406cc12759aa971f0228e444d2f"
+        },
+        {
+          "relativePath": "current-schematic-wire-title-programs.ts",
+          "bytes": 8964,
+          "sha256": "509e4b00f11251cfa8e968bf0921d8f95b1c9ddfba84f7757bd581f12d32d378"
+        },
+        {
+          "relativePath": "current-schematic-wire-title-protocol.ts",
+          "bytes": 4603,
+          "sha256": "d92cfaa1e8030713a3e42b1f949efd05c4dc34e75306ccf834ce5c542a06412a"
+        },
+        {
+          "relativePath": "current-schematic-wire-title-source.ts",
+          "bytes": 4525,
+          "sha256": "5db978a68ab1ea0e59578f1555a39aefee6bca5fd449a1ad92db96fa5d736c0f"
+        },
+        {
+          "relativePath": "current-schematic-wire-transition-source.ts",
+          "bytes": 22248,
+          "sha256": "ce02dd0b058d6e9f4e64fdd508a17587febd7ac747863b15308f4d8b11b91d21"
+        },
+        {
+          "relativePath": "current-schematic-wire-tree-parser-receipt.ts",
+          "bytes": 5389,
+          "sha256": "3b635582a1f6fc8d1cd5d6e8b86e2f073773a74947940a28662caa55c39dace5"
+        },
+        {
+          "relativePath": "current-schematic-wire-tree-preflight-cursor.ts",
+          "bytes": 13138,
+          "sha256": "535cbe3cfd7be617c3c232d4daecf11944c8ef4a0d5e075bda7be98ac8d4bf66"
+        },
+        {
+          "relativePath": "current-schematic-wire-tree-preflight-programs.ts",
+          "bytes": 3929,
+          "sha256": "780ef1adf84d471fc1313b5b9642a3cf0948c5f73b7762ed110547193ffd2186"
+        },
+        {
+          "relativePath": "current-schematic-wire-tree-preflight-protocol.ts",
+          "bytes": 2863,
+          "sha256": "d45c3b8dc7140e244b38d7d49f3e8c91de3930e3e28bc40bf2f0f44292f715a6"
+        },
+        {
+          "relativePath": "current-schematic-wire-tree-promise.ts",
+          "bytes": 2432,
+          "sha256": "39283ba2f3946bd4a74fd43e255b8b62865550930207776530f85151160cf0e4"
+        },
+        {
+          "relativePath": "current-schematic-wire-tree-runtime-driver.ts",
+          "bytes": 24851,
+          "sha256": "210cbc4003f34aaf7dc119bb7530d1dd0ed5f4e70e83984ceeb9e44f0c959d40"
+        },
+        {
+          "relativePath": "current-schematic-wire-tree-runtime-programs.ts",
+          "bytes": 5237,
+          "sha256": "2676e87a8382ff934b25bb042111cfbfca91c4350598f72a3edd29a411da5ed9"
+        },
+        {
+          "relativePath": "current-schematic-wire-tree-runtime-protocol.ts",
+          "bytes": 3902,
+          "sha256": "f29cb2d763e568dec1d11063ca3651b9766b91c863c9aa8c3807b2a43e9232c4"
+        },
+        {
+          "relativePath": "current-schematic-wire-tree-runtime-source.ts",
+          "bytes": 5108,
+          "sha256": "32b3cdac1a4a7df03fe19f24e826bacb65a2b542d62f85a6fe3d43016f87274b"
+        },
+        {
+          "relativePath": "current-schematic-wire-ui-provider-cursor.ts",
+          "bytes": 13096,
+          "sha256": "744066038455c3927045849501b35bad7f7edab6209bc1334fbaee6b8f3d1789"
+        },
+        {
+          "relativePath": "current-schematic-wire-ui-provider-programs.ts",
+          "bytes": 5743,
+          "sha256": "4f8d9dff6603a4689c5cda0243d41bbd467ec011abe0b8d3dcf670edea7b5395"
+        },
+        {
+          "relativePath": "current-schematic-wire-ui-provider-protocol.ts",
+          "bytes": 2433,
+          "sha256": "0e40cea2e33bac18519be64662c20c420286e9e8dfc646d98abe3c4d054beb0d"
+        },
+        {
+          "relativePath": "current-schematic-wire-ui-runtime-cursor.ts",
+          "bytes": 7778,
+          "sha256": "8ef8fbfbfbb1644fa985e3c24990fbee7fc28123fd7f43cb2e82fdb27a54b0f1"
+        },
+        {
+          "relativePath": "current-schematic-wire-ui-runtime-driver.ts",
+          "bytes": 19724,
+          "sha256": "0cbcda3b603b835fbe6a0a981d578b9e9b7c92ed8d57c4e9dc7974f5c95ee433"
+        },
+        {
+          "relativePath": "current-schematic-wire-ui-runtime-programs.ts",
+          "bytes": 4864,
+          "sha256": "4e9e12065b1730a50c4bd212989c145192d4c6d6524dc8dbf64251092b4f9ab7"
+        },
+        {
+          "relativePath": "current-schematic-wire-ui-runtime-protocol.ts",
+          "bytes": 3666,
+          "sha256": "fb3b059281a4217c98b248f248eed9a344b97ccb027533e2493afedc961622ca"
+        },
+        {
+          "relativePath": "current-schematic-wire-ui-runtime-root.ts",
+          "bytes": 1575,
+          "sha256": "cd544913cd7c121d844423cb696e447e60b4e0e9a9fa7956bd9d19d0bb8ce16b"
+        },
+        {
+          "relativePath": "current-schematic-wire-ui-runtime-source.ts",
+          "bytes": 5205,
+          "sha256": "c0f63ae58bfa307935728cb9af0b1042021ce2bddba7046295e17b065322d9d6"
+        },
+        {
+          "relativePath": "current-schematic-wire-worker-pending-census.ts",
+          "bytes": 3859,
+          "sha256": "991c7c20448bcef7da6f7f593b596a05839078c5c8a34c357414e481899aeb7e"
+        },
+        {
+          "relativePath": "current-schematic-wire-worker-pending-cursor.ts",
+          "bytes": 12822,
+          "sha256": "8e09dacba6656b7c47051a28b2d9a86c64acc4dee1ce4036686e0a7fdcaa5ce7"
+        },
+        {
+          "relativePath": "current-schematic-wire-worker-pending-programs.ts",
+          "bytes": 15118,
+          "sha256": "3a2e9bc0509d9e541da13705dcbdfe9692a8222b5a0b969fd40ba53b38cd68aa"
+        },
+        {
+          "relativePath": "current-schematic-wire-worker-pending-protocol.ts",
+          "bytes": 5606,
+          "sha256": "1e5087bfdc98571b6f1e012dda794bbbf8f4e37f3c5f8cf7ac511970336cf0f7"
+        },
+        {
+          "relativePath": "current-schematic-wire-worker-pending-source.ts",
+          "bytes": 4883,
+          "sha256": "9f95e0e21491006827afd4c8d7bfa7dd382c978b2396e90e05d3132cbc82d9ea"
         },
         {
           "relativePath": "current-schematic-wire-writer-programs.ts",
@@ -11940,6 +12420,11 @@
           "relativePath": "facade-mode.ts",
           "bytes": 19335,
           "sha256": "c1fd5ed52ad0e61a5e90b2ecc5151b22145ccce7bee18cb7a63cf21f68e40a0e"
+        },
+        {
+          "relativePath": "fixed-runtime-data-storage.ts",
+          "bytes": 2232,
+          "sha256": "2cdd80a37e254cf1fb9fbea0d7559d6c685e62d7c4a828ae0014ab496ea4a4ae"
         },
         {
           "relativePath": "flat-display-binding.ts",
@@ -13633,7 +14118,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-16T05:53:58.690Z",
+  "reviewedAt": "2026-11-16T06:55:49.244Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

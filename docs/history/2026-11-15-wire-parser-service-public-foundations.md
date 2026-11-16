@@ -113,3 +113,34 @@ payload contain no user-design files or operation journals.
 The exact final full facade/bridge suites and CodeRabbit review remain for the
 publisher's CI/PR workflow. This local evidence is not their substitute.
 No PR, push, publication, installation or connected writer run was performed.
+
+## 2026-11-16 revalidation after the Windows lifecycle release
+
+The same 143 source/test/generator files were replayed onto the reviewed PR215
+payload, then based on its published merge
+`3f9e9f761a6b479dcdb89c24f25880e7257edbff`. Their ordered path/NUL/bytes SHA-256
+remains `88f00535ed1aeddfd129a1ad8d39fc0cec1e9e53504694df2fa08e75c211aeb3`. Earlier base/version statements above describe
+that earlier preparation and remain historical evidence.
+
+Pinned Node24.18.0/npm11.16.0, core limit zero, clean dependencies, complete
+dependency listing, signatures, zero-vulnerability audit, sanitizer and the Wire
+completion-data generator pass. Both facade TypeScript configurations, bridge
+types/lint, exhaustive API inventory, repository/MCP/skill checks, and all seven official
+skill quick validators pass. Strict type-aware lint covers 4,934 files with zero
+warnings and errors. No complete local suite was repeated: the earlier 93-case
+source evidence is retained, while exact final-commit CI must cover all facade
+shards and bridge tests before this source batch can merge.
+
+Fresh builds of server, supervisor and foreground manager remain byte-identical
+to PR215. The compatibility change contains only source-tree files/count/hash
+and review time. Runtime/external pins, tool registration and plugin version
+remain unchanged. The operating reference now explicitly says to create only
+workspace parents for the maintained fresh-client proof; the helper exclusively
+creates the final workspace and evidence directories itself.
+
+This is a source-only publication. It requires no separate plugin installation
+or Codex restart. Connected native ownership, worker/Main/SQL effects, Save and
+cold verification remain unavailable as described above. The actual release and
+installation of PR215 are separate evidence, not validation of these unmounted
+components. Complete final CI and CodeRabbit review remain pending publication.
+
