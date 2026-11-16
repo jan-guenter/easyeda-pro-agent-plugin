@@ -184,3 +184,57 @@ external pin or plugin version. Final combined focused checks, reproducibility,
 source-tree compatibility refresh, exact-head CI and the updated CodeRabbit
 review remain required before merge.
 
+## Additional full-review lifecycle corrections
+
+The full review at the same 3033e01 head added seven comments: six further source
+issues plus the already-corrected worker completion path. All underlying risks
+were accepted. Classic RPC now snapshots complete caller input before validation
+and generator use. Parser/service retirement joins pending preparation, arm,
+run and finish before starting any missing idempotent cleanup; a child whose
+arm never began makes no new cleanup dispatch. Service arming failure also
+cleans known points immediately. Tree/UI retirement removes acknowledged points
+on arm-only paths and retains failures without inventing removal acknowledgments.
+
+A separate original live assertion rejects request-receipt capture, consumption
+and invocation-root reproof after RPC owner closure. The existing inspect and
+persisted result projections remain unchanged. Closed transports retain cleanup
+errors and supply no authority to dispatch through another owner.
+
+The additional frozen leaf passed 67 focused cases with zero skips, both
+TypeScript configurations and strict lint on its twelve changed files.
+A deliberately held test ACK caused one diagnostic run to remain pending; its
+original test child and runner were retained, one SIGINT targeted only that
+owned child, and both exits were observed. That interrupted/mixed-payload run
+is preserved as incomplete. The fixed final fixture drains its same original
+ACK and tasks. Earlier failures also caught accidental cleanup dispatch on
+unarmed children; the correction preserves their zero-dispatch boundary.
+
+The preceding six-fix combined payload independently passed 54 focused cases,
+zero skips, both TypeScript configurations, global zero-warning strict lint,
+all non-suite phases and byte-identical runtime bundle checks. Final combined
+source checks and exact-head CI/review still precede publication of these
+additional corrections. No SDK execution route or native permission is added.
+
+## Immutable publication stamp
+
+The final package uses `0.3.0+codex.20261116085829`. Earlier statements about retaining
+PR215's stamp describe source preparation before publication. Publishing changed
+packaged source and compatibility metadata under the already-installed stamp
+would give one version different bytes, so the entire source/review batch gets
+one new stamp. The base control/package/bridge versions and external pins stay
+unchanged; no SDK or native route is added. Maintained fresh clients can load
+this version without requesting a manual Codex restart. Installation and actual
+runtime evidence remain separately recorded from source tests.
+
+The final all-review local payload passes dependency installation/listing,
+registry signatures and audit, sanitizer, both TypeScript projects, global
+strict type-aware lint with zero warnings/errors, all non-suite bridge/API/
+build/compatibility/repository/MCP/skill checks and all seven official skill
+quick validators. The final stamped server and manager rebuilds reproduce all
+three runtime bundles byte-for-byte against published PR215. The allowed
+compatibility difference contains only source-tree files/count/hash and review
+time; external runtime/bridge/catalog/installed pins remain unchanged. Six
+production regressions pass again against the complete corrections; the
+separate final 67-case leaf is accepted for its exact unchanged source bytes.
+Complete final-head CI and current CodeRabbit review are still required.
+
