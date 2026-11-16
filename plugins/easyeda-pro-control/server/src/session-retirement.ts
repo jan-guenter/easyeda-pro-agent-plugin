@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import { shutdownBeforeLeaseRelease } from "./shutdown.ts";
 import { currentFootprintForwardSourceRelinquishmentRequestSchema } from "./current-footprint-forward-source-relinquishment-contract.ts";
@@ -55,6 +56,11 @@ interface RetirementDependencies {
   readonly scheduleRetiredClose?: () => void;
 }
 
+interface StatusCallbackAdmission {
+  active: boolean;
+  preflight: "unobserved" | "observing" | "refused" | "admitted";
+}
+
 /** Counts callback admission before any await, including work waiting inside a
  * second serialization gate. Retirement never closes native proof owners. */
 export class FacadeSessionRetirement {
@@ -62,6 +68,8 @@ export class FacadeSessionRetirement {
   private activeCalls = 0;
   #sourceReferenceOnly = true;
   #unusedSourceMetadataOnly = true;
+  #referenceOrRefusedStatusOnly = true;
+  readonly #statusCallback = new AsyncLocalStorage<StatusCallbackAdmission>();
   #retiredCloseAttempted = false;
   private readonly dependencies: RetirementDependencies;
 
@@ -82,6 +90,31 @@ export class FacadeSessionRetirement {
    * requires the original completed metadata coordinator's allocation proof. */
   public isUnusedSourceMetadataOnly(): boolean { return this.#unusedSourceMetadataOnly && this.activeCalls === 0; }
 
+  /** A refused preflight is local metadata only, never bridge admission. Pending
+   * callbacks and unknown status paths cannot supply this retirement proof. */
+  public isReferenceOrRefusedStatusOnly(): boolean { return this.#referenceOrRefusedStatusOnly && this.activeCalls === 0; }
+
+  /** Only the fixed status wrapper calls this before diagnostic/upstream work.
+   * Preserve its original refusal; successful admission irreversibly ends this
+   * local-only retirement route before the caller can dispatch anything else. */
+  public async runStatusAdmissionPreflight<Observation>(observe: () => Promise<Observation>): Promise<Observation> {
+    const callback = this.#statusCallback.getStore();
+    if (callback?.active !== true || callback.preflight !== "unobserved") {
+      this.#referenceOrRefusedStatusOnly = false;
+      throw new Error("Status admission requires its original active callback and one fixed preflight.");
+    }
+    callback.preflight = "observing";
+    try {
+      const admission = await observe();
+      callback.preflight = "admitted";
+      this.#referenceOrRefusedStatusOnly = false;
+      return admission;
+    } catch (error) {
+      callback.preflight = "refused";
+      throw error;
+    }
+  }
+
   /** Admit and count a callback before another gate. Only the fixed SDK wrapper
    * supplies the already-validated reference classification; no request schema
    * exposes it, and a later reference call cannot undo prior non-reference use. */
@@ -97,9 +130,20 @@ export class FacadeSessionRetirement {
         !(name === "easyeda_control_pcb209_worker_startup" && historicalSourceMetadataInputSchema.safeParse(validatedInput).success)) {
       this.#unusedSourceMetadataOnly = false;
     }
+    const statusCallback: StatusCallbackAdmission | undefined = name === "easyeda_control_status"
+      ? { active: true, preflight: "unobserved" } : undefined;
+    if (statusCallback === undefined && !(name === "easyeda_control_api" && sourceReferenceApi)) {
+      this.#referenceOrRefusedStatusOnly = false;
+    }
     this.activeCalls += 1;
-    try { return await task(); }
-    finally { this.activeCalls -= 1; }
+    try { return await (statusCallback === undefined ? task() : this.#statusCallback.run(statusCallback, task)); }
+    finally {
+      if (statusCallback !== undefined) {
+        statusCallback.active = false;
+        if (statusCallback.preflight !== "refused") { this.#referenceOrRefusedStatusOnly = false; }
+      }
+      this.activeCalls -= 1;
+    }
   }
 
   /** Consume one explicit close only after irreversible retirement and zero

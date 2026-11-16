@@ -101,6 +101,132 @@ void test("unused historical metadata classification is strict, monotonic and ex
   assert.equal(malformed.isUnusedSourceMetadataOnly(), false);
 });
 
+void test("refused status preflight has private monotonic eligibility only after every callback settles", async () => {
+  const { session } = fixture(), held = Promise.withResolvers<never>(), refusal = new Error("original journal quarantine");
+  const status = session.run("easyeda_control_status", () => session.runStatusAdmissionPreflight(() => held.promise));
+  assert.equal(session.isReferenceOrRefusedStatusOnly(), false);
+  await assert.rejects(session.retire(), /every admitted tool call/u);
+  held.reject(refusal); await assert.rejects(status, error => error === refusal);
+  assert.equal(session.isSourceReferenceOnly(), false); assert.equal(session.isUnusedSourceMetadataOnly(), false);
+  assert.equal(session.isReferenceOrRefusedStatusOnly(), true);
+  const publication = Promise.withResolvers<null>();
+  const reference = session.run("easyeda_control_api", () => publication.promise, true);
+  assert.equal(session.isReferenceOrRefusedStatusOnly(), false);
+  await assert.rejects(session.retire(), /every admitted tool call/u);
+  publication.resolve(null); await reference;
+  assert.equal(session.isReferenceOrRefusedStatusOnly(), true);
+});
+
+void test("status dispatch, missing hooks and foreign callbacks permanently exclude refused-status retirement", async () => {
+  for (const name of ["easyeda_control_native_release", "easyeda_control_discover", "unknown-tool", "easyeda_control_api",
+    "easyeda_control_pcb209_worker_startup"]) {
+    const { session } = fixture(), held = Promise.withResolvers<never>();
+    const status = session.run("easyeda_control_status", () => session.runStatusAdmissionPreflight(() => held.promise));
+    await session.run(name, () => "refused-before-allocation", name !== "easyeda_control_api", historicalSourceInput());
+    held.reject(new Error("quarantine")); await assert.rejects(status, /quarantine/u);
+    await session.run("easyeda_control_api", () => "static-reference", true);
+    assert.equal(session.isReferenceOrRefusedStatusOnly(), false, name);
+  }
+  for (const task of [(): string => "unknown-status-path", (): never => { throw new Error("before fixed preflight"); }]) {
+    const { session } = fixture();
+    try { await session.run("easyeda_control_status", task); }
+    catch (error) { assert.match(String(error), /before fixed preflight/u); }
+    assert.equal(session.isReferenceOrRefusedStatusOnly(), false);
+  }
+  const { session } = fixture();
+  await assert.rejects(session.run("easyeda_control_status", async () => {
+    await session.runStatusAdmissionPreflight(() => Promise.resolve("admitted"));
+    assert.equal(session.isReferenceOrRefusedStatusOnly(), false);
+    throw new Error("downstream failure after admission");
+  }), /downstream failure after admission/u);
+  await assert.rejects(session.run("easyeda_control_status", () => session.runStatusAdmissionPreflight(() => Promise.reject(new Error("later refusal")))), /later refusal/u);
+  assert.equal(session.isReferenceOrRefusedStatusOnly(), false);
+});
+
+void test("status preflight rejects detached, repeated and reentrant helper use without running another observer", async () => {
+  const outside = fixture().session; let observers = 0;
+  const observe = (): Promise<null> => { observers += 1; return Promise.resolve(null); };
+  await assert.rejects(outside.runStatusAdmissionPreflight(observe), /original active callback/u);
+  assert.equal(outside.isReferenceOrRefusedStatusOnly(), false);
+  const { session } = fixture(), detached = Promise.withResolvers<null>(); let stale: Promise<null> | undefined;
+  await assert.rejects(session.run("easyeda_control_status", async () => {
+    stale = detached.promise.then(() => session.runStatusAdmissionPreflight(observe));
+    await session.runStatusAdmissionPreflight(() => Promise.reject(new Error("original refusal")));
+  }), /original refusal/u);
+  assert.ok(stale !== undefined);
+  const staleRefusal = assert.rejects(stale, /original active callback/u);
+  detached.resolve(null); await staleRefusal;
+  assert.equal(session.isReferenceOrRefusedStatusOnly(), false);
+  for (const reentrant of [false, true]) {
+    const current = fixture().session;
+    await assert.rejects(current.run("easyeda_control_status", async () => {
+      if (reentrant) { return current.runStatusAdmissionPreflight(() => current.runStatusAdmissionPreflight(observe)); }
+      await assert.rejects(current.runStatusAdmissionPreflight(() => Promise.reject(new Error("first refusal"))), /first refusal/u);
+      return current.runStatusAdmissionPreflight(observe);
+    }), /original active callback/u);
+    assert.equal(current.isReferenceOrRefusedStatusOnly(), false);
+  }
+  assert.equal(observers, 0);
+});
+
+void test("queued status callbacks retain their own preflight records and admission revokes the shared eligibility", async () => {
+  const { session } = fixture(), gate = new SerializedGate(), held = Promise.withResolvers<never>();
+  const first = session.run("easyeda_control_status", () => gate.run(() => session.runStatusAdmissionPreflight(() => held.promise)));
+  const second = session.run("easyeda_control_status", () => gate.run(() => session.runStatusAdmissionPreflight(() => Promise.resolve("admitted"))));
+  assert.equal(session.inspect().activeCalls, 2);
+  await assert.rejects(session.retire(), /every admitted tool call/u);
+  held.reject(new Error("first preflight quarantine"));
+  await assert.rejects(first, /first preflight quarantine/u); assert.equal(await second, "admitted");
+  assert.equal(session.isReferenceOrRefusedStatusOnly(), false);
+});
+
+void test("actual index retirement keeps native custody first and strict journal admission after foreign use", async () => {
+  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  const start = source.indexOf("const facadeSession = new FacadeSessionRetirement({");
+  const end = source.indexOf("\n});", start) + "\n});".length;
+  assert.ok(start > 0 && end > start && end - start < 2500);
+  for (const foreign of [false, true]) {
+    const events: string[] = []; let nativeBlocked = true;
+    const nativeError = new Error("original native owner remains"), strictError = new Error("original foreign journal quarantine");
+    const observed: unknown = vm.runInNewContext(`${stripTypeScriptTypes(source.slice(start, end))}\nfacadeSession;`, {
+      FacadeSessionRetirement,
+      assertSessionRetirementNativeOwnersSettled: (): void => {
+        events.push("native-custody"); if (nativeBlocked) { throw nativeError; }
+      },
+      assertUnusedForwardSourceHistoricalRetirement: (): never => { throw new Error("Historical metadata coordinator must stay separate."); },
+      engine: { assertBridgeAndNativeUiEditingAdmission: (): Promise<void> => { events.push("strict-journal"); return Promise.reject(strictError); } },
+      assertNoUnresolvedOrdinaryLaunches: (): never => { throw new Error("Strict admission refused first."); },
+      bridgeGate: { closeAdmission: (): void => { events.push("admission-closed"); } },
+      upstream: { close: (): Promise<void> => { events.push("authority-close"); return Promise.resolve(); } },
+      facadeLease: { release: (): Promise<void> => { events.push("lease-release"); return Promise.resolve(); } },
+    });
+    assert.ok(observed instanceof FacadeSessionRetirement);
+    await assert.rejects(observed.run("easyeda_control_status", () => observed.runStatusAdmissionPreflight(() => Promise.reject(new Error("read-only preflight quarantine")))), /read-only preflight quarantine/u);
+    if (foreign) { await observed.run("easyeda_control_native_release", () => "refused-without-allocation"); }
+    await assert.rejects(observed.retire(), error => error === nativeError);
+    assert.deepEqual(events, ["native-custody"]); assert.equal(observed.inspect().state, "active");
+    assert.equal(observed.inspect().leaseReleaseAcknowledged, false);
+    nativeBlocked = false; events.length = 0;
+    if (foreign) {
+      await assert.rejects(observed.retire(), error => error === strictError);
+      assert.deepEqual(events, ["native-custody", "strict-journal"]);
+      assert.equal(observed.inspect().state, "active"); assert.equal(observed.inspect().leaseReleaseAcknowledged, false);
+    } else {
+      const retired = await observed.retire(); assert.equal(retired.state, "retired");
+      assert.deepEqual(events, ["native-custody", "admission-closed", "authority-close", "lease-release"]);
+    }
+  }
+});
+
+void test("refused-status retirement failure grants no close acknowledgement or connection-close authority", async () => {
+  const { session, events } = fixture(undefined, true);
+  await assert.rejects(session.run("easyeda_control_status", () => session.runStatusAdmissionPreflight(() => Promise.reject(new Error("quarantine")))), /quarantine/u);
+  await assert.rejects(session.retire(), /ownership lease remains retained/u);
+  assert.equal(session.inspect().state, "retirement-failed"); assert.equal(session.inspect().leaseReleaseAcknowledged, false);
+  assert.throws(() => session.closeRetired(), /acknowledged retirement/u);
+  assert.deepEqual(events, ["admission-closed", "authority-close"]);
+});
+
 void test("actual default MCP callback retires a finished unused metadata facade without clearing a foreign journal", { timeout: 30_000 }, async context => {
   const root = await createTestTemporaryDirectory("easyeda-unused-source-metadata-retirement-");
   const journal = await futureDiagnosticJournal(root), { client } = await connectIsolatedIndex(root, context, true);
@@ -471,4 +597,35 @@ void test("a refused non-reference registered call keeps unknown future journal 
     assert.notEqual(inspected.isError, true); assert.match(JSON.stringify(inspected.structuredContent), /"state":"active"/u);
     await client.close();
   }
+});
+
+void test("actual MCP pre-dispatch quarantined status retires and closes without interpreting foreign history", { timeout: 30_000 }, async context => {
+  const root = await createTestTemporaryDirectory("easyeda-refused-status-retirement-");
+  const designDirectory = join(root, "operations"), journal = await futureDiagnosticJournal(root);
+  await mkdir(designDirectory, { mode: 0o700 });
+  const designJournal = join(designDirectory, "easyeda-unreadable-journal.json");
+  await writeFile(designJournal, "{unreadable", { flag: "wx", mode: 0o600 });
+  const transport = new ForegroundSessionTransport({ command: process.execPath, args: [resolve("server/src/index.ts")], cwd: resolve("."),
+    env: { EASYEDA_CONTROL_DATA_DIR: root, EASYEDA_UPSTREAM_ROOT: join(root, "absent-upstream"), EASYEDA_ASSETS_ROOT: join(root, "absent-assets") } }, 10_000);
+  const client = new Client({ name: "refused-status-retirement-regression", version: "1.0.0" }, { capabilities: {} });
+  context.after(async () => {
+    if (transport.hasUnclosedChild()) { await transport.close(); await transport.awaitOwnedClosure(); }
+    await client.close();
+  });
+  await client.connect(transport, { timeout: 15_000 });
+  const pid = transport.pid; assert.ok(pid !== undefined);
+  const refused = await client.callTool({ name: "easyeda_control_status", arguments: {} });
+  assert.equal(refused.isError, true); assert.match(JSON.stringify(refused), /quarantined/u);
+  const reference = await client.callTool({ name: "easyeda_control_api", arguments: { request: { action: "loaded-facade" } } });
+  assert.notEqual(reference.isError, true);
+  const retired = await client.callTool({ name: "easyeda_control_session", arguments: { request: { action: "retire", confirmRetire: true } } });
+  assert.notEqual(retired.isError, true); assert.match(JSON.stringify(retired.structuredContent), /"state":"retired"/u);
+  assert.match(JSON.stringify(retired.structuredContent), /"leaseReleaseAcknowledged":true/u);
+  assert.deepEqual(await readFile(journal.path), journal.bytes); assert.equal(await readFile(designJournal, "utf8"), "{unreadable");
+  for (const name of ["absent-upstream", "absent-assets", "facade.lock"]) { await assert.rejects(lstat(join(root, name)), { code: "ENOENT" }); }
+  try {
+    const closed = await client.callTool({ name: "easyeda_control_session", arguments: { request: { action: "close-retired", confirmCloseRetired: true } } });
+    assert.notEqual(closed.isError, true); sessionRetiredCloseOutputSchema.parse(z.object({ result: sessionRetiredCloseOutputSchema }).parse(closed.structuredContent).result);
+  } catch (error) { assert.ok(error instanceof Error && "code" in error && error.code === -32_000); }
+  assert.deepEqual(await transport.awaitOwnedClosure(), { pid, exitObserved: true, closeObserved: true, exitCode: 0, signal: null, stdinEof: false });
 });

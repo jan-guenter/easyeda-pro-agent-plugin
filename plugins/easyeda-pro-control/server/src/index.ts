@@ -417,7 +417,7 @@ function runFacadeGate<T>(task: () => Promise<T>, allowClosedGeneratedDataCustod
 const facadeSession = new FacadeSessionRetirement({
   assertQuiescent: async (): Promise<void> => {
     assertSessionRetirementNativeOwnersSettled();
-    if (facadeSession.isSourceReferenceOnly()) { return; }
+    if (facadeSession.isSourceReferenceOnly() || facadeSession.isReferenceOrRefusedStatusOnly()) { return; }
     if (facadeSession.isUnusedSourceMetadataOnly() && assertUnusedForwardSourceHistoricalRetirement !== undefined) {
       assertUnusedForwardSourceHistoricalRetirement();
       assertSessionRetirementNativeOwnersSettled();
@@ -1399,7 +1399,7 @@ function serializedStatusGuarded<Input>(
 ): (input: Input) => Promise<CallToolResult> {
   return guarded((input) =>
     runFacadeGate(async () => {
-      const admission = await engine.observeStatusAdmission();
+      const admission = await facadeSession.runStatusAdmissionPreflight(() => engine.observeStatusAdmission());
       await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
       await upstream.listTools();
       await assertNoUnresolvedCurrentPcbDiagnosticLaunches();

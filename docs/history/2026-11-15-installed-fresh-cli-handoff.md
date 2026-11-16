@@ -58,3 +58,41 @@ Source-only guidance now obtains an ordinary connection's PID from offline
 loaded-facade, rather than starting upstream status merely to find a PID. The
 startup-conflict stub instead returns its own PID from its session inspection.
 The two contracts retain their own supported closure paths.
+
+
+## 2026-11-16 pre-dispatch status retirement correction
+
+A subsequent installed Windows-client status refused in the existing read-only
+journal-admission preflight, before diagnostic scanning, upstream startup or
+its status handler. The original facade's native-owner retirement guard passed,
+but the earlier status callback had permanently ended both existing reference
+classifications. Retirement therefore unnecessarily reached unrelated historical
+journal qualification. The refusal and its original cleanup evidence remain
+retained privately; this correction does not reinterpret those journals.
+
+The source correction adds a separate monotonic private callback classification.
+Only source references and status callbacks whose original fixed admission
+preflight refuses retain this local retirement route. Every admitted or queued
+callback must settle first. Successful preflight revokes eligibility before any
+diagnostic, upstream or status-handler work; missing, repeated, detached or
+reentrant preflight hooks and every other non-reference callback remain strict.
+The prior reference and historical-metadata classifications are never restored,
+and the existing historical coordinator route is unchanged. Native custody is
+still checked before the local retirement decision. Status and CAD admission,
+errors, result schemas, authority-close ordering and lease acknowledgments are
+unchanged; failed retirement does not authorize connection closure.
+
+Focused isolated regressions cover the actual SDK callback and status wrapper,
+queued and pending callbacks, native-first retirement, foreign callback history,
+strict journal fallback and normal retired closure with independent original-child
+exit observation. The original unreadable design and unrelated future diagnostic
+journals remain byte-identical. These are source and isolated-process proofs,
+not connected native/runtime admission. Facade and bridge TypeScript checks and
+strict type-aware lint accompany the focused checks; final payload build, pins,
+complete CI and installation remain the enclosing release workflow's work.
+
+The two focused files passed all 33 cases on Linux x86_64 with Node 24.18.0,
+npm 11.16.0 and soft core limit zero. Both facade and bridge TypeScript checks
+passed, and the four changed TypeScript files had zero type-aware lint warnings
+or errors. An earlier passing run used Node 26.13.1/npm 12.2.2 and is retained
+only as non-target evidence; it does not satisfy the pinned-runtime checks.

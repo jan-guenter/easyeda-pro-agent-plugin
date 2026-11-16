@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- This registration fixture joins the actual status wrapper and private retirement state with independent projection/schema collaborators. */
 import assert from "node:assert/strict";
 import { installIndexFixtureDependencies } from "./helpers/index-fixture-dependencies.ts";
 import { readFile } from "node:fs/promises";
@@ -8,6 +9,7 @@ import { z } from "zod";
 import { controlImplementationFingerprint, isRecord } from "../src/core.ts";
 import { CALCULATION_ONLY_TOOLS } from "../src/facade-mode.ts";
 import { projectPublicEngineStatus } from "../src/public-status-projection.ts";
+import { FacadeSessionRetirement } from "../src/session-retirement.ts";
 
 const DIAGNOSTICS = Object.freeze({ schema: "easyeda-pro-control.admission-scan-diagnostics.v1", journalCount: 3,
   candidateCounts: { legacy: 2, incomplete: 1, invalid: 0, terminal: 0, "current-baseline": 0 },
@@ -18,7 +20,7 @@ type Handler = (input: object) => Promise<Record<string, unknown>>;
 /** Register the actual status wrapper in an inert VM and expose controlled connection, admission and diagnostic outcomes. */
 async function registeredStatus(options: { connectDuringProbe?: boolean; disconnected?: boolean; failureStage?: "list-tools" | "status"; diagnosticsThrow?: boolean;
   facadeMode?: "legacy-reviewed" | "calculation-only"; diagnosticBlocked?: boolean } = {}): Promise<{
-  calls: string[]; invoke: Handler; refuseAdmission: () => void;
+  calls: string[]; invoke: Handler; refuseAdmission: () => void; session: FacadeSessionRetirement;
   implementation: Awaited<ReturnType<typeof controlImplementationFingerprint>>;
 }> {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
@@ -36,8 +38,11 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
   const calls: string[] = [];
   let admissionCount = 0, connected = options.disconnected !== true, refused = false;
   let invoke: Handler | undefined;
+  const session = new FacadeSessionRetirement({ assertQuiescent: (): Promise<void> => Promise.resolve(),
+    closeLiveAdmission: (): void => { calls.push("retirement-admission-closed"); },
+    authority: { close: (): Promise<void> => Promise.resolve() }, lease: { release: (): Promise<void> => Promise.resolve() } });
   const scope = vm.createContext({
-    z, CONTROL_VERSION: "synthetic",
+    z, CONTROL_VERSION: "synthetic", facadeSession: session,
     facadeMode: options.facadeMode ?? "legacy-reviewed",
     CALCULATION_ONLY_TOOLS,
     projectPublicEngineStatus,
@@ -75,7 +80,7 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
     guarded: (handler: Handler): Handler => handler,
     listLibraryExecutionCapabilities: (): unknown[] => [],
     registerFacadeTool: (name: string, _config: unknown, handler: Handler): void => {
-      assert.equal(name, "easyeda_control_status"); invoke = handler;
+      assert.equal(name, "easyeda_control_status"); invoke = (input): Promise<Record<string, unknown>> => session.run(name, () => handler(input));
     },
     upstream: {
       listTools: (): Promise<unknown[]> => {
@@ -109,7 +114,7 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
   installIndexFixtureDependencies(scope,source);
   vm.runInNewContext(stripTypeScriptTypes(`${inputSchemas}\n${errorHandlingSource}\n${source.slice(wrapperStart, wrapperEnd)}\n${source.slice(registrationStart, registrationEnd)}`), scope);
   assert.ok(invoke !== undefined);
-  return { calls, invoke, implementation, refuseAdmission: (): void => { refused = true; } };
+  return { calls, invoke, implementation, session, refuseAdmission: (): void => { refused = true; } };
 }
 
 void test("registered status uses one fresh admission and labels its report observation", async () => {
@@ -264,4 +269,20 @@ void test("status archives only the final resampled observation", async () => {
   const result = await fixture.invoke({ returnMode: "summary", evidence: { resultPath: "/synthetic/result", receiptPath: "/synthetic/receipt" } });
   assert.equal(result["incompleteOperationsObservedAt"], "observation-1");
   assert.deepEqual(fixture.calls, ["admission", "list-tools", "status", "lease-start", "status", "lease-end", "archive"]);
+});
+
+void test("only a refusal in the actual registered status preflight retains local-only retirement eligibility", async () => {
+  const refused = await registeredStatus();
+  refused.refuseAdmission();
+  await assert.rejects(refused.invoke({}), /fresh orphan blocks status/u);
+  assert.equal(refused.session.isSourceReferenceOnly(), false);
+  assert.equal(refused.session.isUnusedSourceMetadataOnly(), false);
+  assert.equal(refused.session.isReferenceOrRefusedStatusOnly(), true);
+  assert.deepEqual(refused.calls, ["admission"]);
+  for (const options of [{}, { diagnosticBlocked: true }, { failureStage: "list-tools" }, { failureStage: "status" }] as const) {
+    const admitted = await registeredStatus(options);
+    try { await admitted.invoke({}); }
+    catch (error) { assert.match(String(error), /unresolved diagnostic launch/u); }
+    assert.equal(admitted.session.isReferenceOrRefusedStatusOnly(), false);
+  }
 });
