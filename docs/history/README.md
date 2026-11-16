@@ -1,6 +1,20 @@
 # Project history
 
+- [Wire callback support release](2026-11-16-wire-callback-support-release.md). PR217 exact-head and merged-main CI, all reported review issues resolved, immutable Git payload proof and one combined installation planned.
+
+- [Original Wire first child Point effects and held attributes return](2026-11-16-wire-first-child-point-effects.md). Genuine points/map/scale/constructor/normal execution, qualified ordinary scratch effects and both persistent Point births; first child return instruction held and all later/native/Save gates remain closed.
+
 - [Wire callback review corrections](2026-11-16-wire-callback-review-corrections.md). Twenty reported issues addressed, immutable ordinary cursor evidence, strict data/numeric/actor guards and focused actual Inspector refusals; final release checks remain separate.
+- [2026-11-16 Versioned native compiler integration](2026-11-16-versioned-native-compiler-integration.md).
+- [2026-11-16 Native reference and DEL caller public curation](2026-11-16-native-reference-caller-public-curation.md).
+- [2026-11-16 Native DELETE preferences and poststate](2026-11-16-native-delete-preferences-poststate.md).
+- [2026-11-16 Native DELETE original caller composition](2026-11-16-native-delete-original-caller.md).
+- [2026-11-14 Original native derived and device reference returns](2026-11-14-native-worker-reference-returns.md).
+- [2026-11-14 Native schematic reference and original UI return](2026-11-14-native-schematic-reference-return.md).
+- [2026-11-14 Native PCB reference ledger origin correction](2026-11-14-native-reference-ledger-origin-correction.md).
+- [2026-11-14 Original native inverse reference query](2026-11-14-native-inverse-reference-query.md).
+- [2026-11-14 Original native GET inner return joins](2026-11-14-native-get-inner-return-joins.md).
+- [2026-11-14 Original native GET Core UI return](2026-11-14-native-get-core-ui-return.md).
 
 - [2026-11-16 Wire V5 original native title custody](2026-11-16-wire-v5-native-title-custody.md).
 - [2026-11-16 Wire V5 unconditional ft native filter](2026-11-16-wire-v5-ft-native-filter.md).

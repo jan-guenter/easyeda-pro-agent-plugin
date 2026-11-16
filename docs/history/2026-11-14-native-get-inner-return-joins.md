@@ -1,0 +1,19 @@
+# Original native GET inner return joins
+
+This source checkpoint continues the [UI-return preparation](2026-11-09-inverse-native-get-ui-return-preparation.md) from base `f532eca1`. It changes the distinct internal native GET result observer, controller, closed codec, unmounted native ledger and their original-source Inspector fixture. There is still no Core result issuer, pipe mount, native dispatch, accepted native owner or public continuation.
+
+The actual original inner Task `execute`, subscribe-once callback and RPC callback now each have their own source-qualified entry breakpoint and full original caller stack. Fresh frame tuples join the actual response, original task, callback, resolve and reject references before each body runs. The subscribe-once entry still requires the original live task; the RPC callback entry instead proves its completed cancellation. Resolver metadata is qualified again at that live entry. Their pre-transfer closure mirrors remain comparison anchors and grant no body permit by themselves.
+
+This distinct lane now needs ten owned pauses and eleven resumes. Its existing 1,772 CDP-request reserve remains sufficient; its unmounted control reserve is 1,802. No historical mounted profile budget changes. A new `private.inverse-native-get-task-ui-observations.v2` observation shape records `innerLiveReplyJoined:true`; the released v1 shape is not rewritten. Runtime result, worker completion, reference and deletion grants remain false, and `suppliedObservationsOnly:true` remains explicit.
+
+The nine inert Inspector cases include substitution of the inner callback and native resolver at their actual original entries. They refuse after five/six resumes, before either replacement function runs. Earlier late-transfer, foreign-helper, clone/Noe, inherited-setter and inherited-data adversaries remain. Browser Event metadata and the worker's already-completed incoming envelope remain explicit stand-ins; these are offline original-source tests, not connected native lifecycle proof.
+
+The earlier record's `Object.keys` residual is corrected: pinned UI clone `e9e`, SHA-256 `698dd5cc887837e94cabe91632547aa74da355e8e9e5a069f8d2120d6bd08ce0`, contains `for...in` and `Object.hasOwnProperty.call`, with no `Object.keys` call. The existing native-member and hook proofs qualify the actual `hasOwnProperty` and `call` operands and reprove them before every original resume. This correction introduces no method invocation or new grant.
+
+Validation uses Linux x86_64, Node 24.18.0, npm 11.16.0 and soft core limit zero. `npm ci`, both TypeScript configurations, strict changed-file type-aware lint and the four focused tests pass, with actual installed source supplied to the Inspector cases and no source-dependent skips. No facade, manager, helper, EasyEDA process, native Job, mutation, Save, C# compilation or connected validation was started by this source agent. Its tool catalog exposed no EasyEDA session tool, so no own MCP cleanup action was available or attempted.
+
+Core issuance, original UI-hold transfer, fixed pipe/native mount, complete union capacity, aggregate C# compilation, reference/collateral/DEL/preferences and saved-absence remain separate work. Earlier failed capacity evidence is preserved in the originating record.
+
+## Later 2026-11-14 Core/native continuation
+
+The [Core UI-return record](2026-11-14-native-get-core-ui-return.md) implements the original result issuance/transfer and complete private mount, retaining the failed capacity candidate and fixing it through exact pure-codec/field sharing. Its derived native control reserve is 1,804 (32 controls beyond CDP), correcting this earlier unmounted record's 1,802. This checkpoint's source and validation attribution remain unchanged. Connected acceptance and all later inverse stages remain separate.
