@@ -174,22 +174,24 @@ export async function createLinuxBrokerProofEvidence(options: BrokerOptions): Pr
       return pendingBytes === 0;
     } catch { markFailure(); return false; }
   };
-  let preownerBuffer = "";
-  const preownerStatus = (): void => { try { process.stdout.write(`${JSON.stringify({ schema: "easyeda-pro-control.fresh-cli-broker-setup.v1", nonce: options.nonce, originalBrokerTransportPid: peer.child.pid ?? null, cliOwnerAllocated: false, linuxEvidenceDirectory: options.linuxEvidenceDirectory, controls: ["status", "close-cli-stdin"] })}\n`); } catch { peer.closeInput(); } };
+  let preownerAborted = false; let preownerBuffer = "";
+  const abortPreowner = (): void => { preownerAborted = true; peer.closeInput(); markFailure(); };
+  const preownerStatus = (): void => { try { process.stdout.write(`${JSON.stringify({ schema: "easyeda-pro-control.fresh-cli-broker-setup.v1", nonce: options.nonce, originalBrokerTransportPid: peer.child.pid ?? null, cliOwnerAllocated: false, preownerAborted, linuxEvidenceDirectory: options.linuxEvidenceDirectory, controls: ["status", "close-cli-stdin"] })}\n`); } catch { abortPreowner(); } };
   const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
   const preownerControl = (bytes: Buffer): void => {
     try { preownerBuffer += decoder.decode(bytes, { stream: true }); proofNeed(Buffer.byteLength(preownerBuffer) <= 8192, "PREOWNER_CONTROL_BOUND"); let at = preownerBuffer.indexOf("\n");
       while (at >= 0) { const line = preownerBuffer.slice(0, at); preownerBuffer = preownerBuffer.slice(at + 1); const request = proofRecord(JSON.parse(line), "PREOWNER_CONTROL");
         proofNeed(Object.keys(request).length === 2 && request["nonce"] === options.nonce && (request["action"] === "status" || request["action"] === "close-cli-stdin"), "PREOWNER_FIXED_CONTROL_ONLY");
-        if (request["action"] === "status") { preownerStatus(); } else { peer.closeInput(); } at = preownerBuffer.indexOf("\n"); }
+        if (request["action"] === "status") { preownerStatus(); } else { abortPreowner(); } at = preownerBuffer.indexOf("\n"); }
     } catch { preownerBuffer = ""; }
   };
-  const preownerEnd = (): void => { peer.closeInput(); };
+  const preownerEnd = (): void => { abortPreowner(); };
   process.stdin.on("data", preownerControl); process.stdin.once("end", preownerEnd); preownerStatus();
   try {
     const ready = await bounded(enqueue({ schema: PROFILE, op: "initialize", directory: options.linuxEvidenceDirectory, nonce: options.nonce }, "ready"));
     proofNeed(typeof ready["filesystemType"] === "string" && ["ext4", "xfs", "btrfs"].includes(ready["filesystemType"]) && ready["filesystemProfile"] === "local-persistent-linux.v1", "ORIGINAL_LINUX_FILESYSTEM_REQUIRED"); filesystemType = ready["filesystemType"];
     proofNeed(ready["ok"] === true && ready["fileAndDirectorySync"] === true && ready["filesPreallocated"] === PROOF_JOURNALS.length + 2, "LINUX_BROKER_PREALLOCATION_ACK_REQUIRED");
+    proofNeed(!preownerAborted, "ORIGINAL_LINUX_EVIDENCE_BROKER_SETUP_ABORTED");
   } catch (error) { peer.closeInput(); await peer.closed.promise; throw new Error("ORIGINAL_LINUX_EVIDENCE_BROKER_SETUP_FAILED", { cause: error }); }
   finally { process.stdin.off("data", preownerControl); process.stdin.off("end", preownerEnd); process.stdin.pause(); }
   const observeClose = async (): Promise<void> => { await peer.closed.promise; if (!closing) { markFailure(); } };

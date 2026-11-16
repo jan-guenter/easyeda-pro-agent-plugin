@@ -52,3 +52,24 @@ void test("fixed broker refuses a traversal journal before downstream write and 
     peer.closeInput(); assert.deepEqual(await peer.closed.promise, { code: 1, signal: null }); assert.deepEqual(await readFile(join(root, "evidence/state.jsonl")), bytes); await assert.rejects(access(join(root, "escape")));
   } finally { peer.closeInput(); await peer.closed.promise; }
 });
+
+
+void test("accepted pre-owner abort remains sticky when the original ready ACK has already resolved", async () => {
+  const root = await createTestTemporaryDirectory("fresh-cli-broker-abort-"); let originalBroker: OwnedProofProcess | undefined;
+  // oxlint-disable-next-line typescript/unbound-method -- Preserve and receiver-bind the original implementation at this exact inert ready/abort boundary.
+  const originalNext = OwnedProofProcess.prototype.next;
+  OwnedProofProcess.prototype.next = async function next(this: OwnedProofProcess): Promise<unknown> {
+    const value = await originalNext.call(this);
+    if (value !== null && typeof value === "object" && "kind" in value && value.kind === "ready") {
+      // oxlint-disable-next-line typescript/no-this-alias, unicorn/no-this-assignment -- Retain the exact allocated peer through abort and original close, rather than reconstructing it from a PID.
+      originalBroker = this;
+      process.stdin.emit("data", Buffer.from(`${JSON.stringify({ nonce: NONCE, action: "close-cli-stdin" })}\n`));
+    }
+    return value;
+  };
+  try {
+    const originalSetup = createLinuxBrokerProofEvidence({ distribution: "Ubuntu-24.04", linuxEvidenceDirectory: join(root, "evidence"), workspace: join(root, "workspace"), nonce: NONCE });
+    await assert.rejects(originalSetup, /ORIGINAL_LINUX_EVIDENCE_BROKER_SETUP_FAILED/u);
+    assert.ok(originalBroker !== undefined); assert.equal(originalBroker.child.stdin.writableEnded, true); assert.deepEqual(originalBroker.closeResult, { code: 1, signal: null });
+  } finally { OwnedProofProcess.prototype.next = originalNext; originalBroker?.closeInput(); if (originalBroker !== undefined) { await originalBroker.closed.promise; } }
+});
