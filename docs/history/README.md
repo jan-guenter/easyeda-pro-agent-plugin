@@ -1342,7 +1342,7 @@ layout. The connected ledger retains its generation and case anchors.
 
 - [Footprint support and Wire oldData publication](2026-11-16-footprint-wire-olddata-release.md).
 
-- [Forward helpers and Wire setter public curation](2026-11-16-forward-helper-wire-setter-curation.md).
+- [Forward helpers and Wire setter public curation](2026-11-16-through-2026-11-17-forward-helper-wire-setter-curation.md).
 
 - [Complete original Wire setter/callback return](2026-11-16-wire-complete-setter-callback-return.md).
 

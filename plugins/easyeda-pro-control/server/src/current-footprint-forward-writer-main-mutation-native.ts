@@ -51,9 +51,10 @@ public sealed partial class EasyedaDiagnosticOwner {
    else if(forwardWriterSqlActor!=fields["argument1"] as string||forwardWriterSqlOwner!=fields["argument2"] as string||forwardWriterSqlProject!=fields["projectUuid"] as string||forwardWriterSqlBranch!=fields["branchUuid"] as string||forwardWriterSqlPath!=fields["path"] as string||forwardWriterSqlPrior!=fields["priorHistoryUuid"] as string)throw Error("forward-writer-sql-original-input");
   }
   if(phase=="forward-writer-sql-require"&&forwardWriterSqlCapture!=fields["objectId"] as string)throw Error("forward-writer-sql-require-capture");
-  forwardWriterSqlStep++;if(mainCompletionActive)forwardWriterSqlCompletionOffset++;mainRequest=id;originalMain.SendFixed(text,false);AssertLive();
+  forwardWriterSqlStep++;if(mainCompletionActive)forwardWriterSqlCompletionOffset++;mainRequest=id;SendForwardWriterMainSqlFixed(text);
  }
- public static void VerifyForwardWriterMainSqlSmoke(){EasyedaForwardWriterMainSqlProtocol.VerifySmoke();if(ForwardWriterSqlPhases.Length!=40)throw Error("forward-writer-sql-roster");var owner=CreateFootprintForwardWriterComplete209();try{bool refused=false;try{owner.SendForwardWriterMainSql(1,ForwardWriterSqlPhases[0],"Debugger.evaluateOnCallFrame",new System.Collections.Hashtable());}catch(InvalidOperationException){refused=true;}if(!refused||owner.forwardWriterSqlStep!=0)throw Error("forward-writer-sql-unissued");}finally{owner.originalMain.Release();}}
+ void SendForwardWriterMainSqlFixed(string text){try{originalMain.SendFixed(text,false);AssertLive();}catch{mainCompletionFailed=true;throw;}}
+ public static void VerifyForwardWriterMainSqlSmoke(){EasyedaForwardWriterMainSqlProtocol.VerifySmoke();if(ForwardWriterSqlPhases.Length!=40)throw Error("forward-writer-sql-roster");var owner=CreateFootprintForwardWriterComplete209();try{bool refused=false;try{owner.SendForwardWriterMainSql(1,ForwardWriterSqlPhases[0],"Debugger.evaluateOnCallFrame",new System.Collections.Hashtable());}catch(InvalidOperationException){refused=true;}if(!refused||owner.forwardWriterSqlStep!=0)throw Error("forward-writer-sql-unissued");refused=false;try{owner.SendForwardWriterMainSqlFixed("{}");}catch(InvalidOperationException){refused=true;}if(!refused||!owner.mainCompletionFailed||owner.forwardWriterSqlStep!=0)throw Error("forward-writer-sql-failed-send-latched");}finally{owner.originalMain.Release();}}
 }
 `;
 }

@@ -1,3 +1,5 @@
+import { installCurrentFootprintForwardWriterPipeNativeSource } from "./current-footprint-forward-writer-pipe-native.ts";
+import { installCurrentFootprintForwardWriterRequestGuard } from "./current-footprint-forward-writer-request-native.ts";
 import { currentFootprintForwardHeadNativeSource } from "./current-footprint-forward-head-native.ts";
 import { currentFootprintForwardHeadAgeNativeSource } from "./current-footprint-forward-head-age-native.ts";
 /** New fixed native graph. The old three-role graph is unchanged. Separate
@@ -73,7 +75,7 @@ function dispatch(): string {
             if (($request.records -isnot [int] -and $request.records -isnot [long]) -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,operation,records,rootCreated,rootPid') {throw 'forward-writer-frontier-bind-fields'}
             $owner.BindForwardWriterFrontier([int]$request.records)
           } else {
-            $role=$null
+            $role=[System.Management.Automation.Language.NullString]::Value
             if (@('callback-held','timer-held') -ccontains $request.operation) {
               if ($request.role -isnot [string] -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,operation,role,rootCreated,rootPid') {throw 'forward-writer-frontier-held-fields'}
               $role=$request.role
@@ -189,7 +191,7 @@ export function currentFootprintForwardWriterNativeOutputs(shared: string): read
   const previous = currentFootprintForwardColdNativeOutputs(shared);
   const oldCore = previous[1], oldDriver = previous[0], oldPhase = previous[2];
   if (oldDriver?.role !== "driver" || oldCore?.role !== "core" || oldPhase?.role !== "phase") { throw new Error("FORWARD_WRITER_NATIVE_ROLES"); }
-  let core = oldCore.source.replaceAll("CreateFootprintForwardExecution209", "CreateFootprintForwardWriter209");
+  let core = installCurrentFootprintForwardWriterPipeNativeSource(oldCore.source.replaceAll("CreateFootprintForwardExecution209", "CreateFootprintForwardWriter209"));
   core = one(core, "public void SendMain(int id,string phase,string method,System.Collections.IDictionary fields){", `public void SendMain(int id,string phase,string method,System.Collections.IDictionary fields){${CURRENT_FOOTPRINT_FORWARD_WRITER_STARTUP_DISPATCH}`);
   core = one(core, "originalMain.RequireCompletionCapacity(mainRequest);", "originalMain.RequireCompletionCapacity(mainRequest-(forwardWriterBirth?stockMainRequests:0));");
   core = one(core, "    if(cleanup?forwardCleanupRequests>=", "    cleanup=ForwardWriterRendererCleanup(id,cleanup);\n    if(cleanup?forwardCleanupRequests>=");
@@ -225,6 +227,7 @@ public static class EasyedaFootprintForwardExecutionLimits {`);
   const startup = currentFootprintForwardWriterStartupNativeSource();
   const sync = plannedNormalSenders(`${currentFootprintForwardWriterHistoryNativeSource()}\n${currentFootprintForwardWriterSyncNativeSource()}\n${currentFootprintForwardWriterFrontierNativeSource()}\n${CURRENT_FOOTPRINT_FORWARD_WRITER_RENDERER_CLASS_NATIVE}\n${CURRENT_FOOTPRINT_FORWARD_WRITER_CLOCK_NATIVE}`, 2);
   let driver = prune(one(oldDriver.source, "\n        default {throw 'pcb-diagnostic-action'}", `\n${headDispatch()}        default {throw 'pcb-diagnostic-action'}`), hasHeadAge).replaceAll("WorkerStartupFootprintForwardExecution209", "WorkerStartupFootprintForwardWriter209").replaceAll("CreateFootprintForwardExecution209", "CreateFootprintForwardWriter209");
+  driver = installCurrentFootprintForwardWriterRequestGuard(driver);
   const visualStart = driver.indexOf("      # BEGIN GENERATED WINDOW FAILURE\n");
   const visualEnd = driver.indexOf("      # END GENERATED WINDOW FAILURE\n", visualStart);
   if (visualStart === -1 || visualEnd <= visualStart || driver.includes("      # BEGIN GENERATED WINDOW FAILURE\n", visualStart + 1)) { throw new Error("FORWARD_WRITER_NATIVE_VISUAL_SECTION"); }
@@ -244,6 +247,7 @@ Add-Type -TypeDefinition $graphNative
   driver = one(driver, "    [EasyedaDiagnosticOwner]::VerifyFootprintForwardExecutionGraphSmoke()", "    [EasyedaDiagnosticOwner]::VerifyForwardWriterProducerSmoke()\n    [EasyedaDiagnosticOwner]::VerifyForwardWriterStartupSmoke()\n    [EasyedaDiagnosticOwner]::VerifyForwardWriterCacheSmoke()\n    [EasyedaDiagnosticOwner]::VerifyForwardWriterHistorySmoke()\n    [EasyedaDiagnosticOwner]::VerifyForwardWriterSyncSmoke()\n    [EasyedaDiagnosticOwner]::VerifyForwardWriterFrontierSmoke()\n    [EasyedaDiagnosticOwner]::VerifyForwardWriterRendererClassSmoke()");
   driver = driver.replaceAll("easyeda-pro-control.footprint-forward-cold-execution-compile.v1", "easyeda-pro-control.footprint-forward-writer-compile.v1");
   driver = one(driver, "    [EasyedaDiagnosticOwner]::VerifyForwardWriterRendererClassSmoke()", "    [EasyedaDiagnosticOwner]::VerifyForwardWriterRendererClassSmoke()\n    [EasyedaDiagnosticOwner]::VerifyForwardWriterClockSmoke()");
+  driver = one(driver, "    [EasyedaDiagnosticOwner]::VerifyForwardWriterClockSmoke()", "    [EasyedaDiagnosticOwner]::VerifyForwardWriterClockSmoke()\n    [EasyedaDiagnosticOwner]::VerifyForwardWriterPipeSmoke()");
   const rows = [["driver", "owner.ps1", driver, LIMITS.driver], ["core", "native-core.cs", core, LIMITS.core], ["phase", "native-phase.cs", phase, LIMITS.phase], ["producer", "native-producer.cs", producer, LIMITS.phase], ["startup", "native-startup.cs", startup, LIMITS.startup], ["sync", "native-sync.cs", sync, LIMITS.sync]] as const;
   const outputs = rows.map(([role, name, source, maximumBytes]) => {
     const bytes = Buffer.byteLength(source);

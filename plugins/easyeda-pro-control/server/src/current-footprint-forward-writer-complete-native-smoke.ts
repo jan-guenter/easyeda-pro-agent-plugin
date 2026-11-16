@@ -1,3 +1,4 @@
+import { currentFootprintForwardWriterRequestSmoke } from "./current-footprint-forward-writer-request-native.ts";
 /** Build-only companion for the seven-role graph. This is not a runtime role
  * and cannot add a native action or admit an application generation. */
 import { CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_NATIVE_GRAPH_LIMITS as LIMITS } from "./current-footprint-forward-writer-complete-native-limits.ts";
@@ -41,6 +42,7 @@ try {
   if (@($output).Count -ne 1 -or $output -isnot [string] -or $output.Length -gt 4096) {throw 'forward-writer-smoke-output'}
   $result=$output | ConvertFrom-Json
   if ((@($result.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'compiled,emptyJob,executionAuthorized,pipesChecked,processLaunched,schema' -or $result.schema -cne 'easyeda-pro-control.footprint-forward-writer-complete-compile.v2' -or $result.compiled -cne $true -or $result.emptyJob -cne $true -or $result.pipesChecked -cne $true -or $result.processLaunched -cne $false -or $result.executionAuthorized -cne $false) {throw 'forward-writer-smoke-result'}
+  ${currentFootprintForwardWriterRequestSmoke(outputs[0]?.source ?? "", true)}
   $output
 } finally {foreach ($file in $files) {$file.Dispose()}}
 `;

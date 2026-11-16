@@ -127,3 +127,117 @@ This correction changes only the test and this record. Runtime source,
 generated native helpers, bundle bytes and compatibility pins are unchanged.
 Exact-head CI and review are still required; the earlier local and CI
 attempts are not presented as final successful integration.
+
+## CodeRabbit review corrections
+
+Review `5928464275` on the original helper head reported seven findings and
+one source-independent test-coverage nit. All are addressed together,
+including findings attached only to generated-file review text. The
+complete Main SQL sender now latches failure before rethrowing; frontier
+completion calls preserve a real null string; supported cache/sync and
+complete copy/pre-Create bodies use action-specific envelope classification
+within the unchanged 32768 total envelope limit and native body caps; and receiver
+phases use their original protocol role budgets. Checkout-path-independent
+challenge/distribution tests and source-independent setter program/frame
+syntax, arity and altered-Symbol checks are included.
+
+Only the new six/seven cloned helpers gain a bounded synchronous pipe
+writer. It retains its original foreground thread and duplicated kernel
+handle before WriteFile; deadline failures poison the channel and retain
+the original pipes until both managed join and original kernel-thread exit
+are observed. Cancellation itself proves no exit. Review caught two timing
+gaps in the first correction: kernel signaling can lag managed join, and
+a cancellation can arrive immediately before P/Invoke. The final code
+waits within the same original deadline and requests at most one additional
+cancellation of that original attempt per nonblocking cleanup poll. It
+never creates or replays a writer or closes a live pipe to interrupt it.
+
+Actual Windows no-app smokes cover successful write/read and original
+thread exit, a genuinely blocked write, cancellation before dispatch, and
+a deterministic first ERROR_NOT_FOUND followed by cancellation and exit
+of the same later-entering write. They also cover eight head receiver
+codec/ledger observations, SQL failure latching, NullString binding and
+execution of the exact generated PowerShell request guards. Both corrected
+compiler inputs pass C#5 warning level 4 with warnings treated as errors.
+The six-role input is 1269666 bytes, SHA-256
+`ea93e74fba9a80cc4ab7405b8c5e6afe887176f4cf634748c68097e9607578da`;
+the seven-role input is 1442825 bytes, SHA-256
+`b3080a72e1efe51cf9d0f0aa202d8bbc61ef445d077f987da4a8e88134edc107`.
+Earlier compiler/smoke observations above remain historical evidence, not
+proof of the corrected bytes.
+
+All 191 historical/shared script and identity paths outside the intentional
+new six/seven outputs, and all four profile/limit modules, remain byte-exact.
+No budget or ceiling changed. The prior complete Wire positive is retained
+for its exact unchanged programs; the added checks exercise syntax, arity
+and native Symbol rejection without requiring installed application assets.
+Final combined checks and exact-head CI/CodeRabbit follow; no connected
+execution or installation is claimed by these component results.
+
+### Actual termination-dispatch integration correction
+
+Independent integration review found that the PowerShell termination action
+calls `TerminationObservation()`, whereas the first bounded-writer correction
+guarded only `Terminated()` and `ReleaseClosed()`. The original renderer
+writer could therefore still be pending when the once-only release path
+was reached. The cloned observation now polls that same original writer
+once before any root/Job sample. While pending it returns the unchanged
+three-field shape with null root/Job observations and false termination;
+these are observations deliberately not taken on that call, not fabricated
+process counts. Normal false polls remain retryable under the existing bound.
+Only actual managed and original kernel-thread exit permits the untouched
+two root/Job samples and subsequent original release. Historical helpers and
+packet grammar are unchanged.
+
+The actual default-owner/empty-Job observation smoke passes. A private
+compiler input with only the observation hook removed compiled successfully
+but failed that smoke as expected and completed its owned cleanup. The
+ordinary no-app transport cases and all five native/template focused cases
+also pass. The final pipe source is SHA-256
+`566b51daf62434df272f81a661a8b134dc7efe8dab4846079ff6ce981043a45a`.
+Both strict C#5 and PowerShell5.1 no-app smokes pass on final inputs:
+six 1271874 bytes /
+`cbe1ee0f0aa3c4304d85b20cd515c82039cdc282c44966c0b7d1c3c70bd0f8ae`;
+seven 1445033 bytes /
+`45c1423d68942ad6660ec058eb73a78d706ce231f6a0fce9d85d4672c2d9b8e7`.
+Earlier component successes are retained with their exact earlier inputs.
+
+The source-independent setter checks are in their own test file, keeping
+the existing asset-driven test byte-exact and avoiding a dependency-rule
+exception. Inspector replies stay unknown until runtime validation; no
+unsafe type assertion or linter relaxation was added. These checks and the
+complete graph/tail files pass locally on the corrected native outputs.
+
+### 17 November final formatting correction
+
+The first combined typecheck passed. Global strict lint found 13 style
+errors confined to two new files: four-digit numeric separators in a
+regression, a combined variable declaration and an indexOf absence check.
+These were corrected without rule exceptions, changed values, imports or
+generated helper bytes. The failed campaign remains retained; final checks
+are repeated on the unchanged corrected payload. The originating record
+now names both dates and its index link follows the rename.
+
+### Corrected helper batch final local result, 17 November
+
+The final frozen 5559-file package manifest is SHA-256
+`26c95894c69869ce1759d2d17c68e377c7c04a3a458fc096499290d5382495f3`. Both main/stub TypeScript projects, global and
+bridge strict type-aware lint (zero warnings/errors), complete build, API
+coverage, compatibility, repository/MCP/all-skill validation, all seven
+official skill quick checks and reproducible bundles pass. Only allowed
+facade source projections and review time change; all three bundle bytes
+remain exactly those of the original helper head.
+
+All 19 focused cases across five whole files pass without a skip on this
+final unchanged package. No asset campaign is repeated: the original Wire
+positive's actual programs and its asset-driven test remain byte-exact.
+Both final Windows strict compiler and maintained no-app smoke receipts,
+and the negative missing-observation-hook smoke, bind the compiler inputs
+recorded above. Successful owned fixture roots and reproducible caches
+were removed after observed test-owner exit; complete logs, raw replies,
+initial failures and manifests remain private.
+
+All seven initial CodeRabbit findings and its source-independent-test nit
+are implemented. Exact final-head CI and a completed CodeRabbit review
+remain required before merge. No installation, app launch, connected
+writer acceptance or saved/reopened validation is claimed by this batch.

@@ -47,15 +47,15 @@ $startupPurpose=$footprintMainPurpose -or $WorkerStartup -or $WorkerStartup209 -
 # Electron requests Browser::Quit on pipe disconnect. Never dispose live pipes,
 # including after malformed requests, stdin EOF or an abandoned facade.
 $footprintCopyWorkerHandleFields=@('scriptId','objectId','arg0ObjectId','arg1ObjectId','arg2ObjectId','arg3ObjectId','arg4ObjectId','arg5ObjectId','arg6ObjectId','arg7ObjectId')
-if($forwardWriterCoreBytes -isnot [byte[]] -or $forwardWriterCoreBytes.Length -ne 994817){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterCoreBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '842dd9e77311009f3c0c1fc8f2f0fd3bc97dc7ab982f6ec3017d92ed74f18a44'){throw 'forward-complete-role-hash'};
+if($forwardWriterCoreBytes -isnot [byte[]] -or $forwardWriterCoreBytes.Length -ne 1008236){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterCoreBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne 'b66c3859e5ae77fd2093d32021efb5a9083da23d60e3b4a34eb8dc919d5a95b5'){throw 'forward-complete-role-hash'};
 if($forwardWriterPhaseBytes -isnot [byte[]] -or $forwardWriterPhaseBytes.Length -ne 63435){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterPhaseBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '14c4474f4ef1cef4ed92b62af14e44a468579098f4ff6879d43cbbfeafd40def'){throw 'forward-complete-role-hash'};
-if($forwardWriterProducerBytes -isnot [byte[]] -or $forwardWriterProducerBytes.Length -ne 60895){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterProducerBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '5372f5585449c42e431724cdafaa2257674209812204c514715e810d4c0bc78b'){throw 'forward-complete-role-hash'};
+if($forwardWriterProducerBytes -isnot [byte[]] -or $forwardWriterProducerBytes.Length -ne 61898){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterProducerBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne 'ddacf516e2faa1eea21ce7492998ad3516a418279ef3b016a0a93a4fb9a6657e'){throw 'forward-complete-role-hash'};
 if($forwardWriterStartupBytes -isnot [byte[]] -or $forwardWriterStartupBytes.Length -ne 128506){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterStartupBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '250d49cda01de2ed2be5efdfcc86c2d84e1bc7ab187b5bb589cb4e6c0aca737a'){throw 'forward-complete-role-hash'};
 if($forwardWriterSyncBytes -isnot [byte[]] -or $forwardWriterSyncBytes.Length -ne 58622){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterSyncBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '804fd9228923f8c2a3277930a467c8e7b3bb1b4fcd46cfcaaeb0e384d591b71c'){throw 'forward-complete-role-hash'};
 if($forwardWriterTailBytes -isnot [byte[]] -or $forwardWriterTailBytes.Length -ne 124331){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterTailBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne 'ee754845a39519ee6a05652289fb3f9f404d9ecdad6251e10298cb796d2bc077'){throw 'forward-complete-role-hash'};
 $graphDecoder=[Text.Encoding]::GetEncoding(20127,[Text.EncoderFallback]::ExceptionFallback,[Text.DecoderFallback]::ExceptionFallback)
 $graphNative=$graphDecoder.GetString($forwardWriterCoreBytes)+"`n"+$graphDecoder.GetString($forwardWriterPhaseBytes)+"`n"+$graphDecoder.GetString($forwardWriterProducerBytes)+"`n"+$graphDecoder.GetString($forwardWriterStartupBytes)+"`n"+$graphDecoder.GetString($forwardWriterSyncBytes)+"`n"+$graphDecoder.GetString($forwardWriterTailBytes)
-if([Text.Encoding]::UTF8.GetByteCount($graphNative) -ne 1430611 -or [Text.Encoding]::UTF8.GetByteCount($graphNative) -gt 1507328){throw 'forward-complete-compiled-size'}
+if([Text.Encoding]::UTF8.GetByteCount($graphNative) -ne 1445033 -or [Text.Encoding]::UTF8.GetByteCount($graphNative) -gt 1507328){throw 'forward-complete-compiled-size'}
 Add-Type -TypeDefinition $graphNative
 $owner=[EasyedaDiagnosticOwner]::CreateFootprintForwardWriterComplete209()
 $startupRequestLimit=[EasyedaFootprintForwardExecutionLimits]::Requests
@@ -82,6 +82,7 @@ try {
     [EasyedaDiagnosticOwner]::VerifyForwardWriterCompleteTailSmoke()
     [EasyedaDiagnosticOwner]::VerifyForwardWriterMainSqlSmoke()
     [EasyedaDiagnosticOwner]::VerifyForwardWriterCompleteTailLedgerSmoke()
+    [EasyedaDiagnosticOwner]::VerifyForwardWriterPipeSmoke()
     [EasyedaFootprintCopyAllocatedCreateClockLedger]::VerifySmoke()
     if (-not $owner.Terminated()) {throw 'forward-graph-compile-job-not-empty'}
     $owner.ReleaseUnlaunched()
@@ -104,11 +105,13 @@ try {
     try {
       $request=$line.ToString() | ConvertFrom-Json
       $largeV2Request=@('footprint-copy-clock-registration-v2','footprint-clock-rpc-v2-send','footprint-forward-cold-send') -ccontains $request.action
+      $largeForwardBody=(@('footprint-forward-initial-cache-send','footprint-forward-initial-sync-send') -ccontains $request.action) -and (@($request.PSObject.Properties.Name) -ccontains 'body') -and $request.body -is [string]
+      $largeForwardBody=$largeForwardBody -or ((@($request.PSObject.Properties.Name) -ccontains 'body') -and $request.body -is [string] -and ($request.action -ceq 'footprint-forward-copy-local' -or ($request.action -ceq 'footprint-forward-copy-tail-control' -and $request.operation -ceq 'precreate-body')))
       $largeOpening=$request.action -ceq 'worker-startup-parent' -and $request.method -ceq 'Runtime.callFunctionOn' -and @('preflight','open-project','pcb-preflight','pcb-open-document','pcb-observe') -ccontains $request.parentPhase
       $largeMainRequest=$WorkerStartupFootprintForwardWriterComplete209 -and @('main-request-send','main-completion-send') -ccontains $request.action
       $largeClockRpcRequest=$WorkerStartupFootprintCombined209 -and @('footprint-clock-rpc-send','footprint-copy-native-create') -ccontains $request.action
       if ([Text.Encoding]::UTF8.GetByteCount($line.ToString()) -gt 32768 -or
-          (-not $largeV2Request -and -not $largeMainRequest -and -not $largeClockRpcRequest -and -not $largeOpening -and ($request.action -cne 'send' -or $request.method -cne 'Runtime.callFunctionOn') -and $line.Length -gt 4096)) {throw 'pcb-diagnostic-request-size'}
+          (-not $largeForwardBody -and -not $largeV2Request -and -not $largeMainRequest -and -not $largeClockRpcRequest -and -not $largeOpening -and ($request.action -cne 'send' -or $request.method -cne 'Runtime.callFunctionOn') -and $line.Length -gt 4096)) {throw 'pcb-diagnostic-request-size'}
       if ($request.id -isnot [string] -or $request.id -cnotmatch '^[a-f0-9]{32}$') {throw 'pcb-diagnostic-request-id'}
       $id=$request.id
       if ($launched -and $request.action -cne 'identity' -and ($request.helperInstance -isnot [string] -or $request.jobId -isnot [string] -or $request.rootCreated -isnot [string] -or ($request.rootPid -isnot [int] -and $request.rootPid -isnot [long]) -or $request.helperInstance -cne $owner.HelperInstance -or $request.jobId -cne $owner.JobId -or $request.rootCreated -cne $owner.RootCreated -or $request.rootPid -ne $owner.RootPid)) {throw 'pcb-diagnostic-owner-binding'}
@@ -683,7 +686,7 @@ try {
             if (($request.records -isnot [int] -and $request.records -isnot [long]) -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,operation,records,rootCreated,rootPid') {throw 'forward-writer-frontier-bind-fields'}
             $owner.BindForwardWriterFrontier([int]$request.records)
           } else {
-            $role=$null
+            $role=[System.Management.Automation.Language.NullString]::Value
             if (@('callback-held','timer-held') -ccontains $request.operation) {
               if ($request.role -isnot [string] -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,operation,role,rootCreated,rootPid') {throw 'forward-writer-frontier-held-fields'}
               $role=$request.role

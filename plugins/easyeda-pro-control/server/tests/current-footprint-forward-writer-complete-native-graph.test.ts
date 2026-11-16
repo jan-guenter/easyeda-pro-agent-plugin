@@ -9,7 +9,7 @@ import {captureCurrentFootprintForwardWriterCompleteNativeGraph} from "../src/cu
 import {currentFootprintForwardWriterCompleteProfile} from "../src/current-footprint-forward-writer-complete-profile.ts";
 import {currentFootprintForwardWriterProfile} from "../src/current-footprint-forward-writer-profile.ts";
 
-void test("new complete generation preserves every released six-role source and committed complete file",async()=>{
+void test("new complete generation preserves separate six-role outputs and every committed complete file",async()=>{
  const source=await readFile(new URL(`../../${CURRENT_NATIVE_BASELINE.relativePath}`,import.meta.url),"utf8");assertCurrentNativeBaseline(source);
  const before=currentFootprintForwardWriterNativeOutputs(source);
  const complete=currentFootprintForwardWriterCompleteNativeOutputs(source);
@@ -28,5 +28,12 @@ void test("complete graph captures all original files and rejects malformed nati
  assert.ok(capture.bootstrap.includes("$forwardWriterTailBytes=$b6"));
  assert.equal(capture.bootstrap.includes("-WorkerStartupFootprintForwardWriter209"),false);
  for(const challenge of ["a".repeat(31),"a".repeat(33),`${"a".repeat(32)}\n`,"x".repeat(32)]){await assert.rejects(captureCurrentFootprintForwardWriterCompleteNativeGraph("archlinux",challenge));}
- await assert.rejects(captureCurrentFootprintForwardWriterCompleteNativeGraph("archlinux\n","a".repeat(32)));
+ // Distribution names participate only in the UNC branch, never drive paths.
+ const driveCheckout=/^\/mnt\/[a-z]\//u.test(import.meta.filename);
+ for(const distribution of ["archlinux\n","bad distribution","../archlinux"]){
+  if(driveCheckout){
+   const driveCapture=await captureCurrentFootprintForwardWriterCompleteNativeGraph(distribution,"a".repeat(32));await driveCapture.verify();
+   assert.equal(driveCapture.bootstrap.includes("wsl.localhost"),false);
+  }else{await assert.rejects(captureCurrentFootprintForwardWriterCompleteNativeGraph(distribution,"a".repeat(32)));}
+ }
 });

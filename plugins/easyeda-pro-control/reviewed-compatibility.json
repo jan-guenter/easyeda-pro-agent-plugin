@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "d08835b28dddf98083996dfef0281c0a602d198e4da574ed8587658a4e0d63db",
-      "fileCount": 3053,
+      "sha256": "5651904558ed19795f3bc974ca8dfb49d21a05c697e82faca0c52bc23b02812f",
+      "fileCount": 3055,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -1938,18 +1938,18 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-native-pins.ts",
-          "bytes": 2073,
-          "sha256": "dcbd7e50a8831961aa85718661b3dc78cae63c32d0e1fa3e2417207283ed2857"
+          "bytes": 2074,
+          "sha256": "4d730282f0fd607b29cc039385720b346b6e0656761e43e6777bb0b31e032ac9"
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-native-smoke.ts",
-          "bytes": 3996,
-          "sha256": "7b7d37d193a8b1df6c91b19ae3c8b2dd9ce69fb59deec067a42fb8db05d8d3ed"
+          "bytes": 4189,
+          "sha256": "5f0a85b2f4539001d96937a0baa52242b1b9e5576267de87d96856872066f776"
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-native-source.ts",
-          "bytes": 11608,
-          "sha256": "d4cf4ed857171a6d6557fa525e4e69b7df0666f421c7528caf232626f0b86f32"
+          "bytes": 11782,
+          "sha256": "c5da102a807ca886c569b1e8f57e1077920b37bcc23e2bdf2297e1855108740f"
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-profile.ts",
@@ -2083,8 +2083,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-main-mutation-native.ts",
-          "bytes": 10704,
-          "sha256": "50cdd822de57330e877c4fa01dab8ad17b8dc10a0e37c4d55bda297ccc4cd04e"
+          "bytes": 11069,
+          "sha256": "659fe5e7afb4ed9f4e1347318a9f7649a698c671f95a95b58b827c660e412e6a"
         },
         {
           "relativePath": "current-footprint-forward-writer-main-mutation-programs.ts",
@@ -2109,17 +2109,17 @@
         {
           "relativePath": "current-footprint-forward-writer-native-pins.ts",
           "bytes": 1788,
-          "sha256": "a82615aa456f0f5b60c6448ffbc272440a21496bd95e225f7a97da1aea8a0352"
+          "sha256": "0585fa6dafb10ed5f0c2a912d90fa6ecc44d8861d537e872b86e2c0369399720"
         },
         {
           "relativePath": "current-footprint-forward-writer-native-smoke.ts",
-          "bytes": 3883,
-          "sha256": "4c33c41d653010f9b239424ed60b7a57c86d5683583129d8a2fb2dd0d5cb006d"
+          "bytes": 4077,
+          "sha256": "2385a8a56baec33b16f5015cc60f7fc99a196bd04210614fb96fddc5e1fed1f7"
         },
         {
           "relativePath": "current-footprint-forward-writer-native-source.ts",
-          "bytes": 33529,
-          "sha256": "3debb134561669da353e933f7c65511ff0d89946551e1a79cf3d86aa96a307d3"
+          "bytes": 34163,
+          "sha256": "e968ea248e6e5619db1e0b2bfb7d0ecbd29f335df5bd7d4682a71a2011ebd92e"
         },
         {
           "relativePath": "current-footprint-forward-writer-own-data-collector.ts",
@@ -2137,6 +2137,11 @@
           "sha256": "a5e2d11d420e900bfff73885fe52dd0cbc2030fd83091c4e90fb391ae48a4399"
         },
         {
+          "relativePath": "current-footprint-forward-writer-pipe-native.ts",
+          "bytes": 14470,
+          "sha256": "566b51daf62434df272f81a661a8b134dc7efe8dab4846079ff6ce981043a45a"
+        },
+        {
           "relativePath": "current-footprint-forward-writer-post-branch-data.ts",
           "bytes": 2083,
           "sha256": "9930ad4fa881a78af250fdcd3b0c6b35a86aa5a2a311088f41e1f1dcbcb347e2"
@@ -2148,8 +2153,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-producer-native.ts",
-          "bytes": 8758,
-          "sha256": "6b976db16d1dd46558ed86b33ed796bcd67aa5d911b16b44c195f3900dac6364"
+          "bytes": 9781,
+          "sha256": "ab23120a4f8977ee4142c545f6bd0cad2f439f12d19af95b784523246e3f0099"
         },
         {
           "relativePath": "current-footprint-forward-writer-profile.ts",
@@ -2170,6 +2175,11 @@
           "relativePath": "current-footprint-forward-writer-renderer-class.ts",
           "bytes": 3317,
           "sha256": "c36125385a6d6cb45d7373ca5a6d91553cdb9502dcac94c34fdf88e6a849e6ab"
+        },
+        {
+          "relativePath": "current-footprint-forward-writer-request-native.ts",
+          "bytes": 3780,
+          "sha256": "7e566cc25dbead578cb57508cddff0f1a1cb26817c58b43a63f0ec618e07c63a"
         },
         {
           "relativePath": "current-footprint-forward-writer-startup-native.ts",
@@ -15298,7 +15308,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-16T21:25:08.057Z",
+  "reviewedAt": "2026-11-16T23:10:20.994Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

@@ -1,6 +1,7 @@
 /** Distinct pre-I/O complete graph. The released six-role output function is
  * called unchanged; only this separately pinned seven-role variant is edited. */
 import {currentFootprintForwardWriterMainMutationNativeSource,installCurrentFootprintForwardWriterMainMutationNativeSource,installCurrentFootprintForwardWriterMainMutationNativeTail} from "./current-footprint-forward-writer-main-mutation-native.ts";
+import {installCurrentFootprintForwardWriterRequestGuard} from "./current-footprint-forward-writer-request-native.ts";
 import {createHash} from "node:crypto";
 import {currentFootprintForwardWriterTicketTimerNativeSource} from "./current-footprint-forward-writer-ticket-timer-native.ts";
 import {currentFootprintForwardWriterNativeOutputs} from "./current-footprint-forward-writer-native-source.ts";
@@ -43,7 +44,7 @@ export function currentFootprintForwardWriterCompleteNativeOutputs(shared:string
  let sync=one(get("sync"),"string encoded=EasyedaForwardWriterFrontierProtocol.Encode(","string encoded=EasyedaForwardWriterCompleteFrontierProtocol.Encode(");
  sync=one(sync,"public void BeginForwardWriterAllocatedClock(int first){","public void BeginForwardWriterAllocatedClock(int first){\nRequireForwardWriterCompletePrecreate();");
  const tail=installCurrentFootprintForwardWriterMainMutationNativeTail(rename(currentFootprintForwardWriterCompleteTailNativeSource()));
- let driver=get("driver");
+ let driver=installCurrentFootprintForwardWriterRequestGuard(get("driver"),true);
  const dispatch=currentFootprintForwardWriterCompleteTailDispatch();
  const actual=[...dispatch.matchAll(/^ {8}'([^']+)' \{/gmu)].map(match=>match[1]);
  if(actual.length!==ACTIONS.length||ACTIONS.some(action=>!actual.includes(action))||new Set(actual).size!==actual.length){throw new Error("FORWARD_COMPLETE_NATIVE_DISPATCH_ROSTER");}
