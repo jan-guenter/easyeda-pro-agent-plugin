@@ -286,3 +286,42 @@ reproduce all three installed PR215 bundle bytes; compatibility changes only
 source-tree files/count/hash and review time. Complete local suites are not
 duplicated; exact final-head CI and actual CodeRabbit findings remain the merge
 gates. This records local source validation, not publication or live execution.
+
+## Classic RPC successful-arm retirement
+
+All thirteen checks passed at
+`bdd019475c560b681599a28fd84b61e85e9e06d0`. Its actual CodeRabbit
+review still reported one valid outside-diff issue: successful classic RPC
+arming followed by original exit before run left six known points and its
+object group without a cleanup start. A completed run without finish had the
+same group-release gap. This seventeenth reported comment is accepted.
+
+Retirement now joins original arm, run, join and finish tasks, then starts the
+existing idempotent cleanup whenever arm began. Existing per-attempt and
+notification failure retention remain unchanged. Three actual constructor
+cases cover successful arming without run, unavailable original cleanup and a
+fresh unarmed owner. They require six ordered removals and one group release
+when owned, retain all seven unavailable cleanup failures, reject invented
+release acknowledgment and prove repeated retirement adds no dispatch.
+
+The corrected focused run passed 67 cases without skips: 64 lifecycle cases
+and three genuine classic RPC Inspector cases. Its counterfactual against BDD
+source passed 62 of 64 cases and failed the two new armed cases as expected.
+The first integration run retained four method-fixture parse failures because
+its deliberately unarmed receipt fixture lacked declarations for the newly
+referenced private cleanup members. The fixture now declares those members and
+refuses any unexpected cleanup call. Both TypeScript projects pass. Three
+declaration-grouping lint errors were corrected by splitting declarations in
+the new tests, preserving evaluation order and the production bytes tested.
+Final aggregate checks and exact-head CI/review still precede publication; no
+new program, result projection, budget or package stamp is introduced.
+
+The final frozen classic-RPC correction passes both TypeScript configurations,
+global strict type-aware lint with zero warnings/errors, clean dependencies,
+full dependency listing, signatures, zero-vulnerability audit, sanitizer and
+every non-suite bridge/API/build/compatibility/repository/MCP/skill phase. All
+seven official skill validators pass. The final server/manager rebuilds again
+reproduce all three PR215 runtime bundles exactly; compatibility refresh changes
+only source-tree metadata and review time. No complete local suite was repeated.
+The same candidate stamp covers the entire source batch and all seventeen
+accepted review comments. Final exact-head CI and actual review remain required.

@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "c2d8ab5b11f422a920ad95dbea8c3a0f9b18d3c66ccb2bf03ce368010e9bfff3",
+      "sha256": "6d3a8bde36fbd0e146a67384fa0b5a7058ffec88b20ca76ca361c81815cb42bf",
       "fileCount": 2817,
       "files": [
         {
@@ -11193,8 +11193,8 @@
         },
         {
           "relativePath": "current-schematic-wire-classic-rpc-driver.ts",
-          "bytes": 28830,
-          "sha256": "e3a0c166acd6e4489914d8af17feb0a1e3d32690d2074aa54c2e7d9523105149"
+          "bytes": 28972,
+          "sha256": "39b4771be35d45af69817f4a441be2f5456af117f467eccba62f2fa9051801d3"
         },
         {
           "relativePath": "current-schematic-wire-classic-rpc-origin.ts",
@@ -14118,7 +14118,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-16T09:57:30.724Z",
+  "reviewedAt": "2026-11-16T10:48:44.911Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {
