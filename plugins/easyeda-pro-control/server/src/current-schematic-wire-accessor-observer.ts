@@ -2,6 +2,7 @@
  * operands, monitor history and the original action remain separate gates. */
 /* oxlint-disable import/max-dependencies -- This observer joins its original issuer, strict transport, independently pinned complete source and full inspector metadata. */
 import { z } from "zod";
+import {CURRENT_SCHEMATIC_WIRE_ACCESSOR_PARAMETER_OFFSETS,qualifyCurrentSchematicWireAccessorSource} from "./current-schematic-wire-accessor-source.ts";
 import { canonicalJson, sha256Text } from "./core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { captureCurrentSchematicDisplayAccessorSource, currentSchematicDisplayAccessorArray, currentSchematicDisplayAccessorFourFunctions, currentSchematicDisplayAccessorFunctionScriptId } from "./current-schematic-display-accessor-replies.ts";
@@ -24,7 +25,7 @@ export interface CurrentSchematicWireAccessorBindings {
 type Role = typeof ROLES[number];
 /** Existing geometry pins identify source-span starts. Inspector function
  * locations identify parameter openings, including the actual constructor. */
-export const CURRENT_SCHEMATIC_WIRE_ACCESSOR_PARAMETER_OFFSETS = Object.freeze({ pointsGet: 10, pointsSet: 10, setLines: 8, pointConstructor: 743 });
+export {CURRENT_SCHEMATIC_WIRE_ACCESSOR_PARAMETER_OFFSETS,qualifyCurrentSchematicWireAccessorSource} from "./current-schematic-wire-accessor-source.ts";
 export interface CurrentSchematicWireAccessorObservation {
   readonly schema: "private.current-schematic-wire-accessor-observation.v1"; readonly sourceSha256: string; readonly variant: 0 | 1; readonly functions: 4;
   readonly originalHolderFunctionsQualified: true; readonly originalSourceLocationsQualified: true;
@@ -45,17 +46,6 @@ const trueReply = z.strictObject({ result: z.strictObject({ type: z.literal("boo
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`SCHEMATIC_WIRE_ACCESSOR_${code}`); } }
 /** Data-only source qualification preserves both native bundle alternatives.
  * It cannot construct an original observation, owner or function handle. */
-export function qualifyCurrentSchematicWireAccessorSource(input: unknown): 0 | 1 {
-  const { scriptSource } = captureCurrentSchematicDisplayAccessorSource(input); const bytes = Buffer.byteLength(scriptSource); const hash = sha256Text(scriptSource);
-  const index = SOURCE.files.findIndex(file => file.bytes === bytes && file.sha256 === hash); need(index === 0 || index === 1, "COMPLETE_SOURCE_IDENTITY");
-  const source = METHODS[index]; const file = SOURCE.files[index]; need(source !== undefined && file !== undefined && source.relativePath === file.relativePath, "SOURCE_ROSTER");
-  for (const method of Object.values(source.methods)) { need(sha256Text(scriptSource.slice(method.start, method.end)) === method.sha256, "SOURCE_METHOD_SPAN"); }
-  for (const role of ROLES) {
-    const method = source.methods[role]; const body = scriptSource.slice(method.start, method.end); const parameter = body.indexOf("(", role === "pointConstructor" ? body.indexOf("constructor") : 0);
-    need(parameter === CURRENT_SCHEMATIC_WIRE_ACCESSOR_PARAMETER_OFFSETS[role] && !body.slice(0, parameter).includes("\n"), "FUNCTION_PARAMETER_LOCATION");
-  }
-  return index;
-}
 /** Join exact function text, own descriptors and Inspector location to one
  * qualified source variant. Return its scope handle without invoking the function. */
 export function decodeCurrentSchematicWireAccessorFunction(input: unknown, variant: 0 | 1, role: Role, scriptId: string, description: string): Readonly<Omit<Ref, "objectId">> {

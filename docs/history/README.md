@@ -1,5 +1,41 @@
 # Project history
 
+- [2026-11-16 Wire V5 original native title custody](2026-11-16-wire-v5-native-title-custody.md).
+- [2026-11-16 Wire V5 unconditional ft native filter](2026-11-16-wire-v5-ft-native-filter.md).
+- [2026-11-16 Original Wire running group-method preparation](2026-11-16-wire-running-group-preparation.md).
+- [2026-11-16 Original Wire view effects to held bbox continuation](2026-11-16-wire-original-view-bbox-continuation.md).
+- [2026-11-16 Original Wire tag return to held group-history method](2026-11-16-wire-original-tag-group-method.md).
+- [2026-11-16 Original Wire running data hooks and held getData entry](2026-11-16-wire-original-running-data-hooks.md).
+- [2026-11-16 Original Wire parent branches to held attribute watcher](2026-11-16-wire-original-parent-branches-attr.md).
+- [2026-11-16 Original Wire inherited parent getter and default argument](2026-11-16-wire-original-inherited-parent-getter.md).
+- [2026-11-16 Original Wire running history to held group handler](2026-11-16-wire-original-history-group-entry.md).
+- [2026-11-16 Original Wire genuine group command and held init entry](2026-11-16-wire-original-group-execution-init-entry.md).
+- [2026-11-16 Original Wire getter returns and held base getData result](2026-11-16-wire-original-getter-returns.md).
+- [2026-11-16 Original Wire first child callback and attribute entry](2026-11-16-wire-original-first-child-entry.md).
+- [2026-11-16 Original Wire common effects to held parent entry](2026-11-16-wire-original-common-parent-entry.md).
+- [2026-11-16 Original Wire callback to held record lane](2026-11-16-wire-original-callback-record-lane.md).
+- [2026-11-16 Original Wire bbox predicate to held add entry](2026-11-16-wire-original-bbox-add-entry.md).
+- [2026-11-16 Original Wire running attribute dependency census](2026-11-16-wire-original-attribute-dependencies.md).
+- [2026-11-16 Original Wire attribute absence to held history entry](2026-11-16-wire-original-attr-history-entry.md).
+- [2026-11-16 Original Wire AST callback to held view continuation](2026-11-16-wire-original-ast-view-continuation.md).
+- [2026-11-16 Original Wire add scheduling to held common entry](2026-11-16-wire-original-add-common-entry.md).
+- [2026-11-16 Wire foundations release and automated installation](2026-11-16-wire-foundations-release-install.md).
+- [2026-11-16 Original Wire first child superclass return](2026-11-16-wire-first-child-super-return.md).
+- [2026-11-16 Original Wire first child prerequisites](2026-11-16-wire-first-child-prerequisites.md).
+- [2026-11-16 Wire callback support public curation](2026-11-16-wire-callback-support-public-curation.md).
+- [2026-11-16 Task artifact cleanup after the storage boundary correction](2026-11-16-task-artifact-cleanup.md).
+- [2026-11-15 Wire V5 original native globals](2026-11-15-wire-v5-original-native-globals.md).
+- [2026-11-15 Original Wire title shared-helper return](2026-11-15-wire-original-title-ft-return.md).
+- [2026-11-15 Original selected Wire serial tree child](2026-11-15-wire-original-serial-tree-child.md).
+- [2026-11-15 Original flat Wire title callback](2026-11-15-wire-original-flat-title-callback.md).
+- [2026-11-14 Original Wire v4 run refusal guard](2026-11-14-wire-v4-original-run-refusal-guard.md).
+- [2026-11-14 Wire original bbox Promise chain — 2026-11-14](2026-11-14-wire-original-bbox-promise-chain.md).
+- [2026-11-14 Wire original async tree child — 2026-11-14](2026-11-14-wire-original-async-tree-child.md).
+- [2026-11-14 Wire GROUP history and scene raw readers — 2026-11-14](2026-11-14-wire-group-history-scene-readers.md).
+- [2026-11-14 Wire disabled private annotation branch — 2026-11-14](2026-11-14-wire-disabled-private-annotation-branch.md).
+- [2026-11-14 Wire derived/rTree comparison and two-marker admission](2026-11-14-wire-derived-rtree-two-marker-admission.md).
+- [2026-11-14 Wire complete writer source work — 2026-11-14](2026-11-14-wire-complete-writer-source-work.md).
+
 - [2026-11-15 Installed fresh-CLI handoff](2026-11-15-installed-fresh-cli-handoff.md). Reviewed public release, both official installations, original-process metadata-only handoffs and the separate nested-namespace runtime finding.
 - [Temporary artifact cleanup and source continuation](2026-11-15-temporary-artifact-cleanup.md) — scoped cleanup, retained evidence and ownership of disposable artifacts.
 - [2026-11-15 Wire parser/service public foundations](2026-11-15-wire-parser-service-public-foundations.md). Published-base, independently buildable unmounted parser/RPC/service/tree/title and pending-publication closure with exact Wire-only source data and unchanged runtime admission.

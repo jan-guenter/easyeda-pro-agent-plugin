@@ -1,0 +1,24 @@
+/** Separate running-phase hook census and genuine getData entry, before model getters. */
+import {z} from "zod";
+import {CURRENT_SCHEMATIC_WIRE_GROUP_DATA_HOOK_PROGRAMS as PROGRAMS} from "./current-schematic-wire-group-data-hook-programs.ts";
+import {CURRENT_SCHEMATIC_WIRE_TRANSITION_SOURCE as SOURCE} from "./current-schematic-wire-transition-source.ts";
+import {CURRENT_SCHEMATIC_WIRE_WRITER_FLAGS as FLAGS} from "./current-schematic-wire-writer-protocol.ts";
+import {captureCurrentPcbStringClockReply as capture} from "./current-pcb-string-clock-reply.ts";
+import {freezeDeep} from "./sqlite-inventory-core.ts";
+
+export const CURRENT_SCHEMATIC_WIRE_GROUP_DATA_HOOK_REQUESTS=Object.freeze({normalMaximum:52,cleanup:2,points:1,pauses:1,resumes:1,helperSources:3,events:5,childMaximum:16}as const);
+export const CURRENT_SCHEMATIC_WIRE_GROUP_DATA_HOOK_SITES=freezeDeep(SOURCE.map(profile=>({fn:profile.methods.historyGroupData,offset:21,caller:profile.methods.historyInitOldData,callerOffset:58})));
+const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u),reference=z.strictObject({objectId:handle});
+const flags={objectGroup:z.literal(FLAGS.objectGroup),silent:z.literal(true),generatePreview:z.literal(false),throwOnSideEffect:z.literal(true)};
+const calls=Object.entries(PROGRAMS).map(([role,program])=>z.strictObject({phase:z.literal("wire-group-data-hook-call"),role:z.literal(role),method:z.literal("Runtime.callFunctionOn"),params:z.strictObject({...flags,objectId:handle,functionDeclaration:z.literal(program),arguments:z.array(reference).length(role==="hooks"?8:9),returnByValue:z.literal(role!=="hooks"),awaitPromise:z.literal(false),userGesture:z.literal(false)})}));
+const expressions={main:"[this,t,r,n,Fl]",editor:"[this,t,r,n,Zl]",held:"[this,t]"}as const;
+const frames=Object.entries(expressions).map(([role,expression])=>z.strictObject({phase:z.literal("wire-group-data-hook-frame"),role:z.literal(role),method:z.literal("Debugger.evaluateOnCallFrame"),params:z.strictObject({...flags,callFrameId:handle,expression:z.literal(expression),returnByValue:z.literal(false),includeCommandLineAPI:z.literal(false)})}));
+const arm=z.strictObject({phase:z.literal("wire-group-data-hook-arm"),method:z.literal("Debugger.setBreakpointOnFunctionCall"),params:z.strictObject({objectId:handle,condition:z.literal("")})});
+const schema=z.union([...calls,...frames,arm]);
+export type CurrentSchematicWireGroupDataHookCommand=Readonly<z.infer<typeof schema>>;
+export function validateCurrentSchematicWireGroupDataHookCommand(input:unknown):CurrentSchematicWireGroupDataHookCommand{return freezeDeep(schema.parse(capture(input).value));}
+export function currentSchematicWireGroupDataHookCall(role:keyof typeof PROGRAMS,receiver:string,refs:readonly string[]):CurrentSchematicWireGroupDataHookCommand{return validateCurrentSchematicWireGroupDataHookCommand({phase:"wire-group-data-hook-call",role,method:"Runtime.callFunctionOn",params:{...FLAGS,objectId:receiver,functionDeclaration:PROGRAMS[role],arguments:refs.map(objectId=>({objectId})),returnByValue:role!=="hooks",awaitPromise:false,userGesture:false}});}
+export function currentSchematicWireGroupDataHookFrame(role:keyof typeof expressions,callFrameId:string):CurrentSchematicWireGroupDataHookCommand{return validateCurrentSchematicWireGroupDataHookCommand({phase:"wire-group-data-hook-frame",role,method:"Debugger.evaluateOnCallFrame",params:{...FLAGS,callFrameId,expression:expressions[role],returnByValue:false,includeCommandLineAPI:false}});}
+export interface CurrentSchematicWireGroupDataHookHeldData{
+ readonly schema:"private.schematic-wire-group-data-hook-entry-held.v1";readonly originalRunningInitOperandsAndParentLexicalCompared:true;readonly originalGroupAndBaseGetDataFunctionsQualified:true;readonly nativeChildrenForEachQualified:true;readonly completeOriginalChildRosterAndHookPrototypePathsRetained:true;readonly completePeersAndOriginalOldNewDataBirthsCompared:true;readonly originalInitBodyResumed:true;readonly originalGroupGetDataEntryJoined:true;readonly originalGroupGetDataEntryStillHeld:true;readonly originalSamePendingPromiseRetained:true;readonly originalTickPointRetained:true;readonly childCount:number;readonly normalRequests:number;readonly cleanupRequests:number;readonly modelAttributeGetterExecutionQualified:false;readonly groupGetDataBodyResumed:false;readonly baseGetDataBodyResumed:false;readonly initOldDataBodyReturned:false;readonly methodBodyReturned:false;readonly groupBodyReturned:false;readonly historyBodyReturned:false;readonly tickBodyResumed:false;readonly callbackReturned:false;readonly fullSetterComplete:false;readonly workerCompleted:false;readonly modifyCompleted:false;readonly suppliedTransportOnly:true;readonly originalNativeOwnerJoined:false;readonly continuousGlobalsVerified:false;readonly saveAuthorized:false;
+}

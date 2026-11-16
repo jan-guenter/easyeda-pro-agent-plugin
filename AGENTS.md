@@ -200,6 +200,11 @@ are build/check dependencies only.
   recommendation remains disputed, ask the user to decide before merging.
   The minimal inherited CodeRabbit configuration disables commit-threshold
   auto-pausing. A skipped or paused check is not a review of the current head.
+  A zero-finding review may appear only in the bot walkthrough, without a new
+  GitHub Review object. Require its explicit no-actionable result and exact
+  source/covered commit metadata marked reviewed, plus the completed check.
+  Read prior outside-diff findings as well; a successful check alone proves no
+  current-head review. Do not wait indefinitely for a review object in that case.
 - Before pushing a feature branch, run `npm run repository:history:check -- --base
   <reviewed-published-commit>` from the plugin directory. Current files alone do
   not cover deleted files or older commit messages. Scan the complete outgoing

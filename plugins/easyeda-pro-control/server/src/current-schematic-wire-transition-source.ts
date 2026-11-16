@@ -6,7 +6,7 @@ import {z} from "zod";
 
 import {captureCurrentPcbStringClockReply as capture} from "./current-pcb-string-clock-reply.ts";
 
-import {qualifyCurrentSchematicWireAccessorSource as qualifyBase} from "./current-schematic-wire-accessor-observer.ts";
+import {qualifyCurrentSchematicWireAccessorSource as qualifyBase} from "./current-schematic-wire-accessor-source.ts";
 
 import {captureCurrentSchematicDisplayAccessorSource} from "./current-schematic-display-accessor-replies.ts";
 import {freezeDeep} from "./sqlite-inventory-core.ts";
