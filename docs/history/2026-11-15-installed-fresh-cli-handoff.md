@@ -195,3 +195,12 @@ with no skips on Linux x86_64, Node 24.18.0, npm 11.16.0 and soft core limit zer
 The nine changed TypeScript files passed strict type-aware lint with zero
 warnings and errors. No whole-project suite or lint campaign was repeated for
 this second leaf; the enclosing final-payload verification remains required.
+
+
+The integrated correction also passed a read-only check of the three actual
+unchanged historical records. Fresh Linux namespaces with UID/GID zero and one
+both used a read-only root and no capabilities. Both Symbol profiles qualified
+historical abandonment, and the complete Source receipt qualified. Execution,
+authority restoration, completion and replay flags remained false. This proves
+the historical read correction on the existing bytes, separately from later
+installed upstream, bridge and CAD admission.
