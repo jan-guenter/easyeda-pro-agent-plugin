@@ -141,3 +141,54 @@ repository/MCP/all-skill checks passing. That adapter is not part of this
 public prerequisite batch. Complete exact-commit CI and CodeRabbit review
 remain required before merge. These are offline/source results; no new
 connected admission, live mutation or saved-design proof is claimed.
+
+## CodeRabbit review of the initial public head
+
+Review5925781420 covered initial PR219 head
+`becf8994deb6a3598900305c31f5a5ffcd95e93c` and reported six actionable
+comments. The complete review body, inline findings and walkthrough are retained
+privately. No nitpick, outside-diff or legacy section was reported. The initial
+head passed all 13 CI checks; that result does not cover the following fixes.
+
+- Byte capture now uses the actual typed-array byte-length getter, rejecting
+  wider views and an inherited getter that attempts to disguise their size.
+- Branch/history/body Main normal budgets include the driver step: 9/12/9.
+- Poststate explicitly compares both fresh selected preference values with
+  the original retained census pair, across the await after storage reproof.
+  The existing V1 prepared/result projections remain unchanged. The original
+  collector exposes its retained pair through identity-checked observation;
+  the later genuine Core composition must supply it as beforeSelectedValues.
+- The native dependency sender requires its held query kind before message
+  construction or ledger mutation.
+- The inert mutation parser bounds cumulative serialized projection to 8388608
+  UTF-16 units before retaining each row. It stores bounded encoded rows and
+  joins them once, avoiding repeated EDIT_HEAD expansion into gigabytes.
+- Test-only raw replies use unique process/time/random names. Delivery precedes
+  optional persistence, port closure joins that attempt even on failure, and
+  the child-data test waits for its original worker exit before teardown.
+
+Sixteen focused development cases passed without skips, including both
+selected-key changes after reproof, actual byte-view refusals, the 512 KiB
+EDIT_HEAD/10000-LINE expansion counterexample, unchanged original parser
+positives, and real-port/filesystem-failure delivery. Initial development
+type/style errors and a parser error-label failure remain retained. Final
+unchanged-payload package checks, worker integration, CI and renewed automatic
+CodeRabbit review are pending. No manual bot review comment was repeated.
+
+## Final review-fix payload verification
+
+All mandatory non-suite checks passed again on the unchanged review-fix
+payload: both TypeScript projects, global strict type-aware lint with zero
+warnings, build/native/static checks, compatibility, bridge checks, exhaustive
+API inventory, repository/MCP/all-skill validation, all seven official quick
+checks and reproducible bundles. External pins remain unchanged.
+
+The final source SHA-256 is `236fa0bff0e3a35d68a19ca6f7dfdb76abd1e352c760bc5a3365089df961ed76`.
+The final focused package covers 5500 files with SHA-256
+`115803af7bbf8fb1fcdf56787dbab0f6a07ccd396ca22071a172cc477f72fc48`.
+All 16 review regressions passed without skips. The original Wire positive
+also passed, with its parent joining the original worker's normal exit after
+the complete raw write. The final raw reply and hash remain private; only this
+successful runner's disposable control roots were removed after their original
+processes exited. Final-head CI and CodeRabbit review remain required before
+merge. The earlier initial-head CI result is not reused for these fixes.

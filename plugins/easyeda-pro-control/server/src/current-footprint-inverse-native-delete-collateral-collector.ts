@@ -188,6 +188,12 @@ this.#current();
 return value;
  }
  /** Equal-shaped data cannot recover the original private guard tuple. */
+ /** Historical selected values from this original preparation, without
+  * changing its released V1 projection or re-entering a before-round guard. */
+ public originalSelectedPreferences(value:CurrentFootprintInverseNativeDeleteCollateralPrepared):readonly[string|null,string|null]{
+need(this.#prepared===value&&this.#originalStorage!==null);
+return this.#originalStorage.values;
+ }
  public requirePrepared(value:CurrentFootprintInverseNativeDeleteCollateralPrepared):void{
 this.#current();
 need(this.#prepared===value);

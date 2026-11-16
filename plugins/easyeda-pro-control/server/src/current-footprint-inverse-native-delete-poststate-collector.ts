@@ -17,6 +17,8 @@ import type { CurrentFootprintInverseNativeDeletePoststateCommand } from "./curr
 interface Bindings {
   readonly reflection: string;
   readonly before: CurrentFootprintInverseNativeDeleteCollateralPrepared;
+  /** Core supplies the original collateral collector's retained census pair. */
+  readonly beforeSelectedValues: readonly [string | null, string | null];
   readonly assertOriginalCallerCompleted: () => void;
   readonly current: () => void;
   readonly assertOriginalExit: () => void;
@@ -52,7 +54,9 @@ export class CurrentFootprintInverseNativeDeletePoststateCollector {
   #failed = false;
   #cause: unknown;
   public constructor(bindings: Bindings) {
-    this.#b = Object.freeze({ ...bindings });
+    const values = bindings.beforeSelectedValues;
+    need(values.length === 2 && values.every(value => value === null || typeof value === "string" && value.length <= 4096));
+    this.#b = Object.freeze({ ...bindings, beforeSelectedValues: Object.freeze([values[0], values[1]] as const) });
     originals.add(this); Object.freeze(this);
   }
   #current(): void {
@@ -93,10 +97,11 @@ export class CurrentFootprintInverseNativeDeletePoststateCollector {
         }));
         this.#current(); this.#b.requireOriginalPhysicalComplete();
         need(this.#requests.length === 3 && count === before.storageKeys && after.count === count &&
-          after.peerSha256 === before.storagePeerSha256);
-        // The original storageReprove closure compares every original own
-        // Descriptor/value, including both selected preference keys. The
-        // Census also joins the same actual Storage handle and peer bytes.
+          after.peerSha256 === before.storagePeerSha256 &&
+          after.values[0] === this.#b.beforeSelectedValues[0] && after.values[1] === this.#b.beforeSelectedValues[1]);
+        // Storage can change across the await after storageReprove. This
+        // Fresh census must also match both original selected values; peer
+        // Hashing deliberately excludes those two keys.
         this.#data = Object.freeze({
           profile: "private.current-footprint-inverse-native-delete-poststate-data.v1",
           originalNativeCallerJoined: true, originalTabDescriptorsUnchanged: true,

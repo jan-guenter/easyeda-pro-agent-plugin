@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "847d8a92e4f4253af52f23f31e740a12baf6f78fd7646c8e0d0d18e8233c9eea",
+      "sha256": "51bfb04fbe7c170b02b0a7d43ebc2c33050913a30c98e2e38c702e9bb9788174",
       "fileCount": 3024,
       "files": [
         {
@@ -3488,8 +3488,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-collateral-collector.ts",
-          "bytes": 13903,
-          "sha256": "0f36464e5c19edf79df8df8c254b6bc8cf5a3d5046c357402763eba7ae567ce3"
+          "bytes": 14287,
+          "sha256": "61ba5f40a363d4b89da62e872b423e7f0a3e29b9f7a3de54d1ed3c46191183c9"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-collateral-native.ts",
@@ -3703,8 +3703,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-body-programs.ts",
-          "bytes": 4408,
-          "sha256": "52f338377d8b1f7ec6c1bed23d161c0fc263301c6b108d881b9d846c99624590"
+          "bytes": 4592,
+          "sha256": "13bd9b78e363f8c7596b4dcdfedf06da1e08911ca1eb2e0804875aada19b9283"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-history-programs.ts",
@@ -3724,7 +3724,7 @@
         {
           "relativePath": "current-footprint-inverse-native-delete-main-read-protocol.ts",
           "bytes": 10694,
-          "sha256": "90a1b4e1290272f5791b84f1459ed03e1a37eca817b4d5156161dab8cb77c83d"
+          "sha256": "be1fed8c3d0f83d0bdf22e850b1028be0a324dab8af9942ccc4ad33328b22b4b"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-step-protocol.ts",
@@ -3743,8 +3743,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-poststate-collector.ts",
-          "bytes": 7680,
-          "sha256": "09676cfedb871539f06656653a249349a1a0b6728137e5d8cb65a296b65c9ad1"
+          "bytes": 8182,
+          "sha256": "8f40db663b9eb7480ed2145865e40230c190defd5ea8f1b7336f43d1ed226777"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-poststate-native.ts",
@@ -4363,8 +4363,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-dependencies-native.ts",
-          "bytes": 10643,
-          "sha256": "b92a0c379d49babc8769ce4c5dae2e84881c5811d0b94b1d7e972d6c56a69142"
+          "bytes": 10750,
+          "sha256": "0e2db3765e0d48c32e66a6d65435a11042bd5db8b7852c9a41f19cad9c7311e4"
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-dependencies-programs.ts",
@@ -5363,8 +5363,8 @@
         },
         {
           "relativePath": "current-footprint-mutation-publication-data.ts",
-          "bytes": 8441,
-          "sha256": "b7606ff3e36253e48fcb6ef3a8dd0cc2548a7990eee7467d377ba1aa357985c7"
+          "bytes": 9024,
+          "sha256": "778db4c95a6d98f598a3a89a6ab331fbc61526128ea6cc190bc5912de0f6ac84"
         },
         {
           "relativePath": "current-footprint-mutation-publication-source.ts",
@@ -15153,7 +15153,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-16T18:24:51.078Z",
+  "reviewedAt": "2026-11-16T19:32:23.721Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

@@ -9,12 +9,14 @@ import {CURRENT_FOOTPRINT_MUTATION_PUBLICATION_METHODS as METHODS,requireCurrent
 import type {CurrentFootprintMutationPublicationSource} from "./current-footprint-mutation-publication-source.ts";
 import {freezeDeep} from "./sqlite-inventory-core.ts";
 
-export const CURRENT_FOOTPRINT_MUTATION_PUBLICATION_DATA_LIMITS=Object.freeze({inputStrings:2,utf8Bytes:2_097_152});
-const program=`(()=>{"use strict";const input=JSON.parse(payload),trace=[],console={error(){throw Error("MUTATION_BODY_PARSE");}};
+export const CURRENT_FOOTPRINT_MUTATION_PUBLICATION_DATA_LIMITS=Object.freeze({inputStrings:2,utf8Bytes:2_097_152,projectionUtf16Units:8_388_608});
+const program=`(()=>{"use strict";const input=JSON.parse(payload),trace=[];let projectedUnits=2,projectionBoundExceeded=false;const push=row=>{const text=JSON.stringify(row);projectedUnits+=text.length+(trace.length===0?0:1);if(projectedUnits>${String(CURRENT_FOOTPRINT_MUTATION_PUBLICATION_DATA_LIMITS.projectionUtf16Units)}){projectionBoundExceeded=true;throw Error("MUTATION_BODY_PROJECTION_BOUND");}trace.push(text);};const console={error(){throw Error(projectionBoundExceeded?"MUTATION_BODY_PROJECTION_BOUND":"MUTATION_BODY_PARSE");}};
 ${INITIAL.Gu.source};${INITIAL.Ro.source};
-const manager={throwError:true,onEnd(){},onEditHead(){},onDocHead(doc,editHead,raw){trace.push({kind:"head",doc,editHead:editHead??null,raw});},onLine(id,ticket,data,type,client,docType,docUuid,firstTicket,pend,editHead,num,raw){trace.push({kind:"line",id,ticket,data,type,client,docType,docUuid,firstTicketPresent:firstTicket!==undefined,firstTicket:firstTicket??null,pendPresent:pend!==undefined,pend:pend??null,editHead:editHead??null,numPresent:num!==undefined,num:num??null,raw});},${METHODS["zy.parseFull"].source}};
-manager.parseFull(input.join("|\\n"));return JSON.stringify(trace);
+const manager={throwError:true,onEnd(){},onEditHead(){},onDocHead(doc,editHead,raw){push({kind:"head",doc,editHead:editHead??null,raw});},onLine(id,ticket,data,type,client,docType,docUuid,firstTicket,pend,editHead,num,raw){push({kind:"line",id,ticket,data,type,client,docType,docUuid,firstTicketPresent:firstTicket!==undefined,firstTicket:firstTicket??null,pendPresent:pend!==undefined,pend:pend??null,editHead:editHead??null,numPresent:num!==undefined,num:num??null,raw});},${METHODS["zy.parseFull"].source}};
+manager.parseFull(input.join("|\\n"));return "["+trace.join(",")+"]";
 })()`;
+/** Fixed inert projection for independent bounded-parser regression checks. */
+export const CURRENT_FOOTPRINT_MUTATION_PUBLICATION_PROJECTION=program;
 const parser=new Script(program,{filename:"current-footprint-mutation-publication-data.js"});
 export const CURRENT_FOOTPRINT_MUTATION_PUBLICATION_PROJECTION_SHA256=sha256Text(program);
 const uuid=z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u);

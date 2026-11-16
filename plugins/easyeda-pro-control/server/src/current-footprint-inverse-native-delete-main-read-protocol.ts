@@ -14,9 +14,9 @@ export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READ_GROUP="easyeda-fo
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READ_KINDS=["branch","history","body"]as const;
 export type CurrentFootprintInverseNativeDeleteMainReadKind=typeof CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READ_KINDS[number];
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READS=freezeDeep({
- branch:{site:BRANCH_SITE,programs:BRANCH,packetLength:6,promiseIndex:4,normal:8,cleanup:2},
- history:{site:HISTORY_SITE,programs:HISTORY,packetLength:10,promiseIndex:8,normal:11,cleanup:2},
- body:{site:BODY_SITE,programs:BODY,packetLength:6,promiseIndex:4,normal:8,cleanup:2},
+ branch:{site:BRANCH_SITE,programs:BRANCH,packetLength:6,promiseIndex:4,normal:9,cleanup:2},
+ history:{site:HISTORY_SITE,programs:HISTORY,packetLength:10,promiseIndex:8,normal:12,cleanup:2},
+ body:{site:BODY_SITE,programs:BODY,packetLength:6,promiseIndex:4,normal:9,cleanup:2},
 });
 export {CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_FUNCTIONS as CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READ_FUNCTIONS} from "./current-pcb-via-main-live-history-source.ts";
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READ_FLAGS=Object.freeze({

@@ -20,7 +20,7 @@ void test("completed poststate's exit-only identity path never re-enters a dead 
   let exited = false; let normalChecks = 0; let requests = 0;
   const live = (): void => { normalChecks += 1; assert.equal(exited, false); };
   const lane = new CurrentFootprintInverseNativeDeletePoststateCollector({
-    reflection: "original_reflection", before, current: live, assertOriginalCallerCompleted: live,
+    reflection: "original_reflection", beforeSelectedValues: [null, null], before, current: live, assertOriginalCallerCompleted: live,
     assertOriginalExit: (): void => { assert.equal(exited, true); },
     request: (command): Promise<unknown> => {
       requests += 1;
@@ -45,7 +45,7 @@ void test("completed poststate's exit-only identity path never re-enters a dead 
 void test("original undefined failure cannot become a historical completed poststate", async () => {
   let exited = false;
   const lane = new CurrentFootprintInverseNativeDeletePoststateCollector({
-    reflection: "original_reflection", before,
+    reflection: "original_reflection", beforeSelectedValues: [null, null], before,
     current: (): void => { assert.equal(exited, false); }, assertOriginalCallerCompleted: (): void => { assert.equal(exited, false); },
     assertOriginalExit: (): void => { assert.equal(exited, true); },
     // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Exercise retention of the actual raw rejection, including undefined.
@@ -60,4 +60,32 @@ void test("original undefined failure cannot become a historical completed posts
     originalSelectedPreferencesUnchanged: true, publicPreferenceRemovalObserved: false, restorationAuthorized: false,
     persistenceVerified: false, coldAbsenceVerified: false, wholeInverseVerified: false, cdpRequests: 5,
   }); });
+});
+
+void test("poststate rejects a selected preference changed after storageReprove with identical peer hash and key count", async () => {
+  for (const changed of [0, 1]) {
+    let requests = 0;
+    const selected = ["original-first", "original-second"];
+    const lane = new CurrentFootprintInverseNativeDeletePoststateCollector({
+      reflection: "original_reflection", before: { ...before, storageKeys: 2 },
+      beforeSelectedValues: ["original-first", "original-second"],
+      current: (): void => { assert.ok(requests <= 3); }, assertOriginalCallerCompleted: (): void => { assert.ok(requests <= 3); },
+      assertOriginalExit: (): void => { assert.fail("this is a live supplied-transport regression"); },
+      request: (command): Promise<unknown> => {
+        requests += 1;
+        if (command.method === "Runtime.getProperties") {
+          selected[changed] = "changed-after-reprove";
+          return Promise.resolve({ ...census, result: ["checkRatlineNotShowAgain", "checkDrcNotShowAgain"].map((name, index) => ({
+            name, value: { type: "string", value: selected[index] }, writable: true, enumerable: true, configurable: true, isOwn: true,
+          })) });
+        }
+        if (command.method !== "Runtime.callFunctionOn") { assert.fail("unexpected helper request"); }
+        return Promise.resolve(command.role === "tabReprove" ?
+          { result: { type: "boolean", value: true } } : { result: { type: "number", value: 2 } });
+      },
+      requireOriginalPhysicalComplete: (): void => { assert.equal(requests, 3); },
+    });
+    await assert.rejects(lane.start(), /INVERSE_NATIVE_DELETE_POSTSTATE_CUSTODY/u);
+    assert.equal(requests, 3);
+  }
 });
