@@ -101,10 +101,11 @@ execution, native allocation or persistence.
 
 Joint-check-only dependencies are the exact source/transition extraction from
 e758ad033a02bfd174fd79710489e9c08ccb1cfc. Root already integrated it; those two
-borrowed files are excluded from this unit's source commit.
+borrowed files are excluded from the exact private source seal
+`a3b44cfcc238ab683fb63447afd4a06a885ba131`.
 
-Final focused/type/style and exact generated measurements are recorded below
-when complete. Root owns the one integrated Windows compiler proof and final
+Final focused/type/style and exact generated measurements appear in the
+"Final source checks and measurements" section below. Root owns the one integrated Windows compiler proof and final
 helper/identity regeneration. No Windows/native process, owner, Job or
 application was allocated by this unit.
 
@@ -136,8 +137,17 @@ without skips. The final kind-check regression rejects a string in a literal
 true slot and true in a source-text slot; valid fixed operands are unchanged.
 Strict type-aware lint passed20 owned source paths, the protocol/test/identity
 three-path check and the final controller frontier correction. Repository and
-skill validators passed. Both final TypeScript projects passed; the final
-post-correction repeat is recorded with this source seal.
+skill validators passed. Both final TypeScript projects passed for private
+source seal `a3b44cfcc238ab683fb63447afd4a06a885ba131`. The final
+post-correction two-project run is retained privately as
+`native-caller-types-seal.log`, SHA-256
+`736a62fcb01d68d563084be691de38ebe17c04e021eae57bfefdd0940c8de264`.
+The original six-case no-skip log is `native-caller-focused-final.log`, SHA-256
+`295a01dcb09eaf5aa1dbf03bf72c99595a09a85efab571a11ceb7e636d20b15d`.
+These are the private unit's checks, separate from the later combined public
+Native 26-case campaign and two-project TypeScript pass for public head
+`74f3000cb016fa4557afa8094fd4c749ebb0c913`, recorded in the
+[public curation record](2026-11-16-native-reference-caller-public-curation.md).
 
 The type-aware fixer initially removed an explicit undefined argument required
 by PromiseWithResolvers<undefined>. The explicit fulfillment and its narrow

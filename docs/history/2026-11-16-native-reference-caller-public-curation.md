@@ -118,3 +118,36 @@ The frozen 5179-file TypeScript inventory is recorded privately with SHA-256
 Exact-head GitHub full-suite/Windows CI, actual CodeRabbit review, merge and the
 combined official installations remain pending. The earlier preparation and
 failure observations above remain historical evidence, not current blockers.
+
+## PR218 review corrections
+
+CodeRabbit reviewed exact public head
+`74f3000cb016fa4557afa8094fd4c749ebb0c913` across all 113 selected
+paths. It reported no inline/outside-diff/legacy issues and two body nitpicks.
+Both were accepted. The original caller history now names private source seal
+`a3b44cfcc238ab683fb63447afd4a06a885ba131`, identifies the retained final
+post-correction two-project log and six-case log by SHA-256, and points to the
+existing measurements. Its historical six-case unit remains distinct from the
+later 26-case combined public Native campaign.
+
+The caller test now separates full installed-source qualification from fixed
+program compilation and every protocol/invalid-kind/owner assertion. The latter
+run unconditionally. The complete corrected file passes seven cases without
+skips against configured assets. A second focused run with EASYEDA_ASSETS_ROOT
+absent passes the compilation/protocol case and explicitly skips only the
+installed-source case. No case, assertion, configured-asset failure or guard
+was removed.
+
+Both TypeScript projects pass again (42.33s), global strict type-aware lint
+reports zero warnings/errors (286.24s), and compatibility verification passes
+without any pin change. Production source, dependencies, all three runtime
+bundles and their reproducibility proof remain unchanged. The initial head's
+thirteen GitHub checks all passed; the final corrected head still requires its
+own complete CI and actual CodeRabbit coverage before merge.
+
+The corrected tracked TypeScript inventory contains 5179 files, SHA-256
+`8a0974c8875b6c97d80d29421fcee5891c2aa7b937c6d0e3e3a5e5d4726b81d3`. Repository, MCP-contract and all-skill
+checks, including all seven installed quick validators, are repeated for the
+final documentation composition. Raw replies and failed initial attempts remain
+private. No additional manual review comment or local CodeRabbit CLI run was
+requested.

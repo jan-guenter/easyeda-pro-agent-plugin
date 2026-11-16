@@ -92,11 +92,13 @@ void test("synthetic native-recipe fixture preserves exact method identities and
  const shadow=workerFixture();vm.runInContext('globalThis.hooks=0;Object.defineProperty(synthetic.bus,"publish",{get(){hooks+=1;return function(){};}})',shadow);
  assert.throws(()=>vm.runInContext('Function("return ("+W.prepare+")")().call(reflection,synthetic.service,synthetic.event,synthetic.job,synthetic.entry,synthetic.ownNative)',shadow));assert.equal(vm.runInContext("hooks",shadow),0);
 });
-void test("caller fixed programs compile and source qualifiers use actual installed complete files",async(context):Promise<void>=>{
+void test("caller source qualifiers use actual installed complete files",async(context):Promise<void>=>{
  const configured=await readConfiguredEasyedaAssets(["pro-mgr/3.2.185.bf63a159/js/project-worker.js","pro-ui/3.2.198.2800f583/js/ui.js","pro-mgr/3.2.185.bf63a159/js/pro-mgr.js"]);if(configured===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
  const assets=process.env["EASYEDA_ASSETS_ROOT"];assert.ok(assets!==undefined&&assets.length>0);
  const [worker,ui,manager]=configured;assert.ok(worker!==undefined&&ui!==undefined&&manager!==undefined);
  qualifyCurrentFootprintInverseNativeDeleteCallerSources({worker,ui,manager});
+});
+void test("caller fixed programs compile and protocol rejects invented operands and owners without installed assets",():void=>{
  for(const program of[...Object.values(W),...Object.values(U)]){assert.equal(typeof vm.runInNewContext(`(${program})`),"function");}
  const packets=cases();assert.ok(packets.length>0);for(const packet of packets){assert.deepEqual(validate(packet),packet);}
  const outerResult=packets.find(p=>p.phase==="inverse-native-delete-caller-call"&&p.role==="outerResult");assert.ok(outerResult?.phase==="inverse-native-delete-caller-call");
