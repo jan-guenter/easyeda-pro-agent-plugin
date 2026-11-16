@@ -89,6 +89,12 @@ Open questions are not requirements.
    standing exception does not permit terminating an active native owner.
    Restoration needs exact authority, closed-file scope, backup and independent proof.
    Exit does not prove discard.
+   A finished workflow also owns cleanup of its disposable runtime, extraction
+   and clone artifacts. After original owners and helpers have closed, remove
+   copies that are no longer needed for unique source or evidence. Retain their
+   provenance and terminal receipts, and explain why any large artifact remains.
+   Use bounded paths and reversible cleanup where appropriate; task-generated
+   clutter is not a reason to change host storage configuration.
 7. Never commit credentials, keys, projects, generated evidence, journals or private
    user-design data.
 
@@ -112,6 +118,9 @@ Open questions are not requirements.
 - Use `npm test` or focused Node `--import ./scripts/test-isolation.ts`. The builtin-only
   preload allocates private control/credential/upstream roots before static imports.
   Never test on live control data, alter real journals or broadly delete failure roots.
+  For durable Linux evidence-broker fixtures, set `TMPDIR` to a private test-owned
+  parent on `ext4`, `xfs` or `btrfs`. Memory-backed `tmpfs`, DrvFS and unsupported
+  filesystems deliberately refuse this profile; do not relax its storage checks.
 - Keep strict TypeScript and pedantic type-aware Oxlint at zero warnings. Explain
   narrow inline exceptions; globally relax a rule only when necessary.
 - Materialize package-check worktrees with umask022 inside a private parent;
@@ -235,7 +244,13 @@ are build/check dependencies only.
   a lost connection. Preserve its evidence and use only an already-authorized
   cleanup path. Conservative Linux recovery probes count these stubs too.
 - Source-only subagents must also inspect their own session before assuming
-  that no facade was allocated. The host can start the normal MCP connection
+  that no facade was allocated. Obtain the ordinary facade PID through offline
+  `easyeda_control_api` action `loaded-facade`; session inspection does not
+  return it. Do not call ordinary status merely to discover that PID: status
+  can start the upstream and consumes the source-only classification. A
+  startup-conflict stub instead returns its own PID from session inspection.
+  Retain the original process before requesting supported closure.
+  The host can start the normal MCP connection
   eagerly even when the agent has made no explicit tool call. Retire that
   original idle metadata-only connection and use its supported `close-retired`
   action, retaining its original pidfd through observed exit, before returning

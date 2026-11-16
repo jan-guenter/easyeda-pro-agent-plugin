@@ -46,7 +46,7 @@ void test("WSL profile and packet selectors reject accessors, noncanonical paths
     nodeExecutable: "/canonical/node", pluginRoot: "/canonical/plugin", machineProfilePath: "/canonical/profile.json" };
   assert.equal(parseWindowsWslLaunchProfile(profile).distribution, "synthetic");
   for (const value of [{ ...profile, distribution: "--exec" }, { ...profile, pluginRoot: "/a/../other" },
-    { ...profile, pluginRoot: "/a//other" }, { ...profile, pluginRoot: "/a\nother" }, { ...profile, command: "arbitrary" }]) {
+    { ...profile, pluginRoot: "/a//other" }, { ...profile, pluginRoot: "/a\nother" }, { ...profile, command: "arbitrary" }, { ...profile, uid: 1 }, { ...profile, gid: 1 }]) {
     assert.throws(() => parseWindowsWslLaunchProfile(value));
   }
   let calls = 0; const getter = { ...profile };
@@ -132,6 +132,29 @@ process.stdin.pipe(process.stdout); process.stdin.once("end", () => { process.ex
   child.stdin.end(bytes);
   assert.deepEqual(await completion.promise, { code: 23, signal: null });
   assert.deepEqual(Buffer.concat(stdout), bytes); assert.equal(Buffer.concat(stderr).length, 0);
+});
+
+void test("a root-reported capsule keeps capabilities dropped and admits an inert nested user/PID namespace", async () => {
+  const fixture = await packetFixture();
+  // The selector is synthetic on non-root CI; the kernel mapping and nested
+  // Bubblewrap processes are real. No facade/index/upstream module is loaded.
+  const server = `import {spawn} from 'node:child_process';import fs from 'node:fs/promises';
+const status=await fs.readFile('/proc/self/status','utf8');const caps=Object.fromEntries(status.split('\\n').filter(line=>/^Cap(?:Eff|Prm|Bnd):/u.test(line)).map(line=>line.trim().split(/:\\s+/u)));
+const child=spawn('/usr/sbin/bwrap',['--unshare-all','--unshare-user','--unshare-pid','--share-net','--as-pid-1','--new-session','--disable-userns','--cap-drop','ALL','--ro-bind','/usr','/usr','--symlink','usr/lib','/lib','--symlink','usr/lib64','/lib64','--dev-bind','/dev/null','/dev/null','--json-status-fd','3','--','/usr/bin/id','-u'],{stdio:['pipe','pipe','pipe','pipe']});
+const close=Promise.withResolvers();let stdout='',stderr='',records='';child.once('error',close.reject);child.once('close',(code,signal)=>close.resolve({code,signal}));child.stdout.on('data',chunk=>{stdout+=chunk});child.stderr.on('data',chunk=>{stderr+=chunk});child.stdio[3].on('data',chunk=>{records+=chunk});child.stdin.end();
+const ended=await close.promise;process.stdout.write(JSON.stringify({uid:process.getuid(),gid:process.getgid(),owner:(await fs.stat(new URL(import.meta.url))).uid,caps,ended,stdout,stderr,records}));`;
+  await writeFile(join(fixture.root, "server/dist/server.mjs"), server);
+  const profile = parseWindowsWslLaunchProfile({ schema: "easyeda-pro-control.windows-wsl-launch.v1", distribution: "synthetic",
+    nodeExecutable: process.execPath, pluginRoot: fixture.root, machineProfilePath: fixture.packet.machineProfilePath });
+  const packet = await captureWindowsWslRuntime(fixture.root, profile);
+  const result = await runFixtureNode(`Object.defineProperty(process,'getuid',{value:()=>0});process.argv=[process.execPath,"launch",${JSON.stringify(serializeWindowsWslRuntimePacket(packet))}];${windowsWslRuntimeProgram()}`);
+  assert.equal(result.code, 0, result.stderr); assert.equal(result.signal, null); assert.equal(result.stderr, "");
+  const observed: unknown = JSON.parse(result.stdout);
+  assert.ok(observed !== null && typeof observed === "object" && "uid" in observed && "gid" in observed && "owner" in observed && "caps" in observed && "ended" in observed && "stdout" in observed && "stderr" in observed && "records" in observed);
+  assert.equal(observed.uid, 1); assert.equal(observed.gid, 1); assert.equal(observed.owner, 1);
+  assert.deepEqual(observed.caps, { CapPrm: "0000000000000000", CapEff: "0000000000000000", CapBnd: "0000000000000000" });
+  assert.deepEqual(observed.ended, { code: 0, signal: null }); assert.equal(observed.stdout, "1\n"); assert.equal(observed.stderr, "");
+  assert.equal(typeof observed.records, "string"); assert.match(String(observed.records), /"child-pid":\s*\d+/u); assert.match(String(observed.records), /"exit-code":\s*0/u);
 });
 
 void test("standalone configuration refuses before importing Linux profile or SQLite modules",async()=>{

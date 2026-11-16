@@ -1,5 +1,8 @@
 # Project history
 
+- [2026-11-15 Installed fresh-CLI handoff](2026-11-15-installed-fresh-cli-handoff.md). Reviewed public release, both official installations, original-process metadata-only handoffs and the separate nested-namespace runtime finding.
+- [Temporary artifact cleanup and source continuation](2026-11-15-temporary-artifact-cleanup.md) — scoped cleanup, retained evidence and ownership of disposable artifacts.
+
 - [2026-11-15 Public manager metadata lifecycle port](2026-11-15-public-manager-metadata-lifecycle-port.md). Published-base ports of original first-status settlement and untouched EOF retirement;43 focused checks, with full-writer/native cleanup excluded.
 
 - [2026-11-15 Pristine manager input closure](2026-11-15-pristine-input-closure.md). Verbatim record from `26ff9505:docs/history/2026-11-15-pristine-input-closure.md`; supported untouched-child retirement on EOF.
@@ -1272,3 +1275,8 @@ layout. The connected ledger retains its generation and case anchors.
 - [Native PR #212 boundary corrections](2026-11-15-native-pr212-review-boundaries.md), exact bind fields, UUID admission parity, PowerShell null roles, helper obligations, immutable serialization expectations and original Inspector failure settlement. Source/Inspector/PS5 checks only.
 
 - [Windows-to-WSL bootstrap](2026-11-15-windows-wsl-bootstrap.md) — 2026-11-15; strict transport/provisioning, crash-released publication serialization, captured six-file namespace custody, disposable binary EOF interop and the CI-only synthetic sandbox pin correction.
+
+- [Windows capsule nested user namespace](2026-11-15-windows-capsule-nested-user-namespace.md) — 2026-11-15; exact UID-map diagnostic, UID0-only private identity mapping with capabilities still dropped, and inert nested-sandbox regression.
+
+- 2026-11-16: [Windows metadata driver with a fixed Linux evidence broker](2026-11-16-windows-linux-evidence-broker.md).
+- [Maintained fresh CLI metadata proof](2026-11-15-through-2026-11-16-fresh-cli-metadata-proof-helper.md) — 2026-11-15 through 2026-11-16; portable default-preview coordinator, original pidfd/handle retirement, failure-safe evidence/control and bounded closed-workspace cleanup manifest.

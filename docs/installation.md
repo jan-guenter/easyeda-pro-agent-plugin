@@ -277,6 +277,12 @@ admission. This is six-file handoff custody, not full-package ownership proof.
 Keep the selected package unchanged through cleanup and independently verify the
 full installed package. A runtime process check must read these six paths through
 `/proc/<facadePid>/root`, separately from the host installation.
+For a Linux caller with UID0, the capsule maps that same caller to UID/GID1
+inside its private user namespace and still drops every capability before Node.
+This permits the upstream's nested user namespace on kernels enforcing the
+[UID0 mapping rule](https://www.man7.org/linux/man-pages/man7/user_namespaces.7.html)
+without retaining `CAP_SETFCAP`. Other callers keep the existing identity mapping;
+there is no caller-selectable UID, GID or capability field.
 
 Use a separate configuration/control directory, such as the existing
 `~/.easyeda-pro-control`. A machine profile stored directly in a protected runtime

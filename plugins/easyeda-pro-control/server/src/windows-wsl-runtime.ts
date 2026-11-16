@@ -112,6 +112,10 @@ async function planWslNamespace(packet: WindowsWslRuntimePacket): Promise<readon
   const args: string[] = []; let bytes = 0, entries = 0;
   const append = { values(...values: string[]): void { for (const value of values) { bytes += Buffer.byteLength(value) + 1; wslNeed(bytes <= 1024 * 1024); args.push(value); } } };
   append.values("--unshare-user");
+  // UID zero without CAP_SETFCAP cannot map parent UID zero into the nested
+  // Upstream user namespace (Linux 5.12+). Map this same root caller to one
+  // Only inside the outer capsule; all capabilities still drop before Node.
+  if (process.getuid?.() === 0) { append.values("--uid", "1", "--gid", "1"); }
   for (const directory of [...directories].toSorted((left, right) => left.length - right.length)) {
     const info = await fs.lstat(directory, { bigint: true }); wslNeed(info.isDirectory() && !info.isSymbolicLink() && await fs.realpath(directory) === directory);
     // oxlint-disable-next-line no-bitwise -- Preserve original ancestor permission/special bits in the private directory skeleton.
