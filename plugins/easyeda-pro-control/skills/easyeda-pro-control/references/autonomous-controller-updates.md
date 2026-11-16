@@ -37,6 +37,14 @@ and `close-retired`. Ordinary session inspection has no PID; an ordinary status
 request can start the upstream and consumes source-only classification even
 on failure. This differs from the startup-conflict stub's own inspection above.
 
+An original Status call that refuses in its read-only admission preflight can
+retain local retirement eligibility through the facade's private settled
+callback history. The native-owner guard still runs first. Request ordinary
+retirement and require its acknowledgment before closing; a Status error alone
+does not establish eligibility. Successful preflight, other non-reference calls
+and pending or unknown work retain the stricter cleanup requirements. This
+retirement path changes no journal or bridge admission decision.
+
 ## Establish one controller
 
 First query the current Codex connection's offline `loaded-facade`. Finish its

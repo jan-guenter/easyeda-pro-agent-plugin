@@ -96,3 +96,55 @@ npm 11.16.0 and soft core limit zero. Both facade and bridge TypeScript checks
 passed, and the four changed TypeScript files had zero type-aware lint warnings
 or errors. An earlier passing run used Node 26.13.1/npm 12.2.2 and is retained
 only as non-target evidence; it does not satisfy the pinned-runtime checks.
+
+## 2026-11-16 PR 214 installation and maintained proofs
+
+[PR 214](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/214)
+merged as a72ddc622e6cc3a756688a23bbe164e7c725d98e. Its tree is identical to
+reviewed head 291bbf62c1763977180006cee5472dc02feef7a7, which passed all 13
+checks. CodeRabbit's final review covered that head with no actionable issues;
+all reported inline and outside-diff issues were addressed. The merged remote
+feature branch was removed after checking its exact head. No PR remained open
+at that point.
+
+Both hosts used the official upgrade scoped to easyeda-pro-agent and retained
+the [Git marketplace](https://github.com/jan-guenter/easyeda-pro-agent-plugin.git).
+The installed stamp is 0.3.0+codex.20261115233510. The trusted merged checkout
+verified all 5,079 Linux installed files, 47 directories including the root and
+98,433,360 bytes with the full V2 byte/mode/link comparison. Independent Windows
+verification covered the same files and bytes, all 46 descendant directories,
+reparse-free root ancestry/entries and single-link original file-handle hashes.
+That Windows proof claims neither POSIX modes, NTFS ACL custody nor directory
+durability. The maintained recognized-profile replacement selected the exact
+new Linux root; no installed cache or authentication file was patched.
+
+The maintained installed Linux V1 and actual Windows V2 metadata helpers both
+completed successfully. The Windows driver used the original Linux evidence
+broker and file/directory synchronization acknowledgments. Each fresh CLI used
+only the four fixed metadata actions, retained full replies and its original
+facade pidfd before inspection, then observed original facade, watcher and
+driver closure. Windows also retained and observed its original CLI-lineage
+handles. These runs needed no model turn, desktop restart or manual app action.
+Their selected empty workspaces were removed separately on each platform after
+original closure; raw evidence remains private.
+
+The later fresh Windows-host connection loaded the expected snapshot, but its
+single ordinary Status refused historical abandonment qualification before
+upstream startup. Retirement then failed the Source historical intent binding.
+Its complete settled callback history and installed source showed no native,
+application or Job allocation. After supported retirement failed, the existing
+metadata-only cleanup exception was applied: exact original start/executable,
+module, all six namespace views, original pidfd custody and no descendants were
+rechecked, a single SIGTERM intent was synchronized, and exactly one pidfd
+SIGTERM targeted that facade. Both retained pidfds observed original exit and
+the original watcher completed. The lease path was subsequently absent. This
+is fallback exit evidence, not an acknowledged MCP retirement or native closure.
+
+Read-only comparisons then reproduced the identity mismatch: the unchanged
+Source intent matches all nine bindings outside the UID-one namespace; inside
+it only the stat-owner identity hash differs. Both original Symbol abandonment
+profiles qualify outside and reject their recorded-copy owner identity inside.
+No journal, sidecar or saved design was rewritten. The namespace qualification
+correction and the supported retirement correction belong to the following
+batched release. Installed upstream startup, capsule-fix acceptance and bridge
+or CAD admission remain unproved by this case.

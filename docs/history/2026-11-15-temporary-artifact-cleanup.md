@@ -53,3 +53,14 @@ pre-removal disk-use sum was 1,666,744,320 bytes; this is not a claim
 about physical blocks freed or Windows free space. Their Git branches, shared
 repository, journals and terminal receipts remain. No WSL disk location, image,
 distribution configuration or unrelated user files were changed.
+
+## 16 November: completed metadata workspaces
+
+The installed Linux and Windows V2 metadata proofs each created one fresh empty
+workspace and no runtime copy or clone. After their original drivers, facades
+and watchers had closed, terminal manifests reported the original workspace
+identity unchanged and empty. Fresh platform-local checks confirmed the exact
+selected path and empty non-symlink/non-reparse directory. Each directory was
+removed without recursive deletion. Unique raw replies, manifests and original
+process-closure receipts remain private. No WSL image, disk or distribution
+configuration change was used for cleanup.
