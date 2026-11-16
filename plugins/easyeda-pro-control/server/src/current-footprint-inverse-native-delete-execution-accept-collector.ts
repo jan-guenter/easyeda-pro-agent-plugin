@@ -30,6 +30,9 @@ interface Bindings{
 }
 export interface CurrentFootprintInverseNativeDeleteExecutionAcceptedData{
  readonly entryProof:string;readonly instance:string;readonly jobProof:string;readonly deliveryProof:string;
+ /** Actual arrays already read from this same original paused stack. Later
+  * caller custody must retain these references instead of reconstructing them. */
+ readonly serviceTuple:string;readonly eventTuple:string;
  readonly normal:24;readonly helpers:10;readonly workerClockAuthorized:false;readonly runtimeJobIssued:false;
 }
 function need(v:boolean):asserts v{if(!v){throw new Error("INVERSE_NATIVE_DELETE_ACCEPT_SEQUENCE");}}
@@ -56,5 +59,5 @@ export async function collectCurrentFootprintInverseNativeDeleteExecutionAccept(
  const deliveryProof=result(await send({stage:"delivery",command:{phase:"inverse-native-delivery-capture",method:"Runtime.callFunctionOn",params:{...EVENT_FLAGS,objectId:eventTuple,functionDeclaration:EVENT.capture,arguments:[{objectId:b.intrinsics},{objectId:b.channel.bound},{objectId:jobProof},{objectId:members},{value:b.expected}],returnByValue:false}}}),8);
  const values=array(await properties("proof",deliveryProof),8);need(values.get("7")?.type==="function");
  truth(await send({stage:"delivery",command:{phase:"inverse-native-delivery-reprove",method:"Runtime.callFunctionOn",params:{...EVENT_FLAGS,objectId:deliveryProof,functionDeclaration:EVENT.reprove,arguments:[],returnByValue:true}}}));current();need(normal===24&&helpers===10);
- return Object.freeze({entryProof,instance:actualInstance,jobProof,deliveryProof,normal:24,helpers:10,workerClockAuthorized:false,runtimeJobIssued:false});
+ return Object.freeze({entryProof,instance:actualInstance,jobProof,deliveryProof,serviceTuple,eventTuple,normal:24,helpers:10,workerClockAuthorized:false,runtimeJobIssued:false});
 }

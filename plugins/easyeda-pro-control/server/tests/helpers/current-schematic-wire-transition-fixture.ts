@@ -1,3 +1,4 @@
+import {GENERATED_SCHEMATIC_WIRE_NATIVE_SOURCE as NATIVE} from "../../src/generated-schematic-wire-native-source.ts";
 /** Original qualified function spans in a padded inert Inspector fixture.
  * Stand-in roots never construct an EasyEDA model, action, app or native owner. */
 import assert from "node:assert/strict";
@@ -12,7 +13,7 @@ import { CURRENT_SCHEMATIC_WIRE_TRANSITION_SOURCE as SOURCE, qualifyCurrentSchem
 import type { CurrentSchematicWireTransitionRole as Role } from "../../src/current-schematic-wire-transition-source.ts";
 
 /** Preserve qualified function bytes and original PCs while replacing the app with inert surroundings. */
-export function wireTransitionFixture(source: string, variant: 0 | 1, firstChildAttributes=false): string {
+export function wireTransitionFixture(source: string, variant: 0 | 1, firstChildAttributes=false,pointNormal=false): string {
   assert.equal(qualifyCurrentSchematicWireTransitionSource({ scriptSource: source }), variant);
   const profile = SOURCE[variant], rows = profile.methods;
   const pieces: { start: number; end: number; text: string }[] = [];
@@ -21,6 +22,7 @@ export function wireTransitionFixture(source: string, variant: 0 | 1, firstChild
   const after = (position: number, text: string): void =>{  add(position, position + text.length, text); };
   const original = (role: Role): void => { const row = rows[role]; add(row.start, row.end, source.slice(row.start, row.end)); };
   if(firstChildAttributes){const child=CHILD[variant];before(child.start,"refs.childAttributesObject={");add(child.start,child.end,source.slice(child.start,child.end));after(child.end,'};refs.childAttributes=Object.getOwnPropertyDescriptor(refs.childAttributesObject,"attributes").get;');}
+  if(pointNormal){const native=NATIVE[variant];assert.ok(native!==undefined);const normal=native.methods.pointNormal;before(normal.start,"refs.normalObject=class{");add(normal.start,normal.end,source.slice(normal.start,normal.end));after(normal.end,"};refs.normal=refs.normalObject.normal;");}
   const dependency=DEPENDENCY[variant];
   for(const role of ["baseAttributes","groupAttributes","highlightGet"]as const){const row=dependency[role];before(row.start,`refs.${role}Object={`);add(row.start,row.end,source.slice(row.start,row.end));after(row.end,`};refs.${role}=${role==="highlightGet"?`refs.${role}Object.getNetHighlighted`:`Object.getOwnPropertyDescriptor(refs.${role}Object,"attributes").get`};`);}
   const numeric=dependency.numeric;before(numeric.start,'ia=(function(){"use strict";return ');add(numeric.start,numeric.end,source.slice(numeric.start,numeric.end));after(numeric.end,';})();refs.numeric=ia;');
@@ -60,7 +62,7 @@ export function wireTransitionFixture(source: string, variant: 0 | 1, firstChild
   for (const [role, alias] of [["historyBaseClass", profile.baseAlias], ["historyGroupClass", profile.groupAlias]] as const) { original(role); before(rows[role].start, `${alias  }=`); after(rows[role].end, `;refs.${  role  }=${  alias  };`); }
   // Group and base methods are already inside the complete original classes.
   const tail = 'for(const role of["baseAttributes","groupAttributes"])Object.defineProperty(refs[role+"Object"],"attributes",{get:refs[role],enumerable:false,configurable:true});refs.replaceNumeric=value=>{ia=value};Object.setPrototypeOf(refs.groupAttributesObject,refs.baseAttributesObject);refs.bboxCommon=refs.core.forCommon;refs.bboxUpdating=refs.core.forUpdating;refs.historyInitOldData=refs.historyGroupClass.prototype.initOldData;refs.historyGroupData=refs.historyGroupClass.prototype.getData;refs.historyGroupUpdate=refs.historyGroupClass.prototype.update;refs.historyBaseData=refs.historyBaseClass.prototype.getData;return refs;})()';
-  before(source.length, tail);
+  before(source.length, pointNormal?tail.replace("return refs;","fixturePointValues[1].normal=refs.normal;fixturePointValues[4]=refs.normal;return refs;"):tail);
   const sorted = pieces.toSorted((a, b) => a.start - b.start); let cursor = 0; const out: string[] = [];
   for (const piece of sorted) { assert.ok(piece.start >= cursor, JSON.stringify(piece)); out.push(source.slice(cursor, piece.start).replaceAll(/[^\r\n]/gu, character => " ".repeat(character.length)), piece.text); cursor = piece.end; }
   out.push(source.slice(cursor).replaceAll(/[^\r\n]/gu, character => " ".repeat(character.length))); return out.join("");
