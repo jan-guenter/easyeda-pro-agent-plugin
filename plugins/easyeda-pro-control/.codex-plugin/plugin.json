@@ -1,9 +1,9 @@
 {
   "name": "easyeda-pro-control",
-  "version": "0.3.0+codex.20261116210746",
+  "version": "0.3.0+codex.20261116213817",
   "description": "Safety-gated EasyEDA adapters, narrow symbol/PCB workflows and seven engineering skills.",
   "author": {
-    "name": "Jan Günter",
+    "name": "Jan G\u00fcnter",
     "url": "https://github.com/jan-guenter"
   },
   "homepage": "https://github.com/jan-guenter/easyeda-pro-agent-plugin#readme",

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import type { CurrentFootprintCopyMainRequestHeldFinalPbBindings } from "./current-footprint-copy-main-request-runner.ts";
+// oxlint-disable-next-line import/no-cycle -- The original Main registry and completed full collector join only after collection/cleanup; module initialization invokes no cross-module getter or native action.
 import { requireCurrentFootprintCopyMainCompletionOrigin } from "./current-footprint-copy-main-completion-origin.ts";
 import type { CurrentFootprintCopyMainCompletionOrigin } from "./current-footprint-copy-main-completion-origin.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_ORDER as ORDER, requireCurrentFootprintCopyMainCompletionSource } from "./current-footprint-copy-main-completion-source.ts";
@@ -22,14 +23,22 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_FLAGS as FLAGS, CURRENT_FOOTPRIN
   requireCurrentFootprintCopyMainCompletionEmpty, validateCurrentFootprintCopyMainCompletionCommand } from "./current-footprint-copy-main-completion-protocol.ts";
 import type { CurrentFootprintCopyMainCompletionCommand as Command } from "./current-footprint-copy-main-completion-protocol.ts";
 
+// oxlint-disable-next-line import/no-cycle -- The original Main registry and completed full collector join only after collection/cleanup; module initialization invokes no cross-module getter or native action.
 import { isCurrentFootprintForwardMainCompletionOrigin, requireCurrentFootprintForwardMainCompletionOrigin } from "./current-footprint-copy-main-backend-runner.ts";
 import type { CurrentFootprintForwardMainCompletionOrigin, CurrentFootprintForwardMainCompletionOriginBindings } from "./current-footprint-forward-execution-main-origin.ts";
 
 import { captureCurrentFootprintForwardExecutionPrototypes, requireCurrentFootprintForwardExecutionPrototypes } from "./current-footprint-forward-execution-opening-identity.ts";
 
+// oxlint-disable-next-line import/no-cycle -- The original Main registry and completed full collector join only after collection/cleanup; module initialization invokes no cross-module getter or native action.
+import { isCurrentFootprintForwardWriterMainCompletionOrigin, requireCurrentFootprintForwardWriterMainCompletionOrigin } from "./current-footprint-forward-writer-main-origin.ts";
+import type { CurrentFootprintForwardWriterMainCompletionOrigin } from "./current-footprint-forward-writer-main-origin.ts";
+
+const FULL_INTERNAL = Symbol("original-full-writer-main-completion-engine");
+const fullEngines = new WeakSet<object>();
+const fullConsumed = new WeakSet<object>();
 const FORWARD_INTERNAL = Symbol("original-forward-main-completion-engine");
 const forwardEngines = new WeakSet<object>();
-type CompletionOrigin = CurrentFootprintCopyMainCompletionOrigin | CurrentFootprintForwardMainCompletionOrigin;
+type CompletionOrigin = CurrentFootprintCopyMainCompletionOrigin | CurrentFootprintForwardMainCompletionOrigin | CurrentFootprintForwardWriterMainCompletionOrigin;
 type Origin = ReturnType<typeof requireCurrentFootprintCopyMainCompletionOrigin>;
 type Held = CurrentFootprintCopyMainRequestHeldFinalPbBindings;
 type Value = ReturnType<typeof decodeCurrentFootprintCopyMainCompletionValue>;
@@ -51,6 +60,9 @@ export interface CurrentFootprintCopyMainCompletionObservation {
   readonly executionAuthorized: false;
 }
 const issued = new WeakMap<CurrentFootprintCopyMainCompletionObservation, CurrentFootprintCopyMainCompletionRunner>();
+export type CurrentFootprintForwardWriterMainCompletionObservation = CurrentFootprintCopyMainCompletionObservation;
+const fullIssued = new WeakMap<CurrentFootprintForwardWriterMainCompletionObservation, CurrentFootprintCopyMainCompletionRunner>();
+const fullCompletionContexts = new WeakMap<CurrentFootprintCopyMainCompletionRunner, (packet: CurrentFootprintForwardWriterMainCompletionObservation) => Readonly<{ origin: CurrentFootprintForwardWriterMainCompletionOrigin; held: Held }>>();
 const consumed = new WeakSet<object>();
 const events = z.discriminatedUnion("method", [z.object({ method: z.literal("Debugger.paused"), params: z.unknown() }).strict(),
   z.object({ method: z.literal("Debugger.resumed"), params: z.object({}).strict() }).strict()]);
@@ -87,18 +99,36 @@ export class CurrentFootprintCopyMainCompletionRunner {
   #resolveIdle: (() => void) | null = null;
   public constructor(token: CurrentFootprintCopyMainCompletionOrigin);
   public constructor(internal: typeof FORWARD_INTERNAL, token: CurrentFootprintForwardMainCompletionOrigin);
-  public constructor(first: CurrentFootprintCopyMainCompletionOrigin | typeof FORWARD_INTERNAL, second?: unknown) {
-    if (first === FORWARD_INTERNAL) {
+  public constructor(internal: typeof FULL_INTERNAL, token: CurrentFootprintForwardWriterMainCompletionOrigin);
+  public constructor(first: CurrentFootprintCopyMainCompletionOrigin | typeof FORWARD_INTERNAL | typeof FULL_INTERNAL, second?: unknown) {
+    if (first === FULL_INTERNAL) {
+      need(isCurrentFootprintForwardWriterMainCompletionOrigin(second), "FULL_ORIGINAL_ORIGIN");
+      this.#forwardOrigin = requireCurrentFootprintForwardWriterMainCompletionOrigin(second); this.#origin = this.#forwardOrigin; this.#token = second;
+    } else if (first === FORWARD_INTERNAL) {
       need(isCurrentFootprintForwardMainCompletionOrigin(second), "FORWARD_ORIGINAL_ORIGIN");
       this.#forwardOrigin = requireCurrentFootprintForwardMainCompletionOrigin(second); this.#origin = this.#forwardOrigin; this.#token = second;
     } else { this.#forwardOrigin = null; this.#origin = requireCurrentFootprintCopyMainCompletionOrigin(first); this.#token = first; }
     this.#held = this.#origin.transferredHeld;
+    if (this.#token.profile === "private.current-footprint-forward-writer-main-completion-origin.v1") {
+      const token = this.#token;
+      fullCompletionContexts.set(this, (packet) => {
+        need(fullIssued.get(packet) === this && packet === this.#packet && this.#phase === "collected" && !this.#busy &&
+          this.#firstFailure === null && !this.#generationEnded && !this.#unknownPause && !this.#allocationUncertain, "FULL_ORIGINAL_COMPLETED_CONTEXT");
+        return Object.freeze({ origin: token, held: this.#held });
+      });
+    }
     need(this.#held.scriptId === this.#origin.scriptId, "ORIGINAL_SCRIPT"); requireCurrentFootprintCopyMainCompletionSource(this.#origin.source);
     this.#originalPause = { stage: "original-final-pb", frameId: this.#held.finalPbFrameId, callerFrameId: null, attempted: false, resumed: false };
   }
+  #originalOrigin(): Origin {
+    if (this.#token.profile === "private.current-footprint-forward-writer-main-completion-origin.v1") { return requireCurrentFootprintForwardWriterMainCompletionOrigin(this.#token); }
+    if (this.#token.profile === "private.current-footprint-forward-main-completion-origin.v2") { return requireCurrentFootprintForwardMainCompletionOrigin(this.#token); }
+    return requireCurrentFootprintCopyMainCompletionOrigin(this.#token);
+  }
+  #issuedMap(): typeof issued { return this.#token.profile === "private.current-footprint-forward-writer-main-completion-origin.v1" ? fullIssued : issued; }
   #same(cleanup = false): void {
     if (this.#forwardOrigin !== null) { requireForwardEngine(this); }
-    need(!this.#retired && !this.#generationEnded && (this.#token.profile === "private.current-footprint-forward-main-completion-origin.v2" ? requireCurrentFootprintForwardMainCompletionOrigin(this.#token) : requireCurrentFootprintCopyMainCompletionOrigin(this.#token)) === this.#origin, "ORIGINAL_OWNER");
+    need(!this.#retired && !this.#generationEnded && this.#originalOrigin() === this.#origin, "ORIGINAL_OWNER");
     requireCurrentFootprintCopyMainCompletionSource(this.#origin.source);
     need(cleanup || !this.#cleanupAttempted && !this.#ending && this.#phase !== "failed", "FAILED");
     need(cleanup || this.#started === 0 || performance.now() - this.#started < 300_000, "DEADLINE");
@@ -172,7 +202,8 @@ export class CurrentFootprintCopyMainCompletionRunner {
     need(this.#points.at(-1)?.id === id && this.#points.at(-1)?.stage === stage, "ALLOCATION");
   }
   public async arm(): Promise<void> {
-    need(this.#phase === "ready" && !consumed.has(this.#token), "ARM_CONSUMED"); consumed.add(this.#token); this.#begin(); this.#phase = "arming"; this.#started = performance.now();
+    const attempts = this.#token.profile === "private.current-footprint-forward-writer-main-completion-origin.v1" ? fullConsumed : consumed;
+    need(this.#phase === "ready" && !attempts.has(this.#token), "ARM_CONSUMED"); attempts.add(this.#token); this.#begin(); this.#phase = "arming"; this.#started = performance.now();
     try { for (const stage of ORDER) { if (stage !== "callback-enter") { await this.#allocate(stage); } }
       need(this.#normal === ORDER.length - 1 && this.#points.length === ORDER.length - 1, "ARM_COUNT"); this.#phase = "armed";
     } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
@@ -231,12 +262,12 @@ export class CurrentFootprintCopyMainCompletionRunner {
       this.#packet = freezeDeep({ profile: "private.current-footprint-copy-main-completion-observation.v1", value,
         originalFinalPbResumedOnce: true, allFourteenCompletionPausesResumed: true, allAllocatedCompletionBreakpointsRemoved: true,
         objectGroupReleased: false, nativeSqlCompletionVerified: false, originalGenerationClosed: false, savedResultVerified: false, executionAuthorized: false });
-      issued.set(this.#packet, this); this.#phase = "collected"; return this.#packet;
+      this.#issuedMap().set(this.#packet, this); this.#phase = "collected"; return this.#packet;
     } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
   }
   public async requireOriginal(packet: CurrentFootprintCopyMainCompletionObservation): Promise<void> {
-    need(!this.#busy && packet === this.#packet && issued.get(packet) === this && this.#phase === "collected", "ORIGINAL_PACKET");
-    await this.#current(); need(packet === this.#packet && issued.get(packet) === this, "ORIGINAL_PACKET");
+    need(!this.#busy && packet === this.#packet && this.#issuedMap().get(packet) === this && this.#phase === "collected", "ORIGINAL_PACKET");
+    await this.#current(); need(packet === this.#packet && this.#issuedMap().get(packet) === this, "ORIGINAL_PACKET");
   }
   public async cleanup(): Promise<void> {
     need(!this.#cleanupAttempted, "CLEANUP_CONSUMED"); this.#begin(); this.#cleanupAttempted = true;
@@ -278,9 +309,26 @@ export function createCurrentFootprintForwardMainCompletionRunner(origin: Curren
   const runner = new CurrentFootprintCopyMainCompletionRunner(FORWARD_INTERNAL, origin); Object.freeze(runner); return runner;
 }
 
+/** Full native completion retains its own consumed origins and issued packets.
+ * The fixed fourteen-pause protocol and its factual projection stay unchanged. */
+export function createCurrentFootprintForwardWriterMainCompletionRunner(origin: CurrentFootprintForwardWriterMainCompletionOrigin): CurrentFootprintCopyMainCompletionRunner {
+  requireCurrentFootprintForwardWriterMainCompletionOrigin(origin); requireForwardEnginePrototype();
+  need(!fullEngines.has(origin), "FULL_ENGINE_CONSUMED"); fullEngines.add(origin);
+  const runner = new CurrentFootprintCopyMainCompletionRunner(FULL_INTERNAL, origin); Object.freeze(runner); return runner;
+}
+
 const forwardEnginePrototypes = captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintCopyMainCompletionRunner.prototype);
 function requireForwardEnginePrototype(): void { requireCurrentFootprintForwardExecutionPrototypes(forwardEnginePrototypes); }
 function requireForwardEngine(runner: CurrentFootprintCopyMainCompletionRunner): void {
   requireForwardEnginePrototype();
   need(Object.getPrototypeOf(runner) === CurrentFootprintCopyMainCompletionRunner.prototype && Reflect.ownKeys(runner).length === 0, "FORWARD_ORIGINAL_ENGINE");
+}
+
+/** Separate full factual result lookup. Only this runner's actually completed
+ * full packet is accepted; this does not re-open its retired command lease. */
+export function requireOriginalCurrentFootprintForwardWriterCompletionContext(runner: CurrentFootprintCopyMainCompletionRunner,
+  packet: CurrentFootprintForwardWriterMainCompletionObservation): Readonly<{ origin: CurrentFootprintForwardWriterMainCompletionOrigin; held: Held }> {
+  const read = fullCompletionContexts.get(runner); need(read !== undefined, "FULL_ORIGINAL_CONTEXT");
+  requireForwardEngine(runner);
+  return read(packet);
 }

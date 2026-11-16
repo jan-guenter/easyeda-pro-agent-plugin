@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath,
-  updateOperation, verifyExactManagedArtifact, writePhaseArtifact } from "./artifacts.ts";
+  repairExactManagedArtifactDurability, repairOperationPublicationDurability, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import type { ArtifactDescriptor, OperationJournal } from "./artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, sha256Text } from "./core.ts";
 import type { UnknownRecord } from "./core.ts";
@@ -186,13 +186,17 @@ export class CurrentFootprintForwardWriterWorkflowV2Journal {
     }
     need(pending !== null, "ORIGINAL_PENDING_REQUIRED");
     need(core(actual) === core(this.#operation) || core(actual) === core(pending.next), "PUBLICATION_CHANGED");
-    try { await verifyExactManagedArtifact(pending.descriptor); }
+    try { await repairExactManagedArtifactDurability(pending.descriptor); }
     catch (error) {
       if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) { throw error; }
       const written = await writePhaseArtifact(this.#request.operationId, pending.entry.sequence, pending.entry.kind, pending.entry);
       need(canonicalJson(written) === canonicalJson(pending.descriptor), "ARTIFACT_CHANGED");
+      await repairExactManagedArtifactDurability(pending.descriptor);
     }
     if (core(actual) !== core(pending.next)) { await updateOperation(pending.next); }
+    // A matching renamed manifest can still lack its original parent sync.
+    // Settle only the original sealed bytes before clearing this pending step.
+    await repairOperationPublicationDurability(pending.next);
     actual = await loadOperation(this.#request.operationId); parse(actual); need(core(actual) === core(pending.next), "PUBLICATION_CHANGED");
     this.#operation = pending.next; this.#pending = null;
   }

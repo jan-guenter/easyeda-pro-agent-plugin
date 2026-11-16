@@ -1,3 +1,41 @@
+
+
+
+
+
+
+
+/* oxlint-disable import/max-dependencies -- The sole main scheduler directly joins its fixed grammars, source issuers and genuine native-owner capability; separating them would obscure the original lease boundary. */
+
+
+
+
+
+
+
+import { CurrentFootprintForwardWriterLiveHistoryCustody } from "./current-footprint-forward-writer-live-history-custody.ts";
+import { CurrentFootprintForwardWriterLiveHistoryCollector } from "./current-footprint-forward-writer-live-history-collector.ts";
+import { compareCurrentFootprintForwardWriterChangedHistory, currentFootprintForwardWriterCopyDocumentUuid, deriveCurrentFootprintForwardWriterLiveHistoryCacheData } from "./current-footprint-forward-writer-live-history-cache-data.ts";
+import type { CurrentFootprintForwardWriterLiveHistoryCacheData } from "./current-footprint-forward-writer-live-history-cache-data.ts";
+import { CURRENT_FOOTPRINT_FORWARD_WRITER_LIVE_HISTORY_REQUESTS as FULL_LIVE_HISTORY } from "./current-footprint-forward-writer-live-history-limits.ts";
+import type { CurrentFootprintForwardWriterLiveHistoryBindings, CurrentFootprintForwardWriterLiveHistoryOrigin } from "./current-footprint-forward-writer-live-history-origin.ts";
+import type { CurrentPcbViaProspectiveSyncData } from "./current-pcb-via-prospective-sync-data.ts";
+import { compareCurrentFootprintForwardWriterPostBranchData } from "./current-footprint-forward-writer-post-branch-data.ts";
+import type { CurrentFootprintForwardWriterPostBranchOrigin } from "./current-footprint-forward-writer-post-branch-origin.ts";
+// oxlint-disable-next-line import/no-cycle -- The original completed full collector resolves here only after both instances exist; initialization invokes no getter.
+import { requireOriginalCurrentFootprintForwardWriterCompletionContext } from "./current-footprint-copy-main-completion-runner.ts";
+import type { CurrentFootprintCopyMainCompletionRunner, CurrentFootprintForwardWriterMainCompletionObservation } from "./current-footprint-copy-main-completion-runner.ts";
+import { CurrentFootprintForwardWriterBranchCollector } from "./current-footprint-forward-writer-branch-collector.ts";
+import { CurrentFootprintForwardWriterBranchCustody } from "./current-footprint-forward-writer-branch-custody.ts";
+import { compareCurrentFootprintForwardWriterBranchData } from "./current-footprint-forward-writer-branch-data.ts";
+import type { CurrentFootprintForwardWriterBranchData } from "./current-footprint-forward-writer-branch-data.ts";
+import type { CurrentFootprintForwardWriterBranchBindings, CurrentFootprintForwardWriterBranchOrigin } from "./current-footprint-forward-writer-branch-origin.ts";
+import { CURRENT_FOOTPRINT_FORWARD_WRITER_BRANCH_SITE as BRANCH_SITE, qualifyCurrentFootprintForwardWriterBranchMainSource } from "./current-footprint-forward-writer-branch-source.ts";
+import { validateCurrentFootprintForwardWriterBranchCommand } from "./current-footprint-forward-writer-branch-protocol.ts";
+import type { CurrentFootprintForwardWriterBranchCommand } from "./current-footprint-forward-writer-branch-protocol.ts";
+// oxlint-disable-next-line import/no-cycle -- The original startup lookup runs only after both native and Main objects exist; initialization invokes no reader.
+import { requireOriginalCurrentFootprintForwardWriterStartup } from "./current-footprint-forward-writer-startup-retained.ts";
+import { CURRENT_MAIN_STARTUP_USER_READ_OWNER_PROGRAM as USER_READ_OWNER, isCurrentMainStartupUserRead } from "./current-main-startup-user-read.ts";
 import { createCurrentMainStartupLibraryRefusalContext } from "./current-main-startup-library-refusal-context.ts";
 import type { CurrentMainStartupLibraryRefusalContext } from "./current-main-startup-library-refusal-context.ts";
 import type { CurrentSelectedProjectMainOrigin } from "./current-selected-project-main-origin.ts";
@@ -16,15 +54,18 @@ import { CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE, qualifyCurrentPcbViaMainLiveHis
 /** One original-main startup continuation and construction capture. This runner
  * never opens a project, invokes an application callback, samples a clock or
  * grants a writer. The native transport retains root/Job/socket ownership. */
-/* oxlint-disable import/max-dependencies -- The sole main scheduler directly joins its fixed grammars, source issuers and genuine native-owner capability; separating them would obscure the original lease boundary. */
 import { performance } from "node:perf_hooks";
+import { CurrentFootprintForwardWriterMainMutationController, continueCurrentFootprintForwardWriterReadonlySql, currentFootprintForwardWriterMainMutationPauseSchema } from "./current-footprint-forward-writer-main-mutation-controller.ts";
+import type { CurrentFootprintForwardWriterMainMutationPause } from "./current-footprint-forward-writer-main-mutation-controller.ts";
+import { validateCurrentFootprintForwardWriterMainMutationCommand } from "./current-footprint-forward-writer-main-mutation-protocol.ts";
+import type { CurrentFootprintForwardWriterMainMutationCommand } from "./current-footprint-forward-writer-main-mutation-protocol.ts";
 import { setTimeout as delay } from "node:timers/promises";
 import { types } from "node:util";
 import { z } from "zod";
 import { createOriginalSourceError } from "./original-source-error.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_CALLS as SAVED_CONFIG_CALLS } from "./current-saved-project-registration-config-programs.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES, CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_REQUESTS as SAVED_CONFIG_REQUESTS } from "./current-saved-project-registration-config-protocol.ts";
-import { canonicalJson } from "./core.ts";
+import { canonicalJson, sha256Text } from "./core.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REGISTRATION_BREAKPOINT_ID as REGISTRATION_ID, CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_APP_URL_PATTERN as URL_PATTERN, decodeCurrentFootprintCopyMainBackendArray,
   decodeCurrentFootprintCopyMainBackendFunction, decodeCurrentFootprintCopyMainBackendNative, validateCurrentFootprintCopyMainBackendCommand } from "./current-footprint-copy-main-backend-contract.ts";
 import type { CurrentFootprintCopyMainBackendCommand as Command } from "./current-footprint-copy-main-backend-contract.ts";
@@ -49,13 +90,13 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS, currentFootprintCopyMa
 import type { CurrentFootprintCopyMainCompletionCommand } from "./current-footprint-copy-main-completion-protocol.ts";
 import type { CurrentFootprintCopyMainCompletionOrigin, CurrentFootprintCopyMainCompletionOriginBindings } from "./current-footprint-copy-main-completion-origin.ts";
 // oxlint-disable-next-line import/no-cycle -- The collector's issuer getter returns here; transfer is invoked only after both original owners exist, never during initialization.
-import { requireCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootprintForwardMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
-import type { CurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
+import { requireCurrentFootprintCopyMainRequestHeldFinalPb, requireCurrentFootprintForwardWriterMainRequestHeldFinalPb, requireOriginalCurrentFootprintForwardWriterHeldContext, transferCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootprintForwardMainRequestHeldFinalPb, transferCurrentFootprintForwardWriterMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
+import type { CurrentFootprintCopyMainRequestHeldFinalPb, CurrentFootprintCopyMainRequestHeldFinalPbBindings } from "./current-footprint-copy-main-request-runner.ts";
 import type { CurrentSchematicRelevanceSavedRegistrationBindings, CurrentSchematicRelevanceSavedRegistrationIntent } from "./current-schematic-relevance-saved-registration-intent.ts";
 import type { CurrentSchematicRelevanceDisplayRegistrationBindings, CurrentSchematicRelevanceDisplayRegistrationIntent } from "./current-schematic-relevance-display-registration-intent.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner constructs this runner; its original private-factory guards are invoked only after that construction, never at module initialization. A callback registration seam would weaken this authority check.
 import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootprintCombinedMainCompletion, currentFootprintCombinedMainGenerationExited, failCurrentFootprintCombinedMainCompletion, requireCurrentFootprintCombinedMainCapability, requireCurrentFootprintCombinedMainCleanup, requireCurrentFootprintCombinedPairedSchedule, requireCurrentFootprintHeadAgeBootstrapCapability, retireCurrentFootprintCombinedMainCompletion, sendCurrentFootprintCombinedMainCommand, sendCurrentFootprintCombinedMainCompletion, sendOriginalCurrentSchematicRelevanceDisplayMainLiveHistory } from './current-pcb-diagnostic-owner.ts';
-import type { CurrentFootprintCombinedMainCapability, requireOriginalCurrentFootprintInverseRegistrationIntentForRunner as RequireInverseRegistration, requireOriginalCurrentSavedProjectRegistrationIntent as RequireSavedRegistration, requireOriginalCurrentSchematicRelevanceDisplayRegistrationIntent as RequireSchematicDisplayRegistration, requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent as RequireSchematicSavedRegistration } from './current-pcb-diagnostic-owner.ts';
+import type { CurrentFootprintCombinedMainCapability,CurrentFootprintForwardWriterNativeOwner,requireOriginalCurrentFootprintInverseRegistrationIntentForRunner as RequireInverseRegistration,requireOriginalCurrentSavedProjectRegistrationIntent as RequireSavedRegistration,requireOriginalCurrentSchematicRelevanceDisplayRegistrationIntent as RequireSchematicDisplayRegistration,requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent as RequireSchematicSavedRegistration } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintInverseRegistrationBindings, CurrentFootprintInverseRegistrationIntent } from "./current-footprint-inverse-registration-origin.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -80,8 +121,25 @@ import { assertCurrentFootprintForwardExecutionMainCompletionCapacity, beginCurr
   requireCurrentFootprintForwardExecutionMainCapability, requireCurrentFootprintForwardExecutionMainCleanup,
   retireCurrentFootprintForwardExecutionMainCompletion, sendCurrentFootprintForwardExecutionMainCommand,
   sendCurrentFootprintForwardExecutionMainCompletion } from "./current-footprint-forward-execution-main-capability.ts";
+import { assertCurrentFootprintForwardWriterMainCompletionCapacity, beginCurrentFootprintForwardWriterMainCompletion, currentFootprintForwardWriterMainGenerationExited, failCurrentFootprintForwardWriterMainCompletion, isCurrentFootprintForwardWriterMainCapability, pollCurrentFootprintForwardWriterMain, reproveCurrentFootprintForwardWriterMainPublication, requireCurrentFootprintForwardWriterMainCapability, requireCurrentFootprintForwardWriterMainCleanup, requireCurrentFootprintForwardWriterMainNativeOwner, requireCurrentFootprintForwardWriterPairedSchedule, retireCurrentFootprintForwardWriterMainCompletion, sendCurrentFootprintForwardWriterMainCommand, sendCurrentFootprintForwardWriterMainCompletion } from "./current-footprint-forward-writer-main-capability.ts";
 /* oxlint-enable import/no-cycle */
 import type { CurrentFootprintForwardExecutionMainCapability } from "./current-footprint-forward-execution-main-capability.ts";
+import type { CurrentFootprintForwardWriterMainCapability } from "./current-footprint-forward-writer-main-capability.ts";
+import type { CurrentFootprintForwardWriterMainCompletionOrigin, CurrentFootprintForwardWriterMainRequestOrigin } from "./current-footprint-forward-writer-main-origin.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_READONLY_SOURCE as STOCK_READONLY, qualifyCurrentMainStartupLibraryReadonlySource } from "./current-main-startup-library-readonly-source.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_READONLY_PROGRAM as STOCK_READONLY_PROOF } from "./current-main-startup-library-readonly-program.ts";
+import { currentMainStartupLibraryReadonlyObservationSchema, currentMainStartupLibraryReadonlyStateSchema, validateCurrentMainStartupLibraryReadonlyCommand } from "./current-main-startup-library-readonly-protocol.ts";
+import type { CurrentMainStartupLibraryReadonlyCommand } from "./current-main-startup-library-readonly-protocol.ts";
+import { CurrentFootprintForwardHeadAgeSchedule, validateCurrentFootprintForwardHeadAgeCommand } from "./current-footprint-forward-head-age.ts";
+import type { CurrentFootprintForwardHeadAgeCommand } from "./current-footprint-forward-head-age.ts";
+import { CurrentFootprintForwardHeadMain } from "./current-footprint-forward-head-main.ts";
+import type { CurrentFootprintForwardHeadMainHost } from "./current-footprint-forward-head-main.ts";
+import { isCurrentFootprintForwardHeadMainCommand } from "./current-footprint-forward-head-protocol.ts";
+import type { CurrentFootprintForwardHeadMainCommand } from "./current-footprint-forward-head-protocol.ts";
+// oxlint-disable-next-line import/no-cycle -- Only the original native owner issues this bootstrap beside the Main constructor; resolution occurs after that owner exists.
+import { requireCurrentFootprintForwardHeadBootstrap, sendCurrentFootprintForwardHeadAgeMainCommand, sendCurrentFootprintForwardHeadMainCommand } from "./current-footprint-forward-head-origin.ts";
+import type { CurrentFootprintForwardHeadBootstrap } from "./current-footprint-forward-head-origin.ts";
+import type { CurrentFootprintForwardHeadRead } from "./current-footprint-forward-head-controller.ts";
 
 import { captureCurrentFootprintForwardExecutionPrototypes, requireCurrentFootprintForwardExecutionPrototypes } from "./current-footprint-forward-execution-opening-identity.ts";
 /* oxlint-disable import/no-cycle -- Only the original dedicated native factory issues this capability after both constructors exist; an injectable registration hook would lose original-owner authority. */
@@ -91,8 +149,11 @@ import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureM
 import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
 // oxlint-disable-next-line import/no-cycle -- The actual selected-file native factory creates this runner; no capability issues during module initialization.
-import { enrollOriginalCurrentMainStartupLibrary, originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentMainStartupLibrary, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentSchematicRelevanceDisplayMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+import { enrollOriginalCurrentMainStartupLibrary, originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentMainStartupLibrary, sendOriginalCurrentMainStartupLibraryReadonly, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentSchematicRelevanceDisplayMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+// oxlint-disable-next-line import/no-cycle -- Resolve genuine Core/Main custody only during later original history operations, after both classes exist.
+import { originalCurrentFootprintForwardWriterMainRequestLimit, requireCurrentFootprintForwardWriterMainHistoryOrigin } from "./current-footprint-forward-writer-main-history-origin.ts";
+import type { CurrentFootprintForwardWriterMainHistoryOrigin } from "./current-footprint-forward-writer-main-history-origin.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE as SQL_SOURCE, qualifyCurrentSelectedFileMainSqlFenceSource } from "./current-selected-file-main-sql-fence-source.ts";
 import { currentSelectedMainRawFrameFailure } from "./current-selected-main-raw-frame-failure.ts";
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CAPTURED_FRAMES as SAVED_CAPTURED_FRAMES, CURRENT_MAIN_CAPTURED_SCOPE_JOINS as SCOPE_JOINS } from "./current-main-captured-scope-joins.ts";
@@ -143,6 +204,7 @@ import { currentFootprintCopyMainRequestPlanSchema, decodeCurrentFootprintCopyMa
 import { CURRENT_MAIN_STARTUP_CONFIG_CALLS as STARTUP_CALLS } from "./current-main-startup-config-programs.ts";
 import { qualifyCurrentMainStartupConfigSource } from "./current-main-startup-config-sql.ts";
 import { currentMainStartupLibraryAppDirectory } from "./current-main-startup-library-live-profile.ts";
+import { retainCurrentMainStartupReadOwnerFailure } from "./current-main-startup-read-owner-failure.ts";
 import { CURRENT_MAIN_STARTUP_LIBRARY_READ_OWNER_PROGRAM as STOCK_READ_OWNER } from "./current-main-startup-library-interleave.ts";
 import { CURRENT_MAIN_STARTUP_LIBRARY_V2 as STOCK, isCurrentMainStartupLibraryV2Phase as isCurrentMainStartupLibraryPhase } from "./current-main-startup-library-v2-profile.ts";
 import type { CurrentMainStartupLibraryV2Origin as CurrentMainStartupLibraryOrigin } from "./current-main-startup-library-v2-profile.ts";
@@ -158,55 +220,75 @@ import type { CurrentSavedProjectRegistrationBindings, CurrentSavedProjectRegist
 import { CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITES as SAVED_CONFIG_SITES, qualifyCurrentSavedProjectRegistrationConfigSource } from "./current-saved-project-registration-config-source.ts";
 import { currentSelectedFileMainSqlCaptureError } from "./current-selected-file-main-sql-capture-error.ts";
 
-type MainCapability = CurrentFootprintCombinedMainCapability | CurrentFootprintForwardExecutionMainCapability | CurrentProjectStructureMainCapability;
+import type { CurrentFootprintForwardWriterClockRpcOrigin } from "./current-footprint-forward-writer-clock-origin.ts";
+
+type ForwardAnyMainCapability = CurrentFootprintForwardExecutionMainCapability | CurrentFootprintForwardWriterMainCapability;
+function isForwardAnyMainCapability(value: unknown): value is ForwardAnyMainCapability { return isCurrentFootprintForwardWriterMainCapability(value) || isCurrentFootprintForwardExecutionMainCapability(value); }
+function pollForwardAnyMain(capability:ForwardAnyMainCapability,runner:CurrentFootprintCopyMainBackendRunner,cleanup:boolean,retain?:(chunk:string)=>void):Promise<string> {
+ return isCurrentFootprintForwardWriterMainCapability(capability)?pollCurrentFootprintForwardWriterMain(capability,runner,cleanup,retain):pollCurrentFootprintForwardExecutionMain(capability,runner,cleanup,retain);
+}
+async function reproveForwardAnyMainPublication(capability:ForwardAnyMainCapability,runner:CurrentFootprintCopyMainBackendRunner):Promise<void> {
+ await(isCurrentFootprintForwardWriterMainCapability(capability)?reproveCurrentFootprintForwardWriterMainPublication(capability,runner):reproveCurrentFootprintForwardExecutionMainPublication(capability,runner));
+}
+
+type MainCapability = CurrentFootprintCombinedMainCapability | ForwardAnyMainCapability | CurrentProjectStructureMainCapability;
 /** Reprove the original runner against its distinct structure, forward or combined capability. */
 function mainCapability(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   if (isCurrentProjectStructureMainCapability(capability)) { requireCurrentProjectStructureMainCapability(capability, runner); }
+  else if (isCurrentFootprintForwardWriterMainCapability(capability)) { requireCurrentFootprintForwardWriterMainCapability(capability, runner); }
   else if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCapability(capability, runner); }
   else { requireCurrentFootprintCombinedMainCapability(capability, runner); }
 }
 /** Require cleanup authority from the original capability's own lifecycle. */
 function mainCleanup(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   if (isCurrentProjectStructureMainCapability(capability)) { requireCurrentProjectStructureMainCleanup(capability, runner); }
+  else if (isCurrentFootprintForwardWriterMainCapability(capability)) { requireCurrentFootprintForwardWriterMainCleanup(capability, runner); }
   else if (isCurrentFootprintForwardExecutionMainCapability(capability)) { requireCurrentFootprintForwardExecutionMainCleanup(capability, runner); }
   else { requireCurrentFootprintCombinedMainCleanup(capability, runner); }
 }
 /** Read original-generation exit proof through the matching capability family. */
 function mainExited(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): boolean {
   if (isCurrentProjectStructureMainCapability(capability)) { return currentProjectStructureMainGenerationExited(capability, runner); }
+  if (isCurrentFootprintForwardWriterMainCapability(capability)) { return currentFootprintForwardWriterMainGenerationExited(capability, runner); }
   return isCurrentFootprintForwardExecutionMainCapability(capability) ? currentFootprintForwardExecutionMainGenerationExited(capability, runner) : currentFootprintCombinedMainGenerationExited(capability, runner);
 }
 /** Route a validated request through its original capability without interchanging authority families. */
 async function mainCommand(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner,
   command: CurrentFootprintCopyMainRequestCollectCommand | CurrentProjectStructureMainCommand, id: number): Promise<void> {
   if (isCurrentProjectStructureMainCapability(capability)) { await sendCurrentProjectStructureMainCommand(capability, runner, validateCurrentProjectStructureMainCommand(command), id); return; }
+  if (isCurrentFootprintForwardWriterMainCapability(capability)) { await sendCurrentFootprintForwardWriterMainCommand(capability, runner, validateCurrentFootprintCopyMainRequestCollectCommand(command), id); return; }
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? sendCurrentFootprintForwardExecutionMainCommand(capability, runner, validateCurrentFootprintCopyMainRequestCollectCommand(command), id) : sendCurrentFootprintCombinedMainCommand(capability, runner, command, id));
 }
 /** Reserve completion capacity for forward or combined work; structure authority refuses. */
 function mainCompletionCapacity(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner, first: number): void {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
+  if (isCurrentFootprintForwardWriterMainCapability(capability)) { assertCurrentFootprintForwardWriterMainCompletionCapacity(capability, runner, first); return; }
   if (isCurrentFootprintForwardExecutionMainCapability(capability)) { assertCurrentFootprintForwardExecutionMainCompletionCapacity(capability, runner, first); }
   else { assertCurrentFootprintCombinedMainCompletionCapacity(capability, runner, first); }
 }
 /** Begin the original forward or combined completion once, excluding structure-only authority. */
 async function mainCompletionBegin(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner, first: number): Promise<void> {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
+  if (isCurrentFootprintForwardWriterMainCapability(capability)) { await beginCurrentFootprintForwardWriterMainCompletion(capability, runner, first); return; }
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? beginCurrentFootprintForwardExecutionMainCompletion(capability, runner, first) : beginCurrentFootprintCombinedMainCompletion(capability, runner, first));
 }
 /** Send completion through the original forward or combined owner, excluding structure-only authority. */
 async function mainCompletionCommand(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner,
   command: CurrentFootprintCopyMainCompletionCommand, id: number): Promise<void> {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
+  if (isCurrentFootprintForwardWriterMainCapability(capability)) { await sendCurrentFootprintForwardWriterMainCompletion(capability, runner, command, id); return; }
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? sendCurrentFootprintForwardExecutionMainCompletion(capability, runner, command, id) : sendCurrentFootprintCombinedMainCompletion(capability, runner, command, id));
 }
 /** Join retirement of the original forward or combined completion through its own owner. */
 async function mainCompletionRetire(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
   need(!isCurrentProjectStructureMainCapability(capability), "STRUCTURE_COMPLETION_ROLE_UNAVAILABLE");
+  if (isCurrentFootprintForwardWriterMainCapability(capability)) { await retireCurrentFootprintForwardWriterMainCompletion(capability, runner); return; }
   await (isCurrentFootprintForwardExecutionMainCapability(capability) ? retireCurrentFootprintForwardExecutionMainCompletion(capability, runner) : retireCurrentFootprintCombinedMainCompletion(capability, runner));
 }
 /** Preserve failure on the owning completion lane; structure-only work has no completion to fail. */
 function mainCompletionFail(capability: MainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   if (isCurrentProjectStructureMainCapability(capability)) { return; }
+  if (isCurrentFootprintForwardWriterMainCapability(capability)) { failCurrentFootprintForwardWriterMainCompletion(capability, runner); return; }
   if (isCurrentFootprintForwardExecutionMainCapability(capability)) { failCurrentFootprintForwardExecutionMainCompletion(capability, runner); }
   else { failCurrentFootprintCombinedMainCompletion(capability, runner); }
 }
@@ -252,14 +334,31 @@ export interface CurrentFootprintForwardMainCompletionOriginBindings extends Cur
   readonly request: (command: CurrentFootprintCopyMainCompletionCommand, cleanup: boolean, retainAllocation?: (reply: unknown) => void) => Promise<unknown>;
   readonly settleAllocation: () => Promise<void>;
 }
-type MainRequestOrigin = CurrentFootprintCopyMainRequestOrigin | CurrentFootprintForwardMainRequestOrigin;
-type MainCompletionOrigin = CurrentFootprintCopyMainCompletionOrigin | CurrentFootprintForwardMainCompletionOrigin;
-interface OriginEntry { readonly kind: "combined" | "forward"; readonly assertOriginalEntry: () => void; readonly bindings: CurrentFootprintForwardMainRequestOriginBindings;
+type MainRequestOrigin = CurrentFootprintCopyMainRequestOrigin | CurrentFootprintForwardMainRequestOrigin | CurrentFootprintForwardWriterMainRequestOrigin;
+type MainCompletionOrigin = CurrentFootprintCopyMainCompletionOrigin | CurrentFootprintForwardMainCompletionOrigin | CurrentFootprintForwardWriterMainCompletionOrigin;
+function mainOriginKind(capability:MainCapability):"combined"|"forward"|"writer" {
+ if(isCurrentFootprintForwardWriterMainCapability(capability)) { return "writer"; }
+ if(isCurrentFootprintForwardExecutionMainCapability(capability)) { return "forward"; }return "combined";
+}
+function newMainRequestOrigin(capability:MainCapability):MainRequestOrigin {
+ if(isCurrentFootprintForwardWriterMainCapability(capability)) { return Object.freeze({profile:"private.current-footprint-forward-writer-main-request-origin.v1",executionAuthorized:false}); }
+ if(isCurrentFootprintForwardExecutionMainCapability(capability)) { return Object.freeze({profile:"private.current-footprint-forward-main-request-origin.v2",executionAuthorized:false}); }
+ return Object.freeze({profile:"private.current-footprint-copy-main-request-origin.v1",executionAuthorized:false});
+}
+function newMainCompletionOrigin(capability:MainCapability):MainCompletionOrigin {
+ if(isCurrentFootprintForwardWriterMainCapability(capability)) { return Object.freeze({profile:"private.current-footprint-forward-writer-main-completion-origin.v1",executionAuthorized:false}); }
+ if(isCurrentFootprintForwardExecutionMainCapability(capability)) { return Object.freeze({profile:"private.current-footprint-forward-main-completion-origin.v2",executionAuthorized:false}); }
+ return Object.freeze({profile:"private.current-footprint-copy-main-completion-origin.v1",executionAuthorized:false});
+}
+interface OriginEntry { readonly kind: "combined" | "forward" | "writer"; readonly assertOriginalEntry: () => void; readonly bindings: CurrentFootprintForwardMainRequestOriginBindings;
   readonly capability: MainCapability; readonly runner: CurrentFootprintCopyMainBackendRunner }
 const STOCK_RETURN = STOCK_CALLS.returned;
+const liveHistoryOrigins = new WeakMap<CurrentFootprintForwardWriterLiveHistoryOrigin, Readonly<{owner:CurrentFootprintForwardWriterNativeOwner;runner:CurrentFootprintCopyMainBackendRunner;bindings:CurrentFootprintForwardWriterLiveHistoryBindings}>>();
+const postBranchOrigins = new WeakMap<CurrentFootprintForwardWriterPostBranchOrigin, Readonly<{ owner: CurrentFootprintForwardWriterNativeOwner; runner: CurrentFootprintCopyMainBackendRunner; bindings: CurrentFootprintForwardWriterBranchBindings; retained: () => CurrentFootprintForwardWriterBranchData }>>();
+const branchOrigins = new WeakMap<CurrentFootprintForwardWriterBranchOrigin, Readonly<{ owner: CurrentFootprintForwardWriterNativeOwner; runner: CurrentFootprintCopyMainBackendRunner; bindings: CurrentFootprintForwardWriterBranchBindings; retained: () => CurrentFootprintForwardWriterBranchData }>>();
 const requestOrigins = new WeakMap<object, OriginEntry>();
 const completionOrigins = new WeakMap<object, Readonly<{
-  kind: "combined" | "forward"; assertOriginalEntry: () => void; bindings: CurrentFootprintForwardMainCompletionOriginBindings;
+  kind: "combined" | "forward" | "writer"; assertOriginalEntry: () => void; bindings: CurrentFootprintForwardMainCompletionOriginBindings;
 }>>();
 const structureLeases = new WeakMap<CurrentProjectStructureMainLease, Readonly<{
   assertOriginalEntry: () => void; binding: CurrentProjectStructureMainBinding;
@@ -304,7 +403,7 @@ export function requireCurrentFootprintCopyMainRequestOrigin(token: CurrentFootp
 export function requireCurrentFootprintCopyMainRequestClockOrigin(token: CurrentFootprintCopyMainRequestOrigin,
   clock: CurrentFootprintCopyClockRpcOrigin): void {
   const entry = requestOrigins.get(token); need(entry !== undefined && entry.kind === "combined", "REQUEST_ORIGINAL_LEASE_REQUIRED");
-  entry.assertOriginalEntry(); need(!isCurrentFootprintForwardExecutionMainCapability(entry.capability) && !isCurrentProjectStructureMainCapability(entry.capability), "REQUEST_ORIGINAL_LEASE_REQUIRED");
+  entry.assertOriginalEntry(); need(!isCurrentFootprintForwardExecutionMainCapability(entry.capability) && !isCurrentFootprintForwardWriterMainCapability(entry.capability) && !isCurrentProjectStructureMainCapability(entry.capability), "REQUEST_ORIGINAL_LEASE_REQUIRED");
   requireCurrentFootprintCombinedPairedSchedule(entry.capability, entry.runner, clock);
 }
 
@@ -330,6 +429,8 @@ export function requireCurrentFootprintForwardMainCompletionOrigin(token: Curren
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const location = z.object({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() }).strict();
 const frame = z.looseObject({ callFrameId: handle, location });
+
+
 const registrationId = z.literal(REGISTRATION_ID);
 const pauseSchema = z.looseObject({ reason: z.string().max(128), callFrames: z.array(frame).min(1).max(64), hitBreakpoints: z.array(z.string().min(1).max(512)).max(2).optional() });
 const empty = z.object({}).strict();
@@ -345,6 +446,16 @@ const capturedSqlGuardValue = z.strictObject({ type: z.literal("string"), value:
 const capturedSqlGuardReply = z.strictObject({ result: capturedSqlGuardValue });
 const capturedSqlFrameReply = z.union([sqlTrueReply, objectReply, capturedSqlGuardReply]);
 type CapturedSqlSite = Exclude<CurrentSelectedFileMainSqlFenceSite, "import" | "afterImports">;
+/** These exact structural/HTTP sites execute no SQL body. Their original
+ * captured-frame guard must still pass; SQL methods retain their separate
+ * startup read-owner or configuration proof, even when their guard passes. */
+const guardedStockLifecycleSites: ReadonlySet<CurrentSelectedFileMainSqlFenceSite> = new Set([
+  "keeperBirth", "keeperBound", "contextBirth", "contextBound", "initializerBirth", "initializerBound",
+  "wrapClose", "keeperClose", "initializerClose", "driver",
+]);
+function guardedStockLifecycleSite(site: CurrentSelectedFileMainSqlFenceSite | undefined): boolean {
+  return site !== undefined && guardedStockLifecycleSites.has(site);
+}
 const savedRegistrationEpoch = z.number().int().min(-8_640_000_000_000_000).max(8_640_000_000_000_000);
 const savedRegistrationRunValue = z.strictObject({ schema: z.literal("private.current-saved-project-registration-run.v1"), path: z.string().max(4096),
   insertEpochMilliseconds: savedRegistrationEpoch, updateEpochMilliseconds: savedRegistrationEpoch,
@@ -352,7 +463,7 @@ const savedRegistrationRunValue = z.strictObject({ schema: z.literal("private.cu
 const savedRegistrationRunRemote = z.strictObject({ type: z.literal("object"), value: savedRegistrationRunValue });
 const savedRegistrationRunReply = z.strictObject({ result: savedRegistrationRunRemote });
 type SavedRegistrationSite = typeof CURRENT_SAVED_PROJECT_REGISTRATION_CONFIG_SITE_NAMES[number];
-interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly stockReturn?: true; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; readonly savedRegistrationSite?: SavedRegistrationSite; resumeAttempted: boolean; resumed: boolean }
+interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; readonly forwardHeadSite?: "import" | "afterImports" | "open"; readonly stockReturn?: true; readonly stockReadonly?: true; readonly sqlSite?: CurrentSelectedFileMainSqlFenceSite; readonly savedRegistrationSite?: SavedRegistrationSite; resumeAttempted: boolean; resumed: boolean }
 interface StartupRegistration {
   readonly pause: Pause; readonly point: string; readonly location: string; readonly source: object; readonly appSource: string; readonly scriptId: string;
   readonly stockOrigin: CurrentMainStartupLibraryOrigin; readonly stockTracker: string; readonly stockEnrollment: Pause; readonly stockPoint: string;
@@ -435,6 +546,8 @@ export function requireOriginalCurrentSelectedFileMainRequest(packet: CurrentSel
   const original = selectedRequestPackets.get(packet); need(original !== undefined && original.runner === runner, "SELECTED_REQUEST_ORIGINAL"); runner.requireOriginalSelectedMainRequest(packet);
 }
 export class CurrentFootprintCopyMainBackendRunner {
+
+
   readonly #transport: CurrentFootprintCopyMainBackendTransport;
   readonly #methods: readonly unknown[];
   readonly #decoder = new TextDecoder("utf-8", { fatal: true });
@@ -448,6 +561,16 @@ export class CurrentFootprintCopyMainBackendRunner {
   #stockEnrollmentPause: Pause | null = null;
   #stockRequests = 0;
   #stockCompleted = false;
+  #stockReadonlyPoint: string | null = null;
+  #stockReadonlyRequests = 0;
+  #stockReadonlyArming = false;
+  #stockReadonlyResolution: Resolved | null = null;
+  #stockReadonlyCommand: CurrentMainStartupLibraryReadonlyCommand | null = null;
+  #stockReadonlyFrame: string | null = null;
+  #stockReadonlyPause: Pause | null = null;
+  #stockReadonlyObserved: z.infer<typeof currentMainStartupLibraryReadonlyObservationSchema> | null = null;
+  #stockReadonlyResumed = false;
+  #stockReadonlyDisarmed = false;
   #startupRegistration: StartupRegistration | null = null;
   #stockReturnPoint: string | null = null;
   #stockRefusalContext: CurrentMainStartupLibraryRefusalContext | null = null; #stockRefusalContextAttempted = false;
@@ -460,6 +583,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   readonly #stockRawFrames = new WeakMap<Pause, string>();
   readonly #sqlRawFrames = new WeakMap<Pause, string>();
   readonly #stockInterleaveReadOwners = new WeakSet<Pause>();
+  readonly #stockInterleaveGuardedLifecycle = new WeakSet<Pause>();
   readonly #stockInterleaveConfigurations = new WeakSet<Pause>();
   readonly #stockInterleaveResumeCommands = new WeakMap<Pause, Readonly<{ command: CurrentSelectedFileMainSqlFenceCommand; requestId: number }>>();
   readonly #stockInterleaves = new WeakMap<Pause, Readonly<{ origin: CurrentMainStartupLibraryOrigin; tracker: string; enrollment: Pause; command: Pause; point: string; requests: number; progress: string }>>();
@@ -479,6 +603,8 @@ export class CurrentFootprintCopyMainBackendRunner {
   #sqlArming: CurrentSelectedFileMainSqlFenceSite | null = null;
   #sqlCapture: string | null = null;
   #sqlReady = false;
+  #selectedUsersReadonlyFence: Readonly<{ bootstrap:CurrentSelectedFileMainSqlFenceBootstrap; path:string; capture:string; scriptId:string; appSource:string; points:readonly (readonly [string,CurrentSelectedFileMainSqlFenceSite])[] }> | null = null;
+  #selectedUsersReadonlyFenceConsumed = false;
   #startupConfigTracker: string | null = null;
   #sqlStartupDiagnostic: CurrentSelectedFileMainSqlStartupDiagnosticV2 | null = null;
   readonly #sqlStartupPauseLocations = new WeakMap<Pause, readonly Readonly<z.infer<typeof location>>[]>();
@@ -503,6 +629,46 @@ export class CurrentFootprintCopyMainBackendRunner {
   readonly #inverseMainHistoryRows: CurrentFootprintInverseMainHistoryRows[] = [];
   #inverseMainHistoryOrdinal = 0;
   readonly #inverseMainHistorySignals = new Map<number, ReturnType<typeof Promise.withResolvers<CurrentFootprintInverseMainHistoryRows | null>>>();
+  #forwardWriterPostBranchOrigin: CurrentFootprintForwardWriterPostBranchOrigin | null = null;
+  #forwardWriterPostBranchCustody: CurrentFootprintForwardWriterBranchCustody | null = null;
+  #forwardWriterPostBranchCollector: CurrentFootprintForwardWriterBranchCollector | null = null;
+  #forwardWriterPostBranchArming = false;
+  #forwardWriterPostBranchResolution: Resolved | null = null;
+  #forwardWriterPostBranchPoint: Readonly<{ id: string; location: z.infer<typeof location> }> | null = null;
+  #forwardWriterPostBranchPause: Readonly<{ identity: Pause; raw: unknown }> | null = null;
+  #forwardWriterPostBranchResult: CurrentFootprintForwardWriterBranchData | null = null;
+  readonly #forwardWriterPostBranchSignal = Promise.withResolvers<CurrentFootprintForwardWriterBranchData | null>();
+  #forwardWriterBranchOrigin: CurrentFootprintForwardWriterBranchOrigin | null = null;
+  #forwardWriterBranchCustody: CurrentFootprintForwardWriterBranchCustody | null = null;
+  #forwardWriterBranchCollector: CurrentFootprintForwardWriterBranchCollector | null = null;
+  #forwardWriterBranchArming = false;
+  #forwardWriterBranchResolution: Resolved | null = null;
+  #forwardWriterBranchPoint: Readonly<{ id: string; location: z.infer<typeof location> }> | null = null;
+  #forwardWriterBranchPause: Readonly<{ identity: Pause; raw: unknown }> | null = null;
+  #forwardWriterBranchResult: CurrentFootprintForwardWriterBranchData | null = null;
+  readonly #forwardWriterBranchSignal = Promise.withResolvers<CurrentFootprintForwardWriterBranchData | null>();
+  #forwardWriterLiveHistoryOrigin: CurrentFootprintForwardWriterLiveHistoryOrigin | null = null;
+  #forwardWriterLiveHistoryCustody: CurrentFootprintForwardWriterLiveHistoryCustody | null = null;
+  #forwardWriterLiveHistoryCollector: CurrentFootprintForwardWriterLiveHistoryCollector | null = null;
+  #forwardWriterLiveHistoryArming = false;
+  #forwardWriterLiveHistoryResolution: Resolved | null = null;
+  #forwardWriterLiveHistoryPoint: Readonly<{ id: string; location: z.infer<typeof location> }> | null = null;
+  #forwardWriterLiveHistoryPause: Readonly<{ identity: Pause; raw: unknown }> | null = null;
+  readonly #forwardWriterLiveHistoryRows: CurrentFootprintInverseMainHistoryRows[] = [];
+  #forwardWriterLiveHistoryOrdinal = 0;
+  readonly #forwardWriterLiveHistorySignals = new Map<number, ReturnType<typeof Promise.withResolvers<CurrentFootprintInverseMainHistoryRows | null>>>();
+  readonly #forwardWriterLiveHistoryFirst = Promise.withResolvers<CurrentFootprintInverseMainHistoryRows | null>();
+  #forwardWriterMainHistoryOrigin: CurrentFootprintForwardWriterMainHistoryOrigin | null = null;
+  #forwardWriterMainHistoryBaseline: CurrentFootprintInverseMainHistoryBaseline | null = null;
+  #forwardWriterMainHistoryCustody: CurrentFootprintInverseMainHistoryCustody | null = null;
+  #forwardWriterMainHistoryCollector: CurrentFootprintInverseMainHistoryCollector | null = null;
+  #forwardWriterMainHistoryArming = false;
+  #forwardWriterMainHistoryResolution: Resolved | null = null;
+  #forwardWriterMainHistoryPoint: Readonly<{ id: string; location: z.infer<typeof location> }> | null = null;
+  #forwardWriterMainHistoryPause: Readonly<{ identity: Pause; raw: unknown }> | null = null;
+  readonly #forwardWriterMainHistoryRows: CurrentFootprintInverseMainHistoryRows[] = [];
+  #forwardWriterMainHistoryOrdinal = 0;
+  readonly #forwardWriterMainHistorySignals = new Map<number, ReturnType<typeof Promise.withResolvers<CurrentFootprintInverseMainHistoryRows | null>>>();
   #viaMainOrigin: CurrentSelectedProjectMainOrigin | null = null;
   #viaBeginCustody: CurrentPcbViaMainBeginCustody | null = null;
   #viaStructureCustody: CurrentPcbViaMainStructureCustody | null = null;
@@ -598,6 +764,12 @@ export class CurrentFootprintCopyMainBackendRunner {
   #forwardMainCursor: CurrentFootprintForwardMainCursor | null = null;
   #originAttempted = false;
   #originActive = false;
+  #forwardWriterSqlPause: Readonly<{ identity: Pause; event: CurrentFootprintForwardWriterMainMutationPause }> | null = null;
+  #forwardWriterSqlReads = 0;
+  #forwardWriterSqlController: CurrentFootprintForwardWriterMainMutationController | null = null;
+  #forwardWriterSqlCompletionStage: string | null = null;
+  #forwardWriterSqlDriverEvent: CurrentFootprintForwardWriterMainMutationPause | null = null;
+  #forwardWriterSqlCommand: Readonly<{ command: CurrentFootprintForwardWriterMainMutationCommand; id: number; consume: () => void }> | null = null;
   #originCapability: MainCapability | null = null;
   #originToken: MainRequestOrigin | null = null;
   #structureAttempted = false;
@@ -632,13 +804,71 @@ export class CurrentFootprintCopyMainBackendRunner {
   #headAgeAttempted = false;
   /** Retain the fixed transport and optional original-owner bootstrap token.
    * Copied tokens refuse before any inspector request is issued. */
-  public constructor(transport: CurrentFootprintCopyMainBackendTransport, headAgeBootstrap?: CurrentFootprintHeadAgeBootstrapCapability, selectedSqlBootstrap?: CurrentSelectedFileMainSqlFenceBootstrap) {
+  readonly #forwardHeadBootstrap: CurrentFootprintForwardHeadBootstrap | null;
+  readonly #forwardHead: CurrentFootprintForwardHeadMain | null;
+  #forwardHeadActive: CurrentFootprintForwardHeadMainCommand | null = null;
+  #forwardHeadConsumed = false;
+  readonly #forwardHeadAgeSchedule = new CurrentFootprintForwardHeadAgeSchedule();
+  #forwardHeadAgeActive = false;
+  #forwardHeadAgeCommand: CurrentFootprintForwardHeadAgeCommand | null = null;
+  #forwardHeadAgeConsumed = false;
+
+  public constructor(transport: CurrentFootprintCopyMainBackendTransport, headAgeBootstrap?: CurrentFootprintHeadAgeBootstrapCapability, selectedSqlBootstrap?: CurrentSelectedFileMainSqlFenceBootstrap,
+    forwardHeadBootstrap?: CurrentFootprintForwardHeadBootstrap) {
     if (headAgeBootstrap !== undefined) { requireCurrentFootprintHeadAgeBootstrapCapability(headAgeBootstrap, transport); }
     need(headAgeBootstrap === undefined || selectedSqlBootstrap === undefined, "EXCLUSIVE_MAIN_BOOTSTRAP");
     this.#selectedSqlBootstrap = selectedSqlBootstrap ?? null;
     this.#selectedSqlPath = selectedSqlBootstrap === undefined ? null : requireCurrentSelectedFileMainSqlFenceBootstrap(selectedSqlBootstrap, transport);
-    this.#headAgeBootstrapCapture = headAgeBootstrap !== undefined; this.#headAgeBootstrapCapability = headAgeBootstrap ?? null;
+    this.#headAgeBootstrapCapture = headAgeBootstrap !== undefined || forwardHeadBootstrap !== undefined; this.#headAgeBootstrapCapability = headAgeBootstrap ?? null;
     this.#methods = methods(transport); this.#transport = transport;
+    need(forwardHeadBootstrap === undefined || headAgeBootstrap === undefined && selectedSqlBootstrap === undefined, "FORWARD_HEAD_EXCLUSIVE_BOOTSTRAP");
+    this.#forwardHeadBootstrap = forwardHeadBootstrap ?? null;
+    this.#forwardHead = forwardHeadBootstrap === undefined ? null : new CurrentFootprintForwardHeadMain(Object.freeze<CurrentFootprintForwardHeadMainHost>({
+      source: requireCurrentFootprintForwardHeadBootstrap(forwardHeadBootstrap, transport),
+      assertCurrent: (): void => { requireCurrentFootprintForwardHeadBootstrap(forwardHeadBootstrap, transport); this.#same(false); },
+      request: (command, cleanup): Promise<unknown> => this.#request(command, cleanup), pendingRequestId: (): number | null => this.#pendingId,
+      qualifySource: async (scriptId): Promise<string> => { await this.#qualify(scriptId); need(this.#appSource !== null, "FORWARD_HEAD_APP_SOURCE"); return this.#appSource; },
+      waitPause: async (site) => { await this.#wait(() => { const held = this.#pause; return held !== null && held.forwardHeadSite === site && !held.resumed; }); const pause = this.#pause;
+        need(pause !== null && pause.forwardHeadSite === site && !pause.resumeAttempted && !pause.resumed, "FORWARD_HEAD_ORIGINAL_PAUSE");
+        return Object.freeze({ identity: pause, frameId: pause.frameId, location: pause.location, site }); },
+      resume: async (held): Promise<void> => { const pause = this.#pause; need(pause !== null && held.identity === pause && pause.forwardHeadSite === held.site && !pause.resumeAttempted && !pause.resumed, "FORWARD_HEAD_ORIGINAL_RESUME");
+        pause.resumeAttempted = true; empty.parse(await this.#request({ phase: "forward-head-open", command: { phase: "resume", method: "Debugger.resume", params: {} } }, true)); await this.#wait(() => pause.resumed, true); },
+      constructionObjectId: (): string => { need(this.#retainedArray !== null, "FORWARD_HEAD_ORIGINAL_CONSTRUCTION"); return this.#retainedArray; },
+    }));
+  }
+  /** Consume only the command currently retained by this original Main cursor,
+   * immediately before its original native write. */
+  public consumeForwardHeadCommand(command: CurrentFootprintForwardHeadMainCommand, requestId: number): void {
+    need(this.#forwardHead !== null && this.#forwardHeadBootstrap !== null && this.#busy && this.#pendingId === requestId &&
+      this.#forwardHeadActive === command && !this.#forwardHeadConsumed, "FORWARD_HEAD_ORIGINAL_PENDING");
+    requireCurrentFootprintForwardHeadBootstrap(this.#forwardHeadBootstrap, this.#transport); this.#forwardHead.consume(command, requestId); this.#forwardHeadConsumed = true;
+  }
+  /** The exact original forward command must be consumed by its native sender
+   * while the same Main request is pending. No supplied callback can issue it. */
+  public consumeForwardHeadAgeCommand(command: CurrentFootprintForwardHeadAgeCommand, requestId: number): void {
+    need(this.#forwardHeadBootstrap !== null && this.#forwardHeadAgeActive && this.#busy && this.#pendingId === requestId &&
+      this.#forwardHeadAgeCommand === command && !this.#forwardHeadAgeConsumed, "FORWARD_HEAD_AGE_ORIGINAL_PENDING");
+    requireCurrentFootprintForwardHeadBootstrap(this.#forwardHeadBootstrap, this.#transport);
+    this.#forwardHeadAgeSchedule.consume(command, requestId); this.#forwardHeadAgeConsumed = true;
+  }
+  public async prepareForwardHeadAge(bootstrap: CurrentFootprintForwardHeadBootstrap, nativeRootPid: number): Promise<void> {
+    need(bootstrap === this.#forwardHeadBootstrap && !this.#forwardHeadAgeActive, "FORWARD_HEAD_AGE_BOOTSTRAP");
+    requireCurrentFootprintForwardHeadBootstrap(bootstrap, this.#transport); this.#forwardHeadAgeActive = true;
+    try { await this.prepareHeadAge(nativeRootPid); requireCurrentFootprintForwardHeadBootstrap(bootstrap, this.#transport); }
+    finally { this.#forwardHeadAgeActive = false; }
+  }
+  public async observeForwardHeadAge(bootstrap: CurrentFootprintForwardHeadBootstrap, input: unknown): Promise<CurrentFootprintHeadAgeMainObservation> {
+    need(bootstrap === this.#forwardHeadBootstrap && !this.#forwardHeadAgeActive, "FORWARD_HEAD_AGE_BOOTSTRAP");
+    requireCurrentFootprintForwardHeadBootstrap(bootstrap, this.#transport); this.#forwardHeadAgeActive = true;
+    try { const result = await this.observeHeadAge(input); requireCurrentFootprintForwardHeadBootstrap(bootstrap, this.#transport);
+      this.#forwardHeadAgeSchedule.requireComplete(); return result; }
+    finally { this.#forwardHeadAgeActive = false; }
+  }
+  /** Observe this bootstrap's once-only original opening on the same cursor. */
+  public async observeForwardHeadOpening(bootstrap: CurrentFootprintForwardHeadBootstrap): Promise<CurrentFootprintForwardHeadRead> {
+    need(bootstrap === this.#forwardHeadBootstrap && this.#forwardHead !== null && !this.#busy && this.#packet !== null && !this.#originAttempted && !this.#structureAttempted, "FORWARD_HEAD_OPENING_UNAVAILABLE");
+    this.#busy = true;
+    try { return await this.#forwardHead.observeOpening(); } catch (error) { this.#failed = true; throw error; } finally { this.#busy = false; }
   }
   /** Capture this actual construction's cursor without issuing a request or
    * transferring its native capability. Repeated reads preserve one token. */
@@ -664,7 +894,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     // Admission may retain an exact v2 allocation before its original send.
     // Observed, stopped or detached uncertainty cannot use this in-flight
     // State to revive normal work.
-    const pendingForwardAllocation = isCurrentFootprintForwardExecutionMainCapability(this.#originCapability) &&
+    const pendingForwardAllocation = isForwardAnyMainCapability(this.#originCapability) &&
       this.#structureAllocation !== null && !this.#structureAllocation.stopped && !this.#structureAllocation.seen &&
       this.#pendingId === this.#structureAllocation.id;
     const failed = this.#failed || this.#originUncertain || this.#structureAllocationUncertain && !pendingForwardAllocation || this.#completionFailed;
@@ -690,6 +920,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Reprove transport, bootstrap custody, source and the active deadline.
    * Cleanup retains its separate lifetime without reopening normal work. */
   #same(cleanup: boolean): void {
+    if (!cleanup && this.#forwardHeadBootstrap !== null) { requireCurrentFootprintForwardHeadBootstrap(this.#forwardHeadBootstrap, this.#transport); }
     if (this.#selectedSqlBootstrap !== null) { need(requireCurrentSelectedFileMainSqlFenceBootstrap(this.#selectedSqlBootstrap, this.#transport) === this.#selectedSqlPath, "SELECTED_SQL_ORIGINAL_BOOTSTRAP"); }
     if (this.#headAgeBootstrapCapability !== null) { requireCurrentFootprintHeadAgeBootstrapCapability(this.#headAgeBootstrapCapability, this.#transport); }
     need(methods(this.#transport).every((value, index) => value === this.#methods[index]) && !this.#released &&
@@ -705,10 +936,40 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(matches, "REGISTRATION_LOCATION");
   }
   #resolve(record: Resolved): void {
+    if (record.breakpointId !== REGISTRATION_ID && this.#forwardHead?.resolve(record.breakpointId, record.location) === true) { return; }
+    if (this.#stockReadonlyArming || record.breakpointId === this.#stockReadonlyPoint) {
+      need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === STOCK_READONLY.point.lineNumber && record.location.columnNumber === STOCK_READONLY.point.columnNumber &&
+        (this.#stockReadonlyResolution === null || this.#stockReadonlyResolution.breakpointId === record.breakpointId), "STOCK_READONLY_RESOLUTION");
+      this.#stockReadonlyResolution = record; return;
+    }
     if (this.#stockArming || record.breakpointId === this.#stockReturnPoint) {
       need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === STOCK.returnPoint.lineNumber && record.location.columnNumber === STOCK.returnPoint.columnNumber &&
         (this.#stockResolution === null || this.#stockResolution.breakpointId === record.breakpointId), "STOCK_RETURN_RESOLUTION");
       this.#stockResolution = record; return;
+    }
+    if (this.#forwardWriterPostBranchArming || this.#forwardWriterPostBranchPoint?.id === record.breakpointId) {
+      const site = BRANCH_SITE;
+      need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === site.lineNumber && record.location.columnNumber === site.columnNumber &&
+        (this.#forwardWriterPostBranchPoint === null || this.#forwardWriterPostBranchPoint.id === record.breakpointId) && (this.#forwardWriterPostBranchResolution === null || this.#forwardWriterPostBranchResolution.breakpointId === record.breakpointId), "FORWARD_WRITER_POST_BRANCH_RESOLUTION");
+      this.#forwardWriterPostBranchResolution = record; return;
+    }
+    if (this.#forwardWriterBranchArming || this.#forwardWriterBranchPoint?.id === record.breakpointId) {
+      const site = BRANCH_SITE;
+      need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === site.lineNumber && record.location.columnNumber === site.columnNumber &&
+        (this.#forwardWriterBranchPoint === null || this.#forwardWriterBranchPoint.id === record.breakpointId) && (this.#forwardWriterBranchResolution === null || this.#forwardWriterBranchResolution.breakpointId === record.breakpointId), "FORWARD_WRITER_BRANCH_RESOLUTION");
+      this.#forwardWriterBranchResolution = record; return;
+    }
+    if (this.#forwardWriterLiveHistoryArming || this.#forwardWriterLiveHistoryPoint?.id === record.breakpointId) {
+      const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
+      need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === site.lineNumber && record.location.columnNumber === site.columnNumber &&
+        (this.#forwardWriterLiveHistoryPoint === null || this.#forwardWriterLiveHistoryPoint.id === record.breakpointId) && (this.#forwardWriterLiveHistoryResolution === null || this.#forwardWriterLiveHistoryResolution.breakpointId === record.breakpointId), "FORWARD_WRITER_LIVE_HISTORY_RESOLUTION");
+      this.#forwardWriterLiveHistoryResolution = record; return;
+    }
+    if (this.#forwardWriterMainHistoryArming || this.#forwardWriterMainHistoryPoint?.id === record.breakpointId) {
+      const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
+      need(record.location.scriptId === this.#appScriptId && record.location.lineNumber === site.lineNumber && record.location.columnNumber === site.columnNumber &&
+        (this.#forwardWriterMainHistoryPoint === null || this.#forwardWriterMainHistoryPoint.id === record.breakpointId) && (this.#forwardWriterMainHistoryResolution === null || this.#forwardWriterMainHistoryResolution.breakpointId === record.breakpointId), "FORWARD_WRITER_HISTORY_RESOLUTION");
+      this.#forwardWriterMainHistoryResolution = record; return;
     }
     if (this.#inverseMainHistoryArming || this.#inverseMainHistoryPoint?.id === record.breakpointId) {
       const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
@@ -721,6 +982,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       this.#savedRegistrationLocation(savedSite, record.location); need(this.#savedRegistrationResolutions.length < 3, "SAVED_REGISTRATION_RESOLUTION_BOUND");
       this.#savedRegistrationResolutions.push(record); return;
     }
+
     if (this.#viaMainOrigin !== null && !this.#sqlBreakpoints.has(record.breakpointId)) {
       const expected = this.#viaMainPoints.get(record.breakpointId) ?? this.#viaMainArming;
       need(expected !== null && expected !== undefined && canonicalJson(expected) === canonicalJson(record.location), "VIA_MAIN_BREAKPOINT_RESOLUTION"); return;
@@ -735,9 +997,11 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   /** Account for bounded original inspector events and exact source locations.
    * Only the owner-issued head-age token admits the passive Node bootstrap. */
-  #event(method: string, input: unknown): void {
+  #event(method: string, rawInput: unknown): void {
+    let input=rawInput;
     if (this.#headAgeBootstrapCapability !== null) { requireCurrentFootprintHeadAgeBootstrapCapability(this.#headAgeBootstrapCapability, this.#transport); }
     this.#events += 1; need(this.#events <= 4096, "EVENT_BOUND");
+
     if (this.#viaMainOrigin !== null && (method === "Debugger.paused" || method === "Debugger.resumed")) {
       need(this.#viaMainEvents.length < 64, "VIA_MAIN_EVENT_BOUND");
       if (method === "Debugger.paused") {
@@ -752,6 +1016,35 @@ export class CurrentFootprintCopyMainBackendRunner {
         if (sqlSite !== undefined) { this.#captureSqlStartupPauseLocations(this.#pause, event.callFrames); this.#sqlHeld = this.#pause; }
       } else { empty.parse(input); need(this.#pause?.resumeAttempted === true && !this.#pause.resumed, "VIA_MAIN_UNRESERVED_RESUME"); this.#pause.resumed = true; }
       this.#viaMainEvents.push(Object.freeze({ method, params: freezeDeep(input) })); return;
+    }
+    if (this.#originActive && isCurrentFootprintForwardWriterMainCapability(this.#originCapability) && (method === "Debugger.paused" || method === "Debugger.resumed")) {
+      const held = this.#forwardWriterSqlPause;
+      if (method === "Debugger.resumed" && held !== null && !held.identity.resumed) {
+        empty.parse(input); need(held.identity.resumeAttempted && this.#pause === held.identity, "FORWARD_WRITER_SQL_UNRESERVED_RESUME"); held.identity.resumed = true; return;
+      }
+      if (method === "Debugger.paused") {
+        const event = currentFootprintForwardWriterMainMutationPauseSchema.parse(input), first = event.callFrames[0];
+        need(first !== undefined, "FORWARD_WRITER_SQL_FIRST_FRAME");
+        const sqlIds = event.hitBreakpoints.filter(id => this.#sqlBreakpoints.has(id));
+        if (sqlIds.length > 0) {
+          need(sqlIds.length === 1 && sqlIds[0] !== undefined, "FORWARD_WRITER_SQL_POINT_ROSTER");
+          const site = this.#sqlBreakpoints.get(sqlIds[0]); need(site !== undefined, "FORWARD_WRITER_SQL_SITE"); this.#sqlLocation(site, first.location);
+          const requestPoints = event.hitBreakpoints.filter(id => this.#originBreakpoints.has(id));
+          if (site === "driver" && requestPoints.length === 1 && requestPoints[0] !== undefined) {
+            // Both actual points belong to this same original driver. Preserve
+            // Its raw two-ID event locally; only the collector projection has
+            // The single point that its unchanged protocol owns.
+            need(event.hitBreakpoints.length === 2 && !this.#completionActive && this.#forwardWriterSqlDriverEvent === null, "FORWARD_WRITER_SQL_DRIVER_POINTS");
+            this.#forwardWriterSqlDriverEvent = freezeDeep(event);
+            input = { ...event, hitBreakpoints: [requestPoints[0]] };
+          } else {
+            need(event.hitBreakpoints.length === 1 && (site === "queryOne" || site === "run") && !this.#originPauseActive && !this.#originResumeExpected &&
+              (held === null || held.identity.resumed), "FORWARD_WRITER_SQL_UNEXPECTED_PAUSE");
+            const pause: Pause = { frameId: first.callFrameId, location: first.location, registration: false, sqlSite: site, resumeAttempted: false, resumed: false };
+            this.#pause = pause; this.#sqlHeld = pause; this.#forwardWriterSqlPause = { identity: pause, event }; return;
+          }
+        }
+      }
     }
     if ((this.#originActive || this.#structureActive) && (method === "Debugger.paused" || method === "Debugger.resumed")) {
       need(this.#originEvents.length < 64, "REQUEST_EVENT_BOUND");
@@ -789,12 +1082,48 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (method === "Debugger.paused") {
       need(this.#pause === null || this.#pause.resumed, "DUPLICATE_PAUSE"); const event = pauseSchema.parse(input), first = event.callFrames[0]; need(first !== undefined, "PAUSE_FRAME");
       const points = event.hitBreakpoints ?? [], sqlSite = points.length === 1 ? this.#sqlBreakpoints.get(points[0] ?? "") : undefined;
+      const forwardHeadSite = points.length === 1 ? this.#forwardHead?.site(points[0] ?? "", first.location) : null;
+      if (forwardHeadSite !== null && forwardHeadSite !== undefined) {
+        need(event.reason === "other", "FORWARD_HEAD_ORIGINAL_PAUSE");
+        this.#pause = { frameId: first.callFrameId, location: first.location, registration: false, forwardHeadSite, resumeAttempted: false, resumed: false }; return;
+      }
+      if (points.length === 1 && points[0] === this.#stockReadonlyPoint) {
+        need(this.#stockPending() && !this.#stockReadonlyDisarmed && this.#stockReadonlyPause === null && this.#stockRequests === 10 && event.reason === "other" &&
+          first.location.scriptId === this.#appScriptId && first.location.lineNumber === STOCK_READONLY.point.lineNumber && first.location.columnNumber === STOCK_READONLY.point.columnNumber,
+          "STOCK_READONLY_ORIGINAL_THROW_PAUSE");
+        const pause: Pause = { frameId: first.callFrameId, location: first.location, registration: false, stockReadonly: true, resumeAttempted: false, resumed: false };
+        this.#pause = pause; this.#stockReadonlyPause = pause; return;
+      }
       if (points.length === 1 && points[0] === this.#stockReturnPoint) {
         need(this.#stockOrigin !== null && !this.#stockCompleted && event.reason === "other" && first.location.scriptId === this.#appScriptId &&
           first.location.lineNumber === STOCK.returnPoint.lineNumber && first.location.columnNumber === STOCK.returnPoint.columnNumber, "STOCK_ORIGINAL_RETURN_PAUSE");
         const returned = z.strictObject({ type: z.literal("object"), subtype: z.literal("promise"), className: z.literal("Promise"), description: z.literal("Promise"), objectId: handle }).parse(first["returnValue"]);
         const pause: Pause = { frameId: first.callFrameId, location: first.location, registration: false, stockReturn: true, resumeAttempted: false, resumed: false };
         this.#pause = pause; this.#stockNativeReturns.set(pause, returned.objectId); return;
+      }
+      if (points.length === 1 && points[0] === this.#forwardWriterPostBranchPoint?.id) {
+        const site = BRANCH_SITE;
+        need(event.reason === "other" && first.location.scriptId === this.#appScriptId && first.location.lineNumber === site.lineNumber && first.location.columnNumber === site.columnNumber && this.#forwardWriterPostBranchPause === null, "FORWARD_WRITER_POST_BRANCH_ORIGINAL_PAUSE");
+        const pause: Pause = { frameId: first.callFrameId, location: first.location, registration: false, resumeAttempted: false, resumed: false };
+        this.#pause = pause; this.#forwardWriterPostBranchPause = Object.freeze({ identity: pause, raw: input }); return;
+      }
+      if (points.length === 1 && points[0] === this.#forwardWriterBranchPoint?.id) {
+        const site = BRANCH_SITE;
+        need(event.reason === "other" && first.location.scriptId === this.#appScriptId && first.location.lineNumber === site.lineNumber && first.location.columnNumber === site.columnNumber && this.#forwardWriterBranchPause === null, "FORWARD_WRITER_BRANCH_ORIGINAL_PAUSE");
+        const pause: Pause = { frameId: first.callFrameId, location: first.location, registration: false, resumeAttempted: false, resumed: false };
+        this.#pause = pause; this.#forwardWriterBranchPause = Object.freeze({ identity: pause, raw: input }); return;
+      }
+      if (points.length === 1 && points[0] === this.#forwardWriterLiveHistoryPoint?.id) {
+        const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
+        need(event.reason === "other" && first.location.scriptId === this.#appScriptId && first.location.lineNumber === site.lineNumber && first.location.columnNumber === site.columnNumber && this.#forwardWriterLiveHistoryPause === null, "FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_PAUSE");
+        const pause: Pause = { frameId: first.callFrameId, location: first.location, registration: false, resumeAttempted: false, resumed: false };
+        this.#pause = pause; this.#forwardWriterLiveHistoryPause = Object.freeze({ identity: pause, raw: input }); return;
+      }
+      if (points.length === 1 && points[0] === this.#forwardWriterMainHistoryPoint?.id) {
+        const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
+        need(event.reason === "other" && first.location.scriptId === this.#appScriptId && first.location.lineNumber === site.lineNumber && first.location.columnNumber === site.columnNumber && this.#forwardWriterMainHistoryPause === null, "FORWARD_WRITER_HISTORY_ORIGINAL_PAUSE");
+        const pause: Pause = { frameId: first.callFrameId, location: first.location, registration: false, resumeAttempted: false, resumed: false };
+        this.#pause = pause; this.#forwardWriterMainHistoryPause = Object.freeze({ identity: pause, raw: input }); return;
       }
       if (points.length === 1 && points[0] === this.#inverseMainHistoryPoint?.id) {
         const site = CURRENT_PCB_VIA_MAIN_LIVE_HISTORY_SITE;
@@ -867,6 +1196,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     const event = z.object({ method: z.string().max(128), params: z.unknown() }).strict().parse(value); this.#event(event.method, event.params);
   }
   async #pump(cleanup = false): Promise<void> {
+
     if (this.#viaMainOrigin === null) { await this.#pumpOriginal(cleanup); return; }
     if (this.#viaMainPoll !== null) { await this.#viaMainPoll; return; }
     const pending = this.#pumpOriginal(cleanup); this.#viaMainPoll = pending;
@@ -875,7 +1205,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #pumpOriginal(cleanup: boolean): Promise<void> {
     await this.#current(cleanup);
     if (this.#structureAllocation !== null) {
-      if (isCurrentFootprintForwardExecutionMainCapability(this.#originCapability)) {
+      if (isForwardAnyMainCapability(this.#originCapability)) {
         await this.#pumpForwardAllocation(this.#originCapability, this.#structureAllocation, cleanup); return;
       }
       // Only original allocation replies gain custody before the post-poll
@@ -886,15 +1216,15 @@ export class CurrentFootprintCopyMainBackendRunner {
       }, (error: unknown) => { this.#originUncertain = true; throw error; });
       await this.#current(cleanup); if (raw === "") { await delay(10); } return;
     }
-    const raw = isCurrentFootprintForwardExecutionMainCapability(this.#originCapability) ?
-      await pollCurrentFootprintForwardExecutionMain(this.#originCapability, this, cleanup) : await this.#transport.poll(cleanup);
+    const raw = isForwardAnyMainCapability(this.#originCapability) ?
+      await pollForwardAnyMain(this.#originCapability, this, cleanup) : await this.#transport.poll(cleanup);
     if (this.#viaMainOrigin !== null) { this.#chunk(raw); await this.#current(cleanup); if (raw === "") { await delay(10); } return; }
     await this.#current(cleanup); this.#chunk(raw); if (raw === "") { await delay(10); }
   }
   /** Register only this pending allocation's original byte receiver. A lost
    * native poll retains its callback until the actual late reply; another poll
    * cannot replace that custody. Native accounting still runs independently. */
-  async #pumpForwardAllocation(capability: CurrentFootprintForwardExecutionMainCapability, allocation: StructureAllocation, cleanup: boolean): Promise<void> {
+  async #pumpForwardAllocation(capability: ForwardAnyMainCapability, allocation: StructureAllocation, cleanup: boolean): Promise<void> {
     const previous = this.#forwardPoll;
     need(previous === null || previous.settled && previous.delivered, "FORWARD_ORIGINAL_POLL_PENDING");
     const poll: ForwardPoll = { allocation, delivered: false, settled: false, chunk: null,
@@ -910,7 +1240,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         "FORWARD_ORIGINAL_POLL_RETAINER");
     } }));
     try {
-      const raw = await pollCurrentFootprintForwardExecutionMain(capability, this, cleanup, poll.retain);
+      const raw = await pollForwardAnyMain(capability, this, cleanup, poll.retain);
       need(poll.delivered && poll.chunk === raw, "FORWARD_ORIGINAL_POLL_REPLY");
       await this.#current(cleanup); if (raw === "") { await delay(10); }
     } catch (error) { this.#originUncertain = true; throw error; }
@@ -951,24 +1281,30 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Consume one fixed request number and retain its sole pending reply.
    * Head-age exceptions are captured before success decoding; cleanup keeps
    * its own counter and cannot repeat a consumed normal request. */
-  async #request(input: Command | CurrentMainStartupLibraryCommand | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand | CurrentFootprintInverseMainHistoryCommand,
+  async #request(input: Command | CurrentFootprintForwardHeadMainCommand | CurrentMainStartupLibraryCommand | CurrentMainStartupLibraryReadonlyCommand | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand | CurrentFootprintInverseMainHistoryCommand | CurrentFootprintForwardWriterBranchCommand | CurrentFootprintForwardWriterMainMutationCommand,
     cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
+
     if (this.#viaMainOrigin !== null && this.#viaMainPoll !== null) { await this.#viaMainPoll; await this.#current(cleanup); }
+
+
+    const writerSql = input.phase.startsWith("forward-writer-sql-");
+    const branchRead = input.phase.startsWith("forward-writer-branch-");
     const inverseHistory = input.phase.startsWith("inverse-main-history-");
     const via = input.phase.startsWith("via-main-");
     const sqlFence = input.phase.startsWith("sql-fence-");
     const stock = isCurrentMainStartupLibraryPhase(input.phase);
+    const stockReadonly = input.phase.startsWith("sql-stock-readonly-");
     const collection = input.phase.startsWith("request-");
     const completion = input.phase.startsWith("completion-");
     const structure = input.phase.startsWith("structure-main-");
-    const forwardAllocation = isCurrentFootprintForwardExecutionMainCapability(this.#originCapability) &&
+    const forwardAllocation = isForwardAnyMainCapability(this.#originCapability) &&
       (collection && (input.phase === "request-driver-arm" || input.phase === "request-site-arm") ||
         completion && (input.phase === "completion-source-arm" || input.phase === "completion-callback-arm"));
     need(retainAllocationReply === undefined || !cleanup && (structure && input.phase === "structure-main-arm" || forwardAllocation), "STRUCTURE_ALLOCATION_CALLBACK");
     let cleanupCommand: boolean;
-    if (via || inverseHistory) { cleanupCommand = cleanup; }
-    else if (completion || structure) { cleanupCommand = ["Debugger.resume", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"].includes(input.method); }
+    if (writerSql || branchRead || via || inverseHistory || isCurrentFootprintForwardHeadMainCommand(input)) { cleanupCommand = cleanup; }
+    else if (completion || structure) { cleanupCommand = "method" in input && ["Debugger.resume", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"].includes(input.method); }
     else if (collection) { cleanupCommand = (CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES as readonly string[]).includes(input.phase); }
     else { cleanupCommand = !sqlFence && !stock && ["resume", "remove", "release"].includes(input.phase); }
     const normalMaximum = this.#structureAttempted ? CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeNormal + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.originIssueNormal + CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.normal : CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeNormal + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.originIssueNormal + CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS.normal +
@@ -976,12 +1312,20 @@ export class CurrentFootprintCopyMainBackendRunner {
     const cleanupMaximum = this.#structureAttempted ? CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeCleanup + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.releaseCleanup + CURRENT_PROJECT_STRUCTURE_MAIN_REQUESTS.cleanup : CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.observeCleanup + CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS.releaseCleanup + CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS.cleanup +
       (this.#completionToken === null ? 0 : CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.cleanup - 2);
     const initialMaximum = this.#selectedSqlBootstrap === null ? 64 : 72 + SQL_REQUESTS.normal + (this.#savedRegistrationEnrollment === null ? 0 : SAVED_CONFIG_REQUESTS);
-    const requestMaximum = cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum + (this.#inverseMainHistoryIntent === null ? 0 : INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total);
+    const fullLiveMaximum = inverseHistory && this.#forwardWriterLiveHistoryOrigin !== null ? requireCurrentFootprintForwardWriterLiveHistoryOrigin(this.#forwardWriterLiveHistoryOrigin,undefined,this).ordinaryRequestLimit : null;
+    const fullHistoryMaximum = this.#forwardWriterMainHistoryOrigin === null ? null : requireCurrentFootprintForwardWriterMainHistoryOrigin(this.#forwardWriterMainHistoryOrigin, this).ordinaryRequestLimit;
+    const fullStartupMaximum = originalCurrentFootprintForwardWriterMainRequestLimit(this.#selectedSqlBootstrap, this);
+    const fullBranchMaximum = branchRead ? this.#activeForwardWriterBranchBindings().ordinaryRequestLimit : null;
+    const requestMaximum = fullBranchMaximum ?? fullLiveMaximum ?? fullHistoryMaximum ?? fullStartupMaximum ?? (cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum + (this.#inverseMainHistoryIntent === null ? 0 : INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total));
     const ordinaryRequests = this.#requests - this.#stockRequests;
     let withinBound: boolean;
     if (stock) { withinBound = !cleanup && this.#stockOrigin !== null && this.#stockRequests < STOCK.requests; }
+    else if (branchRead) { withinBound = fullBranchMaximum !== null && ordinaryRequests < fullBranchMaximum; }
+    else if (inverseHistory && fullLiveMaximum !== null) { withinBound = this.#selectedSqlBootstrap !== null && ordinaryRequests < fullLiveMaximum; }
+    else if (inverseHistory && fullHistoryMaximum !== null) { withinBound = this.#selectedSqlBootstrap !== null && ordinaryRequests < fullHistoryMaximum; }
     else if (inverseHistory) { withinBound = this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null && ordinaryRequests < initialMaximum + INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total; }
     else if (via) { withinBound = this.#selectedSqlBootstrap !== null && this.#viaMainOrigin !== null && ordinaryRequests < initialMaximum + VIA_REQUESTS.total + VIA_STEPS.total + VIA_BEGIN.total + VIA_HISTORY.total + VIA_STRUCTURE.total + VIA_LIVE_HISTORY.total; }
+    else if (isCurrentFootprintForwardWriterMainCapability(this.#originCapability) && fullStartupMaximum !== null) { withinBound = ordinaryRequests < fullStartupMaximum; }
     else if (this.#originAttempted || this.#structureAttempted) { withinBound = ordinaryRequests < normalMaximum + cleanupMaximum && (cleanupCommand ? this.#cleanupRequests < cleanupMaximum : this.#normalRequests < normalMaximum); }
     else { withinBound = ordinaryRequests < requestMaximum; }
     need(this.#pendingId === null && withinBound, "REQUEST_BOUND");
@@ -990,9 +1334,36 @@ export class CurrentFootprintCopyMainBackendRunner {
     const allocation = retainAllocationReply === undefined ? null : { id, retain: retainAllocationReply, seen: false, stopped: false };
     if (allocation !== null) { need(this.#structureAllocation === null, "STRUCTURE_ALLOCATION_PENDING"); this.#structureAllocation = allocation; }
     try {
-    if (stock) {
+    if (writerSql) {
+      need(isCurrentFootprintForwardWriterMainCapability(this.#originCapability) && this.#forwardWriterSqlCommand === null, "FORWARD_WRITER_SQL_ORIGINAL_CAPABILITY");
+      const command = validateCurrentFootprintForwardWriterMainMutationCommand(input); let consumed = false;
+      this.#forwardWriterSqlCommand = { command, id, consume: (): void => { need(!consumed, "FORWARD_WRITER_SQL_COMMAND_CONSUMED"); consumed = true; } };
+      try { await requireCurrentFootprintForwardWriterMainNativeOwner(this.#originCapability,this,"normal").sendForwardWriterMainMutation(this.#originCapability,this,command,id);
+        need(consumed,"FORWARD_WRITER_SQL_NATIVE_CONSUMPTION"); } finally { this.#forwardWriterSqlCommand = null; }
+    } else if (this.#forwardHeadAgeActive) {
+      need(this.#forwardHeadBootstrap !== null, "FORWARD_HEAD_AGE_ORIGINAL_BOOTSTRAP");
+      const selected = validateCurrentFootprintForwardHeadAgeCommand({ phase: "forward-head-age", command: input });
+      this.#forwardHeadAgeCommand = selected; this.#forwardHeadAgeConsumed = false;
+      await sendCurrentFootprintForwardHeadAgeMainCommand(this.#forwardHeadBootstrap, this, selected, id);
+      need(this.#forwardHeadAgeConsumed, "FORWARD_HEAD_AGE_NATIVE_ACK");
+    } else if (isCurrentFootprintForwardHeadMainCommand(input)) {
+      need(this.#forwardHeadBootstrap !== null && this.#forwardHead !== null, "FORWARD_HEAD_ORIGINAL_BOOTSTRAP"); this.#forwardHeadActive = input; this.#forwardHeadConsumed = false;
+      await sendCurrentFootprintForwardHeadMainCommand(this.#forwardHeadBootstrap, this, input, id); need(this.#forwardHeadConsumed, "FORWARD_HEAD_NATIVE_ACK");
+    } else if (stockReadonly) {
+      need(this.#selectedSqlBootstrap !== null && this.#stockOrigin !== null && this.#stockReadonlyCommand === null, "STOCK_READONLY_ORIGINAL_BOOTSTRAP");
+      const command = validateCurrentMainStartupLibraryReadonlyCommand(input); this.#stockReadonlyCommand = command; this.#stockReadonlyRequests += 1;
+      try { await sendOriginalCurrentMainStartupLibraryReadonly(this.#selectedSqlBootstrap, this, this.#stockOrigin, command, id); }
+      finally { this.#stockReadonlyCommand = null; }
+    } else if (stock) {
       need(this.#selectedSqlBootstrap !== null && this.#stockOrigin !== null, "STOCK_ORIGINAL_BOOTSTRAP");
       await sendOriginalCurrentMainStartupLibrary(this.#selectedSqlBootstrap, this, this.#stockOrigin, validateCurrentMainStartupLibraryCommand(input), id);
+    } else if (branchRead) {
+      await this.#activeForwardWriterBranchBindings().send(validateCurrentFootprintForwardWriterBranchCommand(input),id);
+    } else if (inverseHistory && this.#forwardWriterLiveHistoryOrigin !== null) {
+      await requireCurrentFootprintForwardWriterLiveHistoryOrigin(this.#forwardWriterLiveHistoryOrigin,undefined,this).send(validateCurrentFootprintInverseMainHistoryCommand(input),id);
+    } else if (inverseHistory && this.#forwardWriterMainHistoryOrigin !== null) {
+      const bindings = requireCurrentFootprintForwardWriterMainHistoryOrigin(this.#forwardWriterMainHistoryOrigin, this);
+      await bindings.send(validateCurrentFootprintInverseMainHistoryCommand(input), id);
     } else if (inverseHistory) {
       need(this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null, "INVERSE_HISTORY_ORIGINAL_BOOTSTRAP");
       await sendOriginalCurrentFootprintInverseMainHistory(this.#selectedSqlBootstrap, this, validateCurrentFootprintInverseMainHistoryCommand(input), id);
@@ -1061,6 +1432,10 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Preserve the first cause and its bounded schema issues. Only privately
    * issued labels refine a schema failure; cleanup cannot replace that cause. */
   #fail(error: unknown): void {
+    this.failFootprintForwardWriterInitialHistory();
+    this.failFootprintForwardWriterBranchRead();
+    this.failFootprintForwardWriterPostBranchRead();
+    this.failFootprintForwardWriterLiveHistory();
     this.#failed = true; this.failFootprintInverseInitialHistory();
     if (this.#lastFailure !== null) { return; }
     if (error instanceof z.ZodError) { this.#lastFailure = issuedFailures.get(error) ?? "REPLY_SCHEMA"; this.#schemaIssues = schemaIssues(error); }
@@ -1075,6 +1450,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       empty.parse(await this.#request({ phase: "runtime-enable", method: "Runtime.enable", params: {} }));
       z.object({ debuggerId: handle }).strict().parse(await this.#request({ phase: "debugger-enable", method: "Debugger.enable", params: { maxScriptsCacheSize: 33_554_432 } }));
       if (this.#selectedSqlBootstrap !== null) { await this.#armSelectedSqlEarly(); }
+      if (this.#forwardHead !== null) { await this.#forwardHead.arm(); }
       const armed = z.object({ breakpointId: registrationId, locations: z.array(location).max(1) }).strict().parse(await this.#request({ phase: "registration-arm", method: "Debugger.setBreakpointByUrl", params: {
         urlRegex: URL_PATTERN, lineNumber: SOURCE.registration.https.lineNumber, columnNumber: SOURCE.registration.https.breakpointColumnNumber } }));
       this.#breakpoint = armed.breakpointId;
@@ -1082,11 +1458,12 @@ export class CurrentFootprintCopyMainBackendRunner {
       for (const actual of armed.locations) { this.#location(actual); }
       empty.parse(await this.#request({ phase: "run-waiting", method: "Runtime.runIfWaitingForDebugger", params: {} }));
       await this.#wait(() => this.#pause !== null); const first = this.#pause; need(first !== null, "INITIAL_PAUSE_REQUIRED");
-      if (!first.registration && first.sqlSite === undefined) {
+      if (!first.registration && first.sqlSite === undefined && first.forwardHeadSite === undefined) {
         if (this.#scripts.has(first.location.scriptId)) { await this.#qualify(first.location.scriptId); }
         this.#initialContinuationCount = 1; await this.#resume(first); await this.#wait(() => this.#pause !== first);
       }
       if (this.#selectedSqlBootstrap !== null) { await this.#startSelectedSqlFence(); }
+      if (this.#forwardHead !== null) { await this.#forwardHead.capture(); await this.#wait(() => this.#pause?.registration === true); }
       const registration = this.#pause; need(registration !== null && registration.registration && !registration.resumeAttempted, "REGISTRATION_REQUIRED");
       await this.#qualify(registration.location.scriptId);
       need(this.#resolved.some(record => record.breakpointId === this.#breakpoint && record.location.scriptId === registration.location.scriptId &&
@@ -1156,8 +1533,8 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #sqlResume(pause: Pause): Promise<void> {
     need(this.#selectedSqlBootstrap !== null && this.#pause === pause && (pause.sqlSite === "import" || pause.sqlSite === "afterImports" || this.#sqlApprovedConfigurations.has(pause) || this.#sqlApprovedReadRequests.has(pause) || this.#sqlGuardApprovals.has(pause)) &&
       !pause.resumeAttempted && !pause.resumed, "SELECTED_SQL_NO_MUTATION_GRANT"); pause.resumeAttempted = true;
-    const phase = this.#stockOrigin !== null && !this.#stockCompleted ? "sql-fence-startup-config-resume" : "sql-fence-resume";
-    if (phase === "sql-fence-startup-config-resume") { this.#requireStockInterleave(pause); need(this.#stockInterleaveConfigurations.has(pause) || this.#stockInterleaveReadOwners.has(pause) && this.#sqlGuardApprovals.has(pause), "STOCK_INTERLEAVE_APPROVAL"); }
+    const phase = this.#stockPending() ? "sql-fence-startup-config-resume" : "sql-fence-resume";
+    if (phase === "sql-fence-startup-config-resume") { this.#requireStockInterleave(pause); need(this.#stockInterleaveConfigurations.has(pause) || this.#stockInterleaveReadOwners.has(pause) && this.#sqlGuardApprovals.has(pause) || guardedStockLifecycleSite(pause.sqlSite) && this.#stockInterleaveGuardedLifecycle.has(pause) && this.#sqlGuardApprovals.has(pause), "STOCK_INTERLEAVE_APPROVAL"); }
     empty.parse(await this.#request({ phase, method: "Debugger.resume", params: {} })); await this.#wait(() => pause.resumed);
   }
   /** Classify one original held SQL pause with its retained module bindings.
@@ -1224,11 +1601,16 @@ export class CurrentFootprintCopyMainBackendRunner {
       const id = ids[index]; need(id !== undefined, "SELECTED_SQL_NATIVE_DATE_REQUIRED"); decodeCurrentFootprintCopyMainBackendNative(await this.#request({ phase: "sql-fence-properties", method: "Runtime.getProperties", params: {
         objectId: id, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } }), role);
     }
-    await this.#requireSelectedSqlCapture(); this.#sqlReady = true; await this.#sqlResume(after);
+    await this.#requireSelectedSqlCapture();
+    need(this.#selectedSqlBootstrap!==null&&this.#sqlCapture!==null&&this.#appScriptId!==null&&this.#appSource!==null&&this.#selectedUsersReadonlyFence===null,"SELECTED_USERS_ORIGINAL_FENCE");
+    this.#selectedUsersReadonlyFence=Object.freeze({bootstrap:this.#selectedSqlBootstrap,path:this.#selectedSqlPath,capture:this.#sqlCapture,
+      scriptId:this.#appScriptId,appSource:this.#appSource,points:Object.freeze([...this.#sqlBreakpoints].map(([id,site])=>Object.freeze([id,site]as const)))});
+    this.#sqlReady = true; await this.#sqlResume(after);
     await this.#wait(() => this.#pause !== after);
     while (this.#pause !== null && !this.#pause.registration) {
       const configuration = this.#pause;
-      if (configuration.stockReturn === true) { await this.#finishStartupLibrary(configuration); }
+      if (configuration.stockReadonly === true) { await this.#finishStartupLibraryReadonly(configuration); }
+      else if (configuration.stockReturn === true) { await this.#finishStartupLibrary(configuration); }
       else if (!await this.#configureStartupSql(configuration)) {
         await this.#captureStartupRefusal(configuration);
         if (configuration.sqlSite === "initializerBirth") { await this.#captureStartupPredicate(configuration); }
@@ -1240,10 +1622,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     // Every mutation stays paused until a distinct original request/SQL issuer
     // Proves that exact current call. This bootstrap publishes no such grant.
     need(this.#pause?.registration === true, "SELECTED_SQL_MUTATION_BEFORE_REGISTRATION");
-    if (this.#stockOrigin !== null && !this.#stockCompleted) {
+    if (this.#stockPending()) {
       const pause = this.#pause;
       need(this.#startupRegistration === null && this.#breakpoint === REGISTRATION_ID && this.#source !== null && this.#appSource !== null && this.#appScriptId !== null &&
-        this.#stockTracker !== null && this.#stockEnrollmentPause !== null && this.#stockReturnPoint !== null && this.#sqlCapture !== null && this.#startupConfigTracker !== null, "STOCK_REGISTRATION_ORIGINAL_REQUIRED");
+        this.#stockOrigin !== null && this.#stockTracker !== null && this.#stockEnrollmentPause !== null && this.#stockReturnPoint !== null && this.#sqlCapture !== null && this.#startupConfigTracker !== null, "STOCK_REGISTRATION_ORIGINAL_REQUIRED");
       this.#beginStockInterleave(pause);
       this.#startupRegistration = { pause, point: this.#breakpoint, location: canonicalJson(pause.location), source: this.#source, appSource: this.#appSource, scriptId: this.#appScriptId,
         stockOrigin: this.#stockOrigin, stockTracker: this.#stockTracker, stockEnrollment: this.#stockEnrollmentPause, stockPoint: this.#stockReturnPoint,
@@ -1266,14 +1648,15 @@ export class CurrentFootprintCopyMainBackendRunner {
     const special = command.phase.startsWith("sql-fence-startup-registration-");
     if (held === null) { need(!special, "STOCK_REGISTRATION_ORIGINAL_REQUIRED"); return; }
     this.#startupRegistrationSame();
-    if (!special && held.stage === 3 && held.acknowledged && this.#stockCompleted && this.#packet !== null && issued.get(this.#packet) === this) { return; }
+    if (!special && held.stage === 3 && held.acknowledged && !this.#stockPending() && this.#packet !== null && issued.get(this.#packet) === this) { return; }
     need(special || held.stage === 0, "STOCK_REGISTRATION_METADATA_CONSUMED");
     need(this.#busy && this.#packet === null && this.#pendingId !== null && this.#pendingId === requestId, "STOCK_REGISTRATION_PENDING_REQUIRED");
     if (command.phase === "sql-fence-startup-registration-complete") {
-      need(held.stage === 3 && this.#stockCompleted && this.#stockRequests === STOCK.requests && this.#removed && held.pause.resumed &&
-        this.#pause?.stockReturn === true && this.#pause.resumed && this.#stockCommandPause === this.#pause &&
+      const normal = this.#stockCompleted && this.#stockRequests === STOCK.requests && this.#pause?.stockReturn === true && this.#pause.resumed && this.#stockCommandPause === this.#pause;
+      const readonly = this.#stockReadonlyResumed && this.#stockReadonlyObserved !== null && this.#stockRequests === 10 && this.#stockReadonlyPause?.resumed === true;
+      need(held.stage === 3 && (normal || readonly) && this.#removed && held.pause.resumed &&
         command.params.objectId === held.sourceArray && command.params.arguments[0].objectId === held.retainedArray, "STOCK_REGISTRATION_RETURN_BARRIER");
-      this.#stockProgress.requireAllCallsConsumed();
+      if (normal) { this.#stockProgress.requireAllCallsConsumed(); }
     } else {
       this.#requireStockInterleave(held.pause);
       if (command.phase === "sql-fence-startup-registration-remove") {
@@ -1294,8 +1677,9 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (previous === undefined) { held.commands.set(this.#pendingId, command); }
     else { need(previous === command, "STOCK_REGISTRATION_PENDING_COMMAND_CHANGED"); }
   }
-  /** Resume only the captured registration, then service the same original
-   * stock invocation through its real normal return before the final reproof. */
+  /** Resume only the captured registration, then retain either that original
+   * stock invocation's normal return or its separately proven readonly
+   * rethrow/resumed outcome before the final registration reproof. */
   async #continueStartupRegistration(registration: Pause): Promise<void> {
     const held = this.#startupRegistration;
     need(held !== null && held.pause === registration && held.stage === 0 && this.#selectedSqlBootstrap !== null && held.sourceArray !== null && held.retainedArray !== null, "STOCK_REGISTRATION_CAPTURE_REQUIRED");
@@ -1303,10 +1687,11 @@ export class CurrentFootprintCopyMainBackendRunner {
     empty.parse(await this.#request({ phase: "sql-fence-startup-registration-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: REGISTRATION_ID } })); this.#removed = true;
     held.stage = 2; registration.resumeAttempted = true;
     empty.parse(await this.#request({ phase: "sql-fence-startup-registration-resume", method: "Debugger.resume", params: {} })); await this.#wait(() => registration.resumed);
-    while (!this.#stockCompleted) {
+    while (this.#stockPending()) {
       await this.#wait(() => this.#pause !== registration && this.#pause?.resumed === false);
       const pause = this.#pause; need(pause !== null && !pause.registration, "STOCK_REGISTRATION_UNEXPECTED_PAUSE");
-      if (pause.stockReturn === true) { await this.#finishStartupLibrary(pause); }
+      if (pause.stockReadonly === true) { await this.#finishStartupLibraryReadonly(pause); }
+      else if (pause.stockReturn === true) { await this.#finishStartupLibrary(pause); }
       else if (!await this.#configureStartupSql(pause)) { await this.#captureStartupRefusal(pause); need(false, "SELECTED_SQL_UNQUALIFIED_STARTUP_MUTATION"); }
     }
     this.#startupRegistrationSame(); held.stage = 3;
@@ -1624,19 +2009,28 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #configureStartupSql(pause: Pause): Promise<boolean> {
     const site = pause.sqlSite;
     need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#sqlCapture !== null && this.#sqlReady, "STARTUP_CONFIG_ORIGINAL_PAUSE");
-    const stockPending = this.#stockOrigin !== null && !this.#stockCompleted;
+    const stockPending = this.#stockPending();
     if (stockPending && (this.#originalStockContinuationLineage(pause) || this.#originalStockLineage(pause))) { await this.#continueStartupLibrary(pause, false); return true; }
     if (this.#stockOrigin === null && this.#startupConfigTracker !== null && this.#originalStockLineage(pause)) { await this.#continueStartupLibrary(pause, true); return true; }
     if (stockPending) { this.#beginStockInterleave(pause); }
     const classification = await this.#classifyCapturedSqlPause(pause);
     if (stockPending) { this.#requireStockInterleave(pause); }
     if (classification === "guard-passed") {
-      if (stockPending) {
+      if (stockPending && guardedStockLifecycleSite(site)) {
+        // The actual captured structural/HTTP frame passed its original guard.
+        // Preserve its separate approval without borrowing SQL read-owner custody.
+        this.#requireStockInterleave(pause); this.#stockInterleaveGuardedLifecycle.add(pause);
+      } else if (stockPending) {
         if (site !== "queryAll" && site !== "queryOne") {
           this.#captureStartupRefusalContext(pause, "site-outside-startup-profile");
         }
         need(site === "queryAll" || site === "queryOne", "STOCK_INTERLEAVE_READ_SITE"); const rawFrame = this.#sqlRawFrames.get(pause); need(rawFrame !== undefined && this.#startupConfigTracker !== null, "STOCK_INTERLEAVE_READ_FRAME");
-        sqlTrueReply.parse(await this.#request({ phase: "sql-fence-startup-read-owner", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, objectId: rawFrame, functionDeclaration: STOCK_READ_OWNER, arguments: [{ objectId: this.#startupConfigTracker }], returnByValue: true } }));
+        const argumentsValue: [{ objectId: string }] = [{ objectId: this.#startupConfigTracker }];
+        const params = { ...SQL_CALL, objectId: rawFrame, arguments: argumentsValue, returnByValue: true as const };
+        const reply = await this.#request(this.#originalStartupUserRead(pause)
+          ? { phase: "sql-fence-startup-user-read-owner", method: "Runtime.callFunctionOn", params: { ...params, functionDeclaration: USER_READ_OWNER } }
+          : { phase: "sql-fence-startup-read-owner", method: "Runtime.callFunctionOn", params: { ...params, functionDeclaration: STOCK_READ_OWNER } });
+        try { sqlTrueReply.parse(reply); } catch (error) { retainCurrentMainStartupReadOwnerFailure(error, reply); throw error; }
         this.#requireStockInterleave(pause); this.#stockInterleaveReadOwners.add(pause);
       }
       await this.#sqlResume(pause); return true;
@@ -1689,7 +2083,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Retain the exact still-pending stock receiver/cursor while a separate
    * original startup-config call is classified on the ordinary SQL budget. */
   #beginStockInterleave(pause: Pause): void {
-    need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#stockOrigin !== null && this.#stockTracker !== null && this.#stockEnrollmentPause !== null && this.#stockReturnPoint !== null && this.#stockCommandPause !== null && this.#stockCommandPause !== pause && this.#stockCommandPause.resumeAttempted && this.#stockCommandPause.resumed && !this.#stockCompleted && !this.#stockInterleaves.has(pause), "STOCK_INTERLEAVE_PENDING");
+    need(this.#pause === pause && !pause.resumeAttempted && !pause.resumed && this.#stockOrigin !== null && this.#stockTracker !== null && this.#stockEnrollmentPause !== null && this.#stockReturnPoint !== null && this.#stockCommandPause !== null && this.#stockCommandPause !== pause && this.#stockCommandPause.resumeAttempted && this.#stockCommandPause.resumed && !this.#stockCompleted && !this.#stockReadonlyResumed && !this.#stockInterleaves.has(pause), "STOCK_INTERLEAVE_PENDING");
     const progress = canonicalJson(this.#stockProgress.snapshot());
     const held = Object.freeze({ origin: this.#stockOrigin, tracker: this.#stockTracker, enrollment: this.#stockEnrollmentPause, command: this.#stockCommandPause, point: this.#stockReturnPoint, requests: this.#stockRequests, progress });
     this.#stockInterleaves.set(pause, held);
@@ -1697,7 +2091,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** No ordinary await may change or spend the pending original stock lane. */
   #requireStockInterleave(pause: Pause): void {
     this.#same(false); const held = this.#stockInterleaves.get(pause);
-    need(held !== undefined && this.#pause === pause && this.#stockOrigin === held.origin && this.#stockTracker === held.tracker && this.#stockEnrollmentPause === held.enrollment && this.#stockCommandPause === held.command && held.command.resumed && this.#stockReturnPoint === held.point && this.#stockRequests === held.requests && canonicalJson(this.#stockProgress.snapshot()) === held.progress && !this.#stockCompleted, "STOCK_INTERLEAVE_CHANGED");
+    need(held !== undefined && this.#pause === pause && this.#stockOrigin === held.origin && this.#stockTracker === held.tracker && this.#stockEnrollmentPause === held.enrollment && this.#stockCommandPause === held.command && held.command.resumed && this.#stockReturnPoint === held.point && this.#stockRequests === held.requests && canonicalJson(this.#stockProgress.snapshot()) === held.progress && !this.#stockCompleted && !this.#stockReadonlyResumed, "STOCK_INTERLEAVE_CHANGED");
   }
   /** Reprove the original approved config/read pause at every Core await and
    * actual submission. The consumed resume alone may observe its own resumed
@@ -1705,15 +2099,20 @@ export class CurrentFootprintCopyMainBackendRunner {
   public requireOriginalStartupInterleaveCommand(capability: CurrentSelectedFileMainSqlFenceBootstrap, command: CurrentSelectedFileMainSqlFenceCommand): void {
     need(this.#selectedSqlBootstrap === capability, "STOCK_INTERLEAVE_ORIGINAL_BOOTSTRAP");
     const pause = this.#pause;
-    if (pause === null || !this.#stockInterleaves.has(pause)) { need(command.phase !== "sql-fence-startup-read-owner" && command.phase !== "sql-fence-startup-config-resume", "STOCK_INTERLEAVE_REQUIRED"); return; }
+    if (pause === null || !this.#stockInterleaves.has(pause)) { need(command.phase !== "sql-fence-startup-read-owner" && command.phase !== "sql-fence-startup-user-read-owner" && command.phase !== "sql-fence-startup-config-resume", "STOCK_INTERLEAVE_REQUIRED"); return; }
     need(this.#busy && this.#sqlReady && this.#packet === null && this.#startupConfigTracker !== null && this.#pendingId !== null, "STOCK_INTERLEAVE_ORIGINAL_PAUSE"); this.#requireStockInterleave(pause);
     if (command.phase === "sql-fence-startup-config-resume") {
       let retained = this.#stockInterleaveResumeCommands.get(pause);
       if (retained === undefined) { need(!pause.resumed && pause.resumeAttempted, "STOCK_INTERLEAVE_FIRST_RESUME"); retained = Object.freeze({ command, requestId: this.#pendingId }); this.#stockInterleaveResumeCommands.set(pause, retained); }
       need(retained.command === command && retained.requestId === this.#pendingId, "STOCK_INTERLEAVE_RESUME_REQUEST_CHANGED");
     } else { need(!pause.resumed, "STOCK_INTERLEAVE_READ_AFTER_RESUME"); }
-    if (command.phase === "sql-fence-startup-read-owner") { need(!pause.resumeAttempted && this.#sqlGuardApprovals.has(pause) && (pause.sqlSite === "queryAll" || pause.sqlSite === "queryOne") && command.params.objectId === this.#sqlRawFrames.get(pause) && command.params.arguments[0].objectId === this.#startupConfigTracker, "STOCK_INTERLEAVE_READ_OWNER"); }
-    else if (command.phase === "sql-fence-startup-config-resume") { need(pause.resumeAttempted && (this.#stockInterleaveConfigurations.has(pause) || this.#sqlGuardApprovals.has(pause) && this.#stockInterleaveReadOwners.has(pause)), "STOCK_INTERLEAVE_APPROVED_RESUME"); }
+    if (command.phase === "sql-fence-startup-read-owner" || command.phase === "sql-fence-startup-user-read-owner") { need((command.phase !== "sql-fence-startup-user-read-owner" || this.#originalStartupUserRead(pause)) && !pause.resumeAttempted && this.#sqlGuardApprovals.has(pause) && (pause.sqlSite === "queryAll" || pause.sqlSite === "queryOne") && command.params.objectId === this.#sqlRawFrames.get(pause) && command.params.arguments[0].objectId === this.#startupConfigTracker, "STOCK_INTERLEAVE_READ_OWNER"); }
+    else if (command.phase === "sql-fence-startup-config-resume") { need(pause.resumeAttempted && (this.#stockInterleaveConfigurations.has(pause) || this.#sqlGuardApprovals.has(pause) && this.#stockInterleaveReadOwners.has(pause) || guardedStockLifecycleSite(pause.sqlSite) && this.#stockInterleaveGuardedLifecycle.has(pause) && this.#sqlGuardApprovals.has(pause)), "STOCK_INTERLEAVE_APPROVED_RESUME"); }
+  }
+  #originalStartupUserRead(pause: Pause): boolean {
+    const frames = this.#stockFrames.get(pause);
+    return this.#pause === pause && pause.sqlSite === "queryOne" && this.#appSource !== null && this.#appScriptId !== null && frames !== undefined &&
+      isCurrentMainStartupUserRead(this.#appSource, this.#appScriptId, frames);
   }
   #originalStockLineage(pause: Pause): boolean {
     const frames = this.#stockFrames.get(pause);
@@ -1755,6 +2154,68 @@ export class CurrentFootprintCopyMainBackendRunner {
       case "sql-stock-v2-resume": { need(pause.resumeAttempted && !pause.resumed, "STOCK_RESERVED_RESUME"); break; }
       default: { throw new Error("MAIN_STARTUP_LIBRARY_COMMAND_PHASE"); }
     }
+  }
+  /** A failure is settled only after the source-held original throw's own
+   * consumed resume and actual Debugger.resumed. It never becomes V2 success. */
+  #stockPending(): boolean { return this.#stockOrigin !== null && !this.#stockCompleted && !this.#stockReadonlyResumed; }
+  public requireOriginalStartupLibraryReadonlyCommand(capability: CurrentSelectedFileMainSqlFenceBootstrap, origin: CurrentMainStartupLibraryOrigin, command: CurrentMainStartupLibraryReadonlyCommand): void {
+    this.#same(false);
+    need(this.#selectedSqlBootstrap === capability && this.#stockOrigin === origin && this.#stockReadonlyCommand !== null && canonicalJson(this.#stockReadonlyCommand) === canonicalJson(command) &&
+      this.#busy && this.#sqlReady && this.#sqlCapture !== null && this.#startupConfigTracker !== null && this.#stockTracker !== null && this.#stockEnrollmentPause !== null &&
+      this.#appScriptId !== null && !this.#stockCompleted && !this.#stockReadonlyResumed && !this.#stockReadonlyDisarmed, "STOCK_READONLY_ORIGINAL_COMMAND");
+    const phase = command.phase;
+    if (phase === "sql-stock-readonly-points" || phase === "sql-stock-readonly-arm") {
+      need(this.#pause === this.#stockEnrollmentPause && this.#stockCommandPause === this.#pause && !this.#pause.resumeAttempted && !this.#pause.resumed && this.#stockRequests === 7 &&
+        (phase === "sql-stock-readonly-points" ? command.params.start.scriptId : command.params.location.scriptId) === this.#appScriptId, "STOCK_READONLY_ORIGINAL_ARM"); return;
+    }
+    if (phase === "sql-stock-readonly-disarm-normal") {
+      need(this.#pause?.stockReturn === true && this.#stockCommandPause === this.#pause && !this.#pause.resumeAttempted && !this.#pause.resumed && this.#stockReadonlyObserved === null &&
+        command.params.breakpointId === this.#stockReadonlyPoint, "STOCK_READONLY_NORMAL_RETURN"); this.#stockProgress.requireAllCallsConsumed(); return;
+    }
+    const pause = this.#stockReadonlyPause;
+    need(pause !== null && this.#pause === pause && pause.stockReadonly === true && !pause.resumed && this.#stockRequests === 10 &&
+      this.#stockCommandPause === this.#stockEnrollmentPause && this.#stockEnrollmentPause.resumed, "STOCK_READONLY_ORIGINAL_RETHROW");
+    if (phase === "sql-stock-readonly-frame") { need(!pause.resumeAttempted && command.params.callFrameId === pause.frameId && this.#stockReadonlyFrame === null, "STOCK_READONLY_ERROR_FRAME"); }
+    else if (phase === "sql-stock-readonly-proof") { need(!pause.resumeAttempted && command.params.objectId === this.#sqlCapturedFrames.get(this.#stockEnrollmentPause)?.result.objectId &&
+      command.params.arguments[0].objectId === this.#startupConfigTracker && command.params.arguments[1].objectId === this.#stockTracker && command.params.arguments[2].objectId === this.#stockReadonlyFrame, "STOCK_READONLY_ORIGINAL_ERROR_REFERENCES"); }
+    else {
+      need(this.#stockReadonlyObserved !== null, "STOCK_READONLY_ORIGINAL_ERROR_REQUIRED");
+      if (phase === "sql-stock-readonly-remove-return") { need(!pause.resumeAttempted && command.params.breakpointId === this.#stockReturnPoint, "STOCK_READONLY_REMOVE_RETURN"); }
+      else if (phase === "sql-stock-readonly-remove-failure") { need(!pause.resumeAttempted && command.params.breakpointId === this.#stockReadonlyPoint, "STOCK_READONLY_REMOVE_FAILURE"); }
+      else if (phase === "sql-stock-readonly-require") { need(!pause.resumeAttempted && command.params.objectId === this.#sqlCapture, "STOCK_READONLY_CAPTURE"); }
+      else { need(phase === "sql-stock-readonly-resume" && pause.resumeAttempted, "STOCK_READONLY_RESERVED_RESUME"); }
+    }
+  }
+  async #armStartupLibraryReadonly(): Promise<void> {
+    need(this.#appSource !== null && this.#appScriptId !== null && this.#stockReadonlyPoint === null, "STOCK_READONLY_ARM_ONCE");
+    qualifyCurrentMainStartupLibraryReadonlySource(this.#appSource);
+    const point = z.strictObject({ ...location.shape, type: z.enum(["return", "call", "debuggerStatement"]).optional() });
+    const points = z.strictObject({ locations: z.array(point).max(16) }).parse(await this.#request({ phase: "sql-stock-readonly-points", method: "Debugger.getPossibleBreakpoints", params: {
+      start: { scriptId: this.#appScriptId, ...STOCK_READONLY.start }, end: { scriptId: this.#appScriptId, ...STOCK_READONLY.end }, restrictToFunction: true } }));
+    need(points.locations.filter(value => value.scriptId === this.#appScriptId && value.lineNumber === STOCK_READONLY.point.lineNumber && value.columnNumber === STOCK_READONLY.point.columnNumber).length === 1, "STOCK_READONLY_ORIGINAL_THROW_POINT");
+    this.#stockReadonlyArming = true;
+    const armed = z.strictObject({ breakpointId: handle, actualLocation: location }).parse(await this.#request({ phase: "sql-stock-readonly-arm", method: "Debugger.setBreakpoint", params: {
+      location: { scriptId: this.#appScriptId, ...STOCK_READONLY.point }, condition: "true" } }));
+    need(armed.actualLocation.scriptId === this.#appScriptId && armed.actualLocation.lineNumber === STOCK_READONLY.point.lineNumber && armed.actualLocation.columnNumber === STOCK_READONLY.point.columnNumber &&
+      !this.#sqlBreakpoints.has(armed.breakpointId) && armed.breakpointId !== this.#stockReturnPoint && (this.#stockReadonlyResolution === null || this.#stockReadonlyResolution.breakpointId === armed.breakpointId), "STOCK_READONLY_ARM_LOCATION");
+    this.#stockReadonlyPoint = armed.breakpointId; this.#stockReadonlyArming = false;
+  }
+  async #finishStartupLibraryReadonly(pause: Pause): Promise<void> {
+    need(this.#pause === pause && pause === this.#stockReadonlyPause && pause.stockReadonly === true && !pause.resumeAttempted && !pause.resumed && this.#stockPending() &&
+      this.#stockRequests === 10 && this.#stockEnrollmentPause !== null && this.#stockTracker !== null && this.#startupConfigTracker !== null && this.#sqlCapture !== null &&
+      this.#stockReturnPoint !== null && this.#stockReadonlyPoint !== null && this.#stockReadonlyFrame === null && this.#stockReadonlyObserved === null, "STOCK_READONLY_ORIGINAL_FAILURE");
+    const errorFrame = objectReply.parse(await this.#request({ phase: "sql-stock-readonly-frame", method: "Debugger.evaluateOnCallFrame", params: { ...SQL_FRAME, callFrameId: pause.frameId, expression: STOCK_READONLY.frameExpression } }));
+    need(errorFrame.result.description === "Array(4)", "STOCK_READONLY_FOUR_ORIGINAL_ERROR_OPERANDS"); this.#stockReadonlyFrame = errorFrame.result.objectId;
+    const tuple = this.#sqlCapturedFrames.get(this.#stockEnrollmentPause); need(tuple !== undefined, "STOCK_READONLY_ORIGINAL_FIRST_RUN_TUPLE");
+    const proof = z.strictObject({ result: z.strictObject({ type: z.literal("object"), value: currentMainStartupLibraryReadonlyObservationSchema }) }).parse(await this.#request({
+      phase: "sql-stock-readonly-proof", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, objectId: tuple.result.objectId, functionDeclaration: STOCK_READONLY_PROOF,
+        arguments: [{ objectId: this.#startupConfigTracker }, { objectId: this.#stockTracker }, { objectId: errorFrame.result.objectId }], returnByValue: true } }));
+    this.#stockReadonlyObserved = Object.freeze(proof.result.value);
+    empty.parse(await this.#request({ phase: "sql-stock-readonly-remove-return", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#stockReturnPoint } }));
+    empty.parse(await this.#request({ phase: "sql-stock-readonly-remove-failure", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#stockReadonlyPoint } }));
+    sqlTrueReply.parse(await this.#request({ phase: "sql-stock-readonly-require", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, objectId: this.#sqlCapture, functionDeclaration: SQL_REQUIRE, arguments: [], returnByValue: true } }));
+    pause.resumeAttempted = true; empty.parse(await this.#request({ phase: "sql-stock-readonly-resume", method: "Debugger.resume", params: {} }));
+    await this.#wait(() => pause.resumed); this.#stockReadonlyResumed = true; this.#stockReadonlyDisarmed = true;
   }
   async #stockRequireCapture(): Promise<void> {
     need(this.#sqlCapture !== null, "STOCK_SQL_CAPTURE_REQUIRED");
@@ -1815,6 +2276,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       need(armed.actualLocation.scriptId === this.#appScriptId && armed.actualLocation.lineNumber === STOCK.returnPoint.lineNumber && armed.actualLocation.columnNumber === STOCK.returnPoint.columnNumber &&
         !this.#sqlBreakpoints.has(armed.breakpointId) && (this.#stockResolution === null || this.#stockResolution.breakpointId === armed.breakpointId), "STOCK_RETURN_ARM");
       this.#stockReturnPoint = armed.breakpointId; this.#stockArming = false;
+      await this.#armStartupLibraryReadonly();
     }
     need(this.#stockTracker !== null && lineage, "STOCK_TRACKER_REQUIRED");
     const selected = this.#capturedSqlFrame(pause, "run");
@@ -1834,6 +2296,8 @@ export class CurrentFootprintCopyMainBackendRunner {
     sqlTrueReply.parse(await this.#request({ phase: "sql-stock-v2-return", method: "Runtime.callFunctionOn", params: { ...SQL_CALL, throwOnSideEffect: false, objectId: returnedFrame.result.objectId,
       functionDeclaration: STOCK_RETURN, arguments: [{ objectId: this.#startupConfigTracker }, { objectId: this.#stockTracker }, { objectId: returned }, { objectId: nativePromise.resultObjectId }], returnByValue: true } }));
     empty.parse(await this.#request({ phase: "sql-stock-v2-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#stockReturnPoint } }));
+    need(this.#stockReadonlyPoint !== null && !this.#stockReadonlyDisarmed && this.#stockReadonlyObserved === null, "STOCK_READONLY_NORMAL_DISARM_REQUIRED");
+    empty.parse(await this.#request({ phase: "sql-stock-readonly-disarm-normal", method: "Debugger.removeBreakpoint", params: { breakpointId: this.#stockReadonlyPoint } })); this.#stockReadonlyDisarmed = true;
     await this.#stockRequireCapture(); await this.#stockResume(pause); this.#stockCompleted = true;
   }
   #requireSelectedRequestPause(pause: Pause): void {
@@ -1892,6 +2356,217 @@ export class CurrentFootprintCopyMainBackendRunner {
   public requireFootprintInverseInitialHistoryRows(ordinal: number): CurrentFootprintInverseMainHistoryRows {
     this.#same(false); const rows = this.#inverseMainHistoryRows[ordinal - 1]; need(Number.isSafeInteger(ordinal) && ordinal >= 1 && ordinal <= INVERSE_HISTORY.repetitions && rows !== undefined && this.#inverseMainHistoryIntent === this.originalFootprintInverseRegistrationCommandIntent(), "INVERSE_HISTORY_COMPLETION_REQUIRED"); return rows;
   }
+  /** Separate original full-only readonly branch issuer before any writer
+   * origin/clock. No injected row, method, callback or replacement owner. */
+  public issueForwardWriterBranchOrigin(capability: CurrentFootprintForwardWriterMainCapability): CurrentFootprintForwardWriterBranchOrigin {
+    need(this.#forwardWriterBranchOrigin === null && !this.#originAttempted && !this.#busy && this.#selectedSqlBootstrap !== null, "FORWARD_WRITER_BRANCH_ISSUE_ONCE");
+    const owner = requireCurrentFootprintForwardWriterMainNativeOwner(capability,this,"normal"), startup = requireOriginalCurrentFootprintForwardWriterStartup(owner,this);
+    const source = owner.originalFootprintForwardWriterSource(), target = source.owned.sourcePlan.source;
+    const origin: CurrentFootprintForwardWriterBranchOrigin = Object.freeze({ profile: "private.current-footprint-forward-writer-branch-origin.v1" });
+    const current = (): void => { need(requireCurrentFootprintForwardWriterMainNativeOwner(capability,this,"normal") === owner && requireOriginalCurrentFootprintForwardWriterStartup(owner,this) === startup && this.#forwardWriterBranchOrigin === origin && !this.#originAttempted, "FORWARD_WRITER_BRANCH_OWNER_CHANGED"); };
+    const maximum = originalCurrentFootprintForwardWriterMainRequestLimit(this.#selectedSqlBootstrap,this); need(maximum !== null, "FORWARD_WRITER_BRANCH_REQUEST_LIMIT");
+    const bindings = Object.freeze({ projectUuid: target.projectUuid,branchUuid:target.branchUuid,ordinaryRequestLimit:maximum,assertCurrent:current,
+      send: (command: CurrentFootprintForwardWriterBranchCommand,id: number): Promise<void> => owner.sendFootprintForwardWriterBranchRead(origin,this,command,id) });
+    this.#forwardWriterBranchOrigin = origin; branchOrigins.set(origin,Object.freeze({owner,runner:this,bindings,retained: (): CurrentFootprintForwardWriterBranchData => {
+      need(requireCurrentFootprintForwardWriterMainNativeOwner(capability,this,"normal") === owner && requireOriginalCurrentFootprintForwardWriterStartup(owner,this) === startup && this.#forwardWriterBranchOrigin === origin && this.#forwardWriterBranchResult !== null,"FORWARD_WRITER_BRANCH_ORIGINAL_RESULT"); return this.#forwardWriterBranchResult;
+    } })); current(); return origin;
+  }
+  #forwardWriterPostHistoryUuid: string | null = null;
+  #activeForwardWriterBranchBindings(): CurrentFootprintForwardWriterBranchBindings {
+    if (this.#forwardWriterPostBranchOrigin !== null) { return requireCurrentFootprintForwardWriterPostBranchOrigin(this.#forwardWriterPostBranchOrigin,undefined,this); }
+    need(this.#forwardWriterBranchOrigin !== null,"FORWARD_WRITER_BRANCH_ORIGINAL_ORIGIN"); return requireCurrentFootprintForwardWriterBranchOrigin(this.#forwardWriterBranchOrigin,undefined,this);
+  }
+  private requireFootprintForwardWriterBranchReadRetained(): CurrentFootprintForwardWriterBranchData {
+    need(this.#forwardWriterBranchOrigin !== null,"FORWARD_WRITER_BRANCH_ORIGINAL_RESULT"); const entry = branchOrigins.get(this.#forwardWriterBranchOrigin); need(entry !== undefined && entry.runner === this,"FORWARD_WRITER_BRANCH_ORIGINAL_RESULT"); return entry.retained();
+  }
+  /** The natural post-sync GET is armed only after this same full invocation's
+   * actual completion and cleanup. No second application GET is dispatched. */
+  public issueForwardWriterPostBranchOrigin(capability: CurrentFootprintForwardWriterMainCapability, completion: CurrentFootprintCopyMainCompletionRunner,
+    packet: CurrentFootprintForwardWriterMainCompletionObservation, beforeOrigin: CurrentFootprintForwardWriterBranchOrigin): CurrentFootprintForwardWriterPostBranchOrigin {
+    need(this.#forwardWriterPostBranchOrigin === null && !this.#busy && this.#completionRetirementAcknowledged && !this.#completionActive && !this.#originActive && !this.#completionFailed && this.#forwardWriterBranchOrigin === beforeOrigin && capability === this.#originCapability,"FORWARD_WRITER_POST_BRANCH_ISSUE_ONCE");
+    const owner = requireCurrentFootprintForwardWriterMainNativeOwner(capability,this,"normal"); const context = requireOriginalCurrentFootprintForwardWriterCompletionContext(completion,packet);
+    const original = completionOrigins.get(context.origin); need(original !== undefined && original.kind === "writer" && context.origin === this.#completionToken && original.bindings.transferredHeld === context.held,"FORWARD_WRITER_POST_BRANCH_ORIGINAL_COMPLETION");
+    const request = requireOriginalCurrentFootprintForwardWriterHeldContext(original.bindings.heldFinalPb); const before = requireOriginalCurrentFootprintForwardWriterBranchData(beforeOrigin,owner,this);
+    need(request.plan === context.held.plan && packet.value.backendActorUuid === request.actor.uuid && packet.value.historyUuid !== before.historyUuid,"FORWARD_WRITER_POST_BRANCH_ORIGINAL_BODY");
+    const origin: CurrentFootprintForwardWriterPostBranchOrigin = Object.freeze({profile:"private.current-footprint-forward-writer-post-branch-origin.v1"});
+    const current = (): void => { need(requireCurrentFootprintForwardWriterMainNativeOwner(capability,this,"normal") === owner && this.#forwardWriterPostBranchOrigin === origin && requireOriginalCurrentFootprintForwardWriterCompletionContext(completion,packet).held === context.held && requireOriginalCurrentFootprintForwardWriterBranchData(beforeOrigin,owner,this) === before && !this.#completionActive && !this.#completionFailed,"FORWARD_WRITER_POST_BRANCH_OWNER_CHANGED"); };
+    const maximum = originalCurrentFootprintForwardWriterMainRequestLimit(this.#selectedSqlBootstrap,this); need(maximum !== null,"FORWARD_WRITER_POST_BRANCH_REQUEST_LIMIT");
+    const bindings = Object.freeze({projectUuid:before.projectUuid,branchUuid:before.branchUuid,ordinaryRequestLimit:maximum,assertCurrent:current,send:(command:CurrentFootprintForwardWriterBranchCommand,id:number):Promise<void>=>owner.sendFootprintForwardWriterPostBranchRead(origin,this,command,id)});
+    this.#forwardWriterPostHistoryUuid = packet.value.historyUuid; this.#forwardWriterPostBranchOrigin = origin;
+    postBranchOrigins.set(origin,Object.freeze({owner,runner:this,bindings,retained:():CurrentFootprintForwardWriterBranchData=>{current();need(this.#forwardWriterPostBranchResult!==null,"FORWARD_WRITER_POST_BRANCH_ORIGINAL_RESULT");return this.#forwardWriterPostBranchResult;}}));current();return origin;
+  }
+  public async armFootprintForwardWriterPostBranchRead(origin: CurrentFootprintForwardWriterPostBranchOrigin): Promise<void> {
+    need(!this.#busy && this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#appScriptId !== null && this.#appSource !== null && this.#sqlCapture !== null && this.#viaMainOrigin === null && this.#sqlHeld === null && this.#forwardWriterPostBranchPoint === null && this.#forwardWriterPostBranchCollector === null, "FORWARD_WRITER_POST_BRANCH_ARM_ONCE");
+    const intent = origin;
+    const baseline = requireCurrentFootprintForwardWriterPostBranchOrigin(intent, undefined, this);
+    const record = postBranchOrigins.get(intent); need(record !== undefined, "FORWARD_WRITER_POST_BRANCH_ORIGINAL_ORIGIN");
+    const before = this.requireFootprintForwardWriterBranchReadRetained();
+    const historyUuid = this.#forwardWriterPostHistoryUuid; need(historyUuid !== null,"FORWARD_WRITER_POST_BRANCH_COMPLETION_REQUIRED");
+    const same = (): void => { this.#same(false); need(this.#forwardWriterPostBranchOrigin === intent && this.#selectedSqlBootstrap !== null && requireCurrentFootprintForwardWriterPostBranchOrigin(intent, undefined, this) === baseline, "FORWARD_WRITER_POST_BRANCH_OWNER_CHANGED"); };
+    const expected = Object.freeze({ projectUuid: baseline.projectUuid, branchUuid: baseline.branchUuid,
+      compare: (body: string): CurrentFootprintForwardWriterBranchData => { same(); return compareCurrentFootprintForwardWriterPostBranchData(before,historyUuid,body); } });
+    need(this.#forwardWriterPostBranchOrigin === intent, "FORWARD_WRITER_POST_BRANCH_ORIGINAL_ORIGIN");
+    qualifyCurrentFootprintForwardWriterBranchMainSource(this.#appSource); this.#busy = true;
+    const custody = new CurrentFootprintForwardWriterBranchCustody({ scriptId: this.#appScriptId, sqlCaptureObjectId: this.#sqlCapture, assertCurrent: same,
+      fail: (cause: unknown): void => { this.#fail(cause); },
+      expected: (): typeof expected => { same(); return expected; },
+      pause: (): CurrentPcbViaMainBeginPause => { same(); const held = this.#forwardWriterPostBranchPause; need(held !== null && held.identity === this.#pause, "FORWARD_WRITER_POST_BRANCH_HELD_REQUIRED");
+        return Object.freeze({ identity: held.identity, frameId: held.identity.frameId, raw: held.raw, sqlSite: null, pendingEvents: 0, resumed: held.identity.resumed, resumeAttempted: held.identity.resumeAttempted }); },
+      pendingRequestId: (): number | null => this.#pendingId, busy: (): boolean => this.#busy,
+      send: (command, cleanup): Promise<unknown> => this.#request(command, cleanup),
+      registerPoint: (id, actual): void => { need(this.#forwardWriterPostBranchPoint === null && (this.#forwardWriterPostBranchResolution === null || this.#forwardWriterPostBranchResolution.breakpointId === id) && !this.#sqlBreakpoints.has(id) && !this.#savedRegistrationBreakpoints.has(id), "FORWARD_WRITER_POST_BRANCH_POINT_ALIAS"); this.#forwardWriterPostBranchPoint = Object.freeze({ id, location: actual }); },
+      pointCurrent: (id): boolean => this.#forwardWriterPostBranchPoint?.id === id,
+      removePoint: (id): void => { need(this.#forwardWriterPostBranchPoint?.id === id, "FORWARD_WRITER_POST_BRANCH_ORIGINAL_REMOVE"); this.#forwardWriterPostBranchPoint = null; },
+      resume: async (identity, command): Promise<unknown> => { same(); const held = this.#forwardWriterPostBranchPause; need(held !== null && held.identity === identity && this.#pause === identity && !held.identity.resumed && !held.identity.resumeAttempted, "FORWARD_WRITER_POST_BRANCH_RESUME_ONCE");
+        held.identity.resumeAttempted = true; const result = await this.#request(command); await this.#wait(() => held.identity.resumed); same(); return result; } });
+    this.#forwardWriterPostBranchCustody = custody; const collector = new CurrentFootprintForwardWriterBranchCollector(custody, this.#sqlCapture); this.#forwardWriterPostBranchCollector = collector;
+    this.#forwardWriterPostBranchResolution = null; this.#forwardWriterPostBranchArming = true;
+    try { await collector.arm(this.#appScriptId); same(); } catch (error) { this.#fail(error); throw error; }
+    finally { this.#forwardWriterPostBranchArming = false; this.#busy = false; }
+  }
+  public consumeFootprintForwardWriterPostBranchCommand(origin: CurrentFootprintForwardWriterPostBranchOrigin, command: CurrentFootprintForwardWriterBranchCommand,id: number): void {
+    requireCurrentFootprintForwardWriterPostBranchOrigin(origin,undefined,this); need(this.#forwardWriterPostBranchOrigin === origin && this.#forwardWriterPostBranchCustody !== null,"FORWARD_WRITER_POST_BRANCH_ORIGINAL_CUSTODY"); this.#forwardWriterPostBranchCustody.consume(command,id);
+  }
+  public originalFootprintForwardWriterPostBranchCompletion(): Promise<CurrentFootprintForwardWriterBranchData | null> { need(this.#forwardWriterPostBranchOrigin !== null,"FORWARD_WRITER_POST_BRANCH_ORIGINAL_ORIGIN"); return this.#forwardWriterPostBranchSignal.promise; }
+  public requireFootprintForwardWriterPostBranchRead(origin: CurrentFootprintForwardWriterPostBranchOrigin): CurrentFootprintForwardWriterBranchData {
+    requireCurrentFootprintForwardWriterPostBranchOrigin(origin,undefined,this); need(this.#forwardWriterPostBranchOrigin === origin && this.#forwardWriterPostBranchResult !== null,"FORWARD_WRITER_POST_BRANCH_COMPLETION_REQUIRED"); return this.#forwardWriterPostBranchResult;
+  }
+  public failFootprintForwardWriterPostBranchRead(): void { this.#forwardWriterPostBranchSignal.resolve(null); }
+  public async armFootprintForwardWriterBranchRead(origin: CurrentFootprintForwardWriterBranchOrigin): Promise<void> {
+    need(!this.#busy && this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#appScriptId !== null && this.#appSource !== null && this.#sqlCapture !== null && this.#viaMainOrigin === null && this.#sqlHeld === null && this.#forwardWriterBranchPoint === null && this.#forwardWriterBranchCollector === null, "FORWARD_WRITER_BRANCH_ARM_ONCE");
+    const intent = origin;
+    const baseline = requireCurrentFootprintForwardWriterBranchOrigin(intent, undefined, this);
+    const record = branchOrigins.get(intent); need(record !== undefined, "FORWARD_WRITER_BRANCH_ORIGINAL_ORIGIN");
+    const startup = requireOriginalCurrentFootprintForwardWriterStartup(record.owner,this); const before = startup.head.before;
+    const same = (): void => { this.#same(false); need(this.#forwardWriterBranchOrigin === intent && this.#selectedSqlBootstrap !== null && requireCurrentFootprintForwardWriterBranchOrigin(intent, undefined, this) === baseline, "FORWARD_WRITER_BRANCH_OWNER_CHANGED"); };
+    const expected = Object.freeze({ projectUuid: baseline.projectUuid, branchUuid: baseline.branchUuid,
+      compare: (body: string): CurrentFootprintForwardWriterBranchData => { same(); return compareCurrentFootprintForwardWriterBranchData(before,baseline.projectUuid,baseline.branchUuid,body); } });
+    need(this.#forwardWriterBranchOrigin === intent, "FORWARD_WRITER_BRANCH_ORIGINAL_ORIGIN");
+    qualifyCurrentFootprintForwardWriterBranchMainSource(this.#appSource); this.#busy = true;
+    const custody = new CurrentFootprintForwardWriterBranchCustody({ scriptId: this.#appScriptId, sqlCaptureObjectId: this.#sqlCapture, assertCurrent: same,
+      fail: (cause: unknown): void => { this.#fail(cause); },
+      expected: (): typeof expected => { same(); return expected; },
+      pause: (): CurrentPcbViaMainBeginPause => { same(); const held = this.#forwardWriterBranchPause; need(held !== null && held.identity === this.#pause, "FORWARD_WRITER_BRANCH_HELD_REQUIRED");
+        return Object.freeze({ identity: held.identity, frameId: held.identity.frameId, raw: held.raw, sqlSite: null, pendingEvents: 0, resumed: held.identity.resumed, resumeAttempted: held.identity.resumeAttempted }); },
+      pendingRequestId: (): number | null => this.#pendingId, busy: (): boolean => this.#busy,
+      send: (command, cleanup): Promise<unknown> => this.#request(command, cleanup),
+      registerPoint: (id, actual): void => { need(this.#forwardWriterBranchPoint === null && (this.#forwardWriterBranchResolution === null || this.#forwardWriterBranchResolution.breakpointId === id) && !this.#sqlBreakpoints.has(id) && !this.#savedRegistrationBreakpoints.has(id), "FORWARD_WRITER_BRANCH_POINT_ALIAS"); this.#forwardWriterBranchPoint = Object.freeze({ id, location: actual }); },
+      pointCurrent: (id): boolean => this.#forwardWriterBranchPoint?.id === id,
+      removePoint: (id): void => { need(this.#forwardWriterBranchPoint?.id === id, "FORWARD_WRITER_BRANCH_ORIGINAL_REMOVE"); this.#forwardWriterBranchPoint = null; },
+      resume: async (identity, command): Promise<unknown> => { same(); const held = this.#forwardWriterBranchPause; need(held !== null && held.identity === identity && this.#pause === identity && !held.identity.resumed && !held.identity.resumeAttempted, "FORWARD_WRITER_BRANCH_RESUME_ONCE");
+        held.identity.resumeAttempted = true; const result = await this.#request(command); await this.#wait(() => held.identity.resumed); same(); return result; } });
+    this.#forwardWriterBranchCustody = custody; const collector = new CurrentFootprintForwardWriterBranchCollector(custody, this.#sqlCapture); this.#forwardWriterBranchCollector = collector;
+    this.#forwardWriterBranchResolution = null; this.#forwardWriterBranchArming = true;
+    try { await collector.arm(this.#appScriptId); same(); } catch (error) { this.#fail(error); throw error; }
+    finally { this.#forwardWriterBranchArming = false; this.#busy = false; }
+  }
+  public consumeFootprintForwardWriterBranchCommand(origin: CurrentFootprintForwardWriterBranchOrigin, command: CurrentFootprintForwardWriterBranchCommand,id: number): void {
+    requireCurrentFootprintForwardWriterBranchOrigin(origin,undefined,this); need(this.#forwardWriterBranchOrigin === origin && this.#forwardWriterBranchCustody !== null,"FORWARD_WRITER_BRANCH_ORIGINAL_CUSTODY"); this.#forwardWriterBranchCustody.consume(command,id);
+  }
+  public originalFootprintForwardWriterBranchCompletion(): Promise<CurrentFootprintForwardWriterBranchData | null> { need(this.#forwardWriterBranchOrigin !== null,"FORWARD_WRITER_BRANCH_ORIGINAL_ORIGIN"); return this.#forwardWriterBranchSignal.promise; }
+  public requireFootprintForwardWriterBranchRead(origin: CurrentFootprintForwardWriterBranchOrigin): CurrentFootprintForwardWriterBranchData {
+    requireCurrentFootprintForwardWriterBranchOrigin(origin,undefined,this); need(this.#forwardWriterBranchOrigin === origin && this.#forwardWriterBranchResult !== null,"FORWARD_WRITER_BRANCH_COMPLETION_REQUIRED"); return this.#forwardWriterBranchResult;
+  }
+  public failFootprintForwardWriterBranchRead(): void { this.#forwardWriterBranchSignal.resolve(null); }
+  /** Distinct full-writer issuer only. Four original same-head requests are armed one
+   * at a time before their worker response may continue. */
+  #forwardWriterLiveCompare: ((value:CurrentFootprintInverseMainHistoryRows)=>CurrentFootprintInverseMainHistoryRows) | null = null;
+  #compareForwardWriterLiveHistory(origin:CurrentFootprintForwardWriterLiveHistoryOrigin,value:CurrentFootprintInverseMainHistoryRows):CurrentFootprintInverseMainHistoryRows{
+    requireCurrentFootprintForwardWriterLiveHistoryOrigin(origin,undefined,this);need(this.#forwardWriterLiveHistoryOrigin===origin&&this.#forwardWriterLiveCompare!==null,"FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_COMPARISON");return this.#forwardWriterLiveCompare(value);
+  }
+  public issueForwardWriterLiveHistoryOrigin(capability:CurrentFootprintForwardWriterMainCapability,completion:CurrentFootprintCopyMainCompletionRunner,
+    packet:CurrentFootprintForwardWriterMainCompletionObservation,beforeOrigin:CurrentFootprintForwardWriterBranchOrigin,postOrigin:CurrentFootprintForwardWriterPostBranchOrigin):CurrentFootprintForwardWriterLiveHistoryOrigin{
+    need(this.#forwardWriterLiveHistoryOrigin===null&&!this.#busy&&capability===this.#originCapability&&this.#completionRetirementAcknowledged&&!this.#completionActive&&!this.#originActive&&!this.#completionFailed&&this.#forwardWriterMainHistoryRows.length===INVERSE_HISTORY.repetitions&&this.#forwardWriterBranchOrigin===beforeOrigin&&this.#forwardWriterPostBranchOrigin===postOrigin,"FORWARD_WRITER_LIVE_HISTORY_ISSUE_ONCE");
+    const owner=requireCurrentFootprintForwardWriterMainNativeOwner(capability,this,"normal"); const context=requireOriginalCurrentFootprintForwardWriterCompletionContext(completion,packet);
+    const original=completionOrigins.get(context.origin);need(original!==undefined&&original.kind==="writer"&&context.origin===this.#completionToken&&original.bindings.transferredHeld===context.held,"FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_COMPLETION");
+    const request=requireOriginalCurrentFootprintForwardWriterHeldContext(original.bindings.heldFinalPb); const startup=requireOriginalCurrentFootprintForwardWriterStartup(owner,this); const before=requireOriginalCurrentFootprintForwardWriterBranchData(beforeOrigin,owner,this); const post=postBranchOrigins.get(postOrigin);
+    need(post!==undefined&&post.owner===owner&&post.runner===this&&request.plan===context.held.plan&&request.plan.projectUuid===before.projectUuid&&request.plan.branchUuid===before.branchUuid&&packet.value.backendActorUuid===request.actor.uuid&&packet.value.historyUuid!==before.historyUuid,"FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_BODY");
+    const body=request.plan.dataStr; const historyUuid=packet.value.historyUuid; const documentUuid=currentFootprintForwardWriterCopyDocumentUuid(body); const bodySha256=sha256Text(body);
+    const initial=Object.freeze({projectUuid:before.projectUuid,branchUuid:before.branchUuid,documentUuid,historyUuid,initialHeadIndexBody:startup.data.flow.headIndex.body,historyBodySha256:bodySha256});
+    const result=Promise.resolve(Object.freeze({historyUuid,bodySha256})); const origin:CurrentFootprintForwardWriterLiveHistoryOrigin=Object.freeze({profile:"private.current-footprint-forward-writer-live-history-origin.v1"});
+    const current=():void=>{need(requireCurrentFootprintForwardWriterMainNativeOwner(capability,this,"normal")===owner&&this.#forwardWriterLiveHistoryOrigin===origin&&requireOriginalCurrentFootprintForwardWriterStartup(owner,this)===startup&&requireOriginalCurrentFootprintForwardWriterCompletionContext(completion,packet).held===context.held&&requireOriginalCurrentFootprintForwardWriterBranchData(beforeOrigin,owner,this)===before&&postBranchOrigins.get(postOrigin)===post&&!this.#completionActive&&!this.#completionFailed,"FORWARD_WRITER_LIVE_HISTORY_OWNER_CHANGED");post.bindings.assertCurrent();};
+    const maximum=originalCurrentFootprintForwardWriterMainRequestLimit(this.#selectedSqlBootstrap,this);need(maximum!==null,"FORWARD_WRITER_LIVE_HISTORY_REQUEST_LIMIT");
+    let data:CurrentFootprintForwardWriterLiveHistoryCacheData|null=null,first:CurrentFootprintInverseMainHistoryRows|null=null,prospective:CurrentPcbViaProspectiveSyncData|null=null;
+    const bindings:CurrentFootprintForwardWriterLiveHistoryBindings=Object.freeze({ordinaryRequestLimit:maximum,assertCurrent:current,historyResult:():Promise<Readonly<{historyUuid:string;bodySha256:string}>>=>{current();return result;},initial:():typeof initial=>{current();return initial;},
+      prospective:():CurrentPcbViaProspectiveSyncData=>{current();const observed=requireOriginalCurrentFootprintForwardWriterPostBranchData(postOrigin,owner,this);prospective??=Object.freeze({...initial,mode:"append",historyNum:0,branchBody:observed.body,actualHistoryRowsVerified:false,workerContinuationAuthorized:false});return prospective;},
+      liveData:async():Promise<CurrentFootprintForwardWriterLiveHistoryCacheData>=>{current();const rows=await this.#forwardWriterLiveHistoryFirst.promise;current();need(rows!==null&&this.#forwardWriterLiveHistoryRows[0]===rows,"FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_ROWS_REQUIRED");data??=deriveCurrentFootprintForwardWriterLiveHistoryCacheData({initialInput:startup.data.input,initialFlow:startup.data.flow,beforeBranch:before,postBranch:requireOriginalCurrentFootprintForwardWriterPostBranchData(postOrigin,owner,this),actor:request.actor,body,nativeRows:rows});current();return data;},
+      send:(command:CurrentFootprintInverseMainHistoryCommand,id:number):Promise<void>=>owner.sendFootprintForwardWriterLiveHistory(origin,this,command,id)});
+    this.#forwardWriterLiveHistoryOrigin=origin;this.#forwardWriterLiveCompare=(value):CurrentFootprintInverseMainHistoryRows=>{current();const observed=requireOriginalCurrentFootprintForwardWriterPostBranchData(postOrigin,owner,this); const compared=compareCurrentFootprintForwardWriterChangedHistory(startup.data.input,observed,value);if(first!==null){need(canonicalJson(first)===canonicalJson(compared),"FORWARD_WRITER_LIVE_HISTORY_CHANGED_BETWEEN_READS");}first??=compared;return compared;};
+    liveHistoryOrigins.set(origin,Object.freeze({owner,runner:this,bindings}));current();return origin;
+  }
+  public async armFootprintForwardWriterLiveHistory(origin: CurrentFootprintForwardWriterLiveHistoryOrigin, ordinal: number): Promise<void> {
+    need(!this.#busy && this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#appScriptId !== null && this.#appSource !== null && this.#sqlCapture !== null && this.#viaMainOrigin === null && this.#sqlHeld === null && this.#forwardWriterLiveHistoryPoint === null && ordinal === this.#forwardWriterLiveHistoryRows.length + 1 && ordinal === this.#forwardWriterLiveHistoryOrdinal + 1 && ordinal <= FULL_LIVE_HISTORY.repetitions, "FORWARD_WRITER_LIVE_HISTORY_ARM_ONCE");
+    const intent = origin;
+    const baseline = requireCurrentFootprintForwardWriterLiveHistoryOrigin(intent,undefined,this);
+    need(this.#forwardWriterLiveHistoryOrigin === intent,"FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_ORIGIN");
+    qualifyCurrentPcbViaMainLiveHistorySource(this.#appSource); this.#busy = true; this.#forwardWriterLiveHistoryOrdinal = ordinal; this.#forwardWriterLiveHistorySignals.set(ordinal, Promise.withResolvers<CurrentFootprintInverseMainHistoryRows | null>());
+    const same = (): void => { this.#same(false); need(this.#forwardWriterLiveHistoryOrigin === intent && this.#selectedSqlBootstrap !== null && requireCurrentFootprintForwardWriterLiveHistoryOrigin(intent,undefined,this) === baseline, "FORWARD_WRITER_LIVE_HISTORY_OWNER_CHANGED"); };
+    const initial = baseline.initial();
+    const expected = Object.freeze({projectUuid:initial.projectUuid,branchUuid:initial.branchUuid,historyUuid:initial.historyUuid,
+      compare:(value:CurrentFootprintInverseMainHistoryRows):CurrentFootprintInverseMainHistoryRows=>{same();return this.#compareForwardWriterLiveHistory(intent,value);}});
+    const custody = new CurrentFootprintForwardWriterLiveHistoryCustody({ scriptId: this.#appScriptId, sqlCaptureObjectId: this.#sqlCapture, assertCurrent: same,
+      fail: (cause: unknown): void => { this.#fail(cause); },
+      expected: (): typeof expected => { same(); return expected; },
+      pause: (): CurrentPcbViaMainBeginPause => { same(); const held = this.#forwardWriterLiveHistoryPause; need(held !== null && held.identity === this.#pause, "FORWARD_WRITER_LIVE_HISTORY_HELD_REQUIRED");
+        return Object.freeze({ identity: held.identity, frameId: held.identity.frameId, raw: held.raw, sqlSite: null, pendingEvents: 0, resumed: held.identity.resumed, resumeAttempted: held.identity.resumeAttempted }); },
+      pendingRequestId: (): number | null => this.#pendingId, busy: (): boolean => this.#busy,
+      send: (command, cleanup): Promise<unknown> => this.#request(command, cleanup),
+      registerPoint: (id, actual): void => { need(this.#forwardWriterLiveHistoryPoint === null && (this.#forwardWriterLiveHistoryResolution === null || this.#forwardWriterLiveHistoryResolution.breakpointId === id) && !this.#sqlBreakpoints.has(id) && !this.#savedRegistrationBreakpoints.has(id), "FORWARD_WRITER_LIVE_HISTORY_POINT_ALIAS"); this.#forwardWriterLiveHistoryPoint = Object.freeze({ id, location: actual }); },
+      pointCurrent: (id): boolean => this.#forwardWriterLiveHistoryPoint?.id === id,
+      removePoint: (id): void => { need(this.#forwardWriterLiveHistoryPoint?.id === id, "FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_REMOVE"); this.#forwardWriterLiveHistoryPoint = null; },
+      resume: async (identity, command): Promise<unknown> => { same(); const held = this.#forwardWriterLiveHistoryPause; need(held !== null && held.identity === identity && this.#pause === identity && !held.identity.resumed && !held.identity.resumeAttempted, "FORWARD_WRITER_LIVE_HISTORY_RESUME_ONCE");
+        held.identity.resumeAttempted = true; const result = await this.#request(command); await this.#wait(() => held.identity.resumed); same(); return result; } });
+    this.#forwardWriterLiveHistoryCustody = custody; const collector = new CurrentFootprintForwardWriterLiveHistoryCollector(custody, this.#sqlCapture); this.#forwardWriterLiveHistoryCollector = collector;
+    this.#forwardWriterLiveHistoryResolution = null; this.#forwardWriterLiveHistoryArming = true;
+    try { await collector.arm(this.#appScriptId); same(); } catch (error) { this.#fail(error); throw error; }
+    finally { this.#forwardWriterLiveHistoryArming = false; this.#busy = false; }
+  }
+  public consumeFootprintForwardWriterLiveHistory(origin: CurrentFootprintForwardWriterLiveHistoryOrigin, command: CurrentFootprintInverseMainHistoryCommand, id: number): void {
+    this.#same(false); need(this.#forwardWriterLiveHistoryCustody !== null && this.#forwardWriterLiveHistoryOrigin !== null && requireCurrentFootprintForwardWriterLiveHistoryOrigin(this.#forwardWriterLiveHistoryOrigin,undefined,this) !== undefined, "FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_CUSTODY"); need(this.#forwardWriterLiveHistoryOrigin === origin, "FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_ORIGIN"); this.#forwardWriterLiveHistoryCustody.consume(command, id);
+  }
+  /** Waits only on the original collector. It starts no second inspector poll. */
+  public originalFootprintForwardWriterLiveHistoryCompletion(ordinal: number): Promise<CurrentFootprintInverseMainHistoryRows | null> {
+    this.#same(false); const signal = this.#forwardWriterLiveHistorySignals.get(ordinal); need(signal !== undefined && this.#forwardWriterLiveHistoryOrigin !== null && requireCurrentFootprintForwardWriterLiveHistoryOrigin(this.#forwardWriterLiveHistoryOrigin,undefined,this) !== undefined, "FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_COMPLETION"); return signal.promise;
+  }
+  public failFootprintForwardWriterLiveHistory(): void { this.#forwardWriterLiveHistoryFirst.resolve(null); for (const signal of this.#forwardWriterLiveHistorySignals.values()) { signal.resolve(null); } }
+  public requireFootprintForwardWriterLiveHistoryRows(ordinal: number): CurrentFootprintInverseMainHistoryRows {
+    this.#same(false); const rows = this.#forwardWriterLiveHistoryRows[ordinal - 1]; need(Number.isSafeInteger(ordinal) && ordinal >= 1 && ordinal <= FULL_LIVE_HISTORY.repetitions && rows !== undefined && this.#forwardWriterLiveHistoryOrigin !== null && requireCurrentFootprintForwardWriterLiveHistoryOrigin(this.#forwardWriterLiveHistoryOrigin,undefined,this) !== undefined, "FORWARD_WRITER_LIVE_HISTORY_COMPLETION_REQUIRED"); return rows;
+  }
+  public async armFootprintForwardWriterInitialHistory(origin: CurrentFootprintForwardWriterMainHistoryOrigin, ordinal: number): Promise<void> {
+    need(!this.#busy && this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#appScriptId !== null && this.#appSource !== null && this.#sqlCapture !== null && this.#viaMainOrigin === null && this.#sqlHeld === null && this.#forwardWriterMainHistoryPoint === null && ordinal === this.#forwardWriterMainHistoryRows.length + 1 && ordinal === this.#forwardWriterMainHistoryOrdinal + 1 && ordinal <= INVERSE_HISTORY.repetitions, "FORWARD_WRITER_HISTORY_ARM_ONCE");
+    const intent = origin;
+    const baseline = requireCurrentFootprintForwardWriterMainHistoryOrigin(intent, this).baseline;
+    if (this.#forwardWriterMainHistoryBaseline === null) { this.#forwardWriterMainHistoryOrigin = intent; this.#forwardWriterMainHistoryBaseline = baseline; }
+    need(this.#forwardWriterMainHistoryOrigin === intent && this.#forwardWriterMainHistoryBaseline === baseline, "FORWARD_WRITER_HISTORY_ORIGINAL_BASELINE");
+    qualifyCurrentPcbViaMainLiveHistorySource(this.#appSource); this.#busy = true; this.#forwardWriterMainHistoryOrdinal = ordinal; this.#forwardWriterMainHistorySignals.set(ordinal, Promise.withResolvers<CurrentFootprintInverseMainHistoryRows | null>());
+    const same = (): void => { this.#same(false); need(this.#forwardWriterMainHistoryOrigin === intent && this.#selectedSqlBootstrap !== null && requireCurrentFootprintForwardWriterMainHistoryOrigin(intent, this).baseline === baseline, "FORWARD_WRITER_HISTORY_OWNER_CHANGED"); };
+    const custody = new CurrentFootprintInverseMainHistoryCustody({ scriptId: this.#appScriptId, sqlCaptureObjectId: this.#sqlCapture, assertCurrent: same,
+      expected: (): CurrentFootprintInverseMainHistoryBaseline => { same(); return baseline; },
+      pause: (): CurrentPcbViaMainBeginPause => { same(); const held = this.#forwardWriterMainHistoryPause; need(held !== null && held.identity === this.#pause, "FORWARD_WRITER_HISTORY_HELD_REQUIRED");
+        return Object.freeze({ identity: held.identity, frameId: held.identity.frameId, raw: held.raw, sqlSite: null, pendingEvents: 0, resumed: held.identity.resumed, resumeAttempted: held.identity.resumeAttempted }); },
+      pendingRequestId: (): number | null => this.#pendingId, busy: (): boolean => this.#busy,
+      send: (command, cleanup): Promise<unknown> => this.#request(command, cleanup),
+      registerPoint: (id, actual): void => { need(this.#forwardWriterMainHistoryPoint === null && (this.#forwardWriterMainHistoryResolution === null || this.#forwardWriterMainHistoryResolution.breakpointId === id) && !this.#sqlBreakpoints.has(id) && !this.#savedRegistrationBreakpoints.has(id), "FORWARD_WRITER_HISTORY_POINT_ALIAS"); this.#forwardWriterMainHistoryPoint = Object.freeze({ id, location: actual }); },
+      pointCurrent: (id): boolean => this.#forwardWriterMainHistoryPoint?.id === id,
+      removePoint: (id): void => { need(this.#forwardWriterMainHistoryPoint?.id === id, "FORWARD_WRITER_HISTORY_ORIGINAL_REMOVE"); this.#forwardWriterMainHistoryPoint = null; },
+      resume: async (identity, command): Promise<unknown> => { same(); const held = this.#forwardWriterMainHistoryPause; need(held !== null && held.identity === identity && this.#pause === identity && !held.identity.resumed && !held.identity.resumeAttempted, "FORWARD_WRITER_HISTORY_RESUME_ONCE");
+        held.identity.resumeAttempted = true; const result = await this.#request(command); await this.#wait(() => held.identity.resumed); same(); return result; } });
+    this.#forwardWriterMainHistoryCustody = custody; const collector = new CurrentFootprintInverseMainHistoryCollector(custody, this.#sqlCapture); this.#forwardWriterMainHistoryCollector = collector;
+    this.#forwardWriterMainHistoryResolution = null; this.#forwardWriterMainHistoryArming = true;
+    try { await collector.arm(this.#appScriptId); same(); } catch (error) { this.#fail(error); throw error; }
+    finally { this.#forwardWriterMainHistoryArming = false; this.#busy = false; }
+  }
+  public consumeFootprintForwardWriterInitialHistory(origin: CurrentFootprintForwardWriterMainHistoryOrigin, command: CurrentFootprintInverseMainHistoryCommand, id: number): void {
+    this.#same(false); need(this.#forwardWriterMainHistoryCustody !== null && this.#forwardWriterMainHistoryOrigin !== null && requireCurrentFootprintForwardWriterMainHistoryOrigin(this.#forwardWriterMainHistoryOrigin, this).baseline === this.#forwardWriterMainHistoryBaseline, "FORWARD_WRITER_HISTORY_ORIGINAL_CUSTODY"); need(this.#forwardWriterMainHistoryOrigin === origin, "FORWARD_WRITER_HISTORY_ORIGINAL_ORIGIN"); this.#forwardWriterMainHistoryCustody.consume(command, id);
+  }
+  /** Waits only on the original collector. It starts no second inspector poll. */
+  public originalFootprintForwardWriterInitialHistoryCompletion(ordinal: number): Promise<CurrentFootprintInverseMainHistoryRows | null> {
+    this.#same(false); const signal = this.#forwardWriterMainHistorySignals.get(ordinal); need(signal !== undefined && this.#forwardWriterMainHistoryOrigin !== null && requireCurrentFootprintForwardWriterMainHistoryOrigin(this.#forwardWriterMainHistoryOrigin, this).baseline === this.#forwardWriterMainHistoryBaseline, "FORWARD_WRITER_HISTORY_ORIGINAL_COMPLETION"); return signal.promise;
+  }
+  public failFootprintForwardWriterInitialHistory(): void { for (const signal of this.#forwardWriterMainHistorySignals.values()) { signal.resolve(null); } }
+  public requireFootprintForwardWriterInitialHistoryRows(ordinal: number): CurrentFootprintInverseMainHistoryRows {
+    this.#same(false); const rows = this.#forwardWriterMainHistoryRows[ordinal - 1]; need(Number.isSafeInteger(ordinal) && ordinal >= 1 && ordinal <= INVERSE_HISTORY.repetitions && rows !== undefined && this.#forwardWriterMainHistoryOrigin !== null && requireCurrentFootprintForwardWriterMainHistoryOrigin(this.#forwardWriterMainHistoryOrigin, this).baseline === this.#forwardWriterMainHistoryBaseline, "FORWARD_WRITER_HISTORY_COMPLETION_REQUIRED"); return rows;
+  }
   /** Original driver observation only. Matching JSON and another runner cannot
    * recreate it, and it provides no request/SQL continuation by itself. */
   public async observeSelectedMainRequest(): Promise<CurrentSelectedFileMainRequestObservation> {
@@ -1910,6 +2585,10 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #continueSelectedReadonlyRequest(packet: CurrentSelectedFileMainRequestObservation): Promise<void> {
     need(this.#selectedReadonlyRequest(packet) && this.#selectedReadonlyContinuations < 64, "SELECTED_REQUEST_NO_WRITE_GRANT"); const original = selectedRequestPackets.get(packet); need(original !== undefined, "SELECTED_REQUEST_ORIGINAL");
     if (this.#viaLiveHistoryCustody?.wantsReadonlyRequest(packet) === true) { need(this.#selectedRequestReader !== null, "VIA_LIVE_ORIGINAL_REQUEST_READER"); this.#viaLiveHistoryCustody.retainReadonlyRequest(packet, this.#selectedRequestReader.requireOriginalCapture(packet)); }
+    if (this.#forwardWriterPostBranchCustody?.wantsReadonlyRequest(packet) === true) { need(this.#selectedRequestReader !== null, "FORWARD_WRITER_POST_BRANCH_ORIGINAL_REQUEST_READER"); this.#forwardWriterPostBranchCustody.retainReadonlyRequest(packet,this.#selectedRequestReader.requireOriginalCapture(packet)); }
+    if (this.#forwardWriterBranchCustody?.wantsReadonlyRequest(packet) === true) { need(this.#selectedRequestReader !== null, "FORWARD_WRITER_BRANCH_ORIGINAL_REQUEST_READER"); this.#forwardWriterBranchCustody.retainReadonlyRequest(packet,this.#selectedRequestReader.requireOriginalCapture(packet)); }
+    if (this.#forwardWriterLiveHistoryCustody?.wantsReadonlyRequest(packet) === true) { need(this.#selectedRequestReader !== null, "FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_REQUEST_READER"); this.#forwardWriterLiveHistoryCustody.retainReadonlyRequest(packet, this.#selectedRequestReader.requireOriginalCapture(packet)); }
+    if (this.#forwardWriterMainHistoryCustody?.wantsReadonlyRequest(packet) === true) { need(this.#selectedRequestReader !== null, "FORWARD_WRITER_HISTORY_ORIGINAL_REQUEST_READER"); this.#forwardWriterMainHistoryCustody.retainReadonlyRequest(packet, this.#selectedRequestReader.requireOriginalCapture(packet)); }
     if (this.#inverseMainHistoryCustody?.wantsReadonlyRequest(packet) === true) { need(this.#selectedRequestReader !== null, "INVERSE_HISTORY_ORIGINAL_REQUEST_READER"); this.#inverseMainHistoryCustody.retainReadonlyRequest(packet, this.#selectedRequestReader.requireOriginalCapture(packet)); }
     this.#selectedReadonlyContinuations += 1; this.#sqlApprovedReadRequests.add(original.pause); await this.#sqlResume(original.pause);
     if (this.#sqlHeld === original.pause) { this.#sqlHeld = null; }
@@ -1936,6 +2615,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Same original cursor, no second inspector. A held write remains paused;
    * this method never treats its data as permission to continue native SQL. */
   public async pumpSelectedSqlFence(): Promise<void> {
+
     if (this.#viaMainOrigin !== null) {
       if (!this.#busy) { await this.#pump();
         if (!this.#busy) { const service = (async (): Promise<void> => { this.#busy = true;
@@ -1947,7 +2627,27 @@ export class CurrentFootprintCopyMainBackendRunner {
     this.#busy = true; try {
       await this.#current(); if (this.#sqlHeld !== null) { return; } await this.#pump();
       const pause = this.#pause;
-      if (pause !== null && !pause.resumed && this.#inverseMainHistoryPause?.identity === pause) {
+      if (pause !== null && !pause.resumed && this.#forwardWriterPostBranchPause?.identity === pause) {
+        need(this.#forwardWriterPostBranchCollector !== null && this.#forwardWriterPostBranchResult === null, "FORWARD_WRITER_POST_BRANCH_ORIGINAL_COLLECTOR");
+        const result = await this.#forwardWriterPostBranchCollector.observeHeld(pause.frameId); this.#same(false);
+        need(pause.resumed && this.#forwardWriterPostBranchPoint === null, "FORWARD_WRITER_POST_BRANCH_RELEASE_REQUIRED"); this.#forwardWriterPostBranchResult = result; this.#forwardWriterPostBranchPause = null; this.#forwardWriterPostBranchSignal.resolve(result);
+      }
+      else if (pause !== null && !pause.resumed && this.#forwardWriterBranchPause?.identity === pause) {
+        need(this.#forwardWriterBranchCollector !== null && this.#forwardWriterBranchResult === null, "FORWARD_WRITER_BRANCH_ORIGINAL_COLLECTOR");
+        const result = await this.#forwardWriterBranchCollector.observeHeld(pause.frameId); this.#same(false);
+        need(pause.resumed && this.#forwardWriterBranchPoint === null, "FORWARD_WRITER_BRANCH_RELEASE_REQUIRED"); this.#forwardWriterBranchResult = result; this.#forwardWriterBranchPause = null; this.#forwardWriterBranchSignal.resolve(result);
+      }
+      else if (pause !== null && !pause.resumed && this.#forwardWriterLiveHistoryPause?.identity === pause) {
+        need(this.#forwardWriterLiveHistoryCollector !== null && this.#forwardWriterLiveHistoryRows.length + 1 === this.#forwardWriterLiveHistoryOrdinal, "FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_COLLECTOR");
+        const rows = await this.#forwardWriterLiveHistoryCollector.observeHeld(pause.frameId); this.#same(false);
+        need(pause.resumed && this.#forwardWriterLiveHistoryPoint === null, "FORWARD_WRITER_LIVE_HISTORY_READ_RELEASE_REQUIRED"); this.#forwardWriterLiveHistoryRows.push(rows); this.#forwardWriterLiveHistoryPause = null; this.#forwardWriterLiveHistorySignals.get(this.#forwardWriterLiveHistoryOrdinal)?.resolve(rows); if (this.#forwardWriterLiveHistoryOrdinal === 1) { this.#forwardWriterLiveHistoryFirst.resolve(rows); }
+      }
+      else if (pause !== null && !pause.resumed && this.#forwardWriterMainHistoryPause?.identity === pause) {
+        need(this.#forwardWriterMainHistoryCollector !== null && this.#forwardWriterMainHistoryRows.length + 1 === this.#forwardWriterMainHistoryOrdinal, "FORWARD_WRITER_HISTORY_ORIGINAL_COLLECTOR");
+        const rows = await this.#forwardWriterMainHistoryCollector.observeHeld(pause.frameId); this.#same(false);
+        need(pause.resumed && this.#forwardWriterMainHistoryPoint === null, "FORWARD_WRITER_HISTORY_READ_RELEASE_REQUIRED"); this.#forwardWriterMainHistoryRows.push(rows); this.#forwardWriterMainHistoryPause = null; this.#forwardWriterMainHistorySignals.get(this.#forwardWriterMainHistoryOrdinal)?.resolve(rows);
+      }
+      else if (pause !== null && !pause.resumed && this.#inverseMainHistoryPause?.identity === pause) {
         need(this.#inverseMainHistoryCollector !== null && this.#inverseMainHistoryRows.length + 1 === this.#inverseMainHistoryOrdinal, "INVERSE_HISTORY_ORIGINAL_COLLECTOR");
         const rows = await this.#inverseMainHistoryCollector.observeHeld(pause.frameId); this.#same(false);
         need(pause.resumed && this.#inverseMainHistoryPoint === null, "INVERSE_HISTORY_READ_RELEASE_REQUIRED"); this.#inverseMainHistoryRows.push(rows); this.#inverseMainHistoryPause = null; this.#inverseMainHistorySignals.get(this.#inverseMainHistoryOrdinal)?.resolve(rows);
@@ -1994,6 +2694,14 @@ export class CurrentFootprintCopyMainBackendRunner {
       dataProgress: this.#stockProgress.snapshot(), originalNormalReturnProven: this.#stockCompleted, requests: this.#stockRequests,
       selectedProjectWriteGrant: false, executionAuthorized: false });
   }
+  /** Keep the persisted V2 stock projection exact. This separate fixed
+   * version exposes only retained evidence and never performs another read. */
+  public startupLibraryReadonlyState(): Readonly<z.infer<typeof currentMainStartupLibraryReadonlyStateSchema>> {
+    return freezeDeep(currentMainStartupLibraryReadonlyStateSchema.parse({ schema: "private.current-main-startup-library-readonly-state.v1",
+      pointIssued: this.#stockReadonlyPoint !== null, ordinaryRequests: this.#stockReadonlyRequests,
+      originalError: this.#stockReadonlyObserved, originalRethrowResumed: this.#stockReadonlyResumed,
+      normalReturnProven: false, successfulInitializationProven: false, retryAllowed: false, selectedProjectWriteGrant: false, executionAuthorized: false }));
+  }
   public selectedSqlFenceState(): Readonly<Record<string, unknown>> {
     return Object.freeze({ profile: "private.selected-file-main-sql-fence.v1", originalBootstrapRetained: this.#selectedSqlBootstrap !== null,
       ready: this.#sqlReady, conditionalBreakpoints: Math.max(0, this.#sqlBreakpoints.size - 2), nativePrimitivesReplaced: false,
@@ -2018,6 +2726,29 @@ export class CurrentFootprintCopyMainBackendRunner {
   public beginViaMainObservation(): Promise<Readonly<{ origin: CurrentPcbViaMainOrigin; bindings: CurrentPcbViaMainBackendBindings }>> {
     return this.#beginSelectedMainObservation(Object.freeze({ profile: "private.current-pcb-via-main-origin.v1" }));
   }
+
+
+  /** Retain a complete before-upload capacity and runtime-prerequisite join.
+   * This method dispatches no tail command. The V3 sender separately consumes
+   * that same original Source; preflight alone issues no write authority. */
+
+
+  /** Same original Source, real sixteen-reply prefix and passive renderer
+   * receipt must precede the one natural branch-return arm. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   public async beginSchematicRelevanceDisplaySaveMainObservation(): Promise<Readonly<{ origin: CurrentSchematicRelevanceDisplaySaveMainOrigin; bindings: CurrentSchematicRelevanceDisplaySaveMainBackendBindings }>> {
     const captured = await this.#beginSelectedMainObservation(Object.freeze({ profile: "private.current-schematic-relevance-display-save-main-origin.v1" }));
     const actual = captured.bindings;
@@ -2578,9 +3309,39 @@ export class CurrentFootprintCopyMainBackendRunner {
    * writer-v2 capability. This does not qualify clocks or enable a writer. */
   public async issueForwardExecutionRequestOrigin(capability: CurrentFootprintForwardExecutionMainCapability,
     packet: CurrentFootprintCopyMainBackendObservation): Promise<CurrentFootprintForwardMainRequestOrigin> {
+    need(this.#forwardHeadBootstrap === null, "FORWARD_HEAD_ONLY_RESERVATION");
     requireCurrentFootprintForwardExecutionMainCapability(capability, this);
     const token = await this.#issueRequestOrigin(capability, packet);
     need(token.profile === "private.current-footprint-forward-main-request-origin.v2", "FORWARD_REQUEST_ORIGINAL_OWNER"); return token;
+  }
+  public async issueForwardWriterRequestOrigin(capability:CurrentFootprintForwardWriterMainCapability,packet:CurrentFootprintCopyMainBackendObservation):Promise<CurrentFootprintForwardWriterMainRequestOrigin> {
+    requireCurrentFootprintForwardWriterMainCapability(capability,this);const token=await this.#issueRequestOrigin(capability,packet);
+    need(token.profile==="private.current-footprint-forward-writer-main-request-origin.v1","WRITER_REQUEST_ORIGINAL_OWNER");return token;
+  }
+  /** Resolve only this original full capability/origin before any arm. */
+  public requireForwardWriterRequestOrigin(capability:CurrentFootprintForwardWriterMainCapability,token:CurrentFootprintForwardWriterMainRequestOrigin):void{
+    requireCurrentFootprintForwardWriterMainCapability(capability,this);
+    need(capability===this.#originCapability&&token===this.#originToken,"WRITER_REQUEST_ORIGINAL_OWNER");this.#originCheck(token,false);
+  }
+  /** The original pre-import SQL fence stays installed until the sole Create.
+   * Its private initial tuple/points and irreversible resume marker provide
+   * continuity; neither serialized state nor a fresh boolean can replace them.
+   * No extra SQL or native request is issued here. */
+  public requireForwardWriterSelectedUsersReadContinuity(capability:CurrentFootprintForwardWriterMainCapability):void{
+    requireCurrentFootprintForwardWriterMainCapability(capability,this);this.#same(false);
+    const original=this.#selectedUsersReadonlyFence;
+    need(original!==null&&!this.#selectedUsersReadonlyFenceConsumed&&this.#sqlReady&&this.#selectedSqlBootstrap===original.bootstrap&&
+      this.#selectedSqlPath===original.path&&this.#sqlCapture===original.capture&&this.#appScriptId===original.scriptId&&this.#appSource===original.appSource&&
+      this.#sqlArming===null&&this.#sqlHeld===null&&this.#viaMainOrigin===null&&!this.#structureAttempted&&!this.#completionAttempted&&
+      !this.#busy&&this.#pendingId===null&&!this.#originPauseActive&&!this.#originResumeExpected&&!this.#originUncertain&&this.#originEvents.length===0&&
+      original.points.length===SQL_SITES.length+2&&this.#sqlBreakpoints.size===original.points.length&&
+      original.points.every(([id,site])=>this.#sqlBreakpoints.get(id)===site)&&original.points.some(([,site])=>site==="import")&&original.points.some(([,site])=>site==="afterImports")&&SQL_SITES.every(site=>original.points.some(([,originalSite])=>originalSite===site)),
+      "WRITER_SELECTED_USERS_READ_CONTINUITY");
+    need(requireCurrentSelectedFileMainSqlFenceBootstrap(original.bootstrap,this.#transport)===original.path,"WRITER_SELECTED_USERS_ORIGINAL_BOOTSTRAP");
+  }
+  public requireForwardWriterRequestArmed(capability:CurrentFootprintForwardWriterMainCapability,token:CurrentFootprintForwardWriterMainRequestOrigin):void {
+    requireCurrentFootprintForwardWriterMainCapability(capability,this);need(capability===this.#originCapability&&token===this.#originToken,"WRITER_REQUEST_ORIGINAL_OWNER");this.#originCheck(token,false);
+    need(!this.#busy&&this.#pendingId===null&&this.#originBreakpoints.size===Object.keys(CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES).length&&this.#originEvents.length===0&&!this.#originPauseActive&&!this.#originResumeExpected&&!this.#originUncertain&&!this.#originGroupReleased,"WRITER_REQUEST_ORIGINAL_ARM_REQUIRED");
   }
   async #issueRequestOrigin(capability: MainCapability, packet: CurrentFootprintCopyMainBackendObservation): Promise<MainRequestOrigin> {
     need(!this.#originAttempted && !this.#structureAttempted && !this.#busy && packet === this.#packet && issued.get(packet) === this &&
@@ -2591,9 +3352,8 @@ export class CurrentFootprintCopyMainBackendRunner {
     try {
       await this.#reprove(); mainCapability(capability, this); this.#same(false);
       this.#originSource = qualifyCurrentFootprintCopyMainRequestSource(this.#appSource);
-      const forward = isCurrentFootprintForwardExecutionMainCapability(capability);
-      const token = forward ? Object.freeze({ profile: "private.current-footprint-forward-main-request-origin.v2" as const, executionAuthorized: false as const }) :
-        Object.freeze({ profile: "private.current-footprint-copy-main-request-origin.v1" as const, executionAuthorized: false as const });
+      const forward = isForwardAnyMainCapability(capability);
+      const token=newMainRequestOrigin(capability);
       const bindings: CurrentFootprintForwardMainRequestOriginBindings = Object.freeze({ scriptId: this.#appScriptId,
         fail: (error: unknown): void => { if (forward && this.#originToken === token) { this.#fail(error); } },
         retainedArrayObjectId: this.#retainedArray, driverCallbackObjectId: this.#driverCallbackObjectId, qualifiedSource: this.#originSource,
@@ -2618,7 +3378,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         },
       });
       this.#originCapability = capability; this.#originToken = token; this.#originActive = true;
-      requestOrigins.set(token, Object.freeze({ kind: forward ? "forward" : "combined", assertOriginalEntry: (): void => { this.#originCheck(token, true); }, bindings, capability, runner: this })); return token;
+      requestOrigins.set(token, Object.freeze({ kind: mainOriginKind(capability), assertOriginalEntry: (): void => { this.#originCheck(token, true); }, bindings, capability, runner: this })); return token;
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   /** Synchronous identity join before any create. Equal receipts or an origin
@@ -2657,11 +3417,15 @@ export class CurrentFootprintCopyMainBackendRunner {
     const token = await this.#issueCompletionOrigin(capability, packet);
     need(token.profile === "private.current-footprint-forward-main-completion-origin.v2", "FORWARD_COMPLETION_ORIGINAL_OWNER"); return token;
   }
+  public async issueForwardWriterCompletionOrigin(capability:CurrentFootprintForwardWriterMainCapability,packet:CurrentFootprintCopyMainRequestHeldFinalPb):Promise<CurrentFootprintForwardWriterMainCompletionOrigin> {
+    requireCurrentFootprintForwardWriterMainCapability(capability,this);const token=await this.#issueCompletionOrigin(capability,packet);
+    need(token.profile==="private.current-footprint-forward-writer-main-completion-origin.v1","WRITER_COMPLETION_ORIGINAL_OWNER");return token;
+  }
   async #issueCompletionOrigin(capability: MainCapability, packet: CurrentFootprintCopyMainRequestHeldFinalPb): Promise<MainCompletionOrigin> {
     need(!this.#completionAttempted && !this.#busy && this.#originToken !== null && capability === this.#originCapability &&
       this.#appSource !== null && this.#appScriptId !== null && this.#originSource !== null, "COMPLETION_ORIGINAL_CONSTRUCTION_REQUIRED");
-    const forward = isCurrentFootprintForwardExecutionMainCapability(capability);
-    const held = requireCurrentFootprintCopyMainRequestHeldFinalPb(packet), originalToken = this.#originToken;
+    const forward = isForwardAnyMainCapability(capability);
+    const held = isCurrentFootprintForwardWriterMainCapability(capability) ? requireCurrentFootprintForwardWriterMainRequestHeldFinalPb(packet) : requireCurrentFootprintCopyMainRequestHeldFinalPb(packet); const originalToken = this.#originToken;
     need(held.qualifiedSource === this.#originSource && held.scriptId === this.#appScriptId &&
       held.retainedArrayObjectId === this.#retainedArray, "COMPLETION_ORIGINAL_HELD_OWNER");
     this.#originCheck(originalToken, false);
@@ -2670,7 +3434,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     this.#completionAttempted = true; this.#busy = true;
     try {
       await held.assertOriginal(); this.#originCheck(originalToken, false);
-      need(requireCurrentFootprintCopyMainRequestHeldFinalPb(packet) === held && this.#pendingId === null && this.#text === "" &&
+      need((isCurrentFootprintForwardWriterMainCapability(capability) ? requireCurrentFootprintForwardWriterMainRequestHeldFinalPb(packet) : requireCurrentFootprintCopyMainRequestHeldFinalPb(packet)) === held && this.#pendingId === null && this.#text === "" &&
         (!forward || this.#decoderPendingContinuations === 0 && this.#structureAllocation === null && !this.#structureAllocationUncertain) &&
         this.#originEvents.length === 0 && this.#originBreakpoints.size === 0 && this.#originPauseActive &&
         !this.#originResumeExpected && !this.#originUncertain && !this.#originGroupReleased, "COMPLETION_ORIGINAL_CURSOR");
@@ -2682,11 +3446,11 @@ export class CurrentFootprintCopyMainBackendRunner {
         !this.#originResumeExpected && !this.#originUncertain && !this.#originGroupReleased, "COMPLETION_ORIGINAL_CURSOR");
       // No await between consuming the exact old held lease and installing its
       // Sole new origin. The old collector cannot resume, release or retire it.
-      const transferredHeld = originalToken.profile === "private.current-footprint-forward-main-request-origin.v2" ?
-        transferCurrentFootprintForwardMainRequestHeldFinalPb(packet, originalToken) : transferCurrentFootprintCopyMainRequestHeldFinalPb(packet, originalToken);
-      need(transferredHeld === held, "COMPLETION_TRANSFER_IDENTITY");
-      const token = forward ? Object.freeze({ profile: "private.current-footprint-forward-main-completion-origin.v2" as const, executionAuthorized: false as const }) :
-        Object.freeze({ profile: "private.current-footprint-copy-main-completion-origin.v1" as const, executionAuthorized: false as const });
+      let transferredHeld:CurrentFootprintCopyMainRequestHeldFinalPbBindings;
+      if(originalToken.profile==="private.current-footprint-forward-writer-main-request-origin.v1") { transferredHeld=transferCurrentFootprintForwardWriterMainRequestHeldFinalPb(packet,originalToken); }
+      else if(originalToken.profile==="private.current-footprint-forward-main-request-origin.v2") { transferredHeld=transferCurrentFootprintForwardMainRequestHeldFinalPb(packet,originalToken); }
+      else { transferredHeld=transferCurrentFootprintCopyMainRequestHeldFinalPb(packet,originalToken); }
+      need(transferredHeld===held,"COMPLETION_TRANSFER_IDENTITY");const token=newMainCompletionOrigin(capability);
       this.#completionSource = source; this.#completionToken = token; this.#completionActive = true;
       const bindings: CurrentFootprintForwardMainCompletionOriginBindings = Object.freeze({ heldFinalPb: packet, transferredHeld,
         source, scriptId: held.scriptId,
@@ -2711,17 +3475,25 @@ export class CurrentFootprintCopyMainBackendRunner {
         takeEvent: (): CurrentFootprintCopyMainRequestOriginEvent | null => { this.#completionCheck(token, true); return this.#originEvents.shift() ?? null; },
         retire: (): Promise<void> => this.#completionRetire(token),
       });
-      completionOrigins.set(token, Object.freeze({ kind: forward ? "forward" : "combined", assertOriginalEntry: (): void => { this.#completionCheck(token, true); }, bindings })); return token;
+      if (isCurrentFootprintForwardWriterMainCapability(capability)) {
+        const owner = requireCurrentFootprintForwardWriterMainNativeOwner(capability,this,"normal");const before = this.#forwardWriterBranchOrigin;
+        need(before !== null && this.#sqlCapture !== null && this.#appScriptId !== null && this.#forwardWriterSqlReads === 1 && this.#forwardWriterSqlController === null, "FORWARD_WRITER_SQL_ORIGINAL_OPENING");
+        const original = requireOriginalCurrentFootprintForwardWriterHeldContext(packet);const branch = requireOriginalCurrentFootprintForwardWriterBranchData(before,owner,this);
+        need(original.origin === originalToken && branch.projectUuid === original.plan.projectUuid && branch.branchUuid === original.plan.branchUuid, "FORWARD_WRITER_SQL_ORIGINAL_CONTEXT");
+        this.#forwardWriterSqlController = new CurrentFootprintForwardWriterMainMutationController(this.#forwardWriterSqlHost(), {
+          before: owner.originalFootprintForwardWriterSource().owned.before, actorObjectId: transferredHeld.actorObjectId, sqlObjectId: transferredHeld.sqlObjectId, plan: original.plan, actor: original.actor, priorHistoryUuid: branch.historyUuid });
+      }
+      completionOrigins.set(token, Object.freeze({ kind: mainOriginKind(capability), assertOriginalEntry: (): void => { this.#completionCheck(token, true); }, bindings })); return token;
     } catch (error) { this.#completionFailed = true; this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   /** Poll only the retained original allocation once after its caller has
    * stopped. A late ID enters both original cleanup owners before any guard;
    * uncertainty never becomes normal eligibility or a replacement allocation. */
   async #settleOriginAllocation(token: MainRequestOrigin | MainCompletionOrigin, completion: boolean): Promise<void> {
-    need(isCurrentFootprintForwardExecutionMainCapability(this.#originCapability), "FORWARD_ALLOCATION_ORIGINAL");
+    need(isForwardAnyMainCapability(this.#originCapability), "FORWARD_ALLOCATION_ORIGINAL");
     const current = (): void => {
-      if (token.profile === "private.current-footprint-forward-main-completion-origin.v2") { need(completion, "FORWARD_ALLOCATION_ORIGINAL"); this.#completionCheck(token, true); }
-      else { need(!completion && token.profile === "private.current-footprint-forward-main-request-origin.v2", "FORWARD_ALLOCATION_ORIGINAL"); this.#originCheck(token, true); }
+      if ((token.profile === "private.current-footprint-forward-main-completion-origin.v2" || token.profile === "private.current-footprint-forward-writer-main-completion-origin.v1")) { need(completion, "FORWARD_ALLOCATION_ORIGINAL"); this.#completionCheck(token, true); }
+      else { need(!completion && (token.profile === "private.current-footprint-forward-main-request-origin.v2" || token.profile === "private.current-footprint-forward-writer-main-request-origin.v1"), "FORWARD_ALLOCATION_ORIGINAL"); this.#originCheck(token, true); }
     };
     current(); const allocation = this.#structureAllocation;
     if (allocation === null) { return; }
@@ -2742,12 +3514,12 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   async #completionCurrent(token: MainCompletionOrigin): Promise<void> {
     this.#completionCheck(token, false);
-    if (this.#originCapability !== null && isCurrentFootprintForwardExecutionMainCapability(this.#originCapability)) { await reproveCurrentFootprintForwardExecutionMainPublication(this.#originCapability, this); this.#completionCheck(token, false); }
+    if (this.#originCapability !== null && isForwardAnyMainCapability(this.#originCapability)) { await reproveForwardAnyMainPublication(this.#originCapability, this); this.#completionCheck(token, false); }
     await this.#current(); this.#completionCheck(token, false);
   }
   async #completionPump(token: MainCompletionOrigin, cleanup: boolean): Promise<void> {
     need(typeof cleanup === "boolean" && !this.#busy, "COMPLETION_ORIGINAL_BUSY"); this.#completionCheck(token, cleanup); this.#busy = true;
-    try { await this.#pump(cleanup); this.#completionCheck(token, cleanup); }
+    try { await this.#pump(cleanup); if (!cleanup) { await this.#serveForwardWriterSql(); } this.#completionCheck(token, cleanup); }
     catch (error) { this.#completionFailed = true; this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   async #completionRequest(token: MainCompletionOrigin, input: CurrentFootprintCopyMainCompletionCommand, cleanup: boolean,
@@ -2768,7 +3540,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       this.#originResumeExpected = true;
     }
     const allocation = command.phase === "completion-source-arm" || command.phase === "completion-callback-arm";
-    const forward = token.profile === "private.current-footprint-forward-main-completion-origin.v2";
+    const forward = (token.profile === "private.current-footprint-forward-main-completion-origin.v2" || token.profile === "private.current-footprint-forward-writer-main-completion-origin.v1");
     need(retainAllocationReply === undefined || forward && allocation && !cleanup, "FORWARD_ALLOCATION_CALLBACK");
     this.#busy = true; if (cleanup) { this.#completionCleanup += 1; } else { this.#completionNormal += 1; }
     const retain = forward && allocation ? (reply: unknown): void => {
@@ -2785,6 +3557,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         if (forward) { need(allocated !== null && this.#originBreakpoints.has(allocated) && !this.#structureAllocationUncertain, "COMPLETION_BREAKPOINT_ALLOCATION"); }
         else { need(allocated !== null && !this.#originBreakpoints.has(allocated), "COMPLETION_BREAKPOINT_ALLOCATION"); this.#originBreakpoints.add(allocated); }
       } else if (command.phase === "completion-remove") { empty.parse(result); this.#originBreakpoints.delete(command.params.breakpointId); }
+      else if (command.phase === "completion-join") { this.#forwardWriterSqlCompletionStage = command.stage; }
       else if (command.method === "Debugger.resume") { empty.parse(result); }
       else if (command.phase === "completion-release") { empty.parse(result); this.#originGroupReleased = true; }
       return result;
@@ -2794,6 +3567,10 @@ export class CurrentFootprintCopyMainBackendRunner {
    * Recheck the original cursor after its await, retaining cleanup ownership
    * and the actual acknowledgment if a late event/frame requires root exit. */
   #completionRetireQuiescence(): void {
+    if (isCurrentFootprintForwardWriterMainCapability(this.#originCapability)) {
+      need(this.#forwardWriterSqlReads === 3 && this.#forwardWriterSqlPause?.identity.resumed === true && this.#forwardWriterSqlCommand === null, "FORWARD_WRITER_SQL_NOT_SETTLED");
+      this.#forwardWriterSqlController?.requireComplete(); need(this.#forwardWriterSqlController !== null, "FORWARD_WRITER_SQL_ORIGINAL_CONTROLLER");
+    }
     need(!this.#completionFailed && this.#completionNormal === CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.normal &&
       this.#completionCleanup === CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS.cleanup && this.#originGroupReleased &&
       this.#originBreakpoints.size === 0 && !this.#originPauseActive && !this.#originResumeExpected && !this.#originUncertain &&
@@ -2823,6 +3600,50 @@ export class CurrentFootprintCopyMainBackendRunner {
     }
     this.#originActive = false;
   }
+  #forwardWriterSqlCurrent(): void {
+    need(isCurrentFootprintForwardWriterMainCapability(this.#originCapability) && this.#sqlCapture !== null && this.#appScriptId !== null && this.#selectedSqlBootstrap !== null, "FORWARD_WRITER_SQL_ORIGINAL_OWNER");
+    requireCurrentFootprintForwardWriterMainCapability(this.#originCapability,this); this.#same(false);
+    if (this.#completionActive) { need(this.#completionToken !== null, "FORWARD_WRITER_SQL_COMPLETION_TOKEN"); this.#completionCheck(this.#completionToken,false); }
+    else { need(this.#originToken !== null, "FORWARD_WRITER_SQL_REQUEST_TOKEN"); this.#originCheck(this.#originToken,false); }
+  }
+  #forwardWriterSqlHost(): Readonly<{ scriptId:string;capture:string;assertCurrent:()=>void;request:(command:CurrentFootprintForwardWriterMainMutationCommand)=>Promise<unknown>;resume:()=>Promise<void> }> {
+    this.#forwardWriterSqlCurrent(); need(this.#appScriptId !== null && this.#sqlCapture !== null, "FORWARD_WRITER_SQL_ORIGINAL_CAPTURE");
+    return {scriptId:this.#appScriptId,capture:this.#sqlCapture,assertCurrent:():void=>{this.#forwardWriterSqlCurrent();},
+      request:async(command):Promise<unknown>=>{
+        if(this.#completionActive){need(this.#completionToken!==null,"FORWARD_WRITER_SQL_COMPLETION_TOKEN");await this.#completionCurrent(this.#completionToken);}
+        else{need(this.#originToken!==null,"FORWARD_WRITER_SQL_REQUEST_TOKEN");await this.#originCurrent(this.#originToken);}
+        this.#forwardWriterSqlCurrent();return this.#request(command);
+      },
+      resume:async():Promise<void>=>{
+        if(this.#completionActive){need(this.#completionToken!==null,"FORWARD_WRITER_SQL_COMPLETION_TOKEN");await this.#completionCurrent(this.#completionToken);}
+        else{need(this.#originToken!==null,"FORWARD_WRITER_SQL_REQUEST_TOKEN");await this.#originCurrent(this.#originToken);}
+        this.#forwardWriterSqlCurrent();const held=this.#forwardWriterSqlPause;
+        need(held!==null&&this.#pause===held.identity&&!held.identity.resumeAttempted&&!held.identity.resumed,"FORWARD_WRITER_SQL_RESUME_CONSUMED");
+        held.identity.resumeAttempted=true;empty.parse(await this.#request({phase:"forward-writer-sql-step",method:"Debugger.resume",params:{}}));
+        await this.#wait(()=>held.identity.resumed);this.#forwardWriterSqlCurrent();need(this.#forwardWriterSqlPause===held,"FORWARD_WRITER_SQL_PAUSE_CHANGED");this.#sqlHeld=null;
+      }};
+  }
+  async #serveForwardWriterSql(): Promise<void> {
+    if (!isCurrentFootprintForwardWriterMainCapability(this.#originCapability)) { return; }
+    const held=this.#forwardWriterSqlPause;if(held===null||held.identity.resumed){return;}
+    this.#forwardWriterSqlCurrent();need(!held.identity.resumeAttempted&&this.#pause===held.identity,"FORWARD_WRITER_SQL_ORIGINAL_PAUSE");
+    if(held.identity.sqlSite==="queryOne"){
+      const ordinal=this.#forwardWriterSqlReads+1,stage=this.#forwardWriterSqlCompletionStage;
+      need(ordinal===1&&!this.#completionActive||ordinal===2&&stage==="save"||ordinal===3&&stage==="callback-enter","FORWARD_WRITER_SQL_READ_ORDER");
+      this.#forwardWriterSqlReads=ordinal;await continueCurrentFootprintForwardWriterReadonlySql(this.#forwardWriterSqlHost(),held.event,ordinal);
+    }else{
+      const controller=this.#forwardWriterSqlController;need(held.identity.sqlSite==="run"&&this.#completionActive&&controller!==null,"FORWARD_WRITER_SQL_WRITE_OWNER");
+      const role=controller.next,stage=this.#forwardWriterSqlCompletionStage;
+      need(role==="begin"&&stage==="transaction-enter"||["data","head","branch"].includes(role??"")&&stage==="append"||role==="commit"&&stage==="commit-enter"||role==="project"&&stage==="project-sql","FORWARD_WRITER_SQL_WRITE_ORDER");
+      await controller.continue(held.event);
+    }
+  }
+  /** Only the original private sender slot can be consumed by its same Core.
+   * A caller-created equal command or ID cannot obtain a native write. */
+  public consumeForwardWriterMainMutationCommand(capability:CurrentFootprintForwardWriterMainCapability,command:CurrentFootprintForwardWriterMainMutationCommand,id:number):void {
+    this.#forwardWriterSqlCurrent();const original=this.#forwardWriterSqlCommand;
+    need(capability===this.#originCapability&&original!==null&&original.command===command&&original.id===id&&this.#pendingId===id,"FORWARD_WRITER_SQL_ORIGINAL_COMMAND");original.consume();
+  }
   #originCheck(token: MainRequestOrigin, cleanup: boolean): void {
     need(!this.#completionActive, "COMPLETION_OWNS_MAIN");
     need(this.#originActive && token === this.#originToken && this.#originCapability !== null && this.#originSource !== null,
@@ -2841,13 +3662,13 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   async #originCurrent(token: MainRequestOrigin): Promise<void> {
     this.#originCheck(token, false);
-    if (this.#originCapability !== null && isCurrentFootprintForwardExecutionMainCapability(this.#originCapability)) { await reproveCurrentFootprintForwardExecutionMainPublication(this.#originCapability, this); this.#originCheck(token, false); }
+    if (this.#originCapability !== null && isForwardAnyMainCapability(this.#originCapability)) { await reproveForwardAnyMainPublication(this.#originCapability, this); this.#originCheck(token, false); }
     await this.#current(); this.#originCheck(token, false);
   }
   async #originPump(token: MainRequestOrigin, cleanup: boolean): Promise<void> {
     need(!this.#completionAttempted, "COMPLETION_TRANSFER_CONSUMED");
     need(typeof cleanup === "boolean" && !this.#busy, "REQUEST_ORIGINAL_BUSY"); this.#originCheck(token, cleanup); this.#busy = true;
-    try { await this.#pump(cleanup); this.#originCheck(token, cleanup); }
+    try { await this.#pump(cleanup); if (!cleanup) { await this.#serveForwardWriterSql(); } this.#originCheck(token, cleanup); }
     catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   async #originRequest(token: MainRequestOrigin, input: CurrentFootprintCopyMainRequestCollectCommand, cleanup: boolean,
@@ -2859,11 +3680,12 @@ export class CurrentFootprintCopyMainBackendRunner {
     if (command.phase === "request-resume") {
       // Although charged to cleanup, resume advances the original SQL path.
       // A v2 semantic refusal can retain removal custody, never resume it.
-      if (token.profile === "private.current-footprint-forward-main-request-origin.v2") { this.#originCheck(token, false); }
-      need(this.#originPauseActive && !this.#originResumeExpected, "REQUEST_ORIGINAL_RESUME_CONSUMED"); this.#originResumeExpected = true;
+      if ((token.profile === "private.current-footprint-forward-main-request-origin.v2" || token.profile === "private.current-footprint-forward-writer-main-request-origin.v1")) { this.#originCheck(token, false); }
+      need(this.#originPauseActive && !this.#originResumeExpected, "REQUEST_ORIGINAL_RESUME_CONSUMED");
+      this.#selectedUsersReadonlyFenceConsumed=true;this.#originResumeExpected = true;
     }
     const allocation = command.phase === "request-driver-arm" || command.phase === "request-site-arm";
-    const forward = token.profile === "private.current-footprint-forward-main-request-origin.v2";
+    const forward = (token.profile === "private.current-footprint-forward-main-request-origin.v2" || token.profile === "private.current-footprint-forward-writer-main-request-origin.v1");
     need(retainAllocationReply === undefined || forward && allocation && !cleanup, "FORWARD_ALLOCATION_CALLBACK");
     this.#busy = true;
     const retain = forward && allocation ? (reply: unknown): void => {
@@ -2926,4 +3748,46 @@ export function requireOriginalCurrentFootprintForwardMainPollRetainer(runner: C
   need(typeof retain === "function" && !types.isProxy(retain), "FORWARD_ORIGINAL_POLL_RETAINER");
   const original = forwardPollRetainers.get(retain);
   need(original !== undefined && original.runner === runner, "FORWARD_ORIGINAL_POLL_RETAINER"); original.requireOriginal();
+}
+
+export function isCurrentFootprintForwardWriterMainRequestOrigin(value:unknown):value is CurrentFootprintForwardWriterMainRequestOrigin { return value!==null&&typeof value==="object"&&!types.isProxy(value)&&requestOrigins.get(value)?.kind==="writer"; }
+export function requireCurrentFootprintForwardWriterMainRequestOrigin(token:CurrentFootprintForwardWriterMainRequestOrigin):CurrentFootprintForwardMainRequestOriginBindings {
+ const entry=requestOrigins.get(token);need(entry!==undefined&&entry.kind==="writer","WRITER_REQUEST_ORIGINAL_LEASE_REQUIRED");entry.assertOriginalEntry();return entry.bindings;
+}
+export function requireCurrentFootprintForwardWriterMainCompletionOrigin(token:CurrentFootprintForwardWriterMainCompletionOrigin):CurrentFootprintForwardMainCompletionOriginBindings {
+ const entry=completionOrigins.get(token);need(entry!==undefined&&entry.kind==="writer","WRITER_COMPLETION_ORIGINAL_LEASE_REQUIRED");entry.assertOriginalEntry();return entry.bindings;
+}
+
+export function isCurrentFootprintForwardWriterMainCompletionOrigin(value:unknown):value is CurrentFootprintForwardWriterMainCompletionOrigin { return value!==null&&typeof value==="object"&&!types.isProxy(value)&&completionOrigins.get(value)?.kind==="writer"; }
+export function requireCurrentFootprintForwardWriterMainRequestClockOrigin(token:CurrentFootprintForwardWriterMainRequestOrigin,clock:CurrentFootprintForwardWriterClockRpcOrigin):void {
+ const entry=requestOrigins.get(token);need(entry!==undefined&&entry.kind==="writer","WRITER_REQUEST_ORIGINAL_LEASE_REQUIRED");entry.assertOriginalEntry();
+ need(isCurrentFootprintForwardWriterMainCapability(entry.capability),"WRITER_REQUEST_ORIGINAL_CAPABILITY");requireCurrentFootprintForwardWriterPairedSchedule(entry.capability,entry.runner,clock);
+}
+
+/** Same original owner/runner only. An omitted owner is private Main lookup;
+ * the worker always supplies and rechecks its actual native receiver. */
+export function requireCurrentFootprintForwardWriterBranchOrigin(origin: CurrentFootprintForwardWriterBranchOrigin,
+ owner: CurrentFootprintForwardWriterNativeOwner | undefined, runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintForwardWriterBranchBindings {
+ const entry = branchOrigins.get(origin); need(entry !== undefined && entry.runner === runner && (owner === undefined || owner === entry.owner),"FORWARD_WRITER_BRANCH_ORIGINAL_ORIGIN"); entry.bindings.assertCurrent(); return entry.bindings;
+}
+
+/** Retained factual data after the readonly origin has spent its pre-Create
+ * lease. This never reopens that request or admits a continuation. */
+export function requireOriginalCurrentFootprintForwardWriterBranchData(origin: CurrentFootprintForwardWriterBranchOrigin,
+ owner: CurrentFootprintForwardWriterNativeOwner, runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintForwardWriterBranchData {
+ const entry = branchOrigins.get(origin); need(entry !== undefined && entry.runner === runner && entry.owner === owner,"FORWARD_WRITER_BRANCH_ORIGINAL_RESULT"); return entry.retained();
+}
+
+export function requireCurrentFootprintForwardWriterPostBranchOrigin(origin: CurrentFootprintForwardWriterPostBranchOrigin,
+ owner: CurrentFootprintForwardWriterNativeOwner | undefined, runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintForwardWriterBranchBindings {
+ const entry = postBranchOrigins.get(origin); need(entry !== undefined && entry.runner === runner && (owner === undefined || owner === entry.owner),"FORWARD_WRITER_POST_BRANCH_ORIGINAL_ORIGIN"); entry.bindings.assertCurrent(); return entry.bindings;
+}
+export function requireOriginalCurrentFootprintForwardWriterPostBranchData(origin: CurrentFootprintForwardWriterPostBranchOrigin,
+ owner: CurrentFootprintForwardWriterNativeOwner, runner: CurrentFootprintCopyMainBackendRunner): CurrentFootprintForwardWriterBranchData {
+ const entry = postBranchOrigins.get(origin); need(entry !== undefined && entry.runner === runner && entry.owner === owner,"FORWARD_WRITER_POST_BRANCH_ORIGINAL_RESULT"); return entry.retained();
+}
+
+export function requireCurrentFootprintForwardWriterLiveHistoryOrigin(origin:CurrentFootprintForwardWriterLiveHistoryOrigin,
+ owner:CurrentFootprintForwardWriterNativeOwner|undefined,runner:CurrentFootprintCopyMainBackendRunner):CurrentFootprintForwardWriterLiveHistoryBindings{
+ const entry=liveHistoryOrigins.get(origin);need(entry!==undefined&&entry.runner===runner&&(owner===undefined||owner===entry.owner),"FORWARD_WRITER_LIVE_HISTORY_ORIGINAL_ORIGIN");entry.bindings.assertCurrent();return entry.bindings;
 }

@@ -24,4 +24,5 @@ export interface CurrentFootprintCopyMainCompletionOriginBindings {
   readonly takeEvent: () => Readonly<{ method: "Debugger.paused" | "Debugger.resumed"; params: unknown }> | null;
   readonly retire: () => Promise<void>;
 }
+// oxlint-disable-next-line import/no-cycle -- Only later original completion issuance resolves this retained backend class; module initialization creates no owner or completion authority.
 export { requireCurrentFootprintCopyMainCompletionOrigin } from "./current-footprint-copy-main-backend-runner.ts";

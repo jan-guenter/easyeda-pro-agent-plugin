@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath,
-  updateOperation, verifyExactManagedArtifact, writePhaseArtifact } from "./artifacts.ts";
+  repairExactManagedArtifactDurability, repairOperationPublicationDurability, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import type { ArtifactDescriptor, OperationJournal } from "./artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, sha256Text } from "./core.ts";
 import type { UnknownRecord } from "./core.ts";
@@ -164,13 +164,15 @@ export async function readCurrentFootprintForwardExecutionOpeningHistory(operati
   const operation = await loadOperation(operationId), records = parse(operation);
   return freezeDeep({ operation, records });
 }
-const scan = createOperationScanner((operation): Readonly<{ operationId: string; settled: boolean }> | undefined => {
+/** Pure parsed summary for the shared fresh launch scan; grants no ownership. */
+export function projectCurrentFootprintForwardExecutionOpeningLaunchState(operation: UnknownRecord): Readonly<{ operationId: string; settled: boolean }> | undefined {
   const id = operation["operationId"], plan = operation["plan"];
   if (!(typeof id === "string" && id.startsWith(PREFIX)) && !(isRecord(plan) && plan["profile"] === PROFILE)) { return undefined; }
   need(typeof id === "string" && isRecord(plan), "RESERVED_OPERATION");
   const parsed = parse(operation); const last = parsed.at(-1);
   return { operationId: id, settled: last !== undefined && TERMINAL.has(last.kind) };
-});
+}
+const scan = createOperationScanner(projectCurrentFootprintForwardExecutionOpeningLaunchState);
 /** Every empty, partial or failed v2 journal blocks another native launch. */
 export async function assertNoUnresolvedCurrentFootprintForwardExecutionOpenings(): Promise<void> {
   for (const operation of await scan()) {
@@ -286,13 +288,17 @@ export class CurrentFootprintForwardExecutionOpeningJournal {
     }
     need(pending !== null, "ORIGINAL_PENDING_REQUIRED");
     need(core(actual) === core(this.#operation) || core(actual) === core(pending.next), "PUBLICATION_CHANGED");
-    try { await verifyExactManagedArtifact(pending.descriptor); }
+    try { await repairExactManagedArtifactDurability(pending.descriptor); }
     catch (error) {
       if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) { throw error; }
       const written = await writePhaseArtifact(this.#request.operationId, pending.entry.sequence, pending.entry.kind, pending.entry);
       need(canonicalJson(written) === canonicalJson(pending.descriptor), "ARTIFACT_CHANGED");
+      await repairExactManagedArtifactDurability(pending.descriptor);
     }
     if (core(actual) !== core(pending.next)) { await updateOperation(pending.next); }
+    // A matching renamed manifest can still lack its original parent sync.
+    // Settle only the original sealed bytes before clearing this pending step.
+    await repairOperationPublicationDurability(pending.next);
     actual = await loadOperation(this.#request.operationId); parse(actual); need(core(actual) === core(pending.next), "PUBLICATION_CHANGED");
     this.#operation = pending.next; this.#pending = null;
   }

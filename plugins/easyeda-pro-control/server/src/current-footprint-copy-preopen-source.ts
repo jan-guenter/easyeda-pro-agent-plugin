@@ -10,9 +10,9 @@ import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
 import type { Inventory } from "./closed-sql-equality.ts";
 // oxlint-disable-next-line import/no-cycle -- The raw reader consumes only the original native snapshot and never supplies a replaceable authority callback.
-import { requireCurrentFootprintCopyClosedSnapshot, requireCurrentFootprintForwardExecutionClosedSnapshot } from "./current-footprint-copy-closed-snapshot.ts";
+import { requireCurrentFootprintCopyClosedSnapshot, requireCurrentFootprintForwardExecutionClosedSnapshot, requireCurrentFootprintForwardWriterClosedSnapshot, requireCurrentFootprintForwardWriterSavedClosedSnapshot, requireCurrentFootprintInverseClosedSnapshot } from "./current-footprint-copy-closed-snapshot.ts";
 import type { CurrentFootprintCopyClosedSnapshot, CurrentFootprintCopyClosedSourceIdentity } from "./current-footprint-copy-closed-snapshot.ts";
-import type { CurrentFootprintCopyGenerationOwner, CurrentFootprintForwardExecutionNativeOwner } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintCopyGenerationOwner, CurrentFootprintForwardExecutionNativeOwner, CurrentFootprintForwardWriterHeldSavedNativeOwner, CurrentFootprintForwardWriterNativeOwner, CurrentFootprintInverseNativeOwner } from "./current-pcb-diagnostic-owner.ts";
 
 const CHUNK_BYTES = 1_048_576, MAX_BYTES = 268_435_456n;
 interface Directory { readonly absolute: string; readonly handle: FileHandle; readonly info: BigIntStats }
@@ -131,6 +131,39 @@ export async function verifyCurrentFootprintForwardExecutionPosteditPreopenSourc
   };
   const observed = await verifySource(snapshot, current); current();
   return Object.freeze({ ...observed, profile: "private.current-footprint-forward-execution-preopen-source.v1", sourceMatchesClosedPostedit: true });
+}
+export interface CurrentFootprintForwardWriterPreopenSourceObservation extends SourceObservation{
+ readonly profile:"private.current-footprint-forward-writer-preopen-source.v1";readonly sourceMatchesClosedPostedit:true;
+}
+/** Original complete writer bytes only; no owner or open grant is transferred. */
+export async function verifyCurrentFootprintForwardWriterPosteditPreopenSource(owner:CurrentFootprintForwardWriterNativeOwner,inventory:Inventory):Promise<Readonly<CurrentFootprintForwardWriterPreopenSourceObservation>>{
+ const snapshot=requireCurrentFootprintForwardWriterClosedSnapshot(owner,inventory);
+ const current=():void=>{need(requireCurrentFootprintForwardWriterClosedSnapshot(owner,inventory)===snapshot,"Full footprint preopen original snapshot changed.");};
+ const observed=await verifySource(snapshot,current);current();
+ return Object.freeze({...observed,profile:"private.current-footprint-forward-writer-preopen-source.v1",sourceMatchesClosedPostedit:true});
+}
+export interface CurrentFootprintForwardWriterSavedPreopenSourceObservation extends SourceObservation{
+ readonly profile:"private.current-footprint-forward-writer-saved-preopen-source.v1";readonly sourceMatchesClosedPostedit:true;
+}
+export async function verifyCurrentFootprintForwardWriterSavedPosteditPreopenSource(owner:CurrentFootprintForwardWriterHeldSavedNativeOwner,inventory:Inventory):Promise<Readonly<CurrentFootprintForwardWriterSavedPreopenSourceObservation>>{
+ const snapshot=requireCurrentFootprintForwardWriterSavedClosedSnapshot(owner,inventory);
+ const current=():void=>{need(requireCurrentFootprintForwardWriterSavedClosedSnapshot(owner,inventory)===snapshot,"Full saved footprint preopen original snapshot changed.");};
+ const observed=await verifySource(snapshot,current);current();return Object.freeze({...observed,profile:"private.current-footprint-forward-writer-saved-preopen-source.v1",sourceMatchesClosedPostedit:true});
+}
+export interface CurrentFootprintInverseNativeDeletePreopenSourceObservation extends SourceObservation {
+  readonly profile: "private.current-footprint-inverse-native-delete-preopen-source.v1";
+  readonly sourceMatchesClosedPostedit: true;
+}
+/** Exact native inverse closed bytes. This is a point-in-time file proof;
+ * it grants no old checkpoint adoption, cache replay exclusion or cold owner. */
+export async function verifyCurrentFootprintInverseNativeDeletePosteditPreopenSource(owner: CurrentFootprintInverseNativeOwner,
+  inventory: Inventory): Promise<Readonly<CurrentFootprintInverseNativeDeletePreopenSourceObservation>> {
+  const snapshot = requireCurrentFootprintInverseClosedSnapshot(owner, inventory);
+  const current = (): void => {
+    need(requireCurrentFootprintInverseClosedSnapshot(owner, inventory) === snapshot, "Native inverse preopen original snapshot changed.");
+  };
+  const observed = await verifySource(snapshot, current); current();
+  return Object.freeze({ ...observed, profile: "private.current-footprint-inverse-native-delete-preopen-source.v1", sourceMatchesClosedPostedit: true });
 }
 async function verifySource(copy: SourceBinding, current: () => void): Promise<Readonly<SourceObservation>> {
   current();

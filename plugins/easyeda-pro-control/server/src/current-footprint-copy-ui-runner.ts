@@ -1,3 +1,6 @@
+import { CurrentFootprintCopyClockRegistrationV2Runner } from "./current-footprint-copy-clock-registration-v2-runner.ts";
+import type { CurrentFootprintCopyClockRegistrationV2Transport } from "./current-footprint-copy-clock-registration-v2-runner.ts";
+import type { CurrentFootprintCopyClockRegistrationV2Command } from "./current-footprint-copy-clock-registration-v2-contract.ts";
 /* oxlint-disable import/max-dependencies -- This retained owner joins the separate UI/preload source contracts, strict metadata, fixed transport and its two source-bound child owners. */
 /** Retained copy-source UI route observation. No responder, getter, lazy
  * initializer, RPC, create or Save is called. A mounted copy-purpose channel
@@ -239,6 +242,20 @@ export class CurrentFootprintCopyUiRunner {
       request: (command: CurrentFootprintCopyClockRegistrationCommand): Promise<unknown> => { same(); need(command.sessionId === this.#binding.sessionId); return transport.request(command); },
     });
     return new CurrentFootprintCopyClockRegistrationRunner(this.#source, original, { sessionId: this.#binding.sessionId,
+      uiRoute: this.#retained.route, projectUuid: this.#binding.projectUuid, branchUuid: this.#binding.branchUuid, windowTabId: this.#binding.windowTabId });
+  }
+  /** The full writer retains the actual distinct wrapper/callback sources.
+   * The same one-use child slot prevents a second registration family. */
+  public createForwardWriterClockRegistration(packet: CurrentFootprintCopyUiObservation, transport: CurrentFootprintCopyClockRegistrationV2Transport): CurrentFootprintCopyClockRegistrationV2Runner {
+    this.#same(); need(!this.#busy && !this.#clockRegistrationIssued && this.#packet !== null && packet === this.#packet && this.#retained !== null);
+    this.#clockRegistrationIssued = true;
+    const originalMethods = methods(transport);
+    const same = (): void => { this.#same(); need(!this.#busy && packet === this.#packet && methods(transport).every((item, index) => item === originalMethods[index])); };
+    const original: CurrentFootprintCopyClockRegistrationV2Transport = Object.freeze({
+      assertCurrent: async (): Promise<void> => { same(); await this.#current(); same(); await transport.assertCurrent(); same(); },
+      request: (command: CurrentFootprintCopyClockRegistrationV2Command): Promise<unknown> => { same(); need(command.sessionId === this.#binding.sessionId); return transport.request(command); },
+    });
+    return new CurrentFootprintCopyClockRegistrationV2Runner(this.#source, original, { sessionId: this.#binding.sessionId,
       uiRoute: this.#retained.route, projectUuid: this.#binding.projectUuid, branchUuid: this.#binding.branchUuid, windowTabId: this.#binding.windowTabId });
   }
   public async observe(): Promise<CurrentFootprintCopyUiObservation> {

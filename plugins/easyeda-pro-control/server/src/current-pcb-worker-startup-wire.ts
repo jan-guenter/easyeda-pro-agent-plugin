@@ -10,6 +10,7 @@ import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-co
 import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-cold-native-limits.ts";
 import { currentFootprintForwardColdWire } from "./current-footprint-forward-cold-wire.ts";
+import { currentFootprintForwardWriterProfile } from "./current-footprint-forward-writer-profile.ts";
 import { currentFootprintCopyExecutionWorkerWire } from "./current-footprint-copy-execution-worker-wire.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopySavedSourceWire } from "./current-footprint-copy-saved-source-wire.ts";
@@ -302,6 +303,13 @@ export function currentFootprintForwardExecutionStartupWire(raw: unknown, id: nu
   const original = currentFootprintCopyForwardStartupWire(raw, 1);
   return Object.freeze({ command: Object.freeze({ ...original.command, id }),
     request: Object.freeze({ ...original.request, requestId: id }) });
+}
+/** New birth's fixed preparation range. Rebasing the old encoder uses only its
+ * grammar; it neither upgrades an old channel nor borrows an old native ID. */
+export function currentFootprintForwardWriterStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  if (!Number.isSafeInteger(id) || id < 1 || id > currentFootprintForwardWriterProfile().renderer.requestLimit) { return fail(); }
+  const original = currentFootprintForwardExecutionStartupWire(raw, 1);
+  return Object.freeze({ command: Object.freeze({ ...original.command, id }), request: Object.freeze({ ...original.request, requestId: id }) });
 }
 /** The saved owner admits only construction and native-cache observation.
  * Parser registration capture is shared fixed code, not execution authority. */

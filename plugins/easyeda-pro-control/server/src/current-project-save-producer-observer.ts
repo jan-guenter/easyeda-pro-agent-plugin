@@ -1,3 +1,12 @@
+// oxlint-disable-next-line import/no-cycle -- A later same-observer continuation alone resolves its own full drain; module initialization issues nothing.
+import {continueOriginalCurrentFootprintForwardWriterCopyDrainCall} from "./current-footprint-forward-writer-copy-drain-origin.ts";
+// oxlint-disable-next-line import/no-cycle -- A later original full enrollment alone resolves the retained Core tail binding; initialization grants no continuation.
+import {originalCurrentFootprintForwardWriterCopyTailObservation} from "./current-footprint-forward-writer-copy-tail-origin.ts";
+import type {CurrentFootprintForwardWriterCopyTailObservationBindings} from "./current-footprint-forward-writer-copy-tail-origin.ts";
+// oxlint-disable-next-line import/no-cycle -- Only a later original observer call resolves its genuine full Core upload cursor; initialization issues no authority.
+import { continueOriginalCurrentFootprintForwardWriterCopyUploadCall } from "./current-footprint-forward-writer-copy-upload-origin.ts";
+// oxlint-disable-next-line import/no-cycle -- Only the later original observer continuation resolves its genuine full Core cursor; module initialization issues no authority.
+import { continueOriginalCurrentFootprintForwardWriterCopyLocalCall } from "./current-footprint-forward-writer-copy-local-origin.ts";
 /** Source-owned producer calls remain held unless the separate original
  * startup-cache cursor admits that exact packet. There is no generic resume,
  * cleanup-CDP or timer authority; incomplete retirement needs Job exit. */
@@ -14,7 +23,8 @@ import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-sa
 import { types } from "node:util";
 import { z } from "zod";
 import type { CurrentPcbViaSaveDrainProgress,CurrentPcbViaSaveDrained } from "./current-pcb-via-save-drained.ts";
-import { continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, continueOriginalCurrentGeneratedPeriodicSyncCall, continueOriginalCurrentPcbViaLocalUploadCall, continueOriginalCurrentPcbViaPostHistorySyncCall, continueOriginalCurrentPcbViaPreSavePeriodicSyncCall, continueOriginalCurrentPcbViaSaveDrainCall, continueOriginalCurrentPcbViaSaveTailDeleteCall, continueOriginalCurrentPcbViaUploadRequestCall, continueOriginalCurrentSchematicRelevanceDisplayLocalUploadCall, continueOriginalCurrentSchematicRelevanceDisplaySaveDrainCall, continueOriginalCurrentSchematicRelevanceDisplayUploadRequestCall, originalCurrentPcbViaPostHistorySyncProgress, originalCurrentPcbViaSaveDrainProgress, originalCurrentPcbViaSaveDrained, originalCurrentPcbViaSaveTailObservation, originalCurrentProjectSaveProducerStartupProgress, originalCurrentSchematicRelevanceDisplayLocalObservation, originalCurrentSchematicRelevanceDisplaySaveDrainProgress, originalCurrentSchematicRelevanceDisplaySaveDrained, originalCurrentSchematicRelevanceDisplaySaveTailObservation, requireOriginalCurrentPcbViaLocalUploadCompleted, requireOriginalCurrentPcbViaUploadRequestDispatched, requireOriginalCurrentProjectSaveProducerOrigin, requireOriginalCurrentSchematicRelevanceDisplayLocalUploadCompleted, requireOriginalCurrentSchematicRelevanceDisplayUploadRequestDispatched, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall, settleOriginalCurrentPcbViaPreSavePeriodicSyncCall, settleOriginalCurrentPcbViaSaveDrain, settleOriginalCurrentSchematicRelevanceDisplaySaveDrain } from "./current-pcb-diagnostic-owner.ts";
+// oxlint-disable-next-line import/no-cycle -- Original owner registries are consulted only by later observer operations; the original class descriptor capture remains local to this module after initialization.
+import { continueOriginalCurrentFootprintForwardWriterInitialCacheCall, continueOriginalCurrentFootprintForwardWriterInitialSyncCall, continueOriginalCurrentGeneratedInitialCacheCall, continueOriginalCurrentGeneratedInitialSyncCall, continueOriginalCurrentGeneratedPeriodicSyncCall, continueOriginalCurrentPcbViaLocalUploadCall, continueOriginalCurrentPcbViaPostHistorySyncCall, continueOriginalCurrentPcbViaPreSavePeriodicSyncCall, continueOriginalCurrentPcbViaSaveDrainCall, continueOriginalCurrentPcbViaSaveTailDeleteCall, continueOriginalCurrentPcbViaUploadRequestCall, continueOriginalCurrentSchematicRelevanceDisplayLocalUploadCall, continueOriginalCurrentSchematicRelevanceDisplaySaveDrainCall, continueOriginalCurrentSchematicRelevanceDisplayUploadRequestCall, originalCurrentPcbViaPostHistorySyncProgress, originalCurrentPcbViaSaveDrainProgress, originalCurrentPcbViaSaveDrained, originalCurrentPcbViaSaveTailObservation, originalCurrentProjectSaveProducerStartupProgress, originalCurrentSchematicRelevanceDisplayLocalObservation, originalCurrentSchematicRelevanceDisplaySaveDrainProgress, originalCurrentSchematicRelevanceDisplaySaveDrained, originalCurrentSchematicRelevanceDisplaySaveTailObservation, requireOriginalCurrentPcbViaLocalUploadCompleted, requireOriginalCurrentPcbViaUploadRequestDispatched, requireOriginalCurrentProjectSaveProducerOrigin, requireOriginalCurrentSchematicRelevanceDisplayLocalUploadCompleted, requireOriginalCurrentSchematicRelevanceDisplayUploadRequestDispatched, settleOriginalCurrentGeneratedInitialCacheCalls, settleOriginalCurrentGeneratedInitialSyncCall, settleOriginalCurrentGeneratedPeriodicSyncCall, settleOriginalCurrentPcbViaPreSavePeriodicSyncCall, settleOriginalCurrentPcbViaSaveDrain, settleOriginalCurrentSchematicRelevanceDisplaySaveDrain } from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentFootprintCopyClockRpcV2ArrayCapture } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { CURRENT_PROJECT_SAVE_PRODUCER_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_PRODUCER_FRAME_FLAGS as FRAME_FLAGS,
@@ -51,18 +61,19 @@ function binding(value: CurrentProjectSaveProducerBindings): CurrentProjectSaveP
   return value;
 }
 export class CurrentProjectSaveProducerObserver {
-  readonly #relevanceLocal:boolean; readonly #tail:CurrentPcbViaSaveTailObservationBindings|null; readonly #origin: CurrentProjectSaveProducerOrigin; readonly #owner: object; readonly #operation: object; readonly #binding: CurrentProjectSaveProducerBindings;
+  readonly #relevanceLocal:boolean;  #tail:CurrentPcbViaSaveTailObservationBindings|CurrentFootprintForwardWriterCopyTailObservationBindings|null; readonly #origin: CurrentProjectSaveProducerOrigin; readonly #owner: object; readonly #operation: object; readonly #binding: CurrentProjectSaveProducerBindings;
   readonly #points = new Map<CurrentProjectSaveProducerRole, string>(); readonly #occurrences = new Map<CurrentProjectSaveProducerRole, number>();
   #busy = false; #armed = false; #failed = false; #closed = false; #requests = 0; #events = 0;
+  readonly #forwardWriter: boolean;
   #held: CurrentProjectSaveProducerHeldCall | null = null;
   public constructor(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object) {
-    this.#relevanceLocal=originalCurrentSchematicRelevanceDisplayLocalObservation(origin,owner,operation); this.#origin = origin; this.#owner = owner; this.#operation = operation; this.#binding = binding(requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation));this.#tail=originalCurrentPcbViaSaveTailObservation(origin,owner,operation)??originalCurrentSchematicRelevanceDisplaySaveTailObservation(origin,owner,operation);if(this.#tail!==null){const tail=this.#tail;need(!types.isProxy(tail)&&Object.getPrototypeOf(tail)===Object.prototype&&Object.isFrozen(tail)&&Reflect.ownKeys(tail).length===6,"TAIL_BINDING");const keys=["additionalHeadJobs","additionalSharedRequests","arm","originalBreakpoint","captureHeldCall","assertCurrent"];for(const[index,key]of keys.entries()){const d=Object.getOwnPropertyDescriptor(tail,key);need(d!==undefined&&Object.hasOwn(d,"value")&&(index<2?d.value===(index===0?3:42):typeof d.value==="function"&&!types.isProxy(d.value)),"TAIL_BINDING_DATA");}} Object.freeze(this);
+    this.#relevanceLocal=originalCurrentSchematicRelevanceDisplayLocalObservation(origin,owner,operation); this.#origin = origin; this.#owner = owner; this.#operation = operation; this.#binding = binding(requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation));this.#forwardWriter=origin.profile==="private.current-footprint-forward-writer-save-producer-origin.v1";this.#tail=originalCurrentPcbViaSaveTailObservation(origin,owner,operation)??originalCurrentSchematicRelevanceDisplaySaveTailObservation(origin,owner,operation);if(this.#tail!==null){const tail=this.#tail;need(!types.isProxy(tail)&&Object.getPrototypeOf(tail)===Object.prototype&&Object.isFrozen(tail)&&Reflect.ownKeys(tail).length===6,"TAIL_BINDING");const keys=["additionalHeadJobs","additionalSharedRequests","arm","originalBreakpoint","captureHeldCall","assertCurrent"];for(const[index,key]of keys.entries()){const d=Object.getOwnPropertyDescriptor(tail,key);need(d!==undefined&&Object.hasOwn(d,"value")&&(index<2?d.value===(index===0?3:42):typeof d.value==="function"&&!types.isProxy(d.value)),"TAIL_BINDING_DATA");}} Object.freeze(this);
   }
   async #current(): Promise<void> { need(!this.#failed && !this.#closed && requireOriginalCurrentProjectSaveProducerOrigin(this.#origin, this.#owner, this.#operation) === this.#binding, "ORIGINAL");
-    await this.#binding.assertCurrent();if(this.#tail!==null){need((originalCurrentPcbViaSaveTailObservation(this.#origin,this.#owner,this.#operation)??originalCurrentSchematicRelevanceDisplaySaveTailObservation(this.#origin,this.#owner,this.#operation))===this.#tail,"TAIL_CHANGED");await this.#tail.assertCurrent();} need(!this.#failed && !this.#closed && requireOriginalCurrentProjectSaveProducerOrigin(this.#origin, this.#owner, this.#operation) === this.#binding, "CHANGED"); }
+    await this.#binding.assertCurrent();if(this.#tail!==null){need((originalCurrentFootprintForwardWriterCopyTailObservation(this.#origin,this.#owner,this.#operation)??originalCurrentPcbViaSaveTailObservation(this.#origin,this.#owner,this.#operation)??originalCurrentSchematicRelevanceDisplaySaveTailObservation(this.#origin,this.#owner,this.#operation))===this.#tail,"TAIL_CHANGED");await this.#tail.assertCurrent();} need(!this.#failed && !this.#closed && requireOriginalCurrentProjectSaveProducerOrigin(this.#origin, this.#owner, this.#operation) === this.#binding, "CHANGED"); }
   #refuse(): void { if (!this.#failed) { this.#failed = true; this.#binding.fail(); } }
   async #send(input: unknown): Promise<unknown> {
-    const command = validateCurrentProjectSaveProducerCommand(input); await this.#current(); this.#requests += 1; need(this.#requests <= REQUESTS.cdpRequests+(this.#tail?.additionalSharedRequests??0)+(this.#relevanceLocal?14:0), "REQUEST_CAPACITY");
+    const command = validateCurrentProjectSaveProducerCommand(input); await this.#current(); this.#requests += 1; need(this.#requests <= REQUESTS.cdpRequests+(this.#forwardWriter?70:0)+(this.#tail?.additionalSharedRequests??0)+(this.#relevanceLocal?14:0), "REQUEST_CAPACITY");
     const captured = captureCurrentPcbStringClockReply(await this.#binding.request(command)).value; await this.#current(); return captured;
   }
   public async arm(): Promise<void> {
@@ -73,15 +84,23 @@ export class CurrentProjectSaveProducerObserver {
     } need(this.#points.size === REQUESTS.newArms, "ARM_ROSTER");if(this.#tail!==null){await this.#tail.arm();await this.#current();} this.#armed = true;
     } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
+  /** This exact observer retains its existing pending event read. No caller
+   * binding can add observations; Core's same full map supplies the only token. */
+  public async enrollFootprintForwardWriterCopyTailObservation():Promise<void>{
+    need(this.#forwardWriter&&this.#armed&&!this.#failed&&!this.#closed&&this.#held===null&&this.#tail===null,"FORWARD_TAIL_ENROLL_ONCE");
+    const tail=originalCurrentFootprintForwardWriterCopyTailObservation(this.#origin,this.#owner,this.#operation);
+    need(tail!==null&&tail.additionalHeadJobs===4&&tail.additionalSharedRequests===56,"FORWARD_TAIL_ORIGINAL");
+    this.#tail=tail;try{await this.#current();await tail.arm();await this.#current();}catch(error){this.#refuse();throw error;}
+  }
   public async observeHeldCall(): Promise<CurrentProjectSaveProducerHeldCall> {
     need(this.#armed && !this.#busy && !this.#failed && !this.#closed && this.#held === null, "HELD_CALL_ONCE"); this.#busy = true;
-    try { await this.#current(); this.#events += 1; need(this.#events <= REQUESTS.events+(this.#tail===null?0:11)+(this.#relevanceLocal?3:0), "EVENT_CAPACITY");
+    try { await this.#current(); this.#events += 1; need(this.#events <= REQUESTS.events+(this.#forwardWriter?15:0)+(this.#tail===null?0:this.#tail.additionalHeadJobs*3+2)+(this.#relevanceLocal?3:0), "EVENT_CAPACITY");
       const received = event.parse(captureCurrentPcbStringClockReply(await this.#binding.nextEvent()).value); await this.#current(); need(received.sessionId === this.#binding.sessionId, "EVENT_SESSION");
       for (const role of SHARED) { const id = this.#binding.originalBreakpoint(role); handle.parse(id); const prior = this.#points.get(role); need(prior === id || prior === undefined && ![...this.#points.values()].includes(id), "SHARED_POINT_ALIAS"); this.#points.set(role, id); }
       if(this.#tail!==null){const tail=this.#tail;const extra=CURRENT_PCB_VIA_SAVE_TAIL_DELETE_ROLES.find(role=>tail.originalBreakpoint(role)===received.params.hitBreakpoints[0]);if(extra!==undefined){const original=await tail.captureHeldCall(extra);await this.#current();need(original.role===extra,"TAIL_CAPTURE_ROLE");heldCalls.set(original.packet,Object.freeze({observer:this,role:extra,fields:original.fields,cache:null,promise:null}));this.#held=original.packet;return original.packet;}}
       const role = ROLES.find(name => this.#points.get(name) === received.params.hitBreakpoints[0]), top = received.params.callFrames[0]; need(role !== undefined && top !== undefined, "ORIGINAL_POINT"); const site = SITES[role];
       need(top.location.scriptId === this.#binding.scriptId && top.location.lineNumber === site.lineNumber && top.location.columnNumber === site.columnNumber && top.functionLocation.scriptId === this.#binding.scriptId && top.functionLocation.lineNumber === site.functionLineNumber && top.functionLocation.columnNumber === site.functionColumnNumber, "ORIGINAL_FRAME");
-      const count = (this.#occurrences.get(role) ?? 0) + 1; need(count <= currentProjectSaveProducerRoleLimit(role)+(["headEntry","headPromise","headSuccess"].includes(role)?(this.#tail?.additionalHeadJobs??0)+(this.#relevanceLocal?1:0):0), "ROLE_CAPACITY"); this.#occurrences.set(role, count);
+      const count = (this.#occurrences.get(role) ?? 0) + 1; need(count <= currentProjectSaveProducerRoleLimit(role)+(["headEntry","headPromise","headSuccess"].includes(role)?(this.#forwardWriter?5:0)+(this.#tail?.additionalHeadJobs??0)+(this.#relevanceLocal?1:0):0), "ROLE_CAPACITY"); this.#occurrences.set(role, count);
       const captured = await this.#send({ phase: "project-save-producer-frame", role, method: "Debugger.evaluateOnCallFrame", params: { ...FRAME_FLAGS, callFrameId: top.callFrameId, expression: site.expression } });
       const frameId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(captured, site.length), original = this.#binding.originalReceivers();
       const joined = await this.#send({ phase: "project-save-producer-receiver", role, method: "Runtime.callFunctionOn", params: { ...CALL_FLAGS, objectId: frameId, functionDeclaration: CALLS[role], arguments: [{ objectId: original.project }, { objectId: original.wrapper }, { objectId: original.callback }] } });
@@ -110,6 +129,30 @@ export class CurrentProjectSaveProducerObserver {
       }
       const packet = this.#binding.retainHeldCall(); need(packet !== null && typeof packet === "object" && !types.isProxy(packet) && Object.isFrozen(packet) && Reflect.ownKeys(packet).length === 1 && Object.getOwnPropertyDescriptor(packet, "profile")?.value === "private.current-project-save-producer-held-call.v1", "ORIGINAL_NATIVE_MARKER"); heldCalls.set(packet, Object.freeze({ observer: this, role, fields: fieldsValue, cache, promise })); this.#held = packet; return packet;
     } catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async continueFootprintForwardWriterCopyDrainCall(packet:CurrentProjectSaveProducerHeldCall):Promise<void>{
+    await this.#current();need(!this.#busy&&this.#held===packet&&heldCalls.get(packet)?.observer===this,"FORWARD_DRAIN_ORIGINAL_PACKET");this.#busy=true;
+    try{await continueOriginalCurrentFootprintForwardWriterCopyDrainCall(this.#origin,this.#owner,this.#operation,packet);await this.#current();this.#held=null;}catch(error){this.#refuse();throw error;}finally{this.#busy=false;}
+  }
+  public async continueFootprintForwardWriterCopyUploadCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+    need(this.#forwardWriter && !this.#busy && !this.#failed && !this.#closed && this.#held === packet, "FORWARD_COPY_UPLOAD_ORIGINAL_HELD"); this.#busy = true;
+    try { await this.#current(); await continueOriginalCurrentFootprintForwardWriterCopyUploadCall(this.#origin, this.#owner, this.#operation, packet); await this.#current(); this.#held = null; }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async continueFootprintForwardWriterCopyLocalCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+    need(this.#forwardWriter && !this.#busy && !this.#failed && !this.#closed && this.#held === packet, "FORWARD_COPY_LOCAL_ORIGINAL_HELD"); this.#busy = true;
+    try { await this.#current(); await continueOriginalCurrentFootprintForwardWriterCopyLocalCall(this.#origin, this.#owner, this.#operation, packet); await this.#current(); this.#held = null; }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async continueFootprintForwardWriterInitialCacheCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+    need(this.#forwardWriter && !this.#busy && !this.#failed && !this.#closed && this.#held === packet, "FORWARD_WRITER_CACHE_ORIGINAL_HELD"); this.#busy = true;
+    try { await this.#current(); await continueOriginalCurrentFootprintForwardWriterInitialCacheCall(this.#origin, this.#owner, this.#operation, packet); await this.#current(); this.#held = null; }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
+  }
+  public async continueFootprintForwardWriterInitialSyncCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
+    need(this.#forwardWriter && !this.#busy && !this.#failed && !this.#closed && this.#held === packet, "FORWARD_WRITER_SYNC_ORIGINAL_HELD"); this.#busy = true;
+    try { await this.#current(); await continueOriginalCurrentFootprintForwardWriterInitialSyncCall(this.#origin, this.#owner, this.#operation, packet); await this.#current(); this.#held = null; }
+    catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async continueInitialCacheCall(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
     need(!this.#busy && !this.#failed && !this.#closed && this.#held === packet, "INITIAL_CACHE_ORIGINAL_HELD"); this.#busy = true;
@@ -179,4 +222,18 @@ export class CurrentProjectSaveProducerObserver {
     catch (error) { this.#refuse(); throw error; } finally { this.#busy = false; }
   }
   public async retireAfterOriginalExit(): Promise<void> { need(!this.#busy && !this.#closed, "RETIRE_STATE"); await this.#binding.assertOriginalGenerationExited(); this.#closed = true; }
+}
+const originalObserverPrototype = CurrentProjectSaveProducerObserver.prototype;
+const originalObserverDescriptors = Object.getOwnPropertyDescriptors(originalObserverPrototype);
+/** Verify the original class after module initialization without eagerly
+ * reading this constructor from its original native owner's import cycle. */
+export function assertOriginalCurrentProjectSaveProducerObserverClass(): void {
+  need(CurrentProjectSaveProducerObserver.prototype === originalObserverPrototype, "ORIGINAL_OBSERVER_PROTOTYPE");
+  const actual = Object.getOwnPropertyDescriptors(originalObserverPrototype);
+  need(Reflect.ownKeys(actual).length === Reflect.ownKeys(originalObserverDescriptors).length, "ORIGINAL_OBSERVER_MEMBERS");
+  for (const [key, before] of Object.entries(originalObserverDescriptors)) {
+    const current = Object.getOwnPropertyDescriptor(originalObserverPrototype, key);
+    need(current !== undefined && before.value === current.value && before.get === current.get && before.set === current.set &&
+      before.enumerable === current.enumerable && before.configurable === current.configurable && before.writable === current.writable, "ORIGINAL_OBSERVER_METHOD");
+  }
 }

@@ -4,10 +4,11 @@
  * create/Save and writer permits remain outside this class. */
 import { z } from "zod";
 // oxlint-disable-next-line import/no-cycle -- Retain the genuine construction issuer and original startup transport; no initialization work crosses the cycle.
-import { isOriginalFootprintColdConstructionTransport, isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, originalFootprintForwardExecutionConstructionDependency, requestFootprintExecutionConstructionCache, requireOriginalProjectStructureConstructionDependency } from "./current-footprint-copy-construction-purpose.ts";
+import { isOriginalFootprintColdConstructionTransport, isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintForwardWriterConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, originalFootprintForwardExecutionConstructionDependency, originalFootprintForwardWriterConstructionDependency, requestFootprintExecutionConstructionCache, requireOriginalProjectStructureConstructionDependency } from "./current-footprint-copy-construction-purpose.ts";
 import { CurrentFootprintCopyCacheConstructionRunner } from "./current-footprint-copy-cache-construction-runner.ts";
 import type { CurrentFootprintCopyCacheConstructionObservation, CurrentFootprintCopyCacheConstructionTransport } from "./current-footprint-copy-cache-construction-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
+
 import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE } from "./current-footprint-copy-held-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
@@ -85,7 +86,11 @@ import type { CurrentFootprintColdProducerRoster } from "./current-footprint-col
 import type { CurrentFootprintForwardColdContinuationBinding, CurrentFootprintForwardColdContinuationLease,
   CurrentFootprintForwardColdTail, CurrentFootprintForwardColdTailBinding } from "./current-footprint-forward-cold-continuation.ts";
 // oxlint-disable-next-line import/no-cycle -- The original channel installs the original constructor's event lease synchronously before the construction subscription is consumed.
-import { requireCurrentFootprintForwardColdGenerationExited, requireCurrentFootprintForwardColdTail, suspendCurrentFootprintForwardColdContinuation } from "./current-pcb-worker-startup-channel.ts";
+import { requireCurrentFootprintForwardColdGenerationExited, requireCurrentFootprintForwardColdTail, requireCurrentFootprintForwardWriterProducerChannel, suspendCurrentFootprintForwardColdContinuation } from "./current-pcb-worker-startup-channel.ts";
+import type { CurrentFootprintForwardWriterProducerBootstrap, CurrentFootprintForwardWriterProducerBootstrapBindings, CurrentFootprintForwardWriterProducerEvents } from "./current-footprint-forward-writer-producer-origin.ts";
+import { CURRENT_FOOTPRINT_FORWARD_WRITER_STARTUP_FRONTIER_REQUESTS as FORWARD_FRONTIER } from "./current-footprint-forward-writer-frontier-budget.ts";
+import { CURRENT_PROJECT_SAVE_PRODUCER_REQUESTS as FORWARD_PRODUCER } from "./current-project-save-producer-protocol.ts";
+import { CURRENT_PROJECT_SAVE_PRODUCER_GUARD_REQUESTS as FORWARD_GUARDS } from "./current-project-save-producer-guard-protocol.ts";
 // oxlint-disable-next-line import/no-cycle -- The core privately issues the original lease before instantiating this observer; the observer cannot register or replace its native binding.
 import { CurrentFootprintDetachedCacheObserver } from "./current-footprint-detached-cache-observer.ts";
 import { CURRENT_FOOTPRINT_DETACHED_CACHE_REQUESTS } from "./current-footprint-detached-cache-profile.ts";
@@ -94,6 +99,11 @@ import type { CurrentFootprintDetachedCacheObservationV2 } from "./current-footp
 
 const detachedCacheLeases = new WeakMap<CurrentFootprintDetachedCacheLease, CurrentFootprintDetachedCacheBinding>();
 const coldContinuationLeases = new WeakMap<CurrentFootprintForwardColdContinuationLease, CurrentFootprintForwardColdContinuationBinding>();
+const forwardProducerBootstraps = new WeakMap<CurrentFootprintForwardWriterProducerBootstrap, CurrentFootprintForwardWriterProducerBootstrapBindings>();
+/** A copied bootstrap label never obtains a constructor/native dependency. */
+export function requireCurrentFootprintForwardWriterProducerBootstrap(bootstrap: CurrentFootprintForwardWriterProducerBootstrap): CurrentFootprintForwardWriterProducerBootstrapBindings {
+  const original = forwardProducerBootstraps.get(bootstrap); if (original === undefined) { throw fail("FORWARD_WRITER_PRODUCER_ORIGINAL_BOOTSTRAP"); } return original;
+}
 export function requireCurrentFootprintForwardColdContinuationLease(lease: CurrentFootprintForwardColdContinuationLease): CurrentFootprintForwardColdContinuationBinding {
   const binding = coldContinuationLeases.get(lease); if (binding === undefined) { throw fail("FORWARD_COLD_ORIGINAL_LEASE"); }
   binding.assertCleanup(); return binding;
@@ -280,6 +290,11 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #assignedWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
   #coldProducerRoster: CurrentFootprintColdProducerRoster | null = null;
   #coldProducerWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
+  #forwardProducerBootstrap: CurrentFootprintForwardWriterProducerBootstrap | null = null;
+  #forwardProducerWorkerSource: string | null = null;
+  #forwardProducerEvents: CurrentFootprintForwardWriterProducerEvents | null = null;
+  #forwardProducerPauseActive = false;
+  #forwardProducerExitObserved = false;
   #detachedCacheObserver: CurrentFootprintDetachedCacheObserver | null = null;
   #detachedCacheListener: CurrentFootprintDetachedCacheEvents | null = null;
   #detachedCachePauseActive = false;
@@ -361,7 +376,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   public constructor(internal: typeof INTERNAL_PROFILE, transport: CurrentPcbWorkerConstructionTransport, profile: P,
     sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES | typeof CURRENT_FOOTPRINT_COPY_CONSTRUCTION_SITES, decoders: ConstructionDecoders) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); }
-    if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintHeldSavedConstructionTransport(transport)) {
+ else if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintHeldSavedConstructionTransport(transport)) {
       this.#footprintSampleLimit = CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.stateSampleLimit;
     } else if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintSavedConstructionTransport(transport)) {
       this.#footprintSampleLimit = CURRENT_FOOTPRINT_COPY_SAVED_PROFILE.stateSampleLimit;
@@ -405,6 +420,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     this.#firstFailure = Object.freeze({ code, ...this.#progress(), resumeOrigin: this.#pause?.resumeOrigin ?? null,
       resumeObserved: this.#pause?.resumeObserved ?? false });
     this.#failed = fail(code);
+    this.#forwardProducerEvents?.lost();
   }
   #checkWindow(): void {
     const pause = this.#pause, window = this.#armingWindow ?? (pause !== null && !pause.resumeObserved ? pause.window : null);
@@ -451,6 +467,10 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (!this.#settled) { this.#step = "pause-read-owner-after"; } await this.#current(); return captured.value;
   }
   readonly #onPaused = (input: unknown): void => {
+    if (this.#forwardProducerEvents?.acceptsPause(input) === true) {
+      if (this.#forwardProducerPauseActive || this.#detachedCachePauseActive || this.#structurePauseActive || this.#footprintCachePauseActive || this.#pause !== null && !this.#pause.resumeObserved) { this.#fail("FORWARD_WRITER_PRODUCER_PAUSE_ROUTE"); return; }
+      this.#forwardProducerPauseActive = true; this.#forwardProducerEvents.paused(input); return;
+    }
     if (this.#detachedCacheObserver?.acceptsPause(input) === true) {
       if (this.#detachedCacheListener === null || this.#detachedCachePauseActive || this.#structurePauseActive || this.#footprintCachePauseActive || this.#pause !== null && !this.#pause.resumeObserved) {
         this.#fail("DETACHED_CACHE_PAUSE_ROUTE"); return;
@@ -481,7 +501,8 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (this.#profile === "private.current-footprint-copy-construction.v1") { limitMs = CURRENT_FOOTPRINT_COPY_CONSTRUCTION_TIMING.pauseMs[index] ?? limitMs; }
     else if (this.#current209) { limitMs = CURRENT_PCB_209_STARTUP_TIMING.constructionPauseMs[index] ?? limitMs; }
     if (this.#sequence[index] === "bootstrap" && isOriginalFootprintColdConstructionTransport(this.#transport)) {
-      limitMs += (CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS + CURRENT_FOOTPRINT_DETACHED_CACHE_REQUESTS.arm) * 3 * CURRENT_PCB_209_STARTUP_TIMING.requestMs;
+      const extra = isOriginalFootprintForwardWriterConstructionTransport(this.#transport) ? FORWARD_GUARDS.normal + FORWARD_PRODUCER.intrinsics + FORWARD_PRODUCER.newArms + 2 + FORWARD_FRONTIER.callbackArms + FORWARD_FRONTIER.timerSetup : CURRENT_FOOTPRINT_DETACHED_CACHE_REQUESTS.arm;
+      limitMs += (CURRENT_FOOTPRINT_COLD_PRODUCER_REQUESTS + extra) * 3 * CURRENT_PCB_209_STARTUP_TIMING.requestMs;
     }
     const window = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
     const paused: RetainedPause = { raw, captureError, index, window, resumeOrigin: null,
@@ -493,6 +514,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (this.#settled) { this.#fail("EXTRA_PAUSE"); void observeRejection(this.#cleanupPause(paused)); }
   };
   readonly #onResumed = (): void => {
+    if (this.#forwardProducerPauseActive) { this.#forwardProducerPauseActive = false; this.#forwardProducerEvents?.resumed(); return; }
     if (this.#detachedCachePauseActive) { this.#detachedCachePauseActive = false; this.#detachedCacheListener?.resumed(); return; }
     if (this.#structurePauseActive) {
       this.#structurePauseActive = false; this.#structureListener?.resumed(); return;
@@ -509,6 +531,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   };
   readonly #onLost = (): void => { this.#fail("OWNER_LOST"); this.#detachedCacheListener?.lost(); this.#structureListener?.lost(); this.#footprintCacheListener?.lost(); this.#waiting.reject(this.#failed); };
   #resume(paused: RetainedPause, origin: ResumeOrigin = "normal"): Promise<void> {
+    if (origin === "cleanup" && this.#forwardProducerBootstrap !== null && !this.#forwardProducerExitObserved) { throw fail("FORWARD_WRITER_PRODUCER_ORIGINAL_JOB_EXIT_REQUIRED"); }
     if (paused.resumeResult !== null) { return paused.resumeResult; }
     if (origin === "normal") { this.#checkWindow(); }
     paused.resumeConsumed = true; paused.resumeOrigin = origin;
@@ -524,6 +547,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     return paused.resumeResult;
   }
   async #cleanupPause(paused: RetainedPause): Promise<void> {
+    if (this.#forwardProducerBootstrap !== null && !this.#forwardProducerExitObserved) { throw fail("FORWARD_WRITER_PRODUCER_ORIGINAL_JOB_EXIT_REQUIRED"); }
     const errors: unknown[] = [];
     try { await this.#removeBreakpoints(); } catch (error) { errors.push(error); }
     if (!paused.resumeObserved) { try { await this.#resume(paused, "cleanup"); } catch (error) { errors.push(error); } }
@@ -607,7 +631,10 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       const bus = this.#identities.channelBus, original = this.#identities.project;
       if (original === undefined || bus === undefined) { throw fail("MISSING_OWNER"); }
       await this.#same(original, bus, true);
-      if (isOriginalFootprintColdConstructionTransport(this.#transport)) { await this.#captureColdProducerRoster(); await this.#armDetachedCacheObserver(); }
+      if (isOriginalFootprintColdConstructionTransport(this.#transport)) {
+        await this.#captureColdProducerRoster();
+        await (isOriginalFootprintForwardWriterConstructionTransport(this.#transport) ? this.#armForwardWriterProducer() : this.#armDetachedCacheObserver());
+      }
       if (this.#profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintExecutionConstructionTransport(this.#transport)) {
         await this.#armFootprintCacheConstruction(original);
       }
@@ -705,6 +732,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (site === "parserHead") { this.#parserHead = callback; } else { this.#parserChange = callback; }
   }
   async #removeBreakpoints(): Promise<void> {
+    if (this.#forwardProducerBootstrap !== null && this.#failed !== null && !this.#forwardProducerExitObserved) { throw fail("FORWARD_WRITER_PRODUCER_ORIGINAL_JOB_EXIT_REQUIRED"); }
     const removals: Promise<void>[] = [];
     for (const breakpoint of this.#breakpoints.values()) {
       breakpoint.removal ??= (async (): Promise<void> => {
@@ -887,6 +915,46 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       if (this.#coldProducerRoster !== roster || this.#coldProducerWrappers !== wrappers) { throw fail("COLD_PRODUCER_ORIGINAL_ROSTER"); }
       return roster;
     } catch (error) { this.#fail("COLD_PRODUCER_CHANGED"); throw error; }
+  }
+  /** Issue one original paused bootstrap before any source producer can run.
+   * Failure retains the worker and instrumentation for original Job exit. */
+  async #armForwardWriterProducer(): Promise<void> {
+    const callback = this.#identities.upload, paused = this.#pause, project = this.#identities.project, wrappers = this.#coldProducerWrappers;
+    if (this.#forwardProducerBootstrap !== null || paused === null || paused.resumeConsumed || this.#sequence[paused.index] !== "bootstrap" ||
+        wrappers === null || project === undefined || callback === undefined || !isOriginalFootprintForwardWriterConstructionTransport(this.#transport)) { throw fail("FORWARD_WRITER_PRODUCER_BOOTSTRAP"); }
+    const dependency = originalFootprintForwardWriterConstructionDependency(this.#transport);
+    const bootstrap: CurrentFootprintForwardWriterProducerBootstrap = Object.freeze({ profile: "private.current-footprint-forward-writer-producer-bootstrap.v1" });
+    this.#forwardProducerBootstrap = bootstrap;
+    const same = (): void => {
+      this.#sameTransport();
+      if (this.#forwardProducerBootstrap !== bootstrap || this.#coldProducerWrappers !== wrappers || this.#identities.project !== project || this.#identities.upload !== callback ||
+          originalFootprintForwardWriterConstructionDependency(this.#transport) !== dependency) { throw fail("FORWARD_WRITER_PRODUCER_CHANGED"); }
+    };
+    const current = async (): Promise<void> => { same(); await this.#current(); same(); };
+    const bindings: CurrentFootprintForwardWriterProducerBootstrapBindings = Object.freeze({ issuer: this, dependency, scriptId: this.#scriptId, workerSource: this.#forwardProducerWorkerSource,
+      project, wrapper: wrappers.upload, callback, assertCurrent: current,
+      assertPaused: async (): Promise<void> => { await current(); if (this.#pause !== paused || paused.resumeConsumed || paused.resumeObserved || this.#settled) { throw fail("FORWARD_WRITER_PRODUCER_ORIGINAL_PAUSE"); } },
+      subscribe: (events: CurrentFootprintForwardWriterProducerEvents): void => {
+        same(); if (this.#forwardProducerEvents !== null || events === null || typeof events !== "object" || types.isProxy(events) || !Object.isFrozen(events) ||
+            Object.getPrototypeOf(events) !== Object.prototype || Reflect.ownKeys(events).length !== 4) { throw fail("FORWARD_WRITER_PRODUCER_SUBSCRIBE"); }
+        for (const key of ["acceptsPause", "paused", "resumed", "lost"]) { const value = Object.getOwnPropertyDescriptor(events, key);
+          if (value === undefined || !Object.hasOwn(value, "value") || typeof value.value !== "function" || types.isProxy(value.value)) { throw fail("FORWARD_WRITER_PRODUCER_EVENT_METHOD"); } }
+        this.#forwardProducerEvents = events;
+      },
+      observeExited: async (): Promise<void> => {
+        same(); await dependency.assertOriginalTermination(); same(); if (this.#forwardProducerExitObserved) { return; }
+        this.#forwardProducerExitObserved = true; clearTimeout(paused.watchdog); clearTimeout(this.#armingWatchdog); this.#forwardProducerEvents?.lost();
+      }, fail: (): void => { this.#fail("FORWARD_WRITER_PRODUCER_FAILED"); },
+    });
+    forwardProducerBootstraps.set(bootstrap, bindings);
+    try { await bindings.assertPaused(); await requireCurrentFootprintForwardWriterProducerChannel(dependency).prepare(bootstrap); await bindings.assertPaused(); }
+    catch (error) { this.#fail("FORWARD_WRITER_PRODUCER_ARM_FAILED"); throw error; }
+  }
+  /** End only owned watches after the original root AND whole-Job exit proof.
+   * No debugger resume, synthetic event or new native transport is issued. */
+  public async observeForwardWriterProducerGenerationExited(): Promise<boolean> {
+    const bootstrap = this.#forwardProducerBootstrap; if (bootstrap === null) { return false; }
+    await requireCurrentFootprintForwardWriterProducerBootstrap(bootstrap).observeExited(); return true;
   }
   async #armDetachedCacheObserver(): Promise<void> {
     const project = this.#identities.project;
@@ -1253,6 +1321,10 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       throw fail("CLOCK_RPC_SOURCE_UNAVAILABLE");
     }
     this.#clockRpcSource = qualifyCurrentFootprintCopyClockRpcSource("worker", source);
+    if (isOriginalFootprintForwardWriterConstructionTransport(this.#transport)) {
+      if (typeof source !== "string" || this.#forwardProducerWorkerSource !== null) { throw fail("FORWARD_WRITER_SOURCE_RETAINED_ONCE"); }
+      this.#forwardProducerWorkerSource = source;
+    }
   }
   /** No commands or reproof budget are consumed. The genuine combined owner
    * must separately bind this exact issuer and its original renderer channel. */
@@ -1281,6 +1353,21 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       assertCleanup: same, assertOriginal: async (): Promise<void> => { same(); await this.#current(); same(); },
     }));
     this.#clockRpcLease = lease; return lease;
+  }
+  /** Resolve only the same full bootstrap's completed metadata bundles. No
+   * read or caller handle can create this binding; the private fields and both
+   * original leases must already belong to this construction instance. */
+  public originalForwardWriterCallbackTargets(bootstrap: CurrentFootprintForwardWriterProducerBootstrap): Readonly<{dependencies:string;destinations:string}> {
+    this.#sameTransport();
+    const original=requireCurrentFootprintForwardWriterProducerBootstrap(bootstrap);const clock=this.#clockRpcLease,invocation=this.#createInvocationLease;
+    if(original.issuer!==this||this.#forwardProducerBootstrap!==bootstrap||!isOriginalFootprintForwardWriterConstructionTransport(this.#transport)||
+      this.#releaseConsumed||this.#forwardProducerExitObserved||clock===null||invocation===null||this.#footprintDependencyBundle===null||
+      this.#footprintDestinationBundle===null||this.#footprintDestinationPacket===null||this.#footprintDependencyPacket===null||
+      this.#footprintDestinationRunner?.retained()["failed"]!==false||this.#footprintDestinationRunner.retained()["reproofAttempted"]!==true||
+      this.#footprintDependencyRunner?.retained().failed!==false||!this.#footprintDependencyRunner.retained().completed){throw fail("FORWARD_WRITER_CALLBACK_TARGETS");}
+    const worker=requireCurrentFootprintCopyClockRpcConstructionLease(clock);const call=requireCurrentFootprintCopyCreateInvocationLease(invocation);
+    if(worker.issuer!==this||call.issuer!==this||call.clockLease!==clock||worker.projectObjectId!==original.project){throw fail("FORWARD_WRITER_CALLBACK_TARGETS");}
+    return Object.freeze({dependencies:this.#footprintDependencyBundle,destinations:this.#footprintDestinationBundle});
   }
   /** Retain the already-qualified create method array and original receiver
    * chain. No supplied handles, new inspector request or writer authority. */
@@ -1340,6 +1427,16 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     }
     this.#suspendForwardColdContinuation(lease);
     this.stopConstructionPauseSubscription(this.#packet); binding.assertCleanup();
+  }
+  /** Full clocks keep this original subscription and all producer guards live.
+   * The channel routes their exact pauses before clock events; no cold-v2
+   * observer or stopped construction subscription is adopted. */
+  public prepareForwardWriterClockObservationHandoff(lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<void> {
+    const binding = requireCurrentFootprintCopyClockRpcConstructionLease(lease);
+    if (!isOriginalFootprintForwardWriterConstructionTransport(this.#transport) || this.#forwardProducerBootstrap === null ||
+        this.#forwardProducerEvents === null || this.#forwardProducerExitObserved || binding.issuer !== this || lease !== this.#clockRpcLease ||
+        this.#clockRpcHandoffAttempted || this.#transactionClockAttempted || this.#packet === null || this.#releaseConsumed) { return Promise.reject(fail("FORWARD_WRITER_CLOCK_ORIGINAL_HANDOFF")); }
+    this.#clockRpcHandoffAttempted = true; binding.assertCleanup(); return Promise.resolve();
   }
   /** Compile only the fixed dependency capture/recheck with this construction's
    * retained project, bus, managers and lexical tuple. No caller chooses code
@@ -1586,6 +1683,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     this.#checkWindow(); this.#sameTransport();
     if (this.#profile !== "private.current-footprint-copy-construction.v1" || packet !== this.#packet || issued.get(packet) !== this ||
       !this.#settled || this.#uncertainBreakpoint || this.#releaseConsumed || this.#constructionSubscriptionStopped ||
+      this.#forwardProducerBootstrap !== null ||
       this.#detachedCacheObserver !== null && this.#coldContinuationLease === null ||
       this.#footprintCacheListener !== null || this.#footprintCachePauseActive || this.#footprintCacheConstruction !== null && !this.#footprintCacheConstructionReleased || this.#unsubscribe === null ||
       [...this.#breakpoints.values()].some(value => !value.removed) || this.#pause !== null && !this.#pause.resumeObserved) { throw fail("CONSTRUCTION_HANDOFF"); }
@@ -1770,6 +1868,10 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   }
   public async release(): Promise<void> {
     if (this.#releaseConsumed) { throw fail("RELEASE_CONSUMED"); }
+    if (this.#forwardProducerBootstrap !== null) {
+      if (!this.#forwardProducerExitObserved) { throw fail("FORWARD_WRITER_PRODUCER_ORIGINAL_JOB_EXIT_REQUIRED"); }
+      this.#releaseConsumed = true; this.#released = true; this.#unsubscribe?.(); this.#unsubscribe = null; return;
+    }
     if (!this.#settled || this.#uncertainBreakpoint) { throw fail("RETAIN_PENDING_OWNER"); }
     if (this.#structureListener !== null || this.#structurePauseActive) { throw fail("STRUCTURE_RETAIN_OBSERVER"); }
     if (this.#pause !== null && !this.#pause.resumeObserved) { throw fail("RETAIN_PAUSED_OWNER"); }
@@ -1842,4 +1944,16 @@ export class CurrentFootprintCopyConstructionRunner extends CurrentPcbWorkerCons
       producerScopes: decodeCurrentPcb209WorkerProducerScopes,
     });
   }
+}
+
+
+// oxlint-disable-next-line typescript/unbound-method -- Invoke the captured private-field method only on the original bootstrap registry's issuer.
+const originalForwardWriterCallbackTargets=CurrentPcbWorkerConstructionCore.prototype.originalForwardWriterCallbackTargets;
+/** Data-only handles remain attached to their original bootstrap and metadata
+ * issuer. Equal tokens, another issuer or a replaced method cannot adopt them. */
+export function requireOriginalCurrentFootprintForwardWriterCallbackTargets(bootstrap:CurrentFootprintForwardWriterProducerBootstrap,issuer:object):Readonly<{dependencies:string;destinations:string}>{
+  const original=requireCurrentFootprintForwardWriterProducerBootstrap(bootstrap);
+  if(original.issuer!==issuer||!(original.issuer instanceof CurrentPcbWorkerConstructionCore)||CurrentPcbWorkerConstructionCore.prototype.originalForwardWriterCallbackTargets!==originalForwardWriterCallbackTargets){throw fail("FORWARD_WRITER_CALLBACK_TARGETS");}
+  // The original registry supplies the actual private-field construction receiver.
+  return originalForwardWriterCallbackTargets.call(original.issuer,bootstrap);
 }

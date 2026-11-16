@@ -2,6 +2,7 @@
  * observation/v2 ceilings remain unchanged. Each continuation reserves its own
  * fixed stages; missing tails cannot borrow another stage's slots. */
 /* oxlint-disable import/max-dependencies -- Derive this distinct purpose from each fixed stage's original finite reservation; duplicating those constants would hide accounting drift. */
+// oxlint-disable-next-line import/no-cycle -- The fixed ledger calls the lazy derivation only after both modules initialize; no imported envelope is read during this module's evaluation.
 import { CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY as PREVIOUS } from "./current-footprint-copy-forward-capacity.ts";
 import { CURRENT_FOOTPRINT_FORWARD_WRITER_CLOCK_PREPARATION_REQUESTS as PREPARATION } from "./current-footprint-forward-writer-clock-preparation-budget.ts";
 import { CURRENT_FOOTPRINT_FORWARD_HEAD_MAIN_REQUESTS as HEAD } from "./current-footprint-forward-head-protocol.ts";

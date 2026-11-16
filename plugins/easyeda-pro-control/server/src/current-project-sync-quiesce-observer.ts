@@ -4,6 +4,7 @@
 import { decodeCurrentProjectSyncQuiesceArray } from "./current-project-sync-quiesce-replies.ts";
 import { types } from "node:util";
 import { z } from "zod";
+// oxlint-disable-next-line import/no-cycle -- The original Core registry is resolved only during later quiescence; module evaluation creates no owner or authority.
 import { requireOriginalCurrentProjectSyncQuiesceOrigin } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentProjectSyncQuiesceBindings,CurrentProjectSyncQuiesceOrigin } from "./current-project-sync-quiesce-origin.ts";
 import { CURRENT_PROJECT_SYNC_QUIESCE_PROGRAMS as PROGRAMS } from "./current-project-sync-quiesce-programs.ts";

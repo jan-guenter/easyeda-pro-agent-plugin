@@ -241,3 +241,71 @@ All seven initial CodeRabbit findings and its source-independent-test nit
 are implemented. Exact final-head CI and a completed CodeRabbit review
 remain required before merge. No installation, app launch, connected
 writer acceptance or saved/reopened validation is claimed by this batch.
+
+## Genuine backend dependency batch, 16 November 2026
+
+The next local batch begins at helper/Wire commit
+`bd12df96ca57f145969fa45b557e909dcd4710ec`. It selects the actual
+Core, original backend/factories, retained child ledgers and saved-reader
+lifecycle from sealed forward leaf
+`4ac932e28fab714728f0d6fddfcf9cdf70b507c5`. All three complete
+Core-dependent regressions deferred above are included unchanged. Existing
+Via-named Core members and historical result literals are preserved.
+
+The batch also includes the exact shared original-publication durability
+helpers and repairs for all eight active publishers, with the whole 24-case
+filesystem-fault regression. A matching readback after failed fsync no longer
+settles a pending original publication; the original artifact and sealed
+manifest must both regain descriptor-bound durability first. Ordinary
+readers and historical JSON schemas are unchanged.
+
+Independent bounded review found no remaining P1/P2 in the saved-factory
+fixes or eight repairs. Static source/token dependency inspection found no
+missing imports or deferred-surface edges in the 146-path implementation.
+Those are source/review observations; actual partition compilation and final
+checks remain pending. The public operation, coordinator, manager adapter,
+API coverage and operating reference stay in the following surface batch.
+There is still no connected writer or saved/reopened acceptance proof.
+
+This originating record carries the dependency continuation, avoiding an
+extra redundant history file. The existing CodeRabbit exclusion remains
+limited to three generated bundles; review policy is unchanged. Installation
+is deferred until the actual executable surface has been reviewed and merged.
+
+### Backend final local result
+
+The actual public dependency partition passed both main/stub TypeScript
+projects, global type-aware strict lint with zero warnings, build, compatibility,
+bridge checks, API/repository/MCP/all-skill validation, all seven official
+skill quick checks and reproducible server/supervisor/manager bundles. The
+dependency manifest and lock bytes remain identical to the retained successful
+installation/tree/signatures/audit/sanitizer proof.
+
+All 82 focused cases across 18 complete files passed without a skip in
+80.02 seconds. These include all three deferred Core regressions, retained
+saved-family/factory custody and the complete 24-case filesystem-fault suite
+plus affected journal regressions. The new saved-factory test selects actual
+factory code with inert child processes; it is a bounded ownership regression,
+not full positive native or connected saved acceptance.
+
+The final 5668-file package manifest is SHA-256
+`62ec024b878d00fb399a5a1a1fa59c5dcc76d85eb34c3290de68cb99750b3211`;
+its TypeScript source digest is
+`0ddce490a0215da5afd4d08bff4162bec66b64bb7ff0d503146616444417d61b`.
+Original test processes exited before successful task-owned control fixtures
+and compile caches were removed. Logs, failure evidence and terminal receipts
+remain private. Final exact-head CI/CodeRabbit and publication are pending.
+
+### Backend rebase onto the corrected helper payload
+
+The backend is now based on helper commit
+`c97bb2a3d808974784773f166b0b81c55fc686dc`. Its prior 82-case
+result above binds the earlier helper package; it is not final proof after
+the native review corrections. The complete tail classification regression
+is now in that helper commit, leaving 145 backend implementation/test paths.
+All genuine Core/factory and eight journal repairs remain intact. New final
+checks bind the corrected six/seven helper inputs before publication.
+
+The rebase preserved every newer helper-history section and retained the
+corrected helper's full compatibility baseline. Only facade projections
+will regenerate from the actual backend build; external pins stay fixed.

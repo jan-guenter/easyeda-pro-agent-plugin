@@ -65,6 +65,11 @@ export function currentFootprintCopyV2SavedSqlSource(plan: CurrentFootprintCopyV
 }> {
   const held = original(plan); return Object.freeze({ source: held.source, before: currentFootprintCopyV2Before(held.source.copyPlan), after: held.after });
 }
+/** Exact decoded closed EDIT_HEAD actor from the completed original SQL
+ * relation. This data projection grants no live actor or native authority. */
+export function currentFootprintCopyV2SavedActor(plan:CurrentFootprintCopyV2SavedProjection):Readonly<Record<string,unknown>>{
+ return original(plan).rawUser;
+}
 /** Original SQL relationship only. This does not issue a reopened owner. */
 export function currentFootprintCopyV2SavedTarget(plan: CurrentFootprintCopyV2SavedProjection): Readonly<{
   projectUuid: string; branchUuid: string; footprintUuid: string;
