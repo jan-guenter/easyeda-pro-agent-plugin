@@ -9,7 +9,8 @@ import { basename, dirname, join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { controlDataDirectory, controlRootCapability, operationPath } from "./artifacts.ts";
 import type { loadClosedSymbolJournal } from "./closed-symbol-journal.ts";
-import { inspectRecordedClosedCopy } from "./closed-symbol-recorded-copy.ts";
+import { inspectAbandonedBaselineRecordedClosedCopy, inspectRecordedClosedCopy } from "./closed-symbol-recorded-copy.ts";
+import { HistoricalOwnerReadQualification } from "./historical-owner-read-qualification.ts";
 import { canonicalJson, isRecord, sha256Json } from "./core.ts";
 import { openVerifiedMachineNode } from "./machine-profile.ts";
 import type { MachineProfile, VerifiedMachineNode } from "./machine-profile.ts";
@@ -22,7 +23,7 @@ type Directory = Awaited<ReturnType<Root["openDirectory"]>>;
 type Digests = Readonly<{ sourceSha256: string; schemaSha256: string; logicalSha256: string }>;
 interface FilePlan { readonly path: string; readonly sha256: string; readonly recordedIdentity?: unknown }
 interface FileObservation { readonly plan: FilePlan; readonly directory: Directory; readonly file: FileHandle;
-  readonly bound: string; readonly identity: string }
+  readonly bound: string; readonly identity: string; readonly historicalQualification: HistoricalOwnerReadQualification | undefined }
 interface Entry { readonly key: string; readonly result: Digests; readonly enrolledAt: number }
 const LIFETIME_MS = 600_000, MAX_BYTES = 268_435_456n, MAX_ENTRIES = 4;
 const entries = new Map<string, Entry>();
@@ -59,7 +60,7 @@ function plans(loaded: Prefix, checkpoint: Readonly<Record<string, unknown>>): r
 async function retain(root: Root, plan: FilePlan): Promise<FileObservation> {
   need(await realpath(plan.path) === plan.path, "path contains a symlink");
   const directory = await root.openDirectory(dirname(plan.path), false);
-  let file: FileHandle | undefined;
+  let file: FileHandle | undefined, historicalQualification: HistoricalOwnerReadQualification | undefined;
   try {
     const bound = `/proc/self/fd/${directory.handle.fd}/${basename(plan.path)}`;
     await noSidecars(bound); await noSidecars(plan.path);
@@ -69,18 +70,25 @@ async function retain(root: Root, plan: FilePlan): Promise<FileObservation> {
     need(stat.isFile() && stat.nlink === 1n && stat.size > 0n && stat.size <= MAX_BYTES, "file kind or bound changed");
     const currentIdentity = canonicalJson(identity(stat));
     if (plan.recordedIdentity !== undefined) {
-      need(currentIdentity === canonicalJson(plan.recordedIdentity) && stat.mode % 512n === 0o600n &&
-        typeof process.getuid === "function" && stat.uid === BigInt(process.getuid()), "recorded copy identity changed");
+      need(stat.mode % 512n === 0o600n && typeof process.getuid === "function" && stat.uid === BigInt(process.getuid()), "recorded copy identity changed");
+      if (currentIdentity !== canonicalJson(plan.recordedIdentity)) {
+        try { historicalQualification = await HistoricalOwnerReadQualification.open(); }
+        catch { need(false, "recorded copy identity changed"); }
+        const historical = { ...identity(stat), uid: String(historicalQualification.originalUid(stat.uid)), gid: String(historicalQualification.originalGid(stat.gid)) };
+        need(canonicalJson(historical) === canonicalJson(plan.recordedIdentity), "recorded copy identity changed");
+        await historicalQualification.assertCurrent();
+      }
     }
-    return { plan, directory, file, bound, identity: currentIdentity };
+    return { plan, directory, file, bound, identity: currentIdentity, historicalQualification };
   } catch (error) {
-    const closed = await Promise.allSettled([directory.handle.close(), ...(file === undefined ? [] : [file.close()])]);
+    const closed = await Promise.allSettled([directory.handle.close(), ...(file === undefined ? [] : [file.close()]), ...(historicalQualification === undefined ? [] : [historicalQualification.close()])]);
     const failures = closed.filter(result => result.status === "rejected").map(result => result.reason as unknown);
     if (failures.length > 0) { throw new AggregateError([error, ...failures], "Historical abandonment SQL partial cleanup failed.", { cause: error }); }
     throw error;
   }
 }
 async function unchanged(root: Root, item: FileObservation): Promise<void> {
+  await item.historicalQualification?.assertCurrent();
   for (const value of [await item.file.stat({ bigint: true }), await lstat(item.bound, { bigint: true }), await lstat(item.plan.path, { bigint: true })]) {
     need(value.isFile() && !value.isSymbolicLink() && canonicalJson(identity(value)) === item.identity, "file identity changed");
   }
@@ -89,7 +97,7 @@ async function unchanged(root: Root, item: FileObservation): Promise<void> {
   const named = await root.openDirectory(item.directory.absolute, false);
   try { need(named.info.dev === item.directory.info.dev && named.info.ino === item.directory.info.ino, "directory changed"); }
   finally { await named.handle.close(); }
-  await root.assertCurrent();
+  await root.assertCurrent(); await item.historicalQualification?.assertCurrent();
 }
 async function observe(root: Root, files: readonly FileObservation[]): Promise<void> {
   const buffer = Buffer.alloc(1_048_576);
@@ -106,8 +114,10 @@ async function observe(root: Root, files: readonly FileObservation[]): Promise<v
     await unchanged(root, item);
   }
 }
-async function cold(loaded: Prefix, checkpoint: Readonly<Record<string, unknown>>, runtime: MachineProfile["runtime"], checkpointPlan: FilePlan): Promise<Digests> {
-  const recorded = await inspectRecordedClosedCopy({ operationId: loaded.journal.operationId, phase: "baseline-copy", runtime });
+async function cold(loaded: Prefix, checkpoint: Readonly<Record<string, unknown>>, runtime: MachineProfile["runtime"], checkpointPlan: FilePlan,
+  historicalQualification: HistoricalOwnerReadQualification | undefined): Promise<Digests> {
+  const recorded = historicalQualification === undefined ? await inspectRecordedClosedCopy({ operationId: loaded.journal.operationId, phase: "baseline-copy", runtime })
+    : await inspectAbandonedBaselineRecordedClosedCopy({ operationId: loaded.journal.operationId, runtime }, historicalQualification);
   const { inventory } = recorded, completion = readerCompletion(inventory);
   need(recorded.evidence["closedPlanSha256"] === loaded.journal.closedPlanSha256 &&
     recorded.evidence["phaseDataSha256"] === loaded.events[9]?.dataSha256, "cold reader consumed another journal prefix");
@@ -144,13 +154,13 @@ export async function inspectHistoricalAbandonmentSql(loaded: Prefix, checkpoint
     for (const plan of filePlans) { files.push(await retain(root, plan)); }
     await observe(root, files);
     const key = sha256Json({ inputText, root: { path: root.path, device: String(root.device), inode: String(root.inode) },
-      files: files.map(item => ({ path: item.plan.path, identity: item.identity, sha256: item.plan.sha256 })) });
+      files: files.map(item => ({ path: item.plan.path, identity: item.identity, sha256: item.plan.sha256, historicalOwnerRead: item.historicalQualification?.binding() ?? null })) });
     const now = performance.now();
     for (const [name, entry] of entries) { if (now < entry.enrolledAt || now - entry.enrolledAt >= LIFETIME_MS) { entries.delete(name); } }
     const previous = entries.get(slot);
     if (previous !== undefined && previous.key !== key) { entries.delete(slot); }
     const selected = entries.get(slot);
-    result = selected?.result ?? await cold(loaded, checkpoint, runtime, checkpointPlan);
+    result = selected?.result ?? await cold(loaded, checkpoint, runtime, checkpointPlan, files[0]?.historicalQualification);
     await observe(root, files);
     await node.assertCurrent();
     for (const item of files) { await unchanged(root, item); }
@@ -164,7 +174,13 @@ export async function inspectHistoricalAbandonmentSql(loaded: Prefix, checkpoint
     }
   } catch (error) { failed = true; originalFailure = error; entries.delete(slot); throw error; }
   finally {
-    const closed = await Promise.allSettled([...files.flatMap(item => [item.file.close(), item.directory.handle.close()]), ...(node === undefined ? [] : [node.close()])]);
+    const cleanup = files.flatMap(item => {
+      const resources = [item.file.close(), item.directory.handle.close()];
+      if (item.historicalQualification !== undefined) { resources.push(item.historicalQualification.close()); }
+      return resources;
+    });
+    if (node !== undefined) { cleanup.push(node.close()); }
+    const closed = await Promise.allSettled(cleanup);
     const failures = closed.filter(value => value.status === "rejected").map(value => value.reason as unknown);
     if (failures.length > 0) {
       entries.delete(slot);

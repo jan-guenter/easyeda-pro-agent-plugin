@@ -148,3 +148,50 @@ No journal, sidecar or saved design was rewritten. The namespace qualification
 correction and the supported retirement correction belong to the following
 batched release. Installed upstream startup, capsule-fix acceptance and bridge
 or CAD admission remain unproved by this case.
+
+
+## 2026-11-16 historical owner representation correction
+
+Read-only comparison isolated another boundary introduced by the reviewed outer
+root-to-one capsule. The complete original Source sidecar bindings match outside
+the capsule, but its v1 file-identity digest includes the namespace-relative UID.
+The unchanged files report owner zero outside and owner one inside. Two existing
+closed-symbol abandonment receipts similarly refused their unchanged retained
+raw-copy UID/GID identity. Their original refusal and comparison evidence remain
+retained privately; no journal, sidecar or project bytes were rewritten.
+
+A separate private, versioned read qualification retains the original user
+namespace descriptor. It requires exactly one `1 0 1` range in both current maps,
+all real/effective/saved/filesystem UID/GID columns equal to one and all five
+capability sets zero. It rechecks those facts and the retained namespace across
+asynchronous comparison boundaries. Unsupported maps, credentials and ownership
+remain refused. Local file ownership, modes and complete current-view identities
+are checked independently; all non-owner identity fields and byte hashes remain
+exact. The qualification supplies no native owner or cached admission.
+
+Only a complete existing Source intent/result pair may additionally compare the
+old owner-zero identity representation. Both must bind the same projected digest
+and retain every original manifest, roster, chain, result-to-intent and file-proof
+binding. Raw v1 snapshot and publisher projections are unchanged; an incomplete
+old pair cannot use this read comparison to resume or publish. Symbol reuse is
+restricted to the abandonment reader and its separately named fixed baseline
+cold reader. The ordinary recorded-copy reader keeps its original strict identity
+comparison. Every existing result shape and fixed authority flag is unchanged.
+
+Actual inert read-only user-namespace fixtures preserve byte-identical v1 records,
+prove historical reads under the exact mapping, and prove that ordinary reads
+and Source publication remain strict. Negative cases cover different UID/GID
+maps, capability and credential fields, copied/closed qualification state,
+non-owner identity drift, inconsistent complete Source digests and incomplete
+sidecars. The first implementation diagnostic passed 34 of 35 cases; the sole
+failure was the test bundler's Go RE2 rejection of a JavaScript Unicode regex
+flag. Its correction changes only the test fixture. These proofs use synthetic
+managed histories and inert Node readers, not connected native/runtime admission;
+complete public-payload build, checks, installation and real-history read-only
+qualification remain the enclosing release workflow's work.
+
+After freezing the correction, all 35 cases in the three focused files passed
+with no skips on Linux x86_64, Node 24.18.0, npm 11.16.0 and soft core limit zero.
+The nine changed TypeScript files passed strict type-aware lint with zero
+warnings and errors. No whole-project suite or lint campaign was repeated for
+this second leaf; the enclosing final-payload verification remains required.

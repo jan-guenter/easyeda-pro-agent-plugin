@@ -40,7 +40,7 @@ type EngineApi = Readonly<{ EasyedaControlEngine: typeof EasyedaControlEngine }>
 
 const digest = "a".repeat(64);
 export async function forwardSourceRelinquishmentFixture(context: TestContext, suffix: string): Promise<Readonly<{
-  operationId: string; path: string; originalBytes: Buffer; request: CurrentFootprintForwardSourceRelinquishmentRequest;
+  operationId: string; path: string; originalBytes: Buffer; syntheticProfile: Readonly<Record<string, unknown>>; request: CurrentFootprintForwardSourceRelinquishmentRequest;
   historical: HistoricalApi; contract: ContractApi; source: SourceApi; admission: AdmissionApi;
   engine: EasyedaControlEngine;
   owner: CurrentFootprintForwardSourceUnknownRelinquishment;
@@ -196,7 +196,7 @@ export async function forwardSourceRelinquishmentFixture(context: TestContext, s
     },
   };
   const restart = (): CurrentFootprintForwardSourceUnknownRelinquishment => new coordinator.CurrentFootprintForwardSourceUnknownRelinquishment(options, deps);
-  return { operationId, path, originalBytes, historical, contract, source, admission, engine, state, restart, owner: restart(),
+  return { operationId, path, originalBytes, syntheticProfile: profile, historical, contract, source, admission, engine, state, restart, owner: restart(),
     request: contract.currentFootprintForwardSourceRelinquishmentRequestSchema.parse({ action: "relinquish-unknown-source-opening", operationId,
       expectedManifestSha256: profile.manifestSha256, expectedRosterSha256: profile.rosterSha256, expectedIntentSha256: sha256Json(records[0]),
       expectedBindingSha256: sha256Json(records[6]), confirmRelinquishUnknownSourceOpening: true, acceptUnknownCaptureOutcome: true }) };

@@ -1,8 +1,11 @@
+/* oxlint-disable import/max-dependencies -- Join the actual synthetic Source receipt graph with an inert read-only namespace proof. */
 /** Synthetic managed histories and observation seams only. No live recovery or native process is invoked. */
 import assert from "node:assert/strict";
 import { readFile, readdir, rename, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
+import { pathToFileURL } from "node:url";
+import { compileSyntheticHistoricalSourceReader, historicalRootNamespaceAvailable, runHistoricalReadOnlyNamespace } from "./helpers/historical-owner-namespace-fixture.ts";
 import { controlDataDirectory, createOperation, operationPath } from "../src/artifacts.ts";
 import { scanQualifiedAdmissionOperations } from "../src/closed-symbol-terminal-admission.ts";
 import { OPERATION_SCHEMA, buildPlanHash, isRecord } from "../src/core.ts";
@@ -283,4 +286,33 @@ void test("unrelated prepared Source histories retain legacy admission without h
   assert.equal(selected.authorityRestored, false);
   assert.equal(selected.executionAuthorized, false);
   assert.equal(selected.replayAllowed, false);
+});
+
+void test("complete root-owned Source v1 receipt reads unchanged in the inert UID-one namespace while partial receipts and publishing stay strict", { timeout: 60_000 }, async context => {
+  if (!historicalRootNamespaceAvailable()) { context.skip("Requires the actual root-to-one parent UID/GID mapping."); return; }
+  const f = await forwardSourceRelinquishmentFixture(context, "namespace-owner");
+  const result = f.contract.currentFootprintForwardSourceRelinquishmentResultSchema.parse(await f.owner.run(f.request));
+  const directory = join(controlDataDirectory(), "footprint-forward-source-relinquishments-v1", f.operationId);
+  const intentPath = join(directory, "intent.json"), resultPath = join(directory, "relinquished.json");
+  const before = await Promise.all([f.path, intentPath, resultPath].map(path => readFile(path)));
+  const entry = await compileSyntheticHistoricalSourceReader(`
+    import assert from "node:assert/strict";
+    import { readCurrentFootprintForwardSourceHistoricalSnapshot, readCurrentFootprintForwardSourceRelinquishment,
+      publishCurrentFootprintForwardSourceRelinquishment } from "../src/current-footprint-forward-source-relinquishment-journal.ts";
+    const token = await readCurrentFootprintForwardSourceHistoricalSnapshot(${JSON.stringify(f.operationId)});
+    const receipt = await readCurrentFootprintForwardSourceRelinquishment(token);
+    assert.deepEqual(receipt?.result, ${JSON.stringify(result)});
+    await assert.rejects(publishCurrentFootprintForwardSourceRelinquishment(token, "relinquished.json", receipt.result), /PUBLICATION_BINDING/u);
+    process.stdout.write(JSON.stringify(receipt.result));
+  `, f.syntheticProfile);
+  const program = `await import(${JSON.stringify(pathToFileURL(entry).href)});`;
+  assert.deepEqual(JSON.parse(await runHistoricalReadOnlyNamespace(program)), result);
+  assert.deepEqual(await Promise.all([f.path, intentPath, resultPath].map(path => readFile(path))), before);
+  await assert.rejects(runHistoricalReadOnlyNamespace(program, "2"), /INTENT_BINDING/u);
+  await writeFile(resultPath, `${JSON.stringify({ ...result, originalIdentitySha256: "e".repeat(64) })}\n`);
+  await assert.rejects(runHistoricalReadOnlyNamespace(program), /INTENT_BINDING/u);
+  const resultBytes = before[2]; assert.ok(resultBytes !== undefined); await writeFile(resultPath, resultBytes);
+  await unlink(resultPath);
+  await assert.rejects(runHistoricalReadOnlyNamespace(program), /INTENT_BINDING/u);
+  assert.deepEqual(await readFile(intentPath), before[1]); assert.deepEqual(await readFile(f.path), before[0]);
 });

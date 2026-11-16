@@ -1,4 +1,5 @@
 /** Internal historical evidence reader. Never restores action authority. */
+/* oxlint-disable import/max-dependencies -- Preserve the strict ordinary reader while separately binding fixed abandoned-baseline reads to a retained namespace qualification. */
 import type { BigIntStats } from "node:fs";
 import { lstat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, resolve } from "node:path";
@@ -8,6 +9,8 @@ import { loadClosedSymbolHistoricalPhaseJournal as loadClosedSymbolJournal } fro
 import { canonicalJson, isRecord, sha256Json } from "./core.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
+import type { HistoricalOwnerReadQualification } from "./historical-owner-read-qualification.ts";
+import { VALIDATION_ACTION_ID } from "./closed-symbol-target-claim.ts";
 
 type CopyPhase = "baseline-copy" | "edit-copy" | "verify-copy";
 const HASH = /^[a-f0-9]{64}$/u;
@@ -57,7 +60,7 @@ async function assertArtifact(path: string, expected: FileIdentity): Promise<voi
   requireValue(value.isFile() && !value.isSymbolicLink() && value.nlink === 1n && value.mode % 512n === 0o600n && typeof process.getuid === "function" && value.uid === BigInt(process.getuid()) && canonicalJson(identity(value)) === canonicalJson(expected), "Recorded copy artifact identity changed.");
 }
 
-export async function inspectRecordedClosedCopy(input: Readonly<{ operationId: string; phase: CopyPhase; runtime: MachineProfile["runtime"] }>): Promise<Readonly<{
+async function inspectRecordedCopy(input: Readonly<{ operationId: string; phase: CopyPhase; runtime: MachineProfile["runtime"] }>, historicalQualification?: HistoricalOwnerReadQualification): Promise<Readonly<{
   inventory: Awaited<ReturnType<typeof readExactSqlInventory>>; evidence: Readonly<Record<string, unknown>>;
 }>> {
   const argumentsValue = exact(input, ["operationId", "phase", "runtime"]);
@@ -72,6 +75,22 @@ export async function inspectRecordedClosedCopy(input: Readonly<{ operationId: s
   // Existing-only capability must be retained before any lazy artifact-store read.
   const root = await controlRootCapability(false);
   const initial = await loadClosedSymbolJournal(operationId);
+  if (historicalQualification !== undefined) {
+    await historicalQualification.assertCurrent();
+    requireValue(phase === "baseline-copy" && initial.journal.sequence === 16 && initial.events.length === 16 &&
+      initial.journal.state === "closed-session-recording" && !initial.journal.hardStop && !initial.journal.orphanedCallPossible &&
+      !initial.journal.mutationMayHaveOccurred && initial.journal.plan.operation.id === VALIDATION_ACTION_ID,
+    "Recorded copy historical abandonment prefix changed.");
+  }
+  const assertCurrentArtifact = historicalQualification === undefined ? assertArtifact : async (path: string, expected: FileIdentity): Promise<void> => {
+    await historicalQualification.assertCurrent();
+    const value = await lstat(path, { bigint: true });
+    requireValue(value.isFile() && !value.isSymbolicLink() && value.nlink === 1n && value.mode % 512n === 0o600n && typeof process.getuid === "function" && value.uid === BigInt(process.getuid()), "Recorded copy artifact identity changed.");
+    const observed = identity(value);
+    const historical = { ...observed, uid: String(historicalQualification.originalUid(value.uid)), gid: String(historicalQualification.originalGid(value.gid)) };
+    requireValue(canonicalJson(observed) === canonicalJson(expected) || canonicalJson(historical) === canonicalJson(expected), "Recorded copy artifact identity changed.");
+    await historicalQualification.assertCurrent();
+  };
   const event = initial.events.find((value) => value.step === phase && value.kind === "result");
   requireValue(event !== undefined, "Recorded copy result is absent; no remaining action is authorized.");
   const data = exact(event.data, ["copyReceipt", "sqlDigests"]);
@@ -83,12 +102,12 @@ export async function inspectRecordedClosedCopy(input: Readonly<{ operationId: s
   const directory = await root.openDirectory(directoryPath, false);
   try {
     const bound = `/proc/self/fd/${directory.handle.fd}/${basename(copy.artifact)}`;
-    await assertArtifact(bound, copy.artifactIdentity);
-    await assertArtifact(copy.artifact, copy.artifactIdentity);
+    await assertCurrentArtifact(bound, copy.artifactIdentity);
+    await assertCurrentArtifact(copy.artifact, copy.artifactIdentity);
     const inventory = await readExactSqlInventory({ checkpointPath: copy.artifact, expectedSha256: copy.sha256, runtime });
     requireValue(inventory.checkpointSha256 === expected["checkpointSha256"] && inventory.schemaSha256 === expected["schemaSha256"] && inventory.logicalSha256 === expected["logicalSha256"], "Recorded copy SQL inventory digests changed.");
-    await assertArtifact(bound, copy.artifactIdentity);
-    await assertArtifact(copy.artifact, copy.artifactIdentity);
+    await assertCurrentArtifact(bound, copy.artifactIdentity);
+    await assertCurrentArtifact(copy.artifact, copy.artifactIdentity);
     await root.assertCurrent();
     const current = await root.openDirectory(directoryPath, false);
     try {
@@ -96,12 +115,24 @@ export async function inspectRecordedClosedCopy(input: Readonly<{ operationId: s
     } finally { await current.handle.close(); }
     const final = await loadClosedSymbolJournal(operationId);
     requireValue(canonicalJson(final.journal) === canonicalJson(initial.journal), "Recorded copy journal changed during inspection.");
-    await assertArtifact(bound, copy.artifactIdentity);
-    await assertArtifact(copy.artifact, copy.artifactIdentity);
+    await assertCurrentArtifact(bound, copy.artifactIdentity);
+    await assertCurrentArtifact(copy.artifact, copy.artifactIdentity);
     return Object.freeze({ inventory, evidence: Object.freeze({ profile: "easyeda-pro-control.recorded-closed-copy-evidence.v1", operationId, phase,
       closedPlanSha256: initial.journal.closedPlanSha256, phaseDataSha256: event.dataSha256, copyReceiptSha256: copy.receiptSha256,
       checkpointSha256: inventory.checkpointSha256, schemaSha256: inventory.schemaSha256, logicalSha256: inventory.logicalSha256,
       readerCompletion: readerCompletion(inventory), historicalEvidenceVerified: true, copyAuthorityRestored: false, closureAuthorityRestored: false,
       sourceProjectGenerationBindingVerified: false, executionAuthorized: false, replayAllowed: false, completionProved: false }) });
   } finally { await directory.handle.close(); }
+}
+
+/** Preserve the ordinary historical/terminal reader's exact v1 identity contract. */
+export function inspectRecordedClosedCopy(input: Readonly<{ operationId: string; phase: CopyPhase; runtime: MachineProfile["runtime"] }>): ReturnType<typeof inspectRecordedCopy> {
+  return inspectRecordedCopy(input);
+}
+
+/** Only the abandonment SQL reader supplies a genuine original namespace
+ * qualification. No phase selector, owner reconstruction or writer is offered. */
+export function inspectAbandonedBaselineRecordedClosedCopy(input: Readonly<{ operationId: string; runtime: MachineProfile["runtime"] }>,
+  qualification: HistoricalOwnerReadQualification): ReturnType<typeof inspectRecordedCopy> {
+  return inspectRecordedCopy({ ...input, phase: "baseline-copy" }, qualification);
 }
