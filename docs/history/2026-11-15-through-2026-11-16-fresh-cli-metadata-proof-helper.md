@@ -159,3 +159,11 @@ lint and unchanged bridge checks remain applicable; no dependency lock or bridge
 source changed during these review corrections. Final outgoing-history scan,
 exact-head public CI/CodeRabbit review, merge and both installed acceptance
 checks are still pending at this local handoff.
+
+The first combined head subsequently passed all thirteen CI checks, but three
+additional CodeRabbit broker issues were accepted and fixed before merge.
+Their original failure paths, bounded concurrent-flush correction and six
+focused regressions are recorded in the
+[broker review correction](2026-11-16-windows-linux-evidence-broker.md#subsequent-pr-review-corrections).
+These are additional findings after the seven initial/full-review issues above;
+a green CI check was not treated as permission to ignore the review.

@@ -49,3 +49,31 @@ v2 module graph and plan: preview.v2, ownerStarted:false, original process handl
 held through observed exit 0. This performs no Codex CLI/app-server connection,
 workspace/evidence allocation or Windows/WSL broker execution. It is a portable
 module/preview observation, not Windows runtime acceptance.
+
+## Subsequent PR review corrections
+
+All thirteen public CI checks passed for
+`3ca37a792ae772c8db826a329f88c6e8a36b0eb5`. CodeRabbit nevertheless reported
+three valid broker recovery/concurrency issues, so that head was not merged.
+A failed control-file sync could terminate the broker and lose retained
+evidence custody; a downgraded close ACK could leave Python and the coordinator
+in incompatible states; and status bytes queued after a flush request could
+make a healthy prefix acknowledgment look incomplete.
+
+The broker now reports recoverable negative control ACKs, advances the control
+read offset only after the actual positive ACK, and derives its closing state
+from the ACK actually sent after protocol synchronization. A negative close ACK
+leaves both peers able to settle the original evidence. Journal metrics apply
+once inside the original serialized receive queue. Concurrent flush callers
+share one bounded drain barrier that joins late status suffixes without resetting
+its deadline or replaying an unknown acknowledgment. Failure remains sticky for
+normal metadata execution, while original cleanup can finish.
+
+All six focused broker checks pass on a private supported persistent Linux
+filesystem, with zero skips. The three new cases use the actual fixed Python
+program with one-shot syscall failures, or delay the original prefix ACK while
+queuing concurrent status bytes/callers. Both facade TypeScript projects and
+strict type-aware lint on the two affected files pass with zero warnings/errors.
+Full outgoing-history privacy scanning passes. No actual CLI, native owner or
+EasyEDA process was started. The new exact-head CI/review and installed Windows
+V2 acceptance remain required.
