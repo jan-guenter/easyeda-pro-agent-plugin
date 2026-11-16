@@ -103,7 +103,7 @@ export class CurrentSchematicWireGroupHistoryCursor {
   /** Preserve each exact reply and permanently retain a consumed failure. */
   public accept(command: Command, raw: unknown): void {
     need(!this.#failed && this.#reserved && this.#pending === command);
-    try { const value = capture(raw).value; this.#packets.push(raw); const step = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (step.done === true) { this.#result = step.value; } else { this.#pending = step.value; } } catch (error) { this.#failed = true; throw error; }
+    try { const value = capture(raw).value; this.#packets.push(value); const step = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (step.done === true) { this.#result = step.value; } else { this.#pending = step.value; } } catch (error) { this.#failed = true; throw error; }
   }
   /** Completion remains data only; original event ownership is separate. */
   public requireCompleted(): CurrentSchematicWireGroupHistoryData { need(!this.#failed && !this.#reserved && this.#pending === null && this.#result !== null); return this.#result; }

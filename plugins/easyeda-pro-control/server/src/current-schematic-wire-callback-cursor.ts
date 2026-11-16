@@ -18,6 +18,14 @@ export type CurrentSchematicWireCallbackInput =
   Base & Readonly<{ role: "entry" }> |
   Base & Readonly<{ role: "point-before" | "point-after"; previous: string }> |
   Base & Readonly<{ role: "setter-before"; first: string; second: string }>;
+const frameInput = {frame: handle, holder: handle, native: handle, qualified: handle};
+const cursorInput = z.discriminatedUnion("role", [
+  z.strictObject({role: z.literal("values"), holder: handle, values: z.array(handle).length(8).readonly()}),
+  z.strictObject({...frameInput, role: z.literal("entry")}),
+  z.strictObject({...frameInput, role: z.literal("point-before"), previous: handle}),
+  z.strictObject({...frameInput, role: z.literal("point-after"), previous: handle}),
+  z.strictObject({...frameInput, role: z.literal("setter-before"), first: handle, second: handle}),
+]).readonly();
 export interface CurrentSchematicWireCallbackData {
   readonly schema: "private.schematic-wire-callback-comparison-data.v1"; readonly role: CurrentSchematicWireCallbackInput["role"];
   readonly frame: string | null; readonly tuple: string | null; readonly compared: true; readonly suppliedObservationsOnly: true;
@@ -30,15 +38,16 @@ export class CurrentSchematicWireCallbackCursor {
   /** Exact original selectors come from Core's retaining owner; construction
    * itself supplies neither that custody nor an actual held marker. */
   public constructor(input: CurrentSchematicWireCallbackInput) {
-    handle.parse(input.holder);
-    if (input.role === "values") { need(input.values.length === 8); for (const value of input.values) { handle.parse(value); } }
+    const retained = cursorInput.parse(capture(input).value);
+    handle.parse(retained.holder);
+    if (retained.role === "values") { need(retained.values.length === 8); for (const value of retained.values) { handle.parse(value); } }
     else {
-      handle.parse(input.frame); handle.parse(input.native); handle.parse(input.qualified);
-      if (input.role === "point-before" || input.role === "point-after") { handle.parse(input.previous); }
-      else if (input.role === "setter-before") { handle.parse(input.first); handle.parse(input.second); }
+      handle.parse(retained.frame); handle.parse(retained.native); handle.parse(retained.qualified);
+      if (retained.role === "point-before" || retained.role === "point-after") { handle.parse(retained.previous); }
+      else if (retained.role === "setter-before") { handle.parse(retained.first); handle.parse(retained.second); }
     }
     const maximum = { values: LIMIT.values, entry: LIMIT.entry, "point-before": LIMIT.before, "point-after": LIMIT.after, "setter-before": LIMIT.setter } as const;
-    this.#maximum = maximum[input.role]; this.#plan = CurrentSchematicWireCallbackCursor.collect(input); Object.freeze(this);
+    this.#maximum = maximum[retained.role]; this.#plan = CurrentSchematicWireCallbackCursor.collect(retained); Object.freeze(this);
   }
   private static *collect(input: CurrentSchematicWireCallbackInput): Generator<Command, CurrentSchematicWireCallbackData, unknown> {
     let frame: string | null = null; let result: string | null = null;
@@ -76,7 +85,7 @@ export class CurrentSchematicWireCallbackCursor {
   /** A rejected reply retains the consumed attempt and permanently fails. */
   public accept(command: Command, raw: unknown): void {
     need(!this.#failed && this.#reserved && this.#pending !== null && command === this.#pending);
-    try { const value = capture(raw).value; this.#packets.push(raw); const row = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (row.done === true) { this.#result = row.value; } else { this.#pending = row.value; } } catch (error) { this.#failed = true; throw error; }
+    try { const value = capture(raw).value; this.#packets.push(value); const row = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (row.done === true) { this.#result = row.value; } else { this.#pending = row.value; } } catch (error) { this.#failed = true; throw error; }
   }
   /** Complete data cannot substitute for the retaining original event owner. */
   public requireCompleted(): CurrentSchematicWireCallbackData { need(!this.#failed && !this.#reserved && this.#pending === null && this.#result !== null); return this.#result; }

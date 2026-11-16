@@ -8,8 +8,9 @@ import {freezeDeep} from "./sqlite-inventory-core.ts";
 export const CURRENT_SCHEMATIC_WIRE_GROUP_PREPARATION_REQUESTS=Object.freeze({normalMaximum:52,cleanup:1,helperSourcesMaximum:14,scopeLimit:8,eventsMaximum:14,mapEntries:1,setEntries:1,ownKeys:256,prototypeDepth:12,pauses:0,resumes:0} as const);
 const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u),reference=z.strictObject({objectId:handle});
 const flags={objectGroup:z.literal(FLAGS.objectGroup),silent:z.literal(true),generatePreview:z.literal(false),throwOnSideEffect:z.literal(true)};
-const counts:Readonly<Record<string,number>>={scopeMain:1,scopeEditor:1,roots:3,collection:4,data:3,methods:7,snapshot:8,compared:5};
-const calls=Object.entries(PROGRAMS).map(([role,program])=>z.strictObject({phase:z.literal("wire-group-preparation-call"),role:z.literal(role),method:z.literal("Runtime.callFunctionOn"),params:z.strictObject({...flags,objectId:handle,functionDeclaration:z.literal(program),arguments:z.array(reference).length(counts[role]??0),returnByValue:z.literal(role==="compared"),awaitPromise:z.literal(false),userGesture:z.literal(false)})}));
+const counts:Readonly<Record<keyof typeof PROGRAMS,number>>={scopeMain:1,scopeEditor:1,roots:3,collection:4,data:3,methods:7,snapshot:8,compared:5};
+function programRole(role:string):role is keyof typeof PROGRAMS{return Object.hasOwn(PROGRAMS,role);}
+const calls=Object.entries(PROGRAMS).map(([role,program])=>{if(!programRole(role)){throw new Error("WIRE_GROUP_PREPARATION_ROLE");}return z.strictObject({phase:z.literal("wire-group-preparation-call"),role:z.literal(role),method:z.literal("Runtime.callFunctionOn"),params:z.strictObject({...flags,objectId:handle,functionDeclaration:z.literal(program),arguments:z.array(reference).length(counts[role]),returnByValue:z.literal(role==="compared"),awaitPromise:z.literal(false),userGesture:z.literal(false)})});});
 const frame=z.strictObject({phase:z.literal("wire-group-preparation-frame"),method:z.literal("Debugger.evaluateOnCallFrame"),params:z.strictObject({...flags,callFrameId:handle,expression:z.literal("[this,t,r]"),returnByValue:z.literal(false),includeCommandLineAPI:z.literal(false)})});
 const schema=z.union([...calls,frame]);
 export type CurrentSchematicWireGroupPreparationCommand=Readonly<z.infer<typeof schema>>;

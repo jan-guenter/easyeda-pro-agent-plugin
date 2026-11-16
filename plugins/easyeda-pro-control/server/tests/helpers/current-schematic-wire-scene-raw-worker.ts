@@ -12,6 +12,16 @@ const port = parentPort; if (port === null) { throw new Error("port"); } port.on
 const session = new Session(); session.connectToMainThread(); const helpers = new Set<string>(); const expected: string[] = []; let observing = false; let guardScript: string | null = null;
 session.on("Debugger.scriptParsed", event => { if (observing && event.params.url === "" && CALLS.some(row => event.params.length === row[1].length + 2)) { helpers.add(event.params.scriptId); } });
 async function post(method: string, params: unknown): Promise<unknown> { const raw: unknown = Reflect.apply(session.post.bind(session), session, [method, params]); return await raw; }
+function descriptorRefused(raw: unknown): boolean {
+  if (raw === null || typeof raw !== "object" || !("exceptionDetails" in raw)) { return false; }
+  const details: unknown = raw.exceptionDetails; if (details === null || typeof details !== "object") { return false; }
+  const exception: unknown = Reflect.get(details, "exception");
+  return exception !== null && typeof exception === "object" && Reflect.get(exception, "type") === "string" && Reflect.get(exception, "value") === "SCH209_RAW_SNAPSHOT";
+}
+function trueReply(raw: unknown): boolean {
+  if (raw === null || typeof raw !== "object" || "exceptionDetails" in raw) { return false; }
+  const result: unknown = Reflect.get(raw, "result"); return result !== null && typeof result === "object" && Reflect.get(result, "value") === true;
+}
 const fail = async (error: unknown): Promise<void> => { try { await session.post("Debugger.resume"); } catch {
   // Setup can fail without a held frame.
 } port.postMessage({ error: error instanceof Error ? error.stack : String(error) }); session.disconnect(); port.close(); };
@@ -34,11 +44,14 @@ session.on("Debugger.paused", event => { void (async (): Promise<void> => {
   if (snapshot === null || same === null) { throw new Error("missing original raw commands"); }
   // Fault injection touches only the owned inert graph. The production
   // Vocabulary contains none of these test mutation programs.
-  await post("Runtime.callFunctionOn", { objectId: data.referencesObjectId, functionDeclaration: 'function(){Object.defineProperty(this[0],"inertOwnModelGetter",{get(){throw Error("model getter must stay uncalled")},configurable:true});}', returnByValue: true });
-  const model = await post(snapshot.method, snapshot.params); const modelAccessorRefused = model !== null && typeof model === "object" && "exceptionDetails" in model;
-  await post("Runtime.callFunctionOn", { objectId: data.referencesObjectId, functionDeclaration: 'function(){delete this[0].inertOwnModelGetter;Object.defineProperty(this[20],"opaqueExportGetter",{get(){throw Error("replacement getter must stay uncalled")},configurable:true});}', returnByValue: true });
-  const drift = await post(same.method, same.params); const namespaceGetterDriftRefused = drift !== null && typeof drift === "object" && "exceptionDetails" in drift;
-  if (!modelAccessorRefused || !namespaceGetterDriftRefused) { throw new Error("unsafe raw descriptor acceptance"); }
+  const counters = await session.post("Runtime.callFunctionOn", { objectId: data.referencesObjectId, functionDeclaration: 'function(){const counts=[0,0];Object.defineProperty(this[0],"inertOwnModelGetter",{get(){counts[0]++;throw Error("model getter must stay uncalled")},configurable:true});return counts;}', returnByValue: false });
+  if (counters.exceptionDetails !== undefined || counters.result.objectId === undefined) { throw new Error("fault counter setup"); }
+  const model = await post(snapshot.method, snapshot.params); const modelAccessorRefused = descriptorRefused(model);
+  const injection = await session.post("Runtime.callFunctionOn", { objectId: data.referencesObjectId, functionDeclaration: 'function(counts){delete this[0].inertOwnModelGetter;Object.defineProperty(this[20],"opaqueExportGetter",{get(){counts[1]++;throw Error("replacement getter must stay uncalled")},configurable:true});}', arguments: [{objectId: counters.result.objectId}], returnByValue: true });
+  if (injection.exceptionDetails !== undefined) { throw new Error("namespace fault setup"); }
+  const drift = await post(same.method, same.params); const namespaceGetterDriftRefused = descriptorRefused(drift);
+  const uncalled = await post("Runtime.callFunctionOn", {objectId: counters.result.objectId, functionDeclaration: "function(){return this[0]===0&&this[1]===0;}", returnByValue: true, throwOnSideEffect: true});
+  if (!modelAccessorRefused || !namespaceGetterDriftRefused || !trueReply(uncalled)) { throw new Error("unsafe raw descriptor acceptance or getter invocation"); }
   await session.post("Debugger.resume"); await session.post("Runtime.releaseObjectGroup", { objectGroup: FLAGS.objectGroup }); port.postMessage({ count, data, helpers: helperCount, externalSources, modelAccessorRefused, namespaceGetterDriftRefused, pauses: 1, resumed: 1 }); session.disconnect(); port.close();
 })().catch(fail); });
 void (async (): Promise<void> => { await session.post("Debugger.enable"); observing = true; port.postMessage({ ready: true }); })().catch(fail);

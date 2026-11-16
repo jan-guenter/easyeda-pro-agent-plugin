@@ -1,5 +1,7 @@
 # Project history
 
+- [Wire callback review corrections](2026-11-16-wire-callback-review-corrections.md). Twenty reported issues addressed, immutable ordinary cursor evidence, strict data/numeric/actor guards and focused actual Inspector refusals; final release checks remain separate.
+
 - [2026-11-16 Wire V5 original native title custody](2026-11-16-wire-v5-native-title-custody.md).
 - [2026-11-16 Wire V5 unconditional ft native filter](2026-11-16-wire-v5-ft-native-filter.md).
 - [2026-11-16 Original Wire running group-method preparation](2026-11-16-wire-running-group-preparation.md).

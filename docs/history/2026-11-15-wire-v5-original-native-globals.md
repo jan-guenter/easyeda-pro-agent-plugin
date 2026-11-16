@@ -79,3 +79,11 @@ source-only title/ft coordinator still cannot adopt it or manufacture a native
 owner. The actual source-owner bridge, continuous globals interval, title/tree
 completion, annotation, worker/Main mutation, Save/drain and cold readback
 remain unproved and unmounted; all execution/Save/persistence flags remain false.
+
+## Tested source payload
+
+The source and test contents for this record's initial checks are sealed by
+private source commit `26ec16bcc1b44ff424cd2026942d8cf5833a4b7f`. This identifies the
+tested source tree; a preceding integration commit supplies context only.
+The public curation excludes that private ancestry and grants no connected
+execution or ownership from this historical identifier.

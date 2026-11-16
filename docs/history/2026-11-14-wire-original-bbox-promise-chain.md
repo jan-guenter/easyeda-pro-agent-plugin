@@ -52,3 +52,11 @@ All six focused tests pass with no skips against both installed source variants.
 The work uses isolated WSL, Node 24.18.0/npm 11.16.0, Linux x86_64 and a zero soft core limit. No EasyEDA MCP tools were exposed on session catalogue inspection, and no facade, native/application helper or manager was started. Generated helpers and identity artifacts remain excluded for the root's combined build.
 
 All output keeps originalHeldEventJoined, rTreeComplete, derivedMarkersComplete, bboxComplete, mutationAuthorized and saveAuthorized false. The complete owner still needs original run/construct/Modify admission, history clone/body completion, complete bbox/derived/observer rosters, parser/global AST/annotation completion, all three GROUP publications and Main SQL, one consumed Save, cleanup and an independent cold saved reader.
+
+## Tested source payload
+
+The source and test contents for this record's initial checks are sealed by
+private source commit `51c7ca2a0aceaf485eaf9862201e48517cb22b25`. This identifies the
+tested source tree; a preceding integration commit supplies context only.
+The public curation excludes that private ancestry and grants no connected
+execution or ownership from this historical identifier.

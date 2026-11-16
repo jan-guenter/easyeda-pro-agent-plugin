@@ -82,3 +82,11 @@ and official skill checks completed against the unchanged source freeze.
 This remains a support-source release with no new admitted API or writer.
 Publication, merged-commit CI and official installation outcomes will be
 recorded separately after they occur.
+
+## Review correction follow-up
+
+The [review correction record](2026-11-16-wire-callback-review-corrections.md)
+identifies all twenty reported issues, analogous legacy fixes, the separate
+4096-row immutable packet profile, focused evidence and final frozen checks.
+Those later changes regenerate all three bundle identities; the earlier
+byte-equality statements above describe only the initial curation checkpoint.

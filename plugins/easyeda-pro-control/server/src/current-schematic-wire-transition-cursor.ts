@@ -86,7 +86,7 @@ this.#reads+=1;
  /** Correlate the original reply with the reserved command and advance once. */
  public accept(command:Command,raw:unknown):void{need(!this.#failed&&this.#reserved&&this.#pending!==null&&command===this.#pending);
 try{const value=capture(raw).value;
-this.#packets.push(raw);
+this.#packets.push(value);
 const row=this.#plan.next(value);
 this.#pending=null;
 this.#reserved=false;

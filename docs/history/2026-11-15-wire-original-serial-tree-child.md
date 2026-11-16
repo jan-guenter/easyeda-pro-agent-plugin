@@ -70,3 +70,11 @@ TypeScript files, repository/MCP-contract/all-skill validation and the official
 quick validator for all seven packaged skills pass. Checks use Node24.18.0,
 npm11.16.0 and soft core limit0. Generated helpers and bundles are reserved for
 the parent integration; pre-existing generated changes are excluded here.
+
+## Tested source payload
+
+The source and test contents for this record's initial checks are sealed by
+private source commit `e85e14d1d327f3286e09301ae4fea5582ffd62a2`. This identifies the
+tested source tree; a preceding integration commit supplies context only.
+The public curation excludes that private ancestry and grants no connected
+execution or ownership from this historical identifier.

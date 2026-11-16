@@ -39,3 +39,11 @@ The earlier two-tick observation applies to the direct setter/endpoint branch. I
 The source work uses isolated WSL, pinned Node 24.18.0/npm 11.16.0, Linux x86_64 and a zero soft core limit. No EasyEDA MCP tools were exposed on catalogue inspection, and no facade or native/application tool was started. Generated helpers and identity artifacts remain excluded for the controller's combined build.
 
 The focused batch contains four GROUP tests, two scene raw tests and the three existing generated writer regressions affected by the fixture variant. All nine focused tests passed with no skips. Both TypeScript configurations passed. Strict type-aware lint passed with zero warnings and zero errors across all fourteen affected TypeScript files. Repository validation, plugin validation and all-skill validation passed. These checks establish no connected effect, saved result or cold reopen.
+
+## Tested source payload
+
+The source and test contents for this record's initial checks are sealed by
+private source commit `bd1f30bbbc2705b77b56b3588f2e4570ab2741f0`. This identifies the
+tested source tree; a preceding integration commit supplies context only.
+The public curation excludes that private ancestry and grants no connected
+execution or ownership from this historical identifier.

@@ -79,4 +79,7 @@ export const CURRENT_SCHEMATIC_WIRE_GROUP_METHOD_SOURCE=freezeDeep([
     }
   }
 ] as const);
+/** Start/end are informational source-roster provenance, not runtime selectors.
+ * This qualifier checks complete function bytes/hash and actual script/PC metadata;
+ * callers provide no whole script, so it grants no independent span proof. */
 export function qualifyCurrentSchematicWireGroupMethodFunction(input:unknown,actual:unknown,variant:0|1,role:"lineTagName"|"groupInitCallback",scriptId:string):void{compare(input,actual,CURRENT_SCHEMATIC_WIRE_GROUP_METHOD_SOURCE[variant].rows[role],scriptId);}

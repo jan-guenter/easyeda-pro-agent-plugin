@@ -597,7 +597,7 @@ export type CurrentSchematicWireDerivedRtreeRole = keyof typeof CURRENT_SCHEMATI
 export const CURRENT_SCHEMATIC_WIRE_DERIVED_RTREE_ROLES = Object.freeze(["rbushFactory", "modelTreeClass", "pointRangeClass", "connectionClass", "basicPointClass", "groupRTreeAddible", "lineBBox", "lineRenderBBox", "baseBBoxForRTree", "baseUpdateSelfBBox", "netRefresh", "netAnalyze", "netBuild"] as const);
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const remote = z.strictObject({ type: z.string(), subtype: z.string().optional(), className: z.string().optional(), description: z.string().max(16_384).optional(), objectId: handle.optional(), value: z.unknown().optional(), unserializableValue: z.string().optional() });
-const property = z.strictObject({ name: z.string(), value: remote.optional(), get: remote.optional(), set: remote.optional(), writable: z.boolean().optional(), configurable: z.boolean(), enumerable: z.boolean(), isOwn: z.literal(true) });
+const property = z.strictObject({ name: z.string(), value: remote.optional(), get: remote.optional(), set: remote.optional(), writable: z.boolean().optional(), configurable: z.boolean(), enumerable: z.boolean(), isOwn: z.literal(true) }).refine(field => field.value === undefined && field.writable === undefined || field.get === undefined && field.set === undefined);
 const internal = z.strictObject({ name: z.string(), value: remote });
 const packet = z.strictObject({ result: z.array(property).max(12), internalProperties: z.array(internal).length(3) });
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_WIRE_DERIVED_RTREE_SOURCE"); } }

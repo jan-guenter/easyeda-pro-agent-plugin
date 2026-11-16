@@ -51,7 +51,7 @@ export class CurrentSchematicWireConstructCursor {
   /** One malformed reply permanently consumes this same reader. */
   public accept(command: Command, raw: unknown): void {
     need(!this.#failed && this.#reserved && this.#pending !== null && command === this.#pending);
-    try { const value = capture(raw).value; this.#packets.push(raw); const row = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (row.done === true) { this.#result = row.value; } else { this.#pending = row.value; } }
+    try { const value = capture(raw).value; this.#packets.push(value); const row = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (row.done === true) { this.#result = row.value; } else { this.#pending = row.value; } }
     catch (error) { this.#failed = true; throw error; }
   }
   /** Return supplied comparison data with no original invocation claim. */

@@ -46,3 +46,11 @@ Work uses isolated WSL, pinned Node 24.18.0/npm 11.16.0, Linux x86_64 and a zero
 All four focused tests passed against the installed assets with no skips. Both TypeScript configurations passed. Strict type-aware lint passed on all six affected TypeScript files with zero warnings and errors. Repository, plugin/MCP and packaged-skill validation passed. The initially misidentified second-variant canvas stand-in and the corrected actual-source run remain retained privately; they provide no live evidence.
 
 The complete writer still needs an original runtime branch and complete listener/bbox/derived rosters, parser/global AST completion, all three GROUP worker/Main/SQL publications, one consumed Save, cleanup and the separate cold saved reader. No whole-writer maximum is inferred from this branch's component total.
+
+## Tested source payload
+
+The source and test contents for this record's initial checks are sealed by
+private source commit `f028fae8c6aa073756f16d8e1d5922441c597746`. This identifies the
+tested source tree; a preceding integration commit supplies context only.
+The public curation excludes that private ancestry and grants no connected
+execution or ownership from this historical identifier.

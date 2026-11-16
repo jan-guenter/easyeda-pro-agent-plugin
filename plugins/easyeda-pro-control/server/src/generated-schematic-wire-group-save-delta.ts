@@ -3,7 +3,7 @@
  * group publication, pending-node, Main, SQL, Save or persistence authority. */
 import { z } from "zod";
 import { canonicalJson, sha256Text } from "./core.ts";
-import { parseNativeRecords } from "./native-history.ts";
+import { parseNativeRecords, rejectDuplicateJsonKeys } from "./native-history.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 import { currentProjectCanvasPendingValueSchema } from "./current-project-canvas-pending-value.ts";
 import { generatedSchematicDisplaySaveBodyValueSchema } from "./generated-schematic-display-save-delta.ts";
@@ -59,7 +59,7 @@ export function compareGeneratedSchematicWireGroupPendingSaveDelta(args: Generat
   }
   need(wireTicket > 0 && lineTicket > 0 && attributeTicket > 0, "EXACT_THREE_TYPES");
   let user: unknown;
-  if (!value.userUndefined) { need(value.userJson !== null, "ACTOR"); const decoded: unknown = JSON.parse(value.userJson); actor.parse(decoded); user = decoded; }
+  if (!value.userUndefined) { need(value.userJson !== null, "ACTOR"); rejectDuplicateJsonKeys(value.userJson); const decoded: unknown = JSON.parse(value.userJson); actor.parse(decoded); user = decoded; }
   const expectedHead = { docType: "SCH_PAGE", client: value.client, uuid: target.pageUuid, updateTime: value.clock, version: String(value.clock),
     ...(first.workerEditVersion !== null && first.workerEditVersion.length > 0 ? { editVersion: first.workerEditVersion } : {}), ...(user === undefined ? {} : { user }) };
   const body = [`${JSON.stringify({ type: "DOCHEAD", ticket: value.headTicket })}||${JSON.stringify(expectedHead)}`, ...value.pending.map(node => `${JSON.stringify({ type: node.dataType, ticket: node.ticket, id: node.primitiveId })}||${node.data}`)].join("|\n");

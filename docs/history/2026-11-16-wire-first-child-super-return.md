@@ -145,3 +145,11 @@ The first child attribute/tag returns, complete child iteration/group getData,
 full oldData/init/callback/method/group/history/tick/full-setter returns,
 worker/Main/Modify/native owner/continuous globals/SQL/Save/cold remain closed.
 Later willDidRun packets supply no early owner, status or references.
+
+## Tested source payload
+
+The source and test contents for this record's initial checks are sealed by
+private source commit `4beb6394b3a156ce8655e53479202874837fa434`. This identifies the
+tested source tree; a preceding integration commit supplies context only.
+The public curation excludes that private ancestry and grants no connected
+execution or ownership from this historical identifier.

@@ -1,8 +1,7 @@
 /** Original single GROUP publication listener, qualified after its entire
  * original schematic source. Matching metadata grants no callback ownership. */
 import { createHash } from "node:crypto";
-import { captureCurrentSchematicDisplayAccessorSource as capture } from "./current-schematic-display-accessor-replies.ts";
-import { compareCurrentSchematicWireFunctionMetadata as compare, qualifyCurrentSchematicWireCompletionSource as qualify } from "./current-schematic-wire-completion-source.ts";
+import { compareCurrentSchematicWireFunctionMetadata as compare, captureQualifiedCurrentSchematicWireCompletionSource as qualify } from "./current-schematic-wire-completion-source.ts";
 import type { CurrentSchematicWireCompletionFunction } from "./current-schematic-wire-completion-source.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -150,7 +149,7 @@ export const CURRENT_SCHEMATIC_WIRE_GROUP_HISTORY_SOURCE = freezeDeep([
 ] as const);
 /** Qualify both original whole-source identity and the complete callback span. */
 export function qualifyCurrentSchematicWireGroupHistorySource(input: unknown): 0 | 1 {
-  const variant = qualify(input); const raw = capture(input);
+  const raw = qualify(input); const {variant} = raw;
   const spans: Readonly<Record<CurrentSchematicWireGroupHistorySourceRole, Readonly<{ start: number; end: number; bytes: number; sha256: string }>>> = CURRENT_SCHEMATIC_WIRE_GROUP_HISTORY_SOURCE[variant].rows;
   for (const row of Object.values(spans)) {
     const text = raw.scriptSource.slice(row.start, row.end);

@@ -131,7 +131,7 @@ export class CurrentSchematicWireAsyncCursor {
   /** Preserve supplied replies and permanently consume malformed or failed work. */
   public accept(command: Command, raw: unknown): void {
     need(!this.#failed && this.#reserved && this.#pending === command);
-    try { const value = capture(raw).value; this.#packets.push(raw); const step = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (step.done === true) { this.#result = step.value; } else { this.#pending = step.value; } } catch (error) { this.#failed = true; throw error; }
+    try { const value = capture(raw).value; this.#packets.push(value); const step = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (step.done === true) { this.#result = step.value; } else { this.#pending = step.value; } } catch (error) { this.#failed = true; throw error; }
   }
   /** Supplied data cannot replace actual original events or native custody. */
   public requireCompleted(): CurrentSchematicWireAsyncData { need(!this.#failed && !this.#reserved && this.#pending === null && this.#result !== null); return this.#result; }

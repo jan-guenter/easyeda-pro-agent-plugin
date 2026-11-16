@@ -45,7 +45,7 @@ class Reader<T> {
   /** Malformed evidence retains a terminal consumed attempt. */
   public accept(command: Command, raw: unknown): void {
     need(!this.#failed && this.#reserved && this.#pending !== null && command === this.#pending);
-    try { const value = capture(raw).value; this.#packets.push(raw); const row = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (row.done === true) { this.#result = row.value; } else { this.#pending = row.value; } } catch (error) { this.#failed = true; throw error; }
+    try { const value = capture(raw).value; this.#packets.push(value); const row = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (row.done === true) { this.#result = row.value; } else { this.#pending = row.value; } } catch (error) { this.#failed = true; throw error; }
   }
   /** Completed comparison data cannot issue an original event or continuation. */
   public requireCompleted(): T { need(!this.#failed && !this.#reserved && this.#pending === null && this.#result !== null); return this.#result; }

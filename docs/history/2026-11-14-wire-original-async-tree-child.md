@@ -64,3 +64,15 @@ The execution fixture now selects each of the four original tree callback spans 
 These timing cases required no production cursor, grammar, profile or reservation changes. Deferred completion uses seven settlement requests in the fixture; an already fulfilled child at the start of settlement uses six. Both retain the same seven actual helper scripts and the maximum remains 98.
 
 The nine actual execution cases pass with no skips across the focused runs, including the unchanged pending-budget and coalesced-call refusals. The two existing grammar/entry negatives also pass after the fixture update. Both TypeScript configurations and strict type-aware lint of the three affected test/helper files pass. Existing full-source metadata tests and all original ownership/publication/mutation/Save omissions remain unchanged.
+
+## Tested source payload
+
+The source and test contents for this record's initial checks are sealed by
+private source commit `dd22fccba3a9922f08e37cd4474e9a6058545f6b`. This identifies the
+tested source tree; a preceding integration commit supplies context only.
+The public curation excludes that private ancestry and grants no connected
+execution or ownership from this historical identifier.
+
+The later four-callback follow-up is sealed separately by
+`7aedd54c48286453d76b4ceb9a24d4270da2a235`; its expanded fixture cases
+do not change the earlier result or establish a live application effect.

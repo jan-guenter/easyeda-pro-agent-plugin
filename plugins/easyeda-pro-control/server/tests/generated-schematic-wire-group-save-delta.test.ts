@@ -54,3 +54,11 @@ void test("GROUP delta retains the actual raw actor field order", () => {
   const { args, history, value } = fixture('{"nickname":"Native actor","uuid":"actor","username":"native"}');
   assert.throws(() => compare(args, history, { ...value, userJson: '{"uuid":"actor","username":"native","nickname":"Native actor"}' }), /RAW_BODY/u);
 });
+
+void test("GROUP delta refuses duplicate decoded actor keys before decoding the full value", () => {
+  for (const raw of [
+    '{"nickname":"Native actor","uuid":"foreign","uuid":"actor","username":"native"}',
+    String.raw`{"nickname":"Native actor","u\u0075id":"foreign","uuid":"actor","username":"native"}`,
+    '{"nickname":"Native actor","uuid":"actor","username":"foreign","username":"native"}',
+  ]) { const {args, history, value} = fixture(raw); assert.throws(() => compare(args, history, value)); }
+});

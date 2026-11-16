@@ -11,6 +11,7 @@ export const CURRENT_SCHEMATIC_WIRE_GROUP_HISTORY_FLAGS = Object.freeze({ object
 // + snapshot2 =47. After: frame3 + roots6 + collections4 + payload4
 // + details6 + records6 + attributes6 + points4 + coordinates6 + proof1 =46.
 // Each of the nineteen generated function calls has its own source obligation.
+// The cursor imports this same LIMIT table; actual Inspector tests assert both stages.
 export const CURRENT_SCHEMATIC_WIRE_GROUP_HISTORY_REQUESTS = Object.freeze({ before: 47, after: 46, normal: 93, helperSources: 19, cleanup: 1, total: 113 } as const);
 export const CURRENT_SCHEMATIC_WIRE_GROUP_HISTORY_CALLS = freezeDeep({
   module: { program: PROGRAMS.module, refs: 3, byValue: false },

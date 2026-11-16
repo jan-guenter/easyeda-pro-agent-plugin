@@ -105,3 +105,11 @@ join the actual super destination before its body, and qualify original
 point.scale source/closure/receiver/birth/data dependencies and scalar getter
 entries/returns. Retained scale data is not execution permission. Later
 willDidRun history packets still supply no early owner, status or references.
+
+## Tested source payload
+
+The source and test contents for this record's initial checks are sealed by
+private source commit `c5b37b89adcb274fe275f30c48227e17372e67df`. This identifies the
+tested source tree; a preceding integration commit supplies context only.
+The public curation excludes that private ancestry and grants no connected
+execution or ownership from this historical identifier.

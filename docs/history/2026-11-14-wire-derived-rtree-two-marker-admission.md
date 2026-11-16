@@ -84,3 +84,11 @@ three original WIRE/LINE/ATTR worker publications, complete AST completion,
 original action-end caught-error guard, Main/SQL Save and the separate cold
 saved reader are not established by these comparisons. No live Wire mutation
 or saved/reopened result is claimed.
+
+## Tested source payload
+
+The source and test contents for this record's initial checks are sealed by
+private source commit `80ab66f98bc0df43dfa3f37f5f5a1b23c1fd0811`. This identifies the
+tested source tree; a preceding integration commit supplies context only.
+The public curation excludes that private ancestry and grants no connected
+execution or ownership from this historical identifier.

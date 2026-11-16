@@ -35,6 +35,7 @@ for (const variant of [0, 1] as const) {
   });
 }
 void test("GROUP history vocabulary consumes failures and rejects caller programs, navigation, resumes and copied rows", () => {
+  assert.equal(LIMIT.normal, LIMIT.before + LIMIT.after); assert.equal(LIMIT.total, LIMIT.normal + LIMIT.helperSources + LIMIT.cleanup);
   for (const command of currentSchematicWireGroupHistoryCases()) { assert.deepEqual(validate(command), command); assert.ok(currentSchematicWireGroupHistoryTemplate(command).template.length > 0); assert.throws(() => validate({ ...command, params: { ...command.params, callerCode: "value" } })); }
   assert.throws(() => validate({ phase: "wire-group-history-resume", method: "Debugger.resume", params: {} }));
   const input = { role: "before", frame: "1.2.3", holder: "holder", native: "native", frontier: "frontier", setter: "setter", groupConstructor: "group", scriptId: "script", variant: 0 } as const;
