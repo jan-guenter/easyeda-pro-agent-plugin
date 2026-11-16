@@ -166,7 +166,13 @@ export class CurrentSchematicWireParserDriver {
     }
     try {
       const pending = this.#transport.request(command); need(types.isPromise(pending)); attempt.pending = pending;
-      const raw = await pending; attempt.raw = raw; this.#current(cleanup);
+      const raw = await pending; attempt.raw = raw;
+      if (command.method === "Debugger.setBreakpoint") {
+        const ack = allocated.parse(capture(raw).value); need(!this.#points.some(point => point.id === ack.breakpointId));
+        this.#points.push({ role: command.role, stage: command.stage, id: ack.breakpointId, removeAttempted: false, removed: false });
+        const expected = command.params.location; need(ack.actualLocation.scriptId === expected.scriptId && ack.actualLocation.lineNumber === expected.lineNumber && ack.actualLocation.columnNumber === expected.columnNumber); this.#allocationUncertain = false;
+      }
+      this.#current(cleanup);
       if (generated !== null) {
         need(this.#sourceCall === generated && generated.scripts.length === 1); this.#sourceCall = null;
         const scriptId = generated.scripts[0]; need(scriptId !== undefined);
@@ -190,8 +196,6 @@ export class CurrentSchematicWireParserDriver {
           const raw = await this.#send({ phase: "wire-parser-driver-arm", role, stage, variant: this.#input.variant,
             method: "Debugger.setBreakpoint", params: { location: { scriptId: this.#input.scriptId, ...point } } });
           const ack = allocated.parse(capture(raw).value);
-          need(!this.#points.some(row => row.id === ack.breakpointId));
-          this.#points.push({ role, stage, id: ack.breakpointId, removeAttempted: false, removed: false }); this.#allocationUncertain = false;
           need(ack.actualLocation.scriptId === this.#input.scriptId &&
             ack.actualLocation.lineNumber === point.lineNumber && ack.actualLocation.columnNumber === point.columnNumber);
         }

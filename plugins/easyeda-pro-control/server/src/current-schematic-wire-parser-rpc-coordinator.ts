@@ -33,7 +33,7 @@ const eventSchema=z.strictObject({sessionId:handle,method:z.enum(["Debugger.paus
 const generatedScript=z.object({scriptId:handle,url:z.string(),length:z.number().int().nonnegative()});
 const generatedSource=z.strictObject({scriptSource:z.string().max(32_768)});
 const paused=z.object({hitBreakpoints:z.array(handle).length(1)});
-const allocation=z.object({breakpointId:handle});
+const allocation=z.strictObject({breakpointId:handle,actualLocation:z.strictObject({scriptId:handle,lineNumber:z.number().int().nonnegative(),columnNumber:z.number().int().nonnegative()})});
 const issued=new WeakMap<CurrentSchematicWireParserRpcData,CurrentSchematicWireParserRpcCoordinator>();
 const spent=new WeakSet<CurrentSchematicWireParserRpcData>();
 /** One original live result can be joined by a future complete owner. */
@@ -81,9 +81,11 @@ export class CurrentSchematicWireParserRpcCoordinator {
    if(command.method==="Runtime.callFunctionOn"){need(this.#sourceOwner===null);this.#sourceOwner=owner;generated=true;}
    if(command.method==="Debugger.resume"){while(this.#resume!==null){await this.#resume.complete.promise;this.#current(cleanup);}resume={owner,complete:Promise.withResolvers<null>(),ackObserved:false,eventObserved:false};void settled(resume.complete.promise);this.#resume=resume;}
    const pending=this.#transport.request(command);need(types.isPromise(pending));attempt.pending=pending;
-   const raw=await pending;attempt.raw=raw;this.#current(cleanup);
-   if(command.method==="Debugger.setBreakpoint"){const id=allocation.parse(capture(raw).value).breakpointId;need(!this.#points.has(id));this.#points.set(id,owner);}
-   else if(command.method==="Debugger.removeBreakpoint"){need(this.#points.get(command.params.breakpointId)===owner);this.#points.delete(command.params.breakpointId);}
+   const raw=await pending;attempt.raw=raw;
+   // The original child must acquire this ACK before its current-owner reproof.
+   if(command.method==="Debugger.setBreakpoint"){const id=allocation.parse(capture(raw).value).breakpointId;need(!this.#points.has(id));this.#points.set(id,owner);return raw;}
+   this.#current(cleanup);
+   if(command.method==="Debugger.removeBreakpoint"){need(this.#points.get(command.params.breakpointId)===owner);this.#points.delete(command.params.breakpointId);}
    if(resume!==null){resume.ackObserved=true;if(resume.eventObserved){need(this.#resume===resume);this.#resume=null;resume.complete.resolve(null);}}
    return raw;
   }catch(error){attempt.cause=error;this.#fail(error);throw error;}finally{if(generated){need(this.#sourceOwner===owner);this.#sourceOwner=null;}}

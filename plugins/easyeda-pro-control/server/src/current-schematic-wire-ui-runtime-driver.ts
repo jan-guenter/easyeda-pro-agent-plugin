@@ -80,7 +80,9 @@ export class CurrentSchematicWireUiRuntimeDriver{
   if(command.method==="Runtime.callFunctionOn"){need(this.#sourceCall===null);generated={program:command.params.functionDeclaration,scripts:[]};this.#sourceCall=generated;}
   try{
    this.#current(attempt.cleanup);const pending=this.#transport.request(command);need(types.isPromise(pending));attempt.pending=pending;
-   const raw=await pending;attempt.raw=raw;this.#current(attempt.cleanup);
+   const raw=await pending;attempt.raw=raw;
+   if(command.method==="Debugger.setBreakpoint"){const ack=allocated.parse(capture(raw).value);need(!this.#points.some(point=>point.id===ack.breakpointId));this.#points.push({kind:command.point,id:ack.breakpointId,removeAttempted:false,removed:false});const expected=command.params.location;need(ack.actualLocation.scriptId===expected.scriptId&&ack.actualLocation.lineNumber===expected.lineNumber&&ack.actualLocation.columnNumber===expected.columnNumber);this.#allocationUncertain=false;}
+   this.#current(attempt.cleanup);
    if(generated!==null){need(this.#sourceCall===generated&&generated.scripts.length===1);this.#sourceCall=null;const scriptId=generated.scripts[0];need(scriptId!==undefined);const packet=source.parse(capture(await this.#send({phase:"wire-ui-runtime-source",method:"Debugger.getScriptSource",params:{scriptId}})).value);need(packet.scriptSource===`(${generated.program})`);this.#sources+=1;}
    return raw;
   }catch(error){attempt.cause=error;throw error;}finally{if(this.#sourceCall===generated){this.#sourceCall=null;}}
@@ -95,7 +97,6 @@ export class CurrentSchematicWireUiRuntimeDriver{
   if(this.#armTask!==null){return this.#armTask;}this.#current();need(this.#root!==null);
   const task=(async():Promise<void>=>{try{for(const kind of KINDS){const row=POINTS[kind];this.#allocationUncertain=true;
    const ack=allocated.parse(capture(await this.#send({phase:"wire-ui-runtime-arm",point:kind,method:"Debugger.setBreakpoint",params:{location:{scriptId:this.#input.busScriptId,lineNumber:row.point.lineNumber,columnNumber:row.point.columnNumber}}})).value);
-   need(!this.#points.some(value=>value.id===ack.breakpointId));this.#points.push({kind,id:ack.breakpointId,removeAttempted:false,removed:false});this.#allocationUncertain=false;
    need(ack.actualLocation.scriptId===this.#input.busScriptId&&ack.actualLocation.lineNumber===row.point.lineNumber&&ack.actualLocation.columnNumber===row.point.columnNumber);
   }this.#armed=true;}catch(error){this.#fail(error);throw error;}})();this.#armTask=task;return task;
  }

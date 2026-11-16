@@ -50,7 +50,7 @@ export interface CurrentSchematicWireParserServiceTransport {
 }
 interface Input {readonly sessionId:string;readonly scriptId:string;readonly holder:string;readonly native:string;readonly variant:0|1;readonly source:unknown;readonly busScriptId:string;readonly busSource:unknown}
 interface Attempt {readonly owner:Owner;readonly command:CurrentSchematicWireParserServiceCommand;pending?:Promise<unknown>;raw?:unknown;cause?:unknown}
-interface Resume {readonly owner:Owner;ackObserved:boolean;eventObserved:boolean}
+interface Resume {readonly owner:Owner;readonly complete:PromiseWithResolvers<null>;ackObserved:boolean;eventObserved:boolean}
 export interface CurrentSchematicWireParserServiceData {
  readonly schema:"private.schematic-wire-parser-service-coordinator.v1";readonly registrations:CurrentSchematicWireServiceRegistrationData;
  readonly service:CurrentSchematicWireServiceDriverData;readonly parser:CurrentSchematicWireParserDriverData;readonly rpc:CurrentSchematicWireClassicRpcDriverData;readonly joined:CurrentSchematicWireParserRpcJoinData;
@@ -63,7 +63,7 @@ const eventSchema=z.strictObject({sessionId:handle,method:z.enum(["Debugger.paus
 const generatedScript=z.object({scriptId:handle,url:z.string(),length:z.number().int().nonnegative()});
 const generatedSource=z.strictObject({scriptSource:z.string().max(32_768)});
 const paused=z.object({hitBreakpoints:z.array(handle).length(1)});
-const allocation=z.object({breakpointId:handle});
+const allocation=z.strictObject({breakpointId:handle,actualLocation:z.strictObject({scriptId:handle,lineNumber:z.number().int().nonnegative(),columnNumber:z.number().int().nonnegative()})});
 const issued=new WeakMap<CurrentSchematicWireParserServiceData,CurrentSchematicWireParserServiceCoordinator>();
 const spent=new WeakSet<CurrentSchematicWireParserServiceData>();
 /** One original live result can be joined by a future complete owner. */
@@ -111,7 +111,7 @@ export class CurrentSchematicWireParserServiceCoordinator {
   Object.freeze(this);
  }
  #current(cleanup=false):void{need(methods(this.#transport).every((value,index)=>value===this.#methods[index]));if(!cleanup){need(!this.#closing&&this.#failure===null);this.#transport.assertCurrent();}}
- #fail(cause:unknown):void{if(this.#failure!==null){return;}this.#failure=Object.freeze({cause});this.#registrationCursor?.fail();this.#providerCursor?.fail();this.#treeBeforeCursor?.fail();this.#fault.reject(cause);try{this.#transport.fail(cause);}catch(error){this.#notificationFailure=Object.freeze({cause:error});}}
+ #fail(cause:unknown):void{if(this.#failure!==null){return;}this.#failure=Object.freeze({cause});this.#registrationCursor?.fail();this.#providerCursor?.fail();this.#treeBeforeCursor?.fail();this.#fault.reject(cause);this.#resume?.complete.reject(cause);try{this.#transport.fail(cause);}catch(error){this.#notificationFailure=Object.freeze({cause:error});}}
  #send(owner:Owner,command:CurrentSchematicWireParserServiceCommand):Promise<unknown>{
   // Drivers validate their exact reserved vocabulary before entering here.
   const attempt:Attempt={owner,command};this.#attempts.push(attempt);
@@ -124,12 +124,14 @@ export class CurrentSchematicWireParserServiceCoordinator {
   let generated=false;let resume:Resume|null=null;
   try{
    if(command.method==="Runtime.callFunctionOn"){need(this.#sourceOwner===null);this.#sourceOwner=owner;generated=true;}
-   if(command.method==="Debugger.resume"){need(this.#resume===null);resume={owner,ackObserved:false,eventObserved:false};this.#resume=resume;}
+   if(command.method==="Debugger.resume"){while(this.#resume!==null){await this.#resume.complete.promise;this.#current(cleanup);}resume={owner,complete:Promise.withResolvers<null>(),ackObserved:false,eventObserved:false};void settled(resume.complete.promise);this.#resume=resume;}
    const pending=this.#transport.request(command);need(types.isPromise(pending));attempt.pending=pending;
-   const raw=await pending;attempt.raw=raw;this.#current(cleanup);
-   if(command.method==="Debugger.setBreakpoint"){const id=allocation.parse(capture(raw).value).breakpointId;need(!this.#points.has(id));this.#points.set(id,owner);}
-   else if(command.method==="Debugger.removeBreakpoint"){need(this.#points.get(command.params.breakpointId)===owner);this.#points.delete(command.params.breakpointId);}
-   if(resume!==null){resume.ackObserved=true;if(resume.eventObserved){need(this.#resume===resume);this.#resume=null;}}
+   const raw=await pending;attempt.raw=raw;
+   // The original child must acquire this ACK before its current-owner reproof.
+   if(command.method==="Debugger.setBreakpoint"){const id=allocation.parse(capture(raw).value).breakpointId;need(!this.#points.has(id));this.#points.set(id,owner);return raw;}
+   this.#current(cleanup);
+   if(command.method==="Debugger.removeBreakpoint"){need(this.#points.get(command.params.breakpointId)===owner);this.#points.delete(command.params.breakpointId);}
+   if(resume!==null){resume.ackObserved=true;if(resume.eventObserved){need(this.#resume===resume);this.#resume=null;resume.complete.resolve(null);}}
    return raw;
   }catch(error){attempt.cause=error;this.#fail(error);throw error;}finally{if(generated){need(this.#sourceOwner===owner);this.#sourceOwner=null;}}
  }
@@ -141,7 +143,7 @@ export class CurrentSchematicWireParserServiceCoordinator {
    this.#current();const paired=raw?this.#eventObserver.captureRaw(typeof input==="string"?input:(():never=>{throw new Error("WIRE_ORIGINAL_EVENT_TEXT");})(),this):this.#eventObserver.captureObject(input,this);this.#eventObserver.requireOriginal(paired,this);const observed=paired.event;const event=eventSchema.parse(capture(observed).value);if(event.sessionId!==this.#input.sessionId){return false;}
    let owner:Owner|null=null;let titleCondition=false;
    if(event.method==="Debugger.scriptParsed"){if(this.#title.observeFtCondition(paired.original)){owner="title";titleCondition=true;}else{owner=this.#sourceOwner;if(owner===null){return false;}}}
-   else if(event.method==="Debugger.resumed"){const original=this.#resume;need(original!==null&&!original.eventObserved);owner=original.owner;original.eventObserved=true;if(original.ackObserved){this.#resume=null;}}
+   else if(event.method==="Debugger.resumed"){const original=this.#resume;need(original!==null&&!original.eventObserved);owner=original.owner;original.eventObserved=true;if(original.ackObserved){this.#resume=null;original.complete.resolve(null);}}
    else{const id=paused.parse(event.params).hitBreakpoints[0];need(id!==undefined);owner=this.#points.get(id)??null;if(owner===null){return false;}}
    this.#eventRecords.push(paired);this.#events.push(input);retained=true;let accepted:boolean;
    if(titleCondition){accepted=true;}else if(owner==="registration"||owner==="provider"||owner==="treeBefore"){let active=this.#treeBeforeProgram;if(owner==="registration"){active=this.#registrationProgram;}else if(owner==="provider"){active=this.#providerProgram;}const actual=generatedScript.parse(event.params);if(active===null||actual.url!==""||actual.length!==active.program.length+2){return false;}need(!active.scripts.includes(actual.scriptId));active.scripts.push(actual.scriptId);need(active.scripts.length===1);accepted=true;}

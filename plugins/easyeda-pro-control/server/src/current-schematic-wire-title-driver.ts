@@ -63,7 +63,14 @@ export class CurrentSchematicWireTitleDriver{
   const command=attempt.command;let generated:SourceCall|null=null;
   if(command.method==="Runtime.callFunctionOn"){need(this.#source===null);generated={program:command.params.functionDeclaration,scripts:[]};this.#source=generated;}
   try{
-   this.#current(attempt.cleanup);const pending=this.#transport.request(command);need(types.isPromise(pending));attempt.pending=pending;const raw=await pending;attempt.raw=raw;this.#current(attempt.cleanup);
+   this.#current(attempt.cleanup);const pending=this.#transport.request(command);need(types.isPromise(pending));attempt.pending=pending;const raw=await pending;attempt.raw=raw;
+   if(command.method==="Debugger.setBreakpoint"){
+    const ack=allocation.parse(capture(raw).value);need(!this.#points.some(point=>point.id===ack.breakpointId)&&this.#ftPoint?.id!==ack.breakpointId);
+    if(command.phase==="wire-title-ft-arm"){need(this.#ftPoint===null);this.#ftPoint=Object.freeze({id:ack.breakpointId});}
+    else{this.#points.push({kind:command.point,id:ack.breakpointId,attempted:false,removed:false});}
+    const expected=command.params.location;need(ack.actualLocation.scriptId===expected.scriptId&&ack.actualLocation.lineNumber===expected.lineNumber&&ack.actualLocation.columnNumber===expected.columnNumber);this.#uncertain=false;
+   }
+   this.#current(attempt.cleanup);
    if(generated!==null){need(this.#source===generated&&generated.scripts.length===1);this.#source=null;const id=generated.scripts[0];need(id!==undefined);
     const read=attempt.ft===true?this.#ftSend({phase:"wire-title-ft-source",method:"Debugger.getScriptSource",params:{scriptId:id}}):this.#send({phase:"wire-title-source",method:"Debugger.getScriptSource",params:{scriptId:id}});
     const actual=source.parse(capture(await read).value);need(actual.scriptSource===`(${generated.program})`);
@@ -92,8 +99,7 @@ export class CurrentSchematicWireTitleDriver{
   need(this.#ftEnabled&&this.#ftArray!==null&&this.#ftPoint===null&&this.#completed===4&&this.#cell!==null);await this.#currentFtArray();this.#uncertain=true;
   const expected=ftLocation(this.#input.variant,this.#input.scriptId);
   const ack=allocation.parse(capture(await this.#ftSend({phase:"wire-title-ft-arm",variant:this.#input.variant,method:"Debugger.setBreakpoint",params:{location:expected,condition:FT_CONDITION}})).value);
-  need(!this.#points.some(point=>point.id===ack.breakpointId));this.#ftPoint=Object.freeze({id:ack.breakpointId});
-  need(ack.actualLocation.scriptId===expected.scriptId&&ack.actualLocation.lineNumber===expected.lineNumber&&ack.actualLocation.columnNumber===expected.columnNumber);this.#uncertain=false;
+  need(ack.actualLocation.scriptId===expected.scriptId&&ack.actualLocation.lineNumber===expected.lineNumber&&ack.actualLocation.columnNumber===expected.columnNumber);
  }
  #ftProperties(objectId:string):Promise<unknown>{return this.#ftSend({phase:"wire-title-ft-properties",method:"Runtime.getProperties",params:{objectId,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}});}
  async #processFt(frameId:string,returned:string):Promise<void>{
@@ -113,7 +119,7 @@ export class CurrentSchematicWireTitleDriver{
   })();this.#ftRemoveTask=task;return task;
  }
  public prepare(root:CurrentSchematicWireServiceInvocationRoot,tree:CurrentSchematicWireTreePreflightData):Promise<CurrentSchematicWireTitlePreflightData>{if(this.#prepareTask!==null){return this.#prepareTask;}this.#current();const original=requireRoot(root);need(original.input.holder===this.#input.holder&&original.input.native===this.#input.native&&original.input.scriptId===this.#input.scriptId&&original.input.variant===this.#input.variant);const task=(async():Promise<CurrentSchematicWireTitlePreflightData>=>{try{this.#preparing=true;const cursor=new CurrentSchematicWireTitlePreflightCursor(root,tree);this.#cursor=cursor;for(let command=cursor.next();command!==null;command=cursor.next()){cursor.reserve(command);cursor.accept(command,await this.#send(command));}const data=cursor.requireCompleted();this.#before=consume(data,root);this.#cursor=null;this.#preparing=false;return data;}catch(error){this.#fail(error);throw error;}})();this.#prepareTask=task;return task;}
- public arm():Promise<void>{if(this.#armTask!==null){return this.#armTask;}this.#current();need(this.#before!==null&&!this.#preparing);const task=(async():Promise<void>=>{try{for(const kind of KINDS){this.#uncertain=true;const columnNumber=points(this.#input.variant)[kind],lineNumber=CALLBACK[this.#input.variant].lineNumber;const ack=allocation.parse(capture(await this.#send({phase:"wire-title-arm",variant:this.#input.variant,point:kind,method:"Debugger.setBreakpoint",params:{location:{scriptId:this.#input.scriptId,lineNumber,columnNumber}}})).value);need(!this.#points.some(point=>point.id===ack.breakpointId));this.#points.push({kind,id:ack.breakpointId,attempted:false,removed:false});this.#uncertain=false;need(ack.actualLocation.scriptId===this.#input.scriptId&&ack.actualLocation.lineNumber===lineNumber&&ack.actualLocation.columnNumber===columnNumber);}this.#armed=true;}catch(error){this.#fail(error);throw error;}})();this.#armTask=task;return task;}
+ public arm():Promise<void>{if(this.#armTask!==null){return this.#armTask;}this.#current();need(this.#before!==null&&!this.#preparing);const task=(async():Promise<void>=>{try{for(const kind of KINDS){this.#uncertain=true;const columnNumber=points(this.#input.variant)[kind],lineNumber=CALLBACK[this.#input.variant].lineNumber;const ack=allocation.parse(capture(await this.#send({phase:"wire-title-arm",variant:this.#input.variant,point:kind,method:"Debugger.setBreakpoint",params:{location:{scriptId:this.#input.scriptId,lineNumber,columnNumber}}})).value);need(ack.actualLocation.scriptId===this.#input.scriptId&&ack.actualLocation.lineNumber===lineNumber&&ack.actualLocation.columnNumber===columnNumber);}this.#armed=true;}catch(error){this.#fail(error);throw error;}})();this.#armTask=task;return task;}
  public observeFtCondition(input:unknown):boolean{
   if(this.#closing||!this.#ftEnabled||this.#ftPoint===null||this.#ftRemoveAttempted){return false;}
   const packet=event.parse(capture(input).value);if(packet.sessionId!==this.#input.sessionId||packet.method!=="Debugger.scriptParsed"){return false;}
@@ -185,7 +191,12 @@ export class CurrentSchematicWireTitleDriver{
  public requireLiveComparison(data:CurrentSchematicWireTitleData):void{this.#current();need(this.#packet===data&&!this.#finished);}
  public originalFtReturn(data:CurrentSchematicWireTitleData):CurrentSchematicWireTitleFtReturnData{this.requireLiveComparison(data);need(this.#ftEnabled&&this.#ftPacket!==null);return this.#ftPacket;}
  public finish():Promise<void>{if(this.#finishTask!==null){return this.#finishTask;}this.#current();const task=(async():Promise<void>=>{await this.run();this.#current();this.#finished=true;})();this.#finishTask=task;return task;}
- public retireAfterOriginalExit():Promise<void>{if(this.#retireTask!==null){return this.#retireTask;}this.#current(true);this.#transport.assertOriginalExit();this.#closing=true;if(!this.#settled||this.#packet===null){this.#fail(new Error("WIRE_TITLE_ORIGINAL_EXIT"));}const task=(async():Promise<void>=>{await settled(this.#prepareTask);await settled(this.#ftPrepareTask);await settled(this.#armTask);await this.#tail;await settled(this.#runTask);await settled(this.#finishTask);await settled(this.#removeTask);await settled(this.#ftRemoveTask);await this.#functions;for(const attempt of this.#attempts){await settled(attempt.pending??null);}this.#transport.assertOriginalExit();})();this.#retireTask=task;return task;}
+ public retireAfterOriginalExit():Promise<void>{if(this.#retireTask!==null){return this.#retireTask;}this.#current(true);this.#transport.assertOriginalExit();this.#closing=true;if(!this.#settled||this.#packet===null){this.#fail(new Error("WIRE_TITLE_ORIGINAL_EXIT"));}const task=(async():Promise<void>=>{await settled(this.#prepareTask);await settled(this.#ftPrepareTask);await settled(this.#armTask);await this.#tail;await settled(this.#runTask);await settled(this.#finishTask);
+   const cleanupFailures:unknown[]=[];
+   if(this.#points.length>0&&this.#removeTask===null){try{await this.#remove();}catch(error){cleanupFailures.push(error);}}
+   if(this.#ftPoint!==null&&this.#ftRemoveTask===null){try{await this.#removeFt();}catch(error){cleanupFailures.push(error);}}
+   if(cleanupFailures.length>0){if(this.#notificationFailure!==null){cleanupFailures.unshift(this.#notificationFailure.cause);}this.#notificationFailure=Object.freeze({cause:new AggregateError(cleanupFailures,"WIRE_TITLE_BREAKPOINT_CLEANUP")});}
+   await settled(this.#removeTask);await settled(this.#ftRemoveTask);await this.#functions;for(const attempt of this.#attempts){await settled(attempt.pending??null);}this.#transport.assertOriginalExit();})();this.#retireTask=task;return task;}
  public retained():Readonly<{attempts:readonly Readonly<Attempt>[];events:readonly unknown[];firstFailure:Readonly<{cause:unknown}>|null;notificationFailure:Readonly<{cause:unknown}>|null;allocationUncertain:boolean}>{this.#current(true);return Object.freeze({attempts:Object.freeze(this.#attempts.map(attempt=>Object.freeze({...attempt}))),events:Object.freeze([...this.#events]),firstFailure:this.#failure,notificationFailure:this.#notificationFailure,allocationUncertain:this.#uncertain});}
 }
 Object.freeze(CurrentSchematicWireTitleDriver.prototype);Object.freeze(CurrentSchematicWireTitleDriver);

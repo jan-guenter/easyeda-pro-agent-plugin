@@ -99,7 +99,9 @@ export class CurrentSchematicWireServiceDriver{
   if(command.method==="Runtime.callFunctionOn"){need(this.#sourceCall===null);generated={program:command.params.functionDeclaration,scripts:[]};this.#sourceCall=generated;}
   try{
    this.#current(attempt.cleanup);const pending=this.#transport.request(command);need(types.isPromise(pending));attempt.pending=pending;
-   const raw=await pending;attempt.raw=raw;this.#current(attempt.cleanup);
+   const raw=await pending;attempt.raw=raw;
+   if(command.method==="Debugger.setBreakpoint"){const ack=allocated.parse(capture(raw).value);need(!this.#points.some(point=>point.id===ack.breakpointId));this.#points.push({kind:command.point,id:ack.breakpointId,removeAttempted:false,removed:false});const expected=command.params.location;need(ack.actualLocation.scriptId===expected.scriptId&&ack.actualLocation.lineNumber===expected.lineNumber&&ack.actualLocation.columnNumber===expected.columnNumber);this.#allocationUncertain=false;}
+   this.#current(attempt.cleanup);
    if(generated!==null){need(this.#sourceCall===generated&&generated.scripts.length===1);this.#sourceCall=null;const scriptId=generated.scripts[0];need(scriptId!==undefined);const packet=source.parse(capture(await this.#send({phase:"wire-service-driver-source",method:"Debugger.getScriptSource",params:{scriptId}})).value);need(packet.scriptSource===`(${generated.program})`);this.#sources+=1;}
    return raw;
   }catch(error){attempt.cause=error;throw error;}finally{if(this.#sourceCall===generated){this.#sourceCall=null;}}
@@ -115,7 +117,6 @@ export class CurrentSchematicWireServiceDriver{
   const task=(async():Promise<void>=>{try{for(const kind of KINDS){const row=POINTS[this.#input.variant].points[kind];
    this.#allocationUncertain=true;const scriptId=row.realm==="ui"?this.#input.busScriptId:this.#input.scriptId;
    const ack=allocated.parse(capture(await this.#send({phase:"wire-service-driver-arm",point:kind,variant:this.#input.variant,method:"Debugger.setBreakpoint",params:{location:{scriptId,lineNumber:row.lineNumber,columnNumber:row.columnNumber}}})).value);
-   const point=kind;need(!this.#points.some(value=>value.id===ack.breakpointId));this.#points.push({kind:point,id:ack.breakpointId,removeAttempted:false,removed:false});this.#allocationUncertain=false;
    need(ack.actualLocation.scriptId===scriptId&&ack.actualLocation.lineNumber===row.lineNumber&&ack.actualLocation.columnNumber===row.columnNumber);
   }this.#armed=true;}catch(error){this.#fail(error);try{await this.#cleanupOnce();}catch(cleanupError){this.#notificationFailure??=Object.freeze({cause:cleanupError});}throw error;}})();this.#armTask=task;return task;
  }
