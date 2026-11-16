@@ -30,8 +30,26 @@ owners must be preserved. This is an operating rule, not a claim that a generic
 host-temp purge or disk-management tool has been added.
 
 After both installations and original-process handoffs completed, the duplicate
-public recovery checkout also became unnecessary. Its Git head and clean tree
-were checked, its 6,011 files were inventoried without reparse points, and
+public recovery checkout also became unnecessary. Its public Git head
+`4ba1870dae3fe5d134c17482bb9e1e102577299a` and clean tree were checked. Its
+6,011 files were inventoried without reparse points, and
 the closed 139,427,440-byte checkout went to the Windows Recycle Bin. Its
 provenance and terminal receipt remain private. The unique evidence and the
 managed installed packages remain in place.
+
+## 16 November: closed-worktree cleanup
+
+Six obsolete development/publication worktrees were removed through Git's normal
+worktree removal, without force. Each had a clean tracked/untracked state; its
+exact head remained reachable from retained Git refs. The private audit recorded
+all original paths and heads and found no Linux process command-line, working-directory,
+open-descriptor or mapped-file reference to those copies. The active source lanes
+confirmed they did not use them. Ignored content was limited to reproducible npm
+dependencies; unique source and evidence were retained.
+
+The copies contained 36,368 tracked files totaling
+653,191,363 logical source bytes. Their separately measured
+pre-removal disk-use sum was 1,666,744,320 bytes; this is not a claim
+about physical blocks freed or Windows free space. Their Git branches, shared
+repository, journals and terminal receipts remain. No WSL disk location, image,
+distribution configuration or unrelated user files were changed.
