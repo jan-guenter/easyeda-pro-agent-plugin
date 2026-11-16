@@ -1,3 +1,4 @@
+import { CURRENT_MAIN_STARTUP_USER_READ_OWNER_PROGRAM as STARTUP_USER_READ_OWNER } from "./current-main-startup-user-read.ts";
 /* oxlint-disable import/max-dependencies -- This fixed SQL codec pins separate capture, source, request and registration programs; combining their modules would obscure the independently checked contracts. */
 /** Closed readonly-fence inspector grammar. Callers provide no condition,
  * program, target/session, SQL, native DB or request-resume grant. */
@@ -83,10 +84,12 @@ const startupSelectParams = z.object({ ...callFlags, throwOnSideEffect: z.litera
 const startupVersionParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.version), arguments: selectArguments, returnByValue: z.literal(false) }).strict();
 const startupJBParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.bindJB), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
 const startupDCParams = z.object({ ...callFlags, throwOnSideEffect: z.literal(false), objectId: handle, functionDeclaration: z.literal(STARTUP.bindDC), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
+const startupLoginReadOwnerParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(STARTUP_USER_READ_OWNER), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
 const startupReadOwnerParams = z.object({ ...callFlags, objectId: handle, functionDeclaration: z.literal(STARTUP_READ_OWNER), arguments: selectArguments, returnByValue: z.literal(true) }).strict();
 const startupRegistrationRemoveParams = z.strictObject({ breakpointId: z.literal(REGISTRATION_ID) });
 const startupRegistrationCompleteParams = z.strictObject({ ...callFlags, objectId: handle, functionDeclaration: z.literal(BACKEND.require.program), arguments: selectArguments, returnByValue: z.literal(true) });
 const command = z.discriminatedUnion("phase", [
+  z.object({ phase: z.literal("sql-fence-startup-user-read-owner"), method: z.literal("Runtime.callFunctionOn"), params: startupLoginReadOwnerParams }).strict(),
   z.object({ phase: z.literal("sql-fence-startup-read-owner"), method: z.literal("Runtime.callFunctionOn"), params: startupReadOwnerParams }).strict(),
   z.object({ phase: z.literal("sql-fence-startup-config-resume"), method: z.literal("Debugger.resume"), params: empty }).strict(),
   z.object({ phase: z.literal("sql-fence-startup-registration-remove"), method: z.literal("Debugger.removeBreakpoint"), params: startupRegistrationRemoveParams }).strict(),

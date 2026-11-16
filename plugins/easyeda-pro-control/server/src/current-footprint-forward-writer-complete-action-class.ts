@@ -1,7 +1,7 @@
 /** Closed complete-only stream classification. This data grants no native
  * owner, command, current pause or original Main origin. */
 export const CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS=Object.freeze([
- "footprint-forward-startup-ws","footprint-forward-ticket-timer","footprint-forward-ticket-timer-control","footprint-forward-own-data","footprint-forward-own-data-control","footprint-forward-branch-query","footprint-forward-writer-branch","footprint-forward-live-history",
+ "footprint-forward-writer-main-sql","footprint-forward-startup-ws","footprint-forward-ticket-timer","footprint-forward-ticket-timer-control","footprint-forward-own-data","footprint-forward-own-data-control","footprint-forward-branch-query","footprint-forward-writer-branch","footprint-forward-live-history",
  "footprint-forward-copy-local","footprint-forward-copy-upload","footprint-forward-copy-drain",
  "footprint-forward-copy-post-sync","footprint-forward-copy-delete","footprint-forward-copy-tail-observe",
  "footprint-forward-copy-tail-control","footprint-forward-copy-publication","footprint-forward-copy-publication-control",
@@ -11,6 +11,7 @@ const history=new Set(["inverse-main-history-arm","inverse-main-history-frame","
 export function isCurrentFootprintForwardWriterCompleteAction(action:unknown):boolean{return typeof action==="string"&&CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS.some(candidate=>candidate===action);}
 export function currentFootprintForwardWriterCompleteMainCleanup(action:unknown,phase:unknown):boolean|null{
  if(typeof phase!=="string"){return null;}
+ if(action==="footprint-forward-writer-main-sql"&&/^(?:forward-writer-sql-frame-(?:run|begin|data|cipher|head|branch|commit|project|read)|forward-writer-sql-proof-(?:begin|data|head|branch|commit|project)|forward-writer-sql-(?:read|require|step))$/u.test(phase)){return false;}
  if(action==="footprint-forward-writer-branch"&&branch.has(phase)){return phase==="forward-writer-branch-remove"||phase==="forward-writer-branch-release";}
  if(action==="footprint-forward-live-history"&&history.has(phase)){return phase==="inverse-main-history-remove"||phase==="inverse-main-history-release";}return null;
 }

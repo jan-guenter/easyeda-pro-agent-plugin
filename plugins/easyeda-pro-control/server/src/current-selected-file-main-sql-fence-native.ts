@@ -1,7 +1,9 @@
+import { CURRENT_MAIN_STARTUP_USER_READ_OWNER_PROGRAM as STARTUP_USER_READ_OWNER } from "./current-main-startup-user-read.ts";
 import { CURRENT_MAIN_STARTUP_LIBRARY_READ_OWNER_PROGRAM as STARTUP_READ_OWNER } from "./current-main-startup-library-interleave.ts";
 /* oxlint-disable import/max-dependencies -- This fixed SQL codec pins separate capture, source, request and registration programs; combining their modules would obscure the independently checked contracts. */
 /** Fixed generic selected-file main codebook. A native birth, never a caller
  * string, selects this codec and its original inspector connection. */
+import { currentMainStartupLibraryReadonlyNativeRows } from "./current-main-startup-library-readonly-native.ts";
 import { currentMainStartupLibraryV2NativeRows } from "./current-main-startup-library-v2-native.ts";
 import { currentMainStartupLibraryNativeRows } from "./current-main-startup-library-native.ts";
 import { createHash } from "node:crypto";
@@ -51,17 +53,18 @@ export function currentSelectedFileMainSqlFenceWire(input: unknown, id: number):
     else if (command.phase === "sql-fence-request-capture" || command.phase === "sql-fence-request-bind" || command.phase === "sql-fence-request-rebind" || command.phase === "sql-fence-request-private-bind" || command.phase === "sql-fence-request-private-rebind") {
       for (const [index, argument] of command.params.arguments.entries()) { request[`argument${String(index)}`] = argument.objectId; }
     }
-    else if (command.phase === "sql-fence-startup-registration-complete" || command.phase === "sql-fence-startup-read-owner" || command.phase === "sql-fence-select" || command.phase === "sql-fence-configure" || command.phase === "sql-fence-startup-version" || command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc" || command.phase === "sql-fence-startup-select" || command.phase === "sql-fence-captured-frame" || command.phase === "sql-fence-driver-rebase-capture") { request["argument0"] = command.params.arguments[0].objectId; }
+    else if (command.phase === "sql-fence-startup-registration-complete" || command.phase === "sql-fence-startup-user-read-owner" || command.phase === "sql-fence-startup-read-owner" || command.phase === "sql-fence-select" || command.phase === "sql-fence-configure" || command.phase === "sql-fence-startup-version" || command.phase === "sql-fence-startup-jb" || command.phase === "sql-fence-startup-dc" || command.phase === "sql-fence-startup-select" || command.phase === "sql-fence-captured-frame" || command.phase === "sql-fence-driver-rebase-capture") { request["argument0"] = command.params.arguments[0].objectId; }
   }
   return freezeDeep({ command: { ...command, id }, request });
 }
 /** Enumerate the closed native codec cases using synthetic placeholder
  * handles. These data fixtures neither send requests nor issue ownership. */
-export function currentSelectedFileMainSqlFenceNativeCases(): readonly Command[] {
+function selectedFileNativeCases(forwardWriter: boolean): readonly Command[] {
   const callFrameId = marker("callFrameId"), objectId = marker("objectId"), scriptId = marker("scriptId");
   const rows: Command[] = [
     ...currentSavedProjectRegistrationConfigNativeCases(),
     { phase: "sql-fence-startup-read-owner", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: STARTUP_READ_OWNER, arguments: [{ objectId: marker("argument0") }], returnByValue: true } },
+    { phase: "sql-fence-startup-user-read-owner", method: "Runtime.callFunctionOn", params: { ...CALL, objectId, functionDeclaration: STARTUP_USER_READ_OWNER, arguments: [{ objectId: marker("argument0") }], returnByValue: true } },
     { phase: "sql-fence-startup-config-resume", method: "Debugger.resume", params: {} },
     { phase: "sql-fence-startup-registration-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: REGISTRATION_ID } },
     { phase: "sql-fence-startup-registration-resume", method: "Debugger.resume", params: {} },
@@ -109,14 +112,14 @@ export function currentSelectedFileMainSqlFenceNativeCases(): readonly Command[]
       { phase: "sql-fence-arm", site, method: "Debugger.setBreakpoint", params: { location: { scriptId,
       lineNumber: SOURCE.sites[site].lineNumber, columnNumber: SOURCE.sites[site].breakpointColumnNumber }, condition: CONDITIONS[site] } }, { phase: "sql-fence-frame", site, method: "Debugger.evaluateOnCallFrame", params: { ...FRAME, callFrameId, expression: SOURCE.sites[site].expression } });
   }
-  return freezeDeep(rows);
+  return freezeDeep(forwardWriter ? rows : rows.filter(command => command.phase !== "sql-fence-startup-user-read-owner"));
 }
 const literal = (text: string): string => `@"${text.replaceAll('"', '""')}"`;
 const nativeQuote = String.raw`static string Quote(string value){var b=new System.Text.StringBuilder();b.Append('"');for(int i=0;i<value.Length;i++){char c=value[i];if(char.IsHighSurrogate(c)){Need(i+1<value.Length&&char.IsLowSurrogate(value[i+1]));b.Append(c);b.Append(value[++i]);}else{Need(!char.IsLowSurrogate(c));if(c=='"'||c=='\\'){b.Append('\\');b.Append(c);}else if(c=='\b')b.Append("\\b");else if(c=='\t')b.Append("\\t");else if(c=='\n')b.Append("\\n");else if(c=='\f')b.Append("\\f");else if(c=='\r')b.Append("\\r");else if(c<32){b.Append("\\u");b.Append(((int)c).ToString("x4",System.Globalization.CultureInfo.InvariantCulture));}else b.Append(c);}}b.Append('"');return b.ToString();}`;
 /** Emit finite packed templates. Unknown phases, SQL/program fields, renderer
  * sessions and arbitrary breakpoint conditions have no native representation. */
-export function currentSelectedFileMainSqlFenceNativeSource(): string {
-  const rows = currentSelectedFileMainSqlFenceNativeCases().map(command => {
+function selectedFileNativeSource(forwardWriter: boolean): string {
+  const rows = selectedFileNativeCases(forwardWriter).map(command => {
     const wire = currentSelectedFileMainSqlFenceWire(command, 1); const fields = Object.keys(wire.request).filter(key => !["action", "requestId", "phase", "method"].includes(key));
     const { phase: _phase, ...rest } = command; const native = "site" in rest ? { method: rest.method, params: rest.params } : rest;
     const template = JSON.stringify(native);
@@ -126,6 +129,7 @@ export function currentSelectedFileMainSqlFenceNativeSource(): string {
     return [wire.request["phase"], command.method, fields.join(","), template].join("\t");
   });
   rows.push(...currentMainStartupLibraryNativeRows(), ...currentMainStartupLibraryV2NativeRows());
+  if (forwardWriter) { rows.push(...currentMainStartupLibraryReadonlyNativeRows()); }
   const groups: string[][] = [[]];
   for (const row of rows) {
     let selected = groups.at(-1); if (selected === undefined || Buffer.byteLength(row) > 60_000) { throw new Error("SELECTED_SQL_TABLE_BOUND"); }
@@ -153,3 +157,9 @@ static void Refused(System.Action action){bool refused=false;try{action();}catch
 public static void VerifySmoke(){string[] hashes=${currentPcbDiagnosticNativeHashVector(hashes)};for(int i=0;i<Cases.Length;i++){string[] row=Cases[i];var fields=new System.Collections.Hashtable();if(row[2].Length>0)foreach(string name in row[2].Split(','))fields.Add(name,name=="path"?@"C:\\Synthetic\\fixture.eprj2":"main_handle");string text=Encode(73,row[0],row[1],fields);using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text))).Replace("-","").ToLowerInvariant()==hashes[i]);Refused(()=>Encode(73,row[0],"Runtime.evaluate",fields));Refused(()=>Encode(73,"sql-fence-caller-code",row[1],fields));fields.Add("condition","false");Refused(()=>Encode(73,row[0],row[1],fields));fields.Remove("condition");fields.Add("sessionId","copied");Refused(()=>Encode(73,row[0],row[1],fields));}}
 }`;
 }
+
+/** Released historical codec remains byte-exact; only the distinct forward graph adds the fixed user/readonly rows. */
+export function currentSelectedFileMainSqlFenceNativeCases(): readonly Command[] { return selectedFileNativeCases(false); }
+export function currentSelectedFileMainSqlFenceNativeSource(): string { return selectedFileNativeSource(false); }
+export function currentFootprintForwardWriterSelectedFileMainSqlFenceNativeCases(): readonly Command[] { return selectedFileNativeCases(true); }
+export function currentFootprintForwardWriterSelectedFileMainSqlFenceNativeSource(): string { return selectedFileNativeSource(true); }

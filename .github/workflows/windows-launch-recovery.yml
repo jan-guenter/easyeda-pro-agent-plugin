@@ -453,3 +453,25 @@ jobs:
             }
           } finally { $child.Dispose() }
           Write-Output 'Exact shared launch core verified the suspended image, resumed once, observed natural exit and released its original handles. No EasyEDA launch.'
+
+      - name: Compile and smoke the frozen six-role footprint writer without an application
+        timeout-minutes: 5
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $WarningPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          $PSDefaultParameterValues['Add-Type:WarningAction'] = 'Stop'
+          $script = Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\footprint-forward-writer-smoke.ps1'
+          & $script
+
+      - name: Compile and smoke the frozen seven-role footprint writer without an application
+        timeout-minutes: 5
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $WarningPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          $PSDefaultParameterValues['Add-Type:WarningAction'] = 'Stop'
+          $script = Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\footprint-forward-writer-complete-smoke.ps1'
+          & $script

@@ -32,6 +32,7 @@ interface Retained {
   readonly completion: ReturnType<typeof readerCompletion>;
   readonly sourcePlanText: string;
   readonly referenceText: string;
+  readonly headNumber: number;
 }
 const issued = new WeakMap<CurrentFootprintCopyHeadReference, Retained>();
 /** Emit a fixed refusal code without exposing SQL contents or owner fields. */
@@ -100,6 +101,9 @@ export async function prepareCurrentFootprintCopyHeadReference(before: NativeSql
     /^[a-f0-9]{32}$/u.test(historyUuid), "EXACT_UUID");
   const history = table(before, `project_history_${branchUuid}`);
   const head = await row(history, historyUuid, current); current();
+  const number = field(history, head, "num");
+  need(number.kind === "integer" && /^(?:0|[1-9]\d*)$(?![\s\S])/u.test(number.decimal), "HEAD_NUMBER");
+  const headNumber = Number(number.decimal); need(Number.isSafeInteger(headNumber) && headNumber >= 0 && !Object.is(headNumber, -0), "HEAD_NUMBER");
   const locked = field(history, head, "is_lock");
   need(locked.kind === "integer" && (locked.decimal === "0" || locked.decimal === "1"), "LOCK_STATE");
   const createdAtLiteral = text(field(history, head, "created_at")), nativeAgeRequired = locked.decimal === "0";
@@ -114,7 +118,7 @@ export async function prepareCurrentFootprintCopyHeadReference(before: NativeSql
     beforeSqlSha256: before.logicalSha256, sourcePlanSha256: sha256Json(sourcePlan), originalCompletedReaderRetained: true,
     nativeAgeRequired, nativeDateProvenanceVerified: false, ageVerified: false, executionAuthorized: false,
   });
-  issued.set(reference, Object.freeze({ before, sourcePlan, completion, sourcePlanText, referenceText: canonicalJson(reference) }));
+  issued.set(reference, Object.freeze({ before, sourcePlan, completion, sourcePlanText, referenceText: canonicalJson(reference), headNumber }));
   return reference;
 }
 
@@ -126,4 +130,13 @@ export function requireCurrentFootprintCopyHeadReference(reference: CurrentFootp
   need(retained !== undefined && retained.before === before && retained.sourcePlan === sourcePlan, "ORIGINAL_REFERENCE");
   same(before, sourcePlan, retained.completion, retained.sourcePlanText);
   need(canonicalJson(reference) === retained.referenceText, "REFERENCE_UNCHANGED"); return reference;
+}
+
+/** Preserve the released v1 projection while retaining its actual source head
+ * number privately. A fresh read must compare this field as well as its UUID,
+ * lock and timestamp; equal JSON cannot resolve the original reader's number. */
+export function requireCurrentFootprintCopyHeadNumber(reference: CurrentFootprintCopyHeadReference,
+  before: NativeSqlInventory, sourcePlan: CurrentFootprintSourcePlan): number {
+  requireCurrentFootprintCopyHeadReference(reference, before, sourcePlan);
+  const retained = issued.get(reference); need(retained !== undefined, "ORIGINAL_REFERENCE"); return retained.headNumber;
 }

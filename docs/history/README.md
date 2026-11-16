@@ -1339,3 +1339,11 @@ layout. The connected ledger retains its generation and case anchors.
 - [2026-11-16-native-reference-point-release-install.md](2026-11-16-native-reference-point-release-install.md)
 
 - [2026-11-16-footprint-support-wire-olddata-curation.md](2026-11-16-footprint-support-wire-olddata-curation.md)
+
+- [Footprint support and Wire oldData publication](2026-11-16-footprint-wire-olddata-release.md).
+
+- [Forward helpers and Wire setter public curation](2026-11-16-forward-helper-wire-setter-curation.md).
+
+- [Complete original Wire setter/callback return](2026-11-16-wire-complete-setter-callback-return.md).
+
+- [Reviewed Wire setter delivery composition](2026-11-16-wire-setter-review-composition.md).

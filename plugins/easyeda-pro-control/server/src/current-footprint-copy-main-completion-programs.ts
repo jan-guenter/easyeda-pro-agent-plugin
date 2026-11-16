@@ -59,3 +59,8 @@ export const CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_PROGRAMS = freezeDeep({
   "save-return": { program: `function(previous){${helpers}\nconst packet=[this,previous];saveReturned(packet);verify();return packet;}`, arguments: 1, length: 2, returnByValue: false },
   "controller-return": { program: `function(previous){${helpers}\nconst z=saveReturned(previous);arr(this,5);if(own(this,"0")!==z.owner||own(this,"1")!==z.ctx||own(this,"2")!==z.service||own(this,"3")!==z.path||own(this,"4")!==z.input||own(z.ctx,"body")!==z.history)bad();verify();return{historyUuid:z.history,backendActorUuid:own(z.v,"uuid"),observedProjectUpdatedAt:z.time,observedProjectModifierUuid:z.modifier,originalCallbackAwaitCompleted:true,originalCommitAwaitCompleted:true,originalProjectUpdateAwaitCompleted:true,originalServiceAwaitCompleted:true,controllerBodyJoined:true,nativeSqlCompletionVerified:false,parserUploadPublicationCompleted:false,independentClosedSqlVerified:false,savedResultVerified:false,executionAuthorized:false};}`, arguments: 1, length: 0, returnByValue: true },
 });
+
+
+/** Immutable descriptor-only seed grammar for separately owned selected-SQL
+ * continuations. This data string issues no origin or native continuation. */
+export const CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_JOIN_HELPERS = helpers.slice(0, helpers.indexOf("const save="));

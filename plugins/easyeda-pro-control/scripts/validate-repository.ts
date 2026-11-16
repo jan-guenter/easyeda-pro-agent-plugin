@@ -205,6 +205,23 @@ const required = [
   "scripts/footprint-forward-cold-execution/native-core.cs",
   "scripts/footprint-forward-cold-execution/native-phase.cs",
   "scripts/footprint-forward-cold-execution-smoke.ps1",
+  "scripts/generate-footprint-forward-writer-native.ts",
+  "scripts/generate-footprint-forward-writer-complete-native.ts",
+  "scripts/footprint-forward-writer-smoke.ps1",
+  "scripts/footprint-forward-writer-complete-smoke.ps1",
+  "scripts/footprint-forward-writer/owner.ps1",
+  "scripts/footprint-forward-writer/native-core.cs",
+  "scripts/footprint-forward-writer/native-phase.cs",
+  "scripts/footprint-forward-writer/native-producer.cs",
+  "scripts/footprint-forward-writer/native-startup.cs",
+  "scripts/footprint-forward-writer/native-sync.cs",
+  "scripts/footprint-forward-writer-complete/owner.ps1",
+  "scripts/footprint-forward-writer-complete/native-core.cs",
+  "scripts/footprint-forward-writer-complete/native-phase.cs",
+  "scripts/footprint-forward-writer-complete/native-producer.cs",
+  "scripts/footprint-forward-writer-complete/native-startup.cs",
+  "scripts/footprint-forward-writer-complete/native-sync.cs",
+  "scripts/footprint-forward-writer-complete/native-tail.cs",
   "scripts/check-footprint-forward-cold-native-graph.ts",
   "scripts/generate-footprint-forward-cold-native-graph.ts",
   "scripts/main-reference/OwnedSyntheticJob.cs",
@@ -571,7 +588,7 @@ check(
     pluginPackageManifest.scripts?.["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     pluginPackageManifest.scripts?.["build"] ===
-      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run schematic:native:check && npm run schematic:saved:native:check && npm run inverse:native:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
+      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run native:forward:writer:check && npm run native:forward:writer:complete:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run schematic:native:check && npm run schematic:saved:native:check && npm run inverse:native:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
     pluginPackageManifest.scripts?.["schematic:native:check"] === "node scripts/generate-schematic-edit-native.ts --check" &&
     pluginPackageManifest.scripts?.["schematic:native:update"] === "node scripts/generate-schematic-edit-native.ts --write" &&
     pluginPackageManifest.scripts?.["schematic:saved:native:check"] === "node scripts/generate-schematic-saved-readback-native.ts --check" &&
@@ -662,7 +679,7 @@ check(
   "vendored-bridge-single-pinned-toolchain",
   vendoredBridgePackageManifest.name ===
     "easyeda-pro-control-authenticated-bridge" &&
-    
+
     vendoredBridgePackageManifest.private &&
     vendoredBridgePackageManifest.devDependencies?.["esbuild"] === "0.28.2" &&
     vendoredBridgePackageManifest.devDependencies?.["typescript"] === "7.0.2" &&
