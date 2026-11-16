@@ -731,10 +731,11 @@ and observed plugin IDs: an enabled-only table for a dynamically supplied server
 can create an invalid transport. Disable such a source through its actual plugin.
 Only child `.enabled=false` overrides are accepted; no global setting/auth change.
 
-Choose a NEW empty workspace outside EVERY project/check-out, so repository
-marketplace discovery cannot shadow the installed cache. Both evidence and
-workspace paths must be new for each attempt. The helper creates them exclusively
-and allocates every local evidence/control descriptor before spawning a CLI.
+Choose an unused workspace pathname outside EVERY project/check-out, so repository
+marketplace discovery cannot shadow the installed cache. Create only its parent
+directory first; leave the workspace and evidence directories absent. Both final
+paths must be new for each attempt. The helper creates them exclusively and
+allocates every local evidence/control descriptor before spawning a CLI.
 From the plugin directory, pinned Linux Node/core 0 can run:
 
 ```bash

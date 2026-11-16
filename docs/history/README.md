@@ -2,6 +2,7 @@
 
 - [2026-11-15 Installed fresh-CLI handoff](2026-11-15-installed-fresh-cli-handoff.md). Reviewed public release, both official installations, original-process metadata-only handoffs and the separate nested-namespace runtime finding.
 - [Temporary artifact cleanup and source continuation](2026-11-15-temporary-artifact-cleanup.md) — scoped cleanup, retained evidence and ownership of disposable artifacts.
+- [2026-11-15 Wire parser/service public foundations](2026-11-15-wire-parser-service-public-foundations.md). Published-base, independently buildable unmounted parser/RPC/service/tree/title and pending-publication closure with exact Wire-only source data and unchanged runtime admission.
 
 - [2026-11-15 Public manager metadata lifecycle port](2026-11-15-public-manager-metadata-lifecycle-port.md). Published-base ports of original first-status settlement and untouched EOF retirement;43 focused checks, with full-writer/native cleanup excluded.
 
