@@ -7,3 +7,6 @@ const hooks=`function(native,holder,event,snapshot,init,instance,oldBorn,newBorn
 const entry=`function(native,holder,event,snapshot,init,instance,oldBorn,newBorn,bindings){${hooksGuard}checked(holder,event,snapshot,init,instance,oldBorn,newBorn,bindings);dense(this,5);if(own(this,0)!==instance||own(this,1)!==own(own(holder,0),"line")||own(this,2)!=="points"||own(this,3)!==own(event,"oldValue")||own(this,4)!=="parent")bad();return true;}`;
 const held=`function(native,holder,event,snapshot,init,instance,oldBorn,newBorn,bindings){${hooksGuard}const b=checked(holder,event,snapshot,init,instance,oldBorn,newBorn,bindings);dense(this,2);if(own(this,0)!==instance||own(this,1)!==b[1])bad();return true;}`;
 export const CURRENT_SCHEMATIC_WIRE_GROUP_DATA_HOOK_PROGRAMS=Object.freeze({hooks,entry,held});
+
+// Shared unchanged guard for separate explicit post-init effects; existing programs stay byte exact.
+export {guard as CURRENT_SCHEMATIC_WIRE_GROUP_DATA_HOOK_BASE_GUARD};

@@ -1,0 +1,35 @@
+/** One natural DEL ticket timer. The generic self-return is armed only at
+ * its held timer entry; no conditional predicate script can be evaluated. */
+import {z} from "zod";
+import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_PUBLICATION_TIMER_PROGRAMS as PROGRAMS} from "./current-footprint-inverse-native-delete-publication-timer-programs.ts";
+import {CURRENT_FOOTPRINT_FORWARD_WRITER_TICKET_TIMER_SITES as SITES} from "./current-footprint-forward-writer-ticket-timer-source.ts";
+import {captureCurrentPcbStringClockReply} from "./current-pcb-string-clock-reply.ts";
+import {freezeDeep} from "./sqlite-inventory-core.ts";
+
+export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_PUBLICATION_TIMER_FLAGS=Object.freeze({objectGroup:"easyeda-inverse-native-delete-publication-timer-v1",silent:true,generatePreview:false,throwOnSideEffect:true,awaitPromise:false,userGesture:false}as const);
+const group=CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_PUBLICATION_TIMER_FLAGS.objectGroup,handle=z.string().regex(/^[A-Za-z0-9_.:-]{1,256}$/u),ref=z.strictObject({objectId:handle});
+const flags={objectGroup:z.literal(group),silent:z.literal(true),generatePreview:z.literal(false),throwOnSideEffect:z.literal(true),awaitPromise:z.literal(false),userGesture:z.literal(false)};
+const roles=["entry","returned","selfReturned"]as const;const programs=["binding","baseline","before",...roles,"slot"]as const;
+const count=Object.freeze({binding:1,baseline:2,before:3,entry:4,returned:4,selfReturned:4,slot:3});
+const byValue=Object.freeze({binding:false,baseline:false,before:true,entry:false,returned:true,selfReturned:true,slot:true});
+/* oxlint-disable unicorn/max-nested-calls -- Exact programs, argument tuples and source positions are fixed by each role. */
+const schema=z.union([
+ ...programs.map(role=>z.strictObject({phase:z.literal("inverse-native-delete-publication-timer-call"),role:z.literal(role),method:z.literal("Runtime.callFunctionOn"),params:z.strictObject({...flags,objectId:handle,functionDeclaration:z.literal(PROGRAMS[role]),arguments:z.array(ref).length(count[role]),returnByValue:z.literal(byValue[role])})})),
+ z.strictObject({phase:z.literal("inverse-native-delete-publication-timer-properties"),role:z.enum(["baseline","entry"]),method:z.literal("Runtime.getProperties"),params:z.strictObject({objectId:handle,ownProperties:z.literal(true),accessorPropertiesOnly:z.literal(false),generatePreview:z.literal(false)})}),
+ ...roles.map(role=>z.strictObject({phase:z.literal("inverse-native-delete-publication-timer-arm"),role:z.literal(role),method:z.literal("Debugger.setBreakpoint"),params:z.strictObject({location:z.strictObject({scriptId:handle,lineNumber:z.literal(SITES[role].lineNumber),columnNumber:z.literal(SITES[role].columnNumber)}),condition:z.literal("")})})),
+ ...roles.map(role=>z.strictObject({phase:z.literal("inverse-native-delete-publication-timer-frame"),role:z.literal(role),method:z.literal("Debugger.evaluateOnCallFrame"),params:z.strictObject({objectGroup:z.literal(group),silent:z.literal(true),generatePreview:z.literal(false),throwOnSideEffect:z.literal(true),returnByValue:z.literal(false),includeCommandLineAPI:z.literal(false),callFrameId:handle,expression:z.literal(SITES[role].expression)})})),
+ z.strictObject({phase:z.literal("inverse-native-delete-publication-timer-resume"),role:z.enum(roles),method:z.literal("Debugger.resume"),params:z.strictObject({})}),
+ z.strictObject({phase:z.literal("inverse-native-delete-publication-timer-remove"),role:z.enum(roles),method:z.literal("Debugger.removeBreakpoint"),params:z.strictObject({breakpointId:handle})}),
+ z.strictObject({phase:z.literal("inverse-native-delete-publication-timer-helper"),role:z.string().regex(/^(?:call|frame)-[A-Za-z]+$/u),method:z.literal("Debugger.getScriptSource"),params:z.strictObject({scriptId:handle})}),
+]);
+/* oxlint-enable unicorn/max-nested-calls */
+export type CurrentFootprintInverseNativeDeletePublicationTimerCommand=Readonly<z.infer<typeof schema>>;
+export function validateCurrentFootprintInverseNativeDeletePublicationTimerCommand(input:unknown):CurrentFootprintInverseNativeDeletePublicationTimerCommand{const c=schema.parse(captureCurrentPcbStringClockReply(input).value);if(c.method==="Debugger.getScriptSource"){const role=c.role.slice(c.role.indexOf("-")+1);if(!(`call-${role}`===c.role&&programs.some(r=>r===role)||`frame-${role}`===c.role&&roles.some(r=>r===role))){throw new Error("INVERSE_NATIVE_DELETE_TIMER_HELPER");}}return freezeDeep(c);}
+export function currentFootprintInverseNativeDeletePublicationTimerProgram(input:CurrentFootprintInverseNativeDeletePublicationTimerCommand):string|null{const c=validateCurrentFootprintInverseNativeDeletePublicationTimerCommand(input);if(c.method==="Runtime.callFunctionOn"){return c.params.functionDeclaration;}return c.method==="Debugger.evaluateOnCallFrame"?c.params.expression:null;}
+export function currentFootprintInverseNativeDeletePublicationTimerCases():readonly CurrentFootprintInverseNativeDeletePublicationTimerCommand[]{
+ const out:unknown[]=programs.map(role=>({phase:"inverse-native-delete-publication-timer-call",role,method:"Runtime.callFunctionOn",params:{...CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_PUBLICATION_TIMER_FLAGS,objectId:"original_ref",functionDeclaration:PROGRAMS[role],arguments:Array.from({length:count[role]},()=>({objectId:"original_ref"})),returnByValue:byValue[role]}}));
+ for(const role of["baseline","entry"]){out.push({phase:"inverse-native-delete-publication-timer-properties",role,method:"Runtime.getProperties",params:{objectId:"original_ref",ownProperties:true,accessorPropertiesOnly:false,generatePreview:false}});}
+ for(const role of roles){const site=SITES[role];out.push({phase:"inverse-native-delete-publication-timer-arm",role,method:"Debugger.setBreakpoint",params:{location:{scriptId:"original_ref",lineNumber:site.lineNumber,columnNumber:site.columnNumber},condition:""}},{phase:"inverse-native-delete-publication-timer-frame",role,method:"Debugger.evaluateOnCallFrame",params:{objectGroup:group,silent:true,generatePreview:false,throwOnSideEffect:true,returnByValue:false,includeCommandLineAPI:false,callFrameId:"original_ref",expression:site.expression}},{phase:"inverse-native-delete-publication-timer-resume",role,method:"Debugger.resume",params:{}},{phase:"inverse-native-delete-publication-timer-remove",role,method:"Debugger.removeBreakpoint",params:{breakpointId:"original_ref"}});}
+ const fixed=out.map(c=>validateCurrentFootprintInverseNativeDeletePublicationTimerCommand(c));return freezeDeep([...fixed,...fixed.filter(c=>currentFootprintInverseNativeDeletePublicationTimerProgram(c)!==null).map(c=>({phase:"inverse-native-delete-publication-timer-helper",role:(c.method==="Runtime.callFunctionOn"?"call-":"frame-")+c.role,method:"Debugger.getScriptSource",params:{scriptId:"original_ref"}})).map(c=>validateCurrentFootprintInverseNativeDeletePublicationTimerCommand(c))]);
+}
+export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_PUBLICATION_TIMER_REQUESTS=Object.freeze({normal:21,helpers:10,cdpRequests:31,holds:3,resumes:3,points:3,events:19,controls:40,conditions:0}as const);

@@ -1333,3 +1333,9 @@ layout. The connected ledger retains its generation and case anchors.
 
 - 2026-11-16: [Windows metadata driver with a fixed Linux evidence broker](2026-11-16-windows-linux-evidence-broker.md).
 - [Maintained fresh CLI metadata proof](2026-11-15-through-2026-11-16-fresh-cli-metadata-proof-helper.md) — 2026-11-15 through 2026-11-16; portable default-preview coordinator, original pidfd/handle retirement, failure-safe evidence/control and bounded closed-workspace cleanup manifest.
+
+- [2026-11-16-wire-complete-old-data-init-return.md](2026-11-16-wire-complete-old-data-init-return.md)
+
+- [2026-11-16-native-reference-point-release-install.md](2026-11-16-native-reference-point-release-install.md)
+
+- [2026-11-16-footprint-support-wire-olddata-curation.md](2026-11-16-footprint-support-wire-olddata-curation.md)
