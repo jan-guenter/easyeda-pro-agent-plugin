@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Compare the actual source constructors, exact point inventories, receipt guards and independent cleanup methods in one retained regression file. */
 /** Actual production methods with substituted prerequisites, plus the real
  * installed-source constructor. These checks grant no native owner or effect. */
 import assert from "node:assert/strict";
@@ -5,6 +6,14 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { types } from "node:util";
+import { z } from "zod";
+import { consumeCurrentSchematicWireServiceRequestReceipt as consumeRequest, retainCurrentSchematicWireServiceRequest as retainRequest } from "../src/current-schematic-wire-service-request-receipt.ts";
+import { CURRENT_SCHEMATIC_WIRE_CLASSIC_RPC_SHARED_CALLS as SHARED_CALLS, CURRENT_SCHEMATIC_WIRE_CLASSIC_RPC_SHARED_FLAGS as SHARED_FLAGS } from "../src/current-schematic-wire-classic-rpc-shared-protocol.ts";
+import { CurrentSchematicWireParserDriver } from "../src/current-schematic-wire-parser-driver.ts";
+import type { CurrentSchematicWireParserDriverCommand } from "../src/current-schematic-wire-parser-driver.ts";
+import { CURRENT_SCHEMATIC_WIRE_SERVICE_INVOCATION_KINDS as SERVICE_KINDS, CURRENT_SCHEMATIC_WIRE_SERVICE_INVOCATION_POINTS as SERVICE_POINTS } from "../src/current-schematic-wire-service-invocation-source.ts";
+import { CURRENT_SCHEMATIC_WIRE_TREE_RUNTIME_KINDS as TREE_KINDS, currentSchematicWireTreeRuntimePoints as treePoints } from "../src/current-schematic-wire-tree-runtime-source.ts";
+import { CURRENT_SCHEMATIC_WIRE_UI_RUNTIME_KINDS as UI_KINDS, CURRENT_SCHEMATIC_WIRE_UI_RUNTIME_POINTS as UI_POINTS } from "../src/current-schematic-wire-ui-runtime-source.ts";
 import { runInThisContext } from "node:vm";
 import { CurrentSchematicWireClassicRpcDriver } from "../src/current-schematic-wire-classic-rpc-driver.ts";
 import type { CurrentSchematicWireClassicRpcDriverCommand } from "../src/current-schematic-wire-classic-rpc-driver.ts";
@@ -28,6 +37,8 @@ async function fixture(filename: string, spans: readonly (readonly [string, stri
   });
   const factory: unknown = runInThisContext(stripTypeScriptTypes(`(function(bindings){
     const need=bindings.need,types=bindings.types,capture=bindings.capture,eventSchema={parse:value=>value};
+    const KINDS=bindings.kinds,POINTS=bindings.points,points=bindings.pointsFor,allocated=bindings.allocated,empty=bindings.empty;
+    const FLAGS={objectGroup:"fixture.group"},reader=value=>value,methods=bindings.methods;
     async function settled(task){try{await task;}catch{}}
     return class Fixture { ${setup}\n${methods.join("\n")} };
   })`));
@@ -145,3 +156,280 @@ void test("Wire title cleanup attempts both groups and retains primary and every
   const cleanup: unknown = Reflect.get(snapshot, "notification"); assert.ok(cleanup instanceof AggregateError);
   assert.deepEqual(cleanup.errors, [notification, ft, title]); assert.equal(Reflect.get(snapshot, "settled"), true);
 });
+
+for (const unavailable of [false, true]) {
+  void test(`Wire actual parser arm-only retirement joins and retains cleanup / unavailable ${String(unavailable)}`, async context => {
+    const source = await readConfiguredEasyedaAsset(SOURCE[0].relativePath);
+    if (source === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
+    const commands: CurrentSchematicWireParserDriverCommand[] = [], release = Promise.withResolvers<unknown>();
+    const cleanup = new Error("original parser transport closed"); let count = 0, exited = false;
+    const driver = new CurrentSchematicWireParserDriver({ sessionId: "123.session", scriptId: "123.sch", holder: "123.holder", native: "123.native", variant: 0, source: { scriptSource: source } }, {
+      request: (command): Promise<unknown> => {
+        commands.push(command);
+        if (command.method === "Debugger.setBreakpoint") { count += 1; return Promise.resolve({ breakpointId: `123.point${String(count)}`, actualLocation: command.params.location }); }
+        if (unavailable) { return Promise.reject(cleanup); }
+        return command.method === "Runtime.releaseObjectGroup" ? release.promise : Promise.resolve({});
+      },
+      assertCurrent: (): void => { assert.equal(exited, false); },
+      assertOriginalExit: (): void => { assert.equal(exited, true); },
+      fail: (): void => {
+        // Keep the original failure in the actual driver.
+      },
+    });
+    context.after(async () => { release.resolve({}); exited = true; await driver.retireAfterOriginalExit(); });
+    await driver.arm(); assert.equal(count, 12); assert.throws(() => driver.retireAfterOriginalExit());
+    exited = true; const retirement = driver.retireAfterOriginalExit(); assert.equal(driver.retireAfterOriginalExit(), retirement);
+    let done = false; const observed = (async (): Promise<void> => { await retirement; done = true; })();
+    await tick(); assert.equal(commands.filter(command => command.method === "Debugger.removeBreakpoint").length, 12);
+    assert.equal(done, unavailable); release.resolve({}); await observed;
+    assert.equal(commands.filter(command => command.method === "Runtime.releaseObjectGroup").length, 1);
+    assert.equal(driver.inspect().objectGroupReleased, !unavailable); assert.equal(driver.inspect().allocationUncertain, false);
+    assert.equal(driver.retained().notificationFailure?.cause, unavailable ? cleanup : undefined);
+    const cleanupAttempts = driver.retained().attempts.filter(attempt => attempt.cleanup);
+    assert.equal(cleanupAttempts.length, 13);
+    assert.equal(cleanupAttempts.filter(attempt => attempt.cause === cleanup).length, unavailable ? 13 : 0);
+    await driver.retireAfterOriginalExit(); assert.equal(commands.length, 25); assert.throws(() => driver.run());
+  });
+}
+
+const allocationLocation = z.strictObject({ scriptId: z.string(), lineNumber: z.number(), columnNumber: z.number() });
+const allocationReply = z.strictObject({ breakpointId: z.string(), actualLocation: allocationLocation });
+function locationOf(params: unknown): unknown {
+  assert.ok(params !== null && typeof params === "object"); const value: unknown = Reflect.get(params, "location"); return value;
+}
+const lifecycleCases = [
+  { name: "service", filename: "current-schematic-wire-service-driver.ts", count: 17, kinds: SERVICE_KINDS, points: SERVICE_POINTS,
+    cleanupBegin: " #removeOnce():Promise<void>", cleanupEnd: " public run():Promise<", group: true },
+  { name: "tree", filename: "current-schematic-wire-tree-runtime-driver.ts", count: 10, kinds: TREE_KINDS, points: null,
+    cleanupBegin: " #removeOnce():Promise<void>", cleanupEnd: " async #compareAliases()", group: false },
+  { name: "ui", filename: "current-schematic-wire-ui-runtime-driver.ts", count: 13, kinds: UI_KINDS, points: UI_POINTS,
+    cleanupBegin: " #removeOnce():Promise<void>", cleanupEnd: " async #compareAliases()", group: false },
+] as const;
+
+/** Actual arm/remove/retire methods; registration/preflight custody and request
+ * transport are substituted. This exercises no Inspector or native owner. */
+function lifecycleFixture(row: typeof lifecycleCases[number], request: (command: unknown) => Promise<unknown>, exited: () => boolean): Promise<object> {
+  return fixture(row.filename, [
+    [" public arm():Promise<void>", " public observe(input:unknown)"],
+    [row.cleanupBegin, row.cleanupEnd],
+    [" public retireAfterOriginalExit():Promise<void>", " public requireLiveComparison("],
+  ], `
+    #armTask=null;#runTask=null;#finishTask=null;#removeTask=null;#releaseTask=null;#cleanupTask=null;#retirementTask=null;
+    #tail=Promise.resolve();#functionTail=Promise.resolve();#settlements=[];#attempts=[];#points=[];
+    #input={variant:0,scriptId:"123.sch",busScriptId:"123.bus"};#root={};#before={role:"objectContent"};
+    #armed=false;#closing=false;#settled=false;#packet=null;#finishSettled=false;#allocationUncertain=false;
+    #releaseAttempted=false;#released=false;#failure=null;#notificationFailure=null;#transport=bindings.transport;
+    #current(cleanup=false){if(!cleanup){need(!this.#closing&&this.#failure===null);need(!bindings.exited());}}
+    #fail(cause){this.#failure??=Object.freeze({cause});}
+    async #send(command,cleanup=false){
+      this.#current(cleanup);const attempt={command,cleanup};this.#attempts.push(attempt);
+      try{attempt.pending=bindings.request(command);const raw=await attempt.pending;attempt.raw=raw;this.#current(cleanup);return raw;}
+      catch(cause){attempt.cause=cause;throw cause;}
+    }
+    holdTasks(run,finish){this.#runTask=run;this.#finishTask=finish;}
+    snapshot(){return{points:this.#points,attempts:this.#attempts,notification:this.#notificationFailure,
+      failure:this.#failure,uncertain:this.#allocationUncertain,released:this.#released};}
+  `, {
+    request, exited, kinds: row.kinds, points: row.points, pointsFor: treePoints,
+    allocated: allocationReply,
+    empty: z.strictObject({}), transport: { assertOriginalExit: (): void => { assert.equal(exited(), true); } },
+  });
+}
+
+for (const row of lifecycleCases) {
+  for (const armFailure of [false, true]) {
+    for (const unavailable of [false, true]) {
+      void test(`Wire substituted ${row.name} arm/retirement cleanup / arm failure ${String(armFailure)} / unavailable ${String(unavailable)}`, async context => {
+        const cleanup = new Error("original cleanup refused"), original = new Error("second original allocation failed");
+        const commands: unknown[] = []; let allocations = 0, exited = false;
+        const value = await lifecycleFixture(row, (command: unknown): Promise<unknown> => {
+          commands.push(command); assert.ok(command !== null && typeof command === "object");
+          const method: unknown = Reflect.get(command, "method"), params: unknown = Reflect.get(command, "params");
+          if (method === "Debugger.setBreakpoint") {
+            allocations += 1; if (armFailure && allocations === 2) { return Promise.reject(original); }
+            assert.ok(params !== null && typeof params === "object");
+            return Promise.resolve({ breakpointId: `123.point${String(allocations)}`, actualLocation: locationOf(params) });
+          }
+          if (unavailable) { return Promise.reject(cleanup); }
+          return Promise.resolve({});
+        }, () => exited);
+        context.after(async () => { exited = true; await pending(invoke(value, "retireAfterOriginalExit")); });
+        const arm = pending(invoke(value, "arm")); assert.equal(invoke(value, "arm"), arm);
+        if (armFailure) {
+          await assert.rejects(arm, error => { assert.equal(error, original); return true; });
+          if (row.group) { assert.equal(commands.length, 4); }
+        } else { await arm; assert.equal(allocations, row.count); }
+        exited = true; const retirement = pending(invoke(value, "retireAfterOriginalExit")); assert.equal(invoke(value, "retireAfterOriginalExit"), retirement);
+        await retirement; const state = invoke(value, "snapshot"); assert.ok(state !== null && typeof state === "object");
+        const attempts: unknown = Reflect.get(state, "attempts"), points: unknown = Reflect.get(state, "points");
+        assert.ok(Array.isArray(points) && Array.isArray(attempts)); const expected = armFailure ? 1 : row.count;
+        assert.equal(points.length, expected);
+        for (const point of points) {
+          assert.ok(point !== null && typeof point === "object");
+          assert.equal(Reflect.get(point, "removeAttempted"), true); assert.equal(Reflect.get(point, "removed"), !unavailable);
+        }
+        const expectedCleanup = expected + Number(row.group);
+        assert.equal(commands.length, allocations + expectedCleanup); assert.equal(Reflect.get(state, "uncertain"), armFailure);
+        const notification: unknown = Reflect.get(state, "notification");
+        if (unavailable) { assert.ok(notification !== null && typeof notification === "object"); assert.equal(Reflect.get(notification, "cause"), cleanup); }
+        else { assert.equal(notification, null); }
+        assert.equal(Reflect.get(state, "released"), row.group && !unavailable);
+        const before = commands.length; await pending(invoke(value, "retireAfterOriginalExit")); assert.equal(commands.length, before);
+        if (armFailure) { const failure: unknown = Reflect.get(state, "failure"); assert.ok(failure !== null && typeof failure === "object"); assert.equal(Reflect.get(failure, "cause"), original); }
+      });
+    }
+  }
+}
+
+for (const row of lifecycleCases) {
+  void test(`Wire substituted ${row.name} retirement waits for original arm ACK before cleanup`, async context => {
+    const allocation = Promise.withResolvers<unknown>(), commands: unknown[] = []; let allocations = 0, exited = false;
+    const value = await lifecycleFixture(row, (command: unknown): Promise<unknown> => {
+      commands.push(command); assert.ok(command !== null && typeof command === "object");
+      const method: unknown = Reflect.get(command, "method"), params: unknown = Reflect.get(command, "params");
+      if (method !== "Debugger.setBreakpoint") { return Promise.resolve({}); }
+      allocations += 1;
+      if (allocations === 2) { return allocation.promise; }
+      assert.ok(params !== null && typeof params === "object");
+      return Promise.resolve({ breakpointId: "123.first", actualLocation: locationOf(params) });
+    }, () => exited);
+    const arm = pending(invoke(value, "arm")); const armOutcome = Promise.allSettled([arm]);
+    context.after(async () => { allocation.resolve({}); exited = true; await armOutcome; await pending(invoke(value, "retireAfterOriginalExit")); });
+    await tick(); assert.equal(commands.length, 2); exited = true;
+    const retired = pending(invoke(value, "retireAfterOriginalExit")); await tick(); assert.equal(commands.length, 2);
+    const second = commands[1]; assert.ok(second !== null && typeof second === "object");
+    const params: unknown = Reflect.get(second, "params"); assert.ok(params !== null && typeof params === "object");
+    allocation.resolve({ breakpointId: "123.late", actualLocation: locationOf(params) });
+    await retired; const outcome = await armOutcome; assert.equal(outcome[0]?.status, "rejected");
+    assert.equal(commands.length, 3 + Number(row.group));
+    const state = invoke(value, "snapshot"); assert.ok(state !== null && typeof state === "object"); assert.equal(Reflect.get(state, "uncertain"), true);
+    const points: unknown = Reflect.get(state, "points"); assert.ok(Array.isArray(points)); assert.equal(points.length, 1);
+  });
+
+  void test(`Wire substituted ${row.name} retirement joins run, finish and removal`, async context => {
+    const finish = Promise.withResolvers<unknown>(), removal = Promise.withResolvers<unknown>(), run = Promise.withResolvers<unknown>();
+    const commands: unknown[] = []; let allocations = 0, exited = false, removals = 0;
+    const value = await lifecycleFixture(row, (command: unknown): Promise<unknown> => {
+      commands.push(command); assert.ok(command !== null && typeof command === "object");
+      const method: unknown = Reflect.get(command, "method"), params: unknown = Reflect.get(command, "params");
+      if (method === "Debugger.setBreakpoint") {
+        allocations += 1; assert.ok(params !== null && typeof params === "object");
+        return Promise.resolve({ breakpointId: `123.point${String(allocations)}`, actualLocation: locationOf(params) });
+      }
+      if (method === "Debugger.removeBreakpoint") { removals += 1; if (removals === 1) { return removal.promise; } }
+      return Promise.resolve({});
+    }, () => exited);
+    context.after(async () => { run.resolve(null); finish.resolve(null); removal.resolve({}); exited = true; await pending(invoke(value, "retireAfterOriginalExit")); });
+    await pending(invoke(value, "arm")); invoke(value, "holdTasks", [run.promise, finish.promise]); exited = true;
+    const retired = pending(invoke(value, "retireAfterOriginalExit")); let done = false;
+    const observed = (async (): Promise<void> => { await retired; done = true; })();
+    await tick(); assert.equal(removals, 0); run.resolve(null); await tick(); assert.equal(removals, 0);
+    finish.resolve(null); await tick(); assert.equal(removals, 1); assert.equal(done, false);
+    removal.resolve({}); await observed; assert.equal(removals, row.count); assert.equal(commands.length, row.count * 2 + Number(row.group));
+  });
+}
+
+/** Real receipt capture/consume and driver live/retirement methods, with only
+ * successful prior request/settlement custody substituted by explicit records. */
+function receiptOwner(resume: Promise<unknown>, exited: () => boolean): Promise<object> {
+  const program = SHARED_CALLS.request.program;
+  const raw = { result: { type: "object", subtype: "array", className: "Array", objectId: "123.request", description: "Array(3)" } };
+  const fields = {
+    result: [
+      ...[0, 1, 2].map(index => ({ name: String(index), value: { type: "undefined" }, writable: true, configurable: true, enumerable: true, isOwn: true })),
+      { name: "length", value: { type: "number", value: 3 }, writable: true, configurable: false, enumerable: false, isOwn: true },
+    ],
+    internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", objectId: "123.arrayPrototype" } }],
+  };
+  const command = { phase: "classic-rpc-call", role: "request", method: "Runtime.callFunctionOn",
+    params: { ...SHARED_FLAGS, objectId: "123.frame", functionDeclaration: program, arguments: ["123.native", "123.holder", "123.entry"].map(objectId => ({ objectId })), returnByValue: false, awaitPromise: false, userGesture: false } };
+  const attempts = [
+    { command: { phase: "wire-rpc-driver-origin-call", role: "closing", params: { arguments: [{}, {}, { objectId: "123.entry" }] } } },
+    { command, raw, pending: Promise.resolve(raw) },
+    { command: { method: "Debugger.getScriptSource" }, raw: { scriptSource: `(${program})` } },
+    { command: { phase: "classic-rpc-properties", params: { objectId: "123.request" } }, raw: fields },
+    { command: { method: "Debugger.resume" }, pending: resume },
+  ];
+  const transport = { request: (): Promise<unknown> => { throw new Error("no new receipt dispatch"); },
+    assertCurrent: (): void => { assert.equal(exited(), false); }, assertOriginalExit: (): void => { assert.equal(exited(), true); },
+    fail: (): void => {
+      // Retained successful settlement is supplied only for this guard fixture.
+    } };
+  return fixture("current-schematic-wire-classic-rpc-driver.ts", [
+    [" #current(cleanup=false):void", " #fail(cause:unknown):void"],
+    [" public retireAfterOriginalExit():Promise<void>", " /** Internal receipt/root proof"],
+    [" public requireLiveServiceRequest():void", " public requireLiveComparison("],
+    [" public inspect():Readonly<", " public retained():Readonly<"],
+  ], `
+    #transport=bindings.transport;#methods=bindings.methods(bindings.transport);#armed=true;#settled=false;#failure=null;#closing=false;
+    #packet=null;#finishTask=null;#finishSettled=false;#retirementTask=null;#armTask=null;#runTask=null;#joinTask=null;
+    #cleanupTask=null;#removeTask=null;#releaseTask=null;#tail=Promise.resolve();#functionTail=Promise.resolve();#settlements=[];
+    #attempts=bindings.attempts;#received=0;#resumes=0;#normal=0;#cleanup=0;#released=false;#allocationUncertain=false;
+    #fail(cause){this.#failure??=Object.freeze({cause});}
+    retained(){return{attempts:this.#attempts};}
+    settle(){this.#settled=true;this.#packet={};}
+  `, { transport, attempts, methods: (value: object): readonly unknown[] => ["request", "assertCurrent", "assertOriginalExit", "fail"].map(key => { const method: unknown = Reflect.get(value, key); return method; }) });
+}
+
+for (const mode of ["live", "before-capture", "during-resume", "before-consume"] as const) {
+  void test(`Wire receipt live guard with substituted prior custody / ${mode}`, { timeout: 5000 }, async context => {
+    const resume = Promise.withResolvers<unknown>(); let exited = false;
+    const owner = await receiptOwner(resume.promise, () => exited);
+    context.after(async () => { resume.resolve({}); exited = true; await pending(invoke(owner, "retireAfterOriginalExit")); });
+    if (mode === "before-capture") {
+      resume.resolve({}); invoke(owner, "settle"); exited = true; await pending(invoke(owner, "retireAfterOriginalExit"));
+      await assert.rejects(pending(Reflect.apply(retainRequest, undefined, [owner]))); return;
+    }
+    const captureTask = pending(Reflect.apply(retainRequest, undefined, [owner]));
+    if (mode === "during-resume") {
+      invoke(owner, "settle"); exited = true;
+      const rejected = assert.rejects(captureTask);
+      const retired = pending(invoke(owner, "retireAfterOriginalExit")); resume.resolve({}); await retired;
+      await rejected; return;
+    }
+    resume.resolve({}); const receipt = await captureTask; assert.ok(receipt !== null && typeof receipt === "object");
+    if (mode === "live") {
+      assert.equal(Reflect.apply(consumeRequest, undefined, [receipt, owner]), receipt);
+      assert.throws(() => { Reflect.apply(consumeRequest, undefined, [receipt, owner]); }); return;
+    }
+    invoke(owner, "settle"); exited = true; await pending(invoke(owner, "retireAfterOriginalExit"));
+    const state = invoke(owner, "inspect"); assert.ok(state !== null && typeof state === "object");
+    assert.equal(Reflect.get(state, "armed"), true); assert.equal(Reflect.get(state, "failed"), false);
+    assert.equal(Reflect.get(state, "objectGroupReleased"), false); assert.equal(Object.hasOwn(state, "closing"), false);
+    assert.throws(() => { Reflect.apply(consumeRequest, undefined, [receipt, owner]); });
+    const source = await readFile(new URL("../src/current-schematic-wire-service-invocation-root.ts", import.meta.url), "utf8");
+    const begin = "export function requireCurrentSchematicWireServiceInvocationRoot", index = source.indexOf(begin); assert.ok(index > 0);
+    const root = {}; const issued = new WeakMap<object, object>([[root, { rpc: owner }]]);
+    const factory: unknown = runInThisContext(stripTypeScriptTypes(`(function(issued){
+      const need=value=>{if(!value)throw new Error("root guard");};
+      ${source.slice(index).replace("export function", "function")}
+      return requireCurrentSchematicWireServiceInvocationRoot;
+    })`));
+    assert.ok(typeof factory === "function"); const requireRoot: unknown = Reflect.apply(factory, undefined, [issued]);
+    assert.ok(typeof requireRoot === "function"); assert.throws(() => { Reflect.apply(requireRoot, undefined, [root]); });
+  });
+}
+
+void test("Wire actual unarmed parser retirement dispatches no cleanup", async context => {
+  const source = await readConfiguredEasyedaAsset(SOURCE[0].relativePath);
+  if (source === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
+  let exited = false; const commands: CurrentSchematicWireParserDriverCommand[] = [];
+  const driver = new CurrentSchematicWireParserDriver({ sessionId: "123.session", scriptId: "123.sch", holder: "123.holder", native: "123.native", variant: 0, source: { scriptSource: source } }, {
+    request: (command): Promise<unknown> => { commands.push(command); return Promise.reject(new Error("unexpected unowned group cleanup")); },
+    assertCurrent: (): void => { assert.equal(exited, false); },
+    assertOriginalExit: (): void => { assert.equal(exited, true); },
+    fail: (): void => {
+      // No arm or group allocation belongs to this driver.
+    },
+  });
+  exited = true; await driver.retireAfterOriginalExit(); assert.equal(commands.length, 0);
+  assert.equal(driver.retained().attempts.length, 0); assert.equal(driver.inspect().objectGroupReleased, false);
+});
+
+for (const row of lifecycleCases) {
+  void test(`Wire substituted unarmed ${row.name} retirement dispatches no cleanup`, async () => {
+    const commands: unknown[] = [];
+    const value = await lifecycleFixture(row, (command: unknown): Promise<unknown> => { commands.push(command); return Promise.reject(new Error("no owned allocation")); }, () => true);
+    await pending(invoke(value, "retireAfterOriginalExit")); assert.equal(commands.length, 0);
+  });
+}

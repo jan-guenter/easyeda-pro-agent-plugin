@@ -21,7 +21,7 @@ function need(value:boolean):asserts value{if(!value){throw new Error("WIRE_SERV
 /** The caller already holds the actual service entry; its complete owner must
  * authenticate that event. Await only the original issued resume ACK. */
 export async function retainCurrentSchematicWireServiceRequest(owner:CurrentSchematicWireClassicRpcDriver):Promise<CurrentSchematicWireServiceRequestReceipt>{
- const before=owner.inspect();need(before.armed&&!before.settled&&!before.failed&&!before.objectGroupReleased);
+ owner.requireLiveServiceRequest();const before=owner.inspect();need(before.armed&&!before.settled&&!before.failed&&!before.objectGroupReleased);
  const attempts=owner.retained().attempts;
  const index=attempts.findLastIndex(row=>row.command.phase==="classic-rpc-call"&&row.command.role==="request");need(index!==-1);
  const original=attempts[index];need(original!==undefined&&original.pending!==undefined&&types.isPromise(original.pending)&&!requests.has(original.pending));
@@ -38,11 +38,11 @@ export async function retainCurrentSchematicWireServiceRequest(owner:CurrentSche
  const originCommand=origin.command;need(originCommand.phase==="wire-rpc-driver-origin-call"&&originCommand.role!=="join"&&originCommand.params.arguments[2]?.objectId===entry);
  const role=z.enum(["closing","language","titles"]).parse(originCommand.role);requests.add(original.pending);
  const ack=await resume.pending;empty.parse(capture(ack).value);
- const after=owner.inspect();need(after.armed&&!after.settled&&!after.failed&&!after.objectGroupReleased);
+ owner.requireLiveServiceRequest();const after=owner.inspect();need(after.armed&&!after.settled&&!after.failed&&!after.objectGroupReleased);
  const data:CurrentSchematicWireServiceRequestReceipt=Object.freeze({schema:"private.schematic-wire-service-request-receipt.v1",role,entry,request,suppliedTransportOnly:true,originalNativeOwnerJoined:false});
  issued.set(data,Object.freeze({owner,request:original.pending,resume:resume.pending}));return data;
 }
 export function consumeCurrentSchematicWireServiceRequestReceipt(data:CurrentSchematicWireServiceRequestReceipt,owner:CurrentSchematicWireClassicRpcDriver):CurrentSchematicWireServiceRequestReceipt{
  const original=issued.get(data);need(original!==undefined&&original.owner===owner&&!spent.has(data));spent.add(data);
- const current=owner.inspect();need(current.armed&&!current.failed&&!current.objectGroupReleased);return data;
+ owner.requireLiveServiceRequest();const current=owner.inspect();need(current.armed&&!current.failed&&!current.objectGroupReleased);return data;
 }

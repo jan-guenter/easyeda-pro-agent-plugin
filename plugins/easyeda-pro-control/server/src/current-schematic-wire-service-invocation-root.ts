@@ -14,10 +14,10 @@ interface Original{readonly input:Input;readonly rpc:CurrentSchematicWireClassic
 const issued=new WeakMap<CurrentSchematicWireServiceInvocationRoot,Original>();
 function need(value:boolean):asserts value{if(!value){throw new Error("WIRE_SERVICE_ROOT");}}
 export function createCurrentSchematicWireServiceInvocationRoot(data:CurrentSchematicWireServiceRegistrationData,input:Input,rpc:CurrentSchematicWireClassicRpcDriver):CurrentSchematicWireServiceInvocationRoot{
- const registrations=consume(data,input);const current=rpc.inspect();need(!current.failed&&!current.settled&&!current.objectGroupReleased);
+ rpc.requireLiveServiceRequest();const registrations=consume(data,input);const current=rpc.inspect();need(!current.failed&&!current.settled&&!current.objectGroupReleased);
  const root:CurrentSchematicWireServiceInvocationRoot=Object.freeze({schema:"private.schematic-wire-service-invocation-root.v1",registrations,originalNativeOwnerJoined:false,mutationAuthorized:false,saveAuthorized:false});
  issued.set(root,Object.freeze({input:Object.freeze({...input}),rpc}));return root;
 }
 export function requireCurrentSchematicWireServiceInvocationRoot(root:CurrentSchematicWireServiceInvocationRoot):Readonly<Original>{
- const original=issued.get(root);need(original!==undefined);const current=original.rpc.inspect();need(!current.failed&&!current.objectGroupReleased);return original;
+ const original=issued.get(root);need(original!==undefined);original.rpc.requireLiveServiceRequest();const current=original.rpc.inspect();need(!current.failed&&!current.objectGroupReleased);return original;
 }

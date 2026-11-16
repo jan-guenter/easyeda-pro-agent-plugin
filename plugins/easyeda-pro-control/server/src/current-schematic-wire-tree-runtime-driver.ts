@@ -201,7 +201,7 @@ export class CurrentSchematicWireTreeRuntimeDriver{
  }
  public retireAfterOriginalExit():Promise<void>{
   if(this.#retirementTask!==null){return this.#retirementTask;}this.#current(true);this.#transport.assertOriginalExit();this.#closing=true;if(!this.#settled||this.#packet===null){this.#fail(new Error("WIRE_TREE_RUNTIME_ORIGINAL_EXIT"));}
-  const task=(async():Promise<void>=>{await settled(this.#armTask);await this.#tail;await settled(this.#runTask);await settled(this.#finishTask);await settled(this.#removeTask);await this.#functionTail;for(const attempt of this.#attempts){await settled(attempt.pending??null);}this.#current(true);this.#transport.assertOriginalExit();})();this.#retirementTask=task;return task;
+  const task=(async():Promise<void>=>{await settled(this.#armTask);await this.#tail;await settled(this.#runTask);await settled(this.#finishTask);try{await this.#removeOnce();}catch(cleanupError){this.#notificationFailure??=Object.freeze({cause:cleanupError});}await settled(this.#removeTask);await this.#functionTail;for(const attempt of this.#attempts){await settled(attempt.pending??null);}this.#current(true);this.#transport.assertOriginalExit();})();this.#retirementTask=task;return task;
  }
  public requireLiveComparison(data:CurrentSchematicWireTreeRuntimeDriverData):void{this.#current();need(this.#packet===data&&!this.#finished&&this.#before!==null);serviceRoot(this.#before.root);}
  public inspect():Readonly<{armed:boolean;settled:boolean;failed:boolean;pauses:number;resumes:number;normalRequests:number;cleanupRequests:number;allocationUncertain:boolean;originalNativeOwnerJoined:false;saveAuthorized:false}>{

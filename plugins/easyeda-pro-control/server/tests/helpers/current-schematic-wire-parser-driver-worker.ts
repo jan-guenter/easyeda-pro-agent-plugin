@@ -8,7 +8,7 @@ import { CurrentSchematicWireParserDriver, consumeCurrentSchematicWireParserDriv
 import type { CurrentSchematicWireParserDriverCommand } from "../../src/current-schematic-wire-parser-driver.ts";
 
 const config = z.strictObject({ key: z.string(), scriptId: z.string(), variant: z.union([z.literal(0), z.literal(1)]),
-  source: z.string(), mode: z.enum(["complete", "wrong-path", "publication", "rpc-error", "idle-tab", "foreign-caller"]) }).parse(workerData);
+  source: z.string(), retireWithoutFinish: z.boolean().default(false), mode: z.enum(["complete", "wrong-path", "publication", "rpc-error", "idle-tab", "foreign-caller"]) }).parse(workerData);
 const port = parentPort ?? (() : never => { throw new Error("worker port"); })();
 port.on("message", () => {
   // Retain the worker while an original main-thread source frame is held.
@@ -63,7 +63,12 @@ async function main(): Promise<void> {
     assert.equal(driver.run(), pending); assert.throws(() => consume(structuredClone(result), current));
     assert.equal(consume(result, driver), result.parser); assert.throws(() => consume(result, current));
     assert.equal(result.objectGroupReleased, false); assert.equal(driver.inspect().objectGroupReleased, false);
-    const finished = driver.finish(); assert.equal(driver.finish(), finished); await finished;
+    if (config.retireWithoutFinish) {
+      // Simulated original exit with this supplied Inspector transport still
+      // Available solely as a source fixture with no native process or Job.
+      originalExited = true;
+      const retired = driver.retireAfterOriginalExit(); assert.equal(driver.retireAfterOriginalExit(), retired); await retired;
+    } else { const finished = driver.finish(); assert.equal(driver.finish(), finished); await finished; }
     const retained = driver.retained();
     await complete({ ...driver.inspect(), sources: result.allTwentyTwoGeneratedSourcesCompared, sourceChecks: retained.attempts.filter(row => row.command.method === "Debugger.getScriptSource").length,
       removed: result.allAllocatedBreakpointsRemoved, released: driver.inspect().objectGroupReleased, attempts: retained.attempts.length, events: retained.events.length,

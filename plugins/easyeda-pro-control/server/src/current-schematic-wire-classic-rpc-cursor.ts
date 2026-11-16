@@ -80,18 +80,19 @@ export class CurrentSchematicWireClassicRpcCursor {
  readonly #plan:Generator<Command,CurrentSchematicWireClassicRpcData,unknown>;readonly #maximum:number;
  #pending:Command|null=null;#reserved=false;#failed=false;#reads=0;#result:CurrentSchematicWireClassicRpcData|null=null;readonly #packets:unknown[]=[];
  public constructor(input:CurrentSchematicWireClassicRpcInput) {
+  const snapshot=Object.freeze({...input});
   let first:First;let prior:Stored|null=null;
-  if(input.stage==="entry"){
-   first=Object.freeze({...input});for(const id of[first.frame,first.holder,first.native,first.scriptId]){handle.parse(id);}
+  if(snapshot.stage==="entry"){
+   first=Object.freeze({...snapshot});for(const id of[first.frame,first.holder,first.native,first.scriptId]){handle.parse(id);}
    need((first.variant===0||first.variant===1)&&!Object.is(first.variant,-0));z.enum(["closing","language","titles"]).parse(first.role);
   }else{
-   const original=issued.get(input.previous);need(original!==undefined&&!spent.has(input.previous));spent.add(input.previous);
+   const original=issued.get(snapshot.previous);need(original!==undefined&&!spent.has(snapshot.previous));spent.add(snapshot.previous);
    first=original.first;prior=original;
-   const previous=({request:"entry",timer:"request",returned:"timer",reply:"returned",replyReturned:"reply",settled:"replyReturned"}as const)[input.stage];
-   need(input.previous.stage===previous);if(input.stage!=="settled"){handle.parse(input.frame);}
-   if(input.stage==="returned"){handle.parse(input.outerPromise);}if(input.stage==="reply"||input.stage==="timer"){handle.parse(input.callerFrame);}
+   const previous=({request:"entry",timer:"request",returned:"timer",reply:"returned",replyReturned:"reply",settled:"replyReturned"}as const)[snapshot.stage];
+   need(snapshot.previous.stage===previous);if(snapshot.stage!=="settled"){handle.parse(snapshot.frame);}
+   if(snapshot.stage==="returned"){handle.parse(snapshot.outerPromise);}if(snapshot.stage==="reply"||snapshot.stage==="timer"){handle.parse(snapshot.callerFrame);}
   }
-  this.#maximum=LIMIT[input.stage];this.#plan=CurrentSchematicWireClassicRpcCursor.collect(input,first,prior);Object.freeze(this);
+  this.#maximum=LIMIT[snapshot.stage];this.#plan=CurrentSchematicWireClassicRpcCursor.collect(snapshot,first,prior);Object.freeze(this);
  }
  private static *collect(input:CurrentSchematicWireClassicRpcInput,first:First,old:Stored|null):Generator<Command,CurrentSchematicWireClassicRpcData,unknown>{
   const {native,holder,scriptId,variant}=first;

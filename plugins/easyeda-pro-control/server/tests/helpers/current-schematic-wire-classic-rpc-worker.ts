@@ -37,9 +37,17 @@ function post(method:string,params:unknown):Promise<unknown>{
 }
 async function collect(input:CurrentSchematicWireClassicRpcInput):Promise<CurrentSchematicWireClassicRpcData>{
  if(input.stage!=="entry"){assert.throws(()=>new CurrentSchematicWireClassicRpcCursor({...input,previous:structuredClone(input.previous)}));}
+ const originalFrame="frame"in input?input.frame:null,stage=input.stage;
  const cursor=new CurrentSchematicWireClassicRpcCursor(input);let local=0;
- for(let command=cursor.next();command!==null;command=cursor.next()){cursor.reserve(command);reads+=1;local+=1;cursor.accept(command,await post(command.method,command.params));}
- const result=cursor.requireCompleted();(stages[result.role]??=[]).push(local);if(input.stage!=="entry"){assert.throws(()=>new CurrentSchematicWireClassicRpcCursor(input));}
+ if(originalFrame!==null){Reflect.set(input,"frame","invalid/caller/frame");}
+ for(let command=cursor.next();command!==null;command=cursor.next()){
+  if(local===0&&command.phase==="classic-rpc-frame"){assert.equal(command.params.callFrameId,originalFrame);}
+  cursor.reserve(command);reads+=1;local+=1;
+  if(stage==="entry"&&local===1){Reflect.set(input,"stage","settled");Reflect.set(input,"holder","foreign");Reflect.set(input,"native","foreign");}
+  cursor.accept(command,await post(command.method,command.params));
+ }
+ const result=cursor.requireCompleted();assert.equal(result.stage,stage);assert.equal(result.sameOuterRaceResultCompared,stage==="settled");
+ (stages[result.role]??=[]).push(local);if(stage!=="entry"){assert.throws(()=>new CurrentSchematicWireClassicRpcCursor(input));}
  return result;
 }
 async function remove():Promise<void>{for(const breakpointId of points.keys()){await session.post("Debugger.removeBreakpoint",{breakpointId});}}

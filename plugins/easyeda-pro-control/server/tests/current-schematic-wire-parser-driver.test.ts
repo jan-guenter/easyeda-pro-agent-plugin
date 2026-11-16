@@ -8,8 +8,8 @@ import { wireParserFixture } from "./helpers/current-schematic-wire-parser-fixtu
 import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAsset } from "./helpers/installed-easyeda-source.ts";
 
 function object(value: unknown): object { assert.ok(value !== null && typeof value === "object"); return value; }
-for (const [variant, mode] of [[0, "complete"], [1, "complete"], [0, "wrong-path"], [0, "rpc-error"], [0, "idle-tab"], [0, "foreign-caller"]] as const) {
-  void test(`Wire owned parser event driver ${String(variant)} / ${mode}`, { timeout: 25_000 }, async context => {
+for (const [variant, mode, retireWithoutFinish = false] of [[0, "complete"], [1, "complete"], [0, "wrong-path"], [0, "rpc-error"], [0, "idle-tab"], [0, "foreign-caller"], [0, "complete", true]] as const) {
+  void test(`Wire owned parser event driver ${String(variant)} / ${mode} / retire without finish ${String(retireWithoutFinish)}`, { timeout: 25_000 }, async context => {
     const source = await readConfiguredEasyedaAsset(SOURCE[variant].relativePath);
     if (source === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
     const key = `__wireParserDriver${String(variant)}${mode.replaceAll("-", "_")}`; const url = `${key}.js`;
@@ -19,7 +19,7 @@ for (const [variant, mode] of [[0, "complete"], [1, "complete"], [0, "wrong-path
     Object.defineProperty(globalThis, key, { value: graph, configurable: true }); assert.ok(scriptId.length > 0); session.disconnect();
     const done = Promise.withResolvers<unknown>();
     const worker = new Worker(new URL("helpers/current-schematic-wire-parser-driver-worker.ts", import.meta.url), {
-      workerData: { key, scriptId, variant, source, mode },
+      workerData: { key, scriptId, variant, source, mode, retireWithoutFinish },
     });
     context.after(async () => { Reflect.deleteProperty(globalThis, key); await worker.terminate(); });
     worker.on("error", done.reject); worker.on("message", (value: unknown) => {

@@ -117,7 +117,7 @@ export class CurrentSchematicWireServiceDriver{
    const ack=allocated.parse(capture(await this.#send({phase:"wire-service-driver-arm",point:kind,variant:this.#input.variant,method:"Debugger.setBreakpoint",params:{location:{scriptId,lineNumber:row.lineNumber,columnNumber:row.columnNumber}}})).value);
    const point=kind;need(!this.#points.some(value=>value.id===ack.breakpointId));this.#points.push({kind:point,id:ack.breakpointId,removeAttempted:false,removed:false});this.#allocationUncertain=false;
    need(ack.actualLocation.scriptId===scriptId&&ack.actualLocation.lineNumber===row.lineNumber&&ack.actualLocation.columnNumber===row.columnNumber);
-  }this.#armed=true;}catch(error){this.#fail(error);throw error;}})();this.#armTask=task;return task;
+  }this.#armed=true;}catch(error){this.#fail(error);try{await this.#cleanupOnce();}catch(cleanupError){this.#notificationFailure??=Object.freeze({cause:cleanupError});}throw error;}})();this.#armTask=task;return task;
  }
  public observe(input:unknown):boolean{
   if(this.#closing){return false;}let retained=false;
@@ -192,7 +192,7 @@ export class CurrentSchematicWireServiceDriver{
  }
  public retireAfterOriginalExit():Promise<void>{
   if(this.#retirementTask!==null){return this.#retirementTask;}this.#current(true);this.#transport.assertOriginalExit();this.#closing=true;if(!this.#settled||this.#packet===null||this.#finishTask!==null&&!this.#finishSettled){this.#fail(new Error("WIRE_SERVICE_DRIVER_ORIGINAL_EXIT"));}
-  const task=(async():Promise<void>=>{await settled(this.#armTask);await this.#tail;await Promise.all(this.#settlements.map(settled));await settled(this.#runTask);await settled(this.#finishTask);await settled(this.#cleanupTask);await settled(this.#removeTask);await settled(this.#releaseTask);await this.#functionTail;for(const attempt of this.#attempts){await settled(attempt.pending??null);}this.#current(true);this.#transport.assertOriginalExit();})();this.#retirementTask=task;return task;
+  const task=(async():Promise<void>=>{await settled(this.#armTask);await this.#tail;await Promise.all(this.#settlements.map(settled));await settled(this.#runTask);await settled(this.#finishTask);if(this.#armTask!==null){try{await this.#cleanupOnce();}catch(cleanupError){this.#notificationFailure??=Object.freeze({cause:cleanupError});}}await settled(this.#cleanupTask);await settled(this.#removeTask);await settled(this.#releaseTask);await this.#functionTail;for(const attempt of this.#attempts){await settled(attempt.pending??null);}this.#current(true);this.#transport.assertOriginalExit();})();this.#retirementTask=task;return task;
  }
  public requireLiveComparison(data:CurrentSchematicWireServiceDriverData):void{this.#current();need(this.#packet===data&&!this.#released);}
  public consumeBindings(data:CurrentSchematicWireServiceDriverData):Readonly<{root:CurrentSchematicWireServiceInvocationRoot;roles:readonly ReturnType<typeof consumeBindings>[];suppliedTransportOnly:true;originalNativeOwnerJoined:false;serviceDeliveryJoined:false;saveAuthorized:false}>{

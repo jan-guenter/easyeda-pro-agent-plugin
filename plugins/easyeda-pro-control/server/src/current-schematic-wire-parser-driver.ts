@@ -383,7 +383,11 @@ export class CurrentSchematicWireParserDriver {
     if (!this.#settled || this.#packet === null || this.#finishTask !== null && !this.#finishSettled) { this.#fail(new Error("WIRE_PARSER_DRIVER_ORIGINAL_EXIT")); }
     const task = (async (): Promise<void> => {
       await settled(this.#armTask); await this.#tail;
-      await settled(this.#runTask); await settled(this.#finishTask); await settled(this.#cleanupTask);
+      await settled(this.#runTask); await settled(this.#finishTask);
+      if (this.#armTask !== null) {
+        try { await this.#cleanupOnce(); } catch (cleanupError) { this.#notificationFailure ??= Object.freeze({ cause: cleanupError }); }
+      }
+      await settled(this.#cleanupTask);
       await settled(this.#removalTask); await settled(this.#releaseTask);
       for (const attempt of this.#attempts) { await settled(attempt.pending ?? null); }
       this.#current(true); this.#transport.assertOriginalExit();
