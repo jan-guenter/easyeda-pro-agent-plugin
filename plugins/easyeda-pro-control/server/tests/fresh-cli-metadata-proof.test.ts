@@ -5,7 +5,7 @@ import { access, chmod, mkdir, readFile, readdir, writeFile } from "node:fs/prom
 import { syncBuiltinESMExports } from "node:module";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { parseFreshCliMetadataPlan, previewFreshCliMetadataProof, proveFreshCliMetadata } from "../../scripts/fresh-cli-metadata-proof.ts";
+import { classifyMetadataProofRefusal, parseFreshCliMetadataPlan, previewFreshCliMetadataProof, proveFreshCliMetadata } from "../../scripts/fresh-cli-metadata-proof.ts";
 import { OwnedProofProcess, createProofEvidence } from "../../scripts/fresh-cli-metadata-proof-resources.ts";
 import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 
@@ -85,9 +85,14 @@ void test("fatal UTF-8 streaming and EOF validation preserve physical close whil
   const trailing = Buffer.concat([good, Buffer.from([0xE2])]);
   for (const [index, bytes] of [good, malformed, trailing].entries()) {
     const evidence = await createProofEvidence(join(root, `evidence-${index}`), join(root, `workspace-${index}`));
-    const program = `const b=Buffer.from(${JSON.stringify([...bytes])});process.stdout.write(b.subarray(0,33));process.stdout.write(b.subarray(33));process.stdin.resume();process.stdin.on('end',()=>process.exit(0))`;
+    const splitAt = index === 1 ? 32 : 34;
+    const program = `const b=Buffer.from(${JSON.stringify([...bytes])});process.stdin.once('data',()=>process.stdout.write(b.subarray(${splitAt})));process.stdin.resume();process.stdin.on('end',()=>process.exit(0));process.stdout.write(b.subarray(0,${splitAt}))`;
     const peer = new OwnedProofProcess(process.execPath, ["--eval", program], join(root, `workspace-${index}`), evidence.journal("app-server.stdout.jsonl"), evidence.journal("app-server.stderr.log"));
+    const firstChunk = Promise.withResolvers<Buffer>(); const chunks: Buffer[] = []; let count = 0;
+    const observeChunk = (chunk: Buffer): void => { chunks.push(Buffer.from(chunk)); count += chunk.length; if (count >= splitAt) { firstChunk.resolve(Buffer.concat(chunks)); } }; peer.child.stdout.on("data", observeChunk);
     try {
+      assert.deepEqual(await firstChunk.promise, bytes.subarray(0, splitAt)); peer.child.stdout.off("data", observeChunk);
+      const continued = peer.sendWatcherPacket({ kind: "continue-original-utf8-fixture" }); await continued;
       if (index === 1) { await assert.rejects(peer.next()); }
       else { assert.deepEqual(await peer.next(), { kind: "inert-ready", ignored: "€" }); }
       peer.closeInput(); assert.deepEqual(await peer.closed.promise, { code: 0, signal: null });
@@ -146,4 +151,84 @@ void test("original file/directory sync failures refuse before allocation or ret
   const data = { ...planData(root), host: "windows", cliExecutable: "C:\\trusted\\codex.exe", hostPluginRoot: "C:\\trusted\\plugin", evidenceDirectory: "C:\\new-evidence", workspace: "C:\\new-workspace", windowsNodeExecutable: "C:\\trusted\\node.exe", windowsNodeSha256: "0".repeat(64) };
   const windows = parseFreshCliMetadataPlan(JSON.stringify(data)); const preview = previewFreshCliMetadataProof(windows); assert.ok("durability" in preview);
   await assert.rejects(proveFreshCliMetadata(windows), /WINDOWS_DURABLE_DIRECTORY_SYNC_UNAVAILABLE/u);
+});
+
+
+void test("inert successful metadata lifecycle joins original facade, watcher and CLI before durable completion", async () => {
+  for (const failIntent of [false, true]) {
+  const root = await createTestTemporaryDirectory("fresh-cli-complete-"); const data = planData(root); const packageRoot = join(root, "package"); const files = [];
+  for (const [index, relativePath] of PATHS.entries()) {
+    const filename = join(packageRoot, relativePath); await mkdir(dirname(filename), { recursive: true });
+    const bytes = Buffer.from(relativePath === ".codex-plugin/plugin.json" ? '{"version":"0.3.0"}' : "inert successful fixture"); await writeFile(filename, bytes); await chmod(filename, index === 2 ? 0o755 : 0o644);
+    files.push({ relativePath, bytes: bytes.length, sha256: await digest(bytes), mode: index === 2 ? 0o755 : 0o644 });
+  }
+  await writeFile(join(packageRoot, ".mcp.json"), '{"mcpServers":{"easyeda_pro_control":{}}}');
+  const executable = join(root, "inert-success-cli"), marker = join(root, "original-inert-lifecycle.json");
+  const program = `#!${process.execPath}
+import {spawn} from 'node:child_process';import {readFileSync,writeFileSync} from 'node:fs';
+if(process.argv[2]==='--version'){console.log('codex-cli 0.168.0')}else{
+const facade=spawn(process.execPath,['--eval',"process.stdin.resume();process.stdin.on('end',()=>process.exit(0))"],{stdio:['pipe','ignore','inherit']});const observed={actions:[],intentsBeforeDispatch:[],unsubscribe:false,ackedBeforeRetire:false};
+const exited=new Promise(resolve=>facade.once('close',code=>{observed.originalFacadeCloseCode=code;resolve()}));let ended=false;const endFacade=()=>{if(!ended){ended=true;facade.stdin.end()}return exited};
+const send=(id,result)=>process.stdout.write(JSON.stringify({id,result})+'\\n');const tool=(id,result)=>send(id,{content:[],structuredContent:{result}});let buffer='';
+process.stdin.on('data',bytes=>{buffer+=bytes.toString();let at;while((at=buffer.indexOf('\\n'))>=0){const r=JSON.parse(buffer.slice(0,at));buffer=buffer.slice(at+1);if(!r.id)continue;
+if(r.method==='initialize')send(r.id,{});else if(r.method==='thread/start')send(r.id,{thread:{id:'inert-success-thread'}});else if(r.method==='mcpServerStatus/list')send(r.id,{data:[{name:'easyeda_pro_control',pluginId:'easyeda-pro-control@easyeda-pro-agent',tools:{easyeda_control_api:{},easyeda_control_session:{}}}],nextCursor:null});
+else if(r.method==='thread/unsubscribe'){observed.unsubscribe=true;send(r.id,{status:'unsubscribed'})}else{const q=r.params.arguments.request;const state=readFileSync(${JSON.stringify(join(root, 'evidence/state.jsonl'))},'utf8').trim().split('\\n').map(line=>JSON.parse(line));const intent=state.filter(row=>row.stage==='metadata-action-intent').at(-1);observed.intentsBeforeDispatch.push(intent?.action===q.action&&intent.ordinal===observed.actions.length+1);observed.actions.push(q.action);
+if(q.action==='loaded-facade')tool(r.id,{schema:'easyeda-pro-control.loaded-facade.v1',pid:facade.pid,moduleUrl:${JSON.stringify(new URL(`file://${packageRoot}/server/dist/server.mjs`).href)},nodeVersion:'v24.18.0',admissionGranted:false});
+else if(q.action==='inspect')tool(r.id,{schema:'easyeda-pro-control.session-retirement.v1',state:'active',activeCalls:0,liveAdmissionOpen:true,leaseReleaseAcknowledged:false,replacementConnectionRequired:false});
+else if(q.action==='retire'){if(q.confirmRetire!==true)throw Error('INERT_CONFIRMATION');observed.ackedBeforeRetire=readFileSync(${JSON.stringify(join(root, "evidence/linux-watcher.jsonl"))},'utf8').includes('linux-acked');tool(r.id,{schema:'easyeda-pro-control.session-retirement.v1',state:'retired',activeCalls:0,liveAdmissionOpen:false,leaseReleaseAcknowledged:true,replacementConnectionRequired:true})}
+else if(q.action==='close-retired'){if(q.confirmCloseRetired!==true)throw Error('INERT_CONFIRMATION');void endFacade();tool(r.id,{schema:'easyeda-pro-control.session-close-scheduled.v1',retirementState:'retired',leaseReleaseAcknowledged:true,closeScheduled:true,processExitProved:false,deliveryAcknowledged:false,retryAllowed:false})}else throw Error('INERT_UNEXPECTED_ACTION')}}});
+process.stdin.on('end',()=>{void endFacade().then(()=>{writeFileSync(${JSON.stringify(marker)},JSON.stringify(observed));process.exit(0)})})}
+`;
+  await writeFile(executable, program, { mode: 0o755 }); await chmod(executable, 0o755);
+  data["files"] = files; data["linuxNodeSha256"] = await digest(await readFile(process.execPath)); data["cliExecutable"] = executable;
+  const originalSync = fs.fsyncSync;
+  if (failIntent) {
+    // oxlint-disable-next-line node/no-sync -- Inject failure at the real original file-sync boundary, after its fixed retire intent exists and before dispatch.
+    fs.fsyncSync = (fd): void => { if (fs.existsSync(join(root, "evidence/state.jsonl")) && fs.readFileSync(join(root, "evidence/state.jsonl"), "utf8").includes('"action":"retire","ordinal":3')) { fs.fsyncSync = originalSync; syncBuiltinESMExports(); throw new Error("INERT_RETIRE_INTENT_SYNC_FAILURE"); } originalSync(fd); }; syncBuiltinESMExports();
+  }
+  const plan = parseFreshCliMetadataPlan(JSON.stringify(data));
+  try { assert.equal(await proveFreshCliMetadata(plan), !failIntent); }
+  finally { fs.fsyncSync = originalSync; syncBuiltinESMExports(); }
+  const observed: unknown = JSON.parse(await readFile(marker, "utf8")); assert.ok(observed !== null && typeof observed === "object" && "actions" in observed && "unsubscribe" in observed && "ackedBeforeRetire" in observed && "originalFacadeCloseCode" in observed && "intentsBeforeDispatch" in observed);
+  assert.deepEqual(observed.actions, failIntent ? ["loaded-facade", "inspect"] : ["loaded-facade", "inspect", "retire", "close-retired"]); assert.deepEqual(observed.intentsBeforeDispatch, failIntent ? [true, true] : [true, true, true, true]); assert.equal(observed.unsubscribe, !failIntent); assert.equal(observed.ackedBeforeRetire, !failIntent); assert.equal(observed.originalFacadeCloseCode, 0);
+  for (const name of (failIntent ? ["loaded-facade", "inspect"] : ["loaded-facade", "inspect", "retire", "close-retired"])) { const reply: unknown = JSON.parse(await readFile(join(root, `evidence/${name}-full-reply.json`), "utf8")); assert.ok(reply !== null && typeof reply === "object" && "structuredContent" in reply); }
+  const state = await readFile(join(root, "evidence/state.jsonl"), "utf8"); const records: unknown[] = state.trim().split("\n").map((line: string): unknown => JSON.parse(line));
+  const complete = records.find(record => record !== null && typeof record === "object" && "stage" in record && record.stage === "complete");
+  if (failIntent) { const failure = records.find(record => record !== null && typeof record === "object" && "stage" in record && record.stage === "PROOF_INCOMPLETE"); assert.ok(failure !== null && typeof failure === "object" && "localRefusalCode" in failure); assert.equal(failure.localRefusalCode, "METADATA_ACTION_INTENT_NOT_DURABLE"); }
+  else {
+    assert.ok(complete !== null && typeof complete === "object" && "originalPidfdExitObserved" in complete && "originals" in complete && Array.isArray(complete.originals)); assert.equal(complete.originalPidfdExitObserved, true); assert.equal(complete.originals.length, 3);
+    const originals: unknown[] = complete.originals;
+    for (const original of originals) { assert.ok(original !== null && typeof original === "object" && "close" in original && original.close !== null && typeof original.close === "object" && "code" in original.close && "signal" in original.close); assert.equal(original.close.code, 0); assert.equal(original.close.signal, null); }
+  }
+  const manifest: unknown = JSON.parse(await readFile(join(root, "evidence/cleanup-manifest.json"), "utf8")); assert.ok(manifest !== null && typeof manifest === "object" && "originalsClosed" in manifest && "loadedFacadeExitUnknown" in manifest && "eligibleForEmptyDirectoryRemovalAfterDriverExit" in manifest && "sameDirectoryIdentity" in manifest);
+  assert.equal(manifest.originalsClosed, true); assert.equal(manifest.loadedFacadeExitUnknown, false); assert.equal(manifest.sameDirectoryIdentity, true); assert.equal(manifest.eligibleForEmptyDirectoryRemovalAfterDriverExit, true);
+  }
+});
+
+void test("incomplete diagnostics expose fixed own-data Error codes without invoking hooks or leaking arbitrary text", () => {
+  assert.equal(classifyMetadataProofRefusal(new Error("SERVING_ROOT_DIFFERS")), "SERVING_ROOT_DIFFERS"); assert.equal(classifyMetadataProofRefusal(new Error("RETIREMENT_ACK_REQUIRED")), "RETIREMENT_ACK_REQUIRED");
+  let hooks = 0; const accessor = new Error("FIXTURE_OWN_ACCESSOR"); Object.defineProperty(accessor, "message", { get(): never { hooks += 1; throw new Error("MUST_NOT_READ_MESSAGE"); } });
+  const proxy = new Proxy(new Error("SERVING_ROOT_DIFFERS"), { get(): never { hooks += 1; throw new Error("MUST_NOT_READ_PROXY"); }, getOwnPropertyDescriptor(): never { hooks += 1; throw new Error("MUST_NOT_REFLECT_PROXY"); } });
+  for (const unknown of [new Error("arbitrary vendor text / sensitive path"), { message: "SERVING_ROOT_DIFFERS" }, accessor, proxy]) { assert.equal(classifyMetadataProofRefusal(unknown), null); }
+  const allowed = new Error("RETIREMENT_ACK_REQUIRED"); Object.defineProperty(allowed, "cause", { get(): never { hooks += 1; throw new Error("MUST_NOT_READ_CAUSE"); } });
+  assert.equal(classifyMetadataProofRefusal(allowed), "RETIREMENT_ACK_REQUIRED"); assert.equal(hooks, 0);
+});
+
+
+void test("malformed manifest or MCP UTF-8 refuses before any CLI allocation despite matching expected hashes", async () => {
+  for (const target of [".codex-plugin/plugin.json", ".mcp.json"]) {
+    const root = await createTestTemporaryDirectory("fresh-cli-manifest-utf8-"); const data = planData(root); const packageRoot = join(root, "package"); const files = [];
+    for (const [index, relativePath] of PATHS.entries()) {
+      const filename = join(packageRoot, relativePath); await mkdir(dirname(filename), { recursive: true });
+      const normal = Buffer.from(relativePath === ".codex-plugin/plugin.json" ? '{"version":"0.3.0"}' : "inert fixture");
+      const bytes = relativePath === target ? Buffer.concat([Buffer.from('{"version":"0.3.0","ignored":"'), Buffer.from([0xFF]), Buffer.from('"}')]) : normal; await writeFile(filename, bytes); await chmod(filename, index === 2 ? 0o755 : 0o644);
+      files.push({ relativePath, bytes: bytes.length, sha256: await digest(bytes), mode: index === 2 ? 0o755 : 0o644 });
+    }
+    const mcp = target === ".mcp.json" ? Buffer.concat([Buffer.from('{"mcpServers":{"easyeda_pro_control":{}},"ignored":"'), Buffer.from([0xFF]), Buffer.from('"}')]) : Buffer.from('{"mcpServers":{"easyeda_pro_control":{}}}'); await writeFile(join(packageRoot, ".mcp.json"), mcp);
+    data["files"] = files; data["linuxNodeSha256"] = await digest(await readFile(process.execPath)); const plan = parseFreshCliMetadataPlan(JSON.stringify(data)); const originalSpawn = childProcess.spawn; let allocations = 0;
+    childProcess.spawn = (): never => { allocations += 1; throw new Error("CLI_ALLOCATED_AFTER_BAD_MANIFEST_UTF8"); }; syncBuiltinESMExports();
+    try { await assert.rejects(proveFreshCliMetadata(plan), TypeError); }
+    finally { childProcess.spawn = originalSpawn; syncBuiltinESMExports(); }
+    assert.equal(allocations, 0); await assert.rejects(access(join(root, "evidence"))); await assert.rejects(access(join(root, "workspace")));
+  }
 });

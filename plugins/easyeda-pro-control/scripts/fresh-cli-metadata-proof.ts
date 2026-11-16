@@ -33,6 +33,58 @@ const FILES = ["server/dist/server.mjs", "server/dist/upstream-supervisor.mjs", 
 const ACTIONS = ["loaded-facade", "inspect", "retire", "close-retired"] as const;
 type MetadataAction = typeof ACTIONS[number];
 const REPLY_JOURNALS: Readonly<Record<MetadataAction, ProofJournalName>> = { "loaded-facade": "loaded-facade-full-reply.json", inspect: "inspect-full-reply.json", retire: "retire-full-reply.json", "close-retired": "close-retired-full-reply.json" };
+const LOCAL_REFUSAL_CODES = Object.freeze([
+  "ACTUAL_METADATA_TOOLS_REQUIRED",
+  "CLI_CLOSE_PENDING",
+  "CLI_VERSION_PENDING",
+  "CLOSE_SCHEDULED_ONLY",
+  "EXACT_INSTALLED_PLUGIN_REQUIRED",
+  "FULL_MCP_STRUCTURED_REPLY_REQUIRED",
+  "FULL_REPLY_EVIDENCE_PENDING",
+  "INITIALIZE_PENDING",
+  "LINUX_WATCHER_CLOSE_REQUIRED",
+  "LOADED_FACADE",
+  "LOADED_FACADE_PID_REQUIRED",
+  "MCP_CALL_PENDING_NO_RETRY",
+  "MCP_STATUS_CURSOR_REPEATED",
+  "MCP_STATUS_PAGE_BOUND",
+  "MCP_STATUS_PENDING",
+  "METADATA_ACTION_INTENT_NOT_DURABLE",
+  "NORMAL_METADATA_FLOW_STOPPED",
+  "ORIGINAL_CLI_CLOSE_REQUIRED",
+  "ORIGINAL_EVIDENCE_SYNC_PENDING",
+  "ORIGINAL_LINUX_READY_DIFFERS",
+  "ORIGINAL_NORMAL_READS_CLOSED",
+  "ORIGINAL_NORMAL_WRITES_CLOSED",
+  "ORIGINAL_PIDFD_CUSTODY_REQUIRED",
+  "ORIGINAL_PIDFD_EXIT_REQUIRED",
+  "ORIGINAL_PROCESS_ALREADY_CLOSED",
+  "ORIGINAL_PROCESS_CLOSED_WITH_PENDING_READ",
+  "ORIGINAL_PROCESS_CLOSED_WITH_PENDING_REPLY",
+  "ORIGINAL_PROTOCOL_FAULT",
+  "ORIGINAL_PROTOCOL_OR_EVIDENCE_FAILED",
+  "ORIGINAL_WATCHER_REPLY_PENDING",
+  "ORIGINAL_WINDOWS_EXITS_REQUIRED",
+  "ORIGINAL_WINDOWS_HANDLES_REQUIRED",
+  "RETIREMENT_ACK_REQUIRED",
+  "REVIEWED_CLI_VERSION_REQUIRED",
+  "RPC_ERROR_PRESERVED_RAW",
+  "SERVING_ROOT_DIFFERS",
+  "SESSION_NOT_IDLE",
+  "TERMINAL_EVIDENCE_PENDING",
+  "THREAD_START_PENDING",
+  "UNSUBSCRIBE_PENDING",
+  "WINDOWS_WATCHER_CLOSE_REQUIRED",
+] as const);
+type LocalRefusalCode = typeof LOCAL_REFUSAL_CODES[number];
+/** Diagnostic tags only: inspect neither caller getters, causes nor arbitrary text. */
+export function classifyMetadataProofRefusal(cause: unknown): LocalRefusalCode | null {
+  if (!Error.isError(cause)) { return null; }
+  const descriptor = Object.getOwnPropertyDescriptor(cause, "message");
+  if (descriptor === undefined || !Object.hasOwn(descriptor, "value")) { return null; }
+  const message: unknown = descriptor.value;
+  return typeof message === "string" ? LOCAL_REFUSAL_CODES.find(code => code === message) ?? null : null;
+}
 const CLI_VERSION = "codex-cli 0.168.0";
 const PLUGIN_ID = "easyeda-pro-control@easyeda-pro-agent";
 const SERVER_NAME = "easyeda_pro_control";
@@ -131,9 +183,9 @@ export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise
   const hostNodeBytes = await readBounded(hostNode, 256 * 1024 * 1024); proofNeed(sha256(hostNodeBytes) === (plan.host === "windows" ? plan.windowsNodeSha256 : plan.linuxNodeSha256), "HOST_NODE_BYTES_DIFFER");
   for (const expected of plan.files) { const file = join(plan.hostPluginRoot, expected.relativePath); const bytes = await readBounded(file, expected.relativePath === FILES[0] ? 20 * 1024 * 1024 : 16 * 1024 * 1024);
     proofNeed(bytes.length === expected.bytes && sha256(bytes) === expected.sha256, "INSTALLED_SIX_BYTES_DIFFER");
-    if (expected.relativePath === ".codex-plugin/plugin.json") { const parsedManifest: unknown = JSON.parse(bytes.toString("utf8")); const manifest = proofRecord(parsedManifest, "PLUGIN_MANIFEST"); proofNeed(manifest["version"] === plan.version, "INSTALLED_VERSION_DIFFERS"); }
+    if (expected.relativePath === ".codex-plugin/plugin.json") { const parsedManifest: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes)); const manifest = proofRecord(parsedManifest, "PLUGIN_MANIFEST"); proofNeed(manifest["version"] === plan.version, "INSTALLED_VERSION_DIFFERS"); }
   }
-  const mcpBytes = await readBounded(join(plan.hostPluginRoot, ".mcp.json"), 64 * 1024); const parsedMcp: unknown = JSON.parse(mcpBytes.toString("utf8")); const mcp = proofRecord(parsedMcp, "MCP_MANIFEST");
+  const mcpBytes = await readBounded(join(plan.hostPluginRoot, ".mcp.json"), 64 * 1024); const parsedMcp: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(mcpBytes)); const mcp = proofRecord(parsedMcp, "MCP_MANIFEST");
   const servers = proofRecord(mcp["mcpServers"], "MCP_SERVER_MAP"); proofNeed(Object.keys(servers).length === 1 && Object.hasOwn(servers, SERVER_NAME), "VERIFIED_SOLE_SERVER_REQUIRED");
   let systemRoot = "";
   if (plan.host === "windows") { const value = process.env["SystemRoot"]; proofNeed(hostPath(value, "windows"), "WINDOWS_SYSTEM_ROOT_REQUIRED"); systemRoot = value; }
@@ -220,7 +272,9 @@ export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise
     const selected = rows[0]; proofNeed(rows.length === 1 && selected !== undefined && selected["name"] === SERVER_NAME && selected["pluginId"] === PLUGIN_ID, "EXACT_INSTALLED_PLUGIN_REQUIRED");
     const tools = proofRecord(selected["tools"], "ACTUAL_THREAD_TOOLS"); proofNeed(Object.hasOwn(tools, "easyeda_control_api") && Object.hasOwn(tools, "easyeda_control_session"), "ACTUAL_METADATA_TOOLS_REQUIRED");
     const call = async (action: MetadataAction): Promise<ProofRecord> => {
-      normal(); proofNeed(action === ACTIONS[startedActions.length], "FIXED_METADATA_SEQUENCE_ONLY"); activeAction = action; startedActions.push(action); phase = action;
+      normal(); proofNeed(action === ACTIONS[startedActions.length], "FIXED_METADATA_SEQUENCE_ONLY"); activeAction = action; phase = action;
+      proofNeed(state.put({ stage: "metadata-action-intent", nonce, action, ordinal: startedActions.length + 1, threadId, server: SERVER_NAME }) && evidence.flush() && !evidence.failed(), "METADATA_ACTION_INTENT_NOT_DURABLE");
+      normal(); startedActions.push(action);
       let request: ProofRecord = { action }; if (action === "retire") { request = { action, confirmRetire: true }; } else if (action === "close-retired") { request = { action, confirmCloseRetired: true }; }
       const reply = await boundedProofWait(active.rpc("mcpServer/tool/call", { threadId, server: SERVER_NAME, tool: action === "loaded-facade" ? "easyeda_control_api" : "easyeda_control_session", arguments: { request } }), 60_000, "MCP_CALL_PENDING_NO_RETRY");
       const result = payload(reply);
@@ -252,10 +306,12 @@ export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise
     phase = "complete"; state.put({ stage: phase, nonce, pid: loaded["pid"], originalPidfdExitObserved: true, originals: originalStates(), modelTurnStarted: false, desktopRefreshClaimed: false, admissionGranted: false });
     const terminalManifest = await evidence.terminalWorkspaceManifest(true, facadeClosure());
     proofNeed(evidence.cleanup.put(terminalManifest) && evidence.flush() && !evidence.failed(), "TERMINAL_EVIDENCE_PENDING"); proofNeed(finish(), "ORIGINAL_EVIDENCE_SYNC_PENDING"); if (evidence.failed()) { emit({ ok: false, proofComplete: false, error: "original-evidence-close-failed", evidenceDirectory: plan.evidenceDirectory }); return false; } emit({ ok: true, evidenceDirectory: plan.evidenceDirectory, originalPidfdExitObserved: true, modelTurnStarted: false, admissionGranted: false }); return true;
-  } catch {
+  } catch (error) {
+    // Original EOF precedes even safe classification and fallible logging.
+    closeCli();
+    const localRefusalCode = classifyMetadataProofRefusal(error);
     phase = "incomplete-proof-cleanup";
-    // Logging is fallible; revocation/EOF always precedes it.
-    closeCli(); state.put({ stage: "PROOF_INCOMPLETE", nonce, phase, activeAction, startedActions: [...startedActions] }); publish();
+    state.put({ stage: "PROOF_INCOMPLETE", nonce, phase, activeAction, startedActions: [...startedActions], localRefusalCode }); publish();
     let lastStatus = Date.now(); let terminalWritten = false;
     for (;;) {
       try { await settle(); } catch {
