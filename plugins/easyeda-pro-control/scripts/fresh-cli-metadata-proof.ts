@@ -7,6 +7,7 @@ import { dirname, join, posix, resolve, win32 } from "node:path";
 import { setTimeout as settlementTick } from "node:timers/promises";
 import { OwnedProofProcess, boundedProofWait, createProofEvidence, proofNeed, proofRecord } from "./fresh-cli-metadata-proof-resources.ts";
 import type { ProofFacadeClosure, ProofJournalName, ProofRecord } from "./fresh-cli-metadata-proof-resources.ts";
+import { createLinuxBrokerProofEvidence } from "./fresh-cli-metadata-proof-broker.ts";
 import { linuxMetadataWatcherProgram, windowsMetadataWatcherProgram } from "./fresh-cli-metadata-proof-watchers.ts";
 
 interface ExpectedFile { readonly relativePath: string; readonly bytes: number; readonly sha256: string; readonly mode: number }
@@ -29,6 +30,14 @@ export interface FreshCliMetadataPlan {
   readonly windowsNodeExecutable?: string;
   readonly windowsNodeSha256?: string;
 }
+export interface FreshCliMetadataPlanV2 extends Omit<FreshCliMetadataPlan, "schema" | "evidenceDirectory" | "host"> {
+  readonly schema: "easyeda-pro-control.fresh-cli-metadata-plan.v2";
+  readonly host: "windows";
+  readonly evidenceBackend: "wsl-linux-fsync.v1";
+  readonly linuxEvidenceDirectory: string;
+}
+type CurrentPlan = FreshCliMetadataPlan | FreshCliMetadataPlanV2;
+function evidencePath(plan: CurrentPlan): string { return plan.schema === "easyeda-pro-control.fresh-cli-metadata-plan.v2" ? plan.linuxEvidenceDirectory : plan.evidenceDirectory; }
 const FILES = ["server/dist/server.mjs", "server/dist/upstream-supervisor.mjs", "server/bin/easyeda-fd-sanitizer", "server/dist/control-session-manager.mjs", "reviewed-compatibility.json", ".codex-plugin/plugin.json"] as const;
 const ACTIONS = ["loaded-facade", "inspect", "retire", "close-retired"] as const;
 type MetadataAction = typeof ACTIONS[number];
@@ -102,17 +111,18 @@ function hostPath(value: unknown, host: "linux" | "windows"): value is string {
 }
 
 /** Accept only bounded JSON text: no caller accessors/proxies are reflected. */
-export function parseFreshCliMetadataPlan(text: string): FreshCliMetadataPlan {
+function parsePlan(text: string, v2: boolean): CurrentPlan {
   proofNeed(typeof text === "string" && text.isWellFormed() && Buffer.byteLength(text) <= 32 * 1024, "PLAN_TEXT_BOUND");
   const parsed: unknown = JSON.parse(text), value = proofRecord(parsed, "PLAN_OBJECT");
-  proofNeed(value["schema"] === "easyeda-pro-control.fresh-cli-metadata-plan.v1" && (value["host"] === "linux" || value["host"] === "windows"), "PLAN_SCHEMA");
-  const host = value["host"];
-  const keys = ["schema", "host", "mergedCommit", "version", "cliExecutable", "expectedHostNodeVersion", "linuxPluginRoot", "linuxNodeExecutable", "linuxNodeSha256", "hostPluginRoot", "evidenceDirectory", "workspace", "overrides", "distribution", "files"];
+  proofNeed(value["schema"] === (v2 ? "easyeda-pro-control.fresh-cli-metadata-plan.v2" : "easyeda-pro-control.fresh-cli-metadata-plan.v1") && (v2 ? value["host"] === "windows" : value["host"] === "linux" || value["host"] === "windows"), "PLAN_SCHEMA");
+  const host = value["host"]; proofNeed(host === "linux" || host === "windows", "PLAN_HOST");
+  const keys = ["schema", "host", "mergedCommit", "version", "cliExecutable", "expectedHostNodeVersion", "linuxPluginRoot", "linuxNodeExecutable", "linuxNodeSha256", "hostPluginRoot", "workspace", "overrides", "distribution", "files", ...(v2 ? ["linuxEvidenceDirectory", "evidenceBackend"] : ["evidenceDirectory"])];
   if (host === "windows") { keys.push("windowsNodeExecutable", "windowsNodeSha256"); }
   proofNeed(Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key)), "PLAN_FIELDS");
-  for (const key of ["cliExecutable", "hostPluginRoot", "evidenceDirectory", "workspace"]) { proofNeed(hostPath(value[key], host), "PLAN_HOST_PATH"); }
+  for (const key of ["cliExecutable", "hostPluginRoot", "workspace", ...(v2 ? [] : ["evidenceDirectory"])]) { proofNeed(hostPath(value[key], host), "PLAN_HOST_PATH"); }
   for (const key of ["linuxPluginRoot", "linuxNodeExecutable"]) { proofNeed(linuxPath(value[key]), "PLAN_LINUX_PATH"); }
-  proofNeed(value["evidenceDirectory"] !== value["workspace"], "PLAN_DISTINCT_WORKSPACE");
+  if (v2) { proofNeed(linuxPath(value["linuxEvidenceDirectory"]) && value["evidenceBackend"] === "wsl-linux-fsync.v1", "PLAN_FIXED_LINUX_EVIDENCE_BACKEND"); }
+  else { proofNeed(value["evidenceDirectory"] !== value["workspace"], "PLAN_DISTINCT_WORKSPACE"); }
   proofNeed(typeof value["mergedCommit"] === "string" && /^[a-f\d]{40}$/u.test(value["mergedCommit"]) && hash(value["linuxNodeSha256"]), "PLAN_HASHES");
   proofNeed(typeof value["version"] === "string" && value["version"].length <= 128 && /^\d+\.\d+\.\d+(?:[-+][A-Za-z\d.-]+)?$/u.test(value["version"]), "PLAN_VERSION");
   proofNeed(typeof value["expectedHostNodeVersion"] === "string" && /^v24\.\d+\.\d+$/u.test(value["expectedHostNodeVersion"]) && (host === "windows" || value["expectedHostNodeVersion"] === "v24.18.0"), "PLAN_HOST_NODE_VERSION");
@@ -131,18 +141,24 @@ export function parseFreshCliMetadataPlan(text: string): FreshCliMetadataPlan {
   if (host === "windows") { proofNeed(hostPath(value["windowsNodeExecutable"], host) && hash(value["windowsNodeSha256"]), "PLAN_WINDOWS_NODE"); }
   const overrides: string[] = value["overrides"].map((item: unknown): string => { proofNeed(typeof item === "string", "OVERRIDE_STRING"); return item; });
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Exact JSON keys and every field/bound are validated above; this is immutable plan data, never process authority.
-  return Object.freeze({ ...value, files: Object.freeze(files), overrides: Object.freeze(overrides) }) as FreshCliMetadataPlan;
+  return Object.freeze({ ...value, files: Object.freeze(files), overrides: Object.freeze(overrides) }) as CurrentPlan;
 }
-function argumentsFor(plan: FreshCliMetadataPlan): string[] {
+export function parseFreshCliMetadataPlan(text: string): FreshCliMetadataPlan {
+  const plan = parsePlan(text, false); proofNeed(plan.schema === "easyeda-pro-control.fresh-cli-metadata-plan.v1", "PLAN_V1_REQUIRED"); return plan;
+}
+export function parseFreshCliMetadataPlanV2(text: string): FreshCliMetadataPlanV2 {
+  const plan = parsePlan(text, true); proofNeed(plan.schema === "easyeda-pro-control.fresh-cli-metadata-plan.v2", "PLAN_V2_REQUIRED"); return plan;
+}
+function argumentsFor(plan: CurrentPlan): string[] {
   return ["--enable", "plugins", ...plan.overrides.flatMap(item => ["-c", item]), "app-server", "--listen", "stdio://", "--strict-config"];
 }
-export function previewFreshCliMetadataProof(plan: FreshCliMetadataPlan): ProofRecord {
-  return { schema: "easyeda-pro-control.fresh-cli-metadata-preview.v1", ownerStarted: false, mergedCommit: plan.mergedCommit, expectedVersion: plan.version,
+export function previewFreshCliMetadataProof(plan: CurrentPlan): ProofRecord {
+  return { schema: plan.schema === "easyeda-pro-control.fresh-cli-metadata-plan.v2" ? "easyeda-pro-control.fresh-cli-metadata-preview.v2" : "easyeda-pro-control.fresh-cli-metadata-preview.v1", ownerStarted: false, mergedCommit: plan.mergedCommit, expectedVersion: plan.version,
     executable: plan.cliExecutable, argv: argumentsFor(plan), cwd: plan.workspace, expectedHostNodeVersion: plan.expectedHostNodeVersion,
     distribution: plan.distribution, fixedServerName: SERVER_NAME, exactPluginId: PLUGIN_ID, thread: { ephemeral: true, sandbox: "read-only", approvalPolicy: "never" },
     actions: ACTIONS, statusRoute: "mcpServerStatus/list with BOTH threadId and verified installed serverName; no temporary global discovery",
     prerequisites: ["Independently verified installed full Linux V2 payload", "Windows published-byte/reparse verification and maintained WSL profile when applicable", "Complete disabled unrelated MCP/plugin set from the same active host configuration; filtered status discovery does not prevent other server startup", "New empty workspace outside all projects/checkouts", "Current CODEX_HOME/auth; no copies or global changes"],
-    durability: { linuxOriginalFileAndDirectorySyncRequired: true, windowsProveSupported: false, windowsOmission: "No supported unprivileged directory durability primitive established for this helper; Windows --prove refuses before owner/workspace allocation" },
+    durability: plan.schema === "easyeda-pro-control.fresh-cli-metadata-plan.v2" ? { backend: plan.evidenceBackend, linuxEvidenceDirectory: plan.linuxEvidenceDirectory, windowsProveSupported: true, hostWorkspaceDirectoryDurabilityProved: false, originalLinuxFileAndDirectorySyncAckRequired: true } : { linuxOriginalFileAndDirectorySyncRequired: true, windowsProveSupported: false, windowsOmission: "No supported unprivileged directory durability primitive established for this helper; Windows --prove refuses before owner/workspace allocation" },
     controlActions: ["status", "close-cli-stdin", "settle-exited-watchers"], scope: "Fresh CLI registry and original serving namespace metadata; no model turn, desktop registry refresh or live CAD admission" };
 }
 async function readBounded(filename: string, maximum: number): Promise<Buffer> {
@@ -175,8 +191,12 @@ function emit(value: unknown): void { try { process.stdout.write(`${JSON.stringi
 function requireDurabilityHost(host: string): void { proofNeed(host === "linux", "WINDOWS_DURABLE_DIRECTORY_SYNC_UNAVAILABLE"); }
 /** Metadata-only live operation. All partial outcomes retain original cleanup
  * routes; a closed transport is never retried or replaced by this function. */
-export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise<boolean> {
-  requireDurabilityHost(plan.host);
+export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise<boolean> { requireDurabilityHost(plan.host); const result = await runFreshCliMetadataProof(plan); return result; }
+export async function proveFreshCliMetadataV2(plan: FreshCliMetadataPlanV2): Promise<boolean> { proofNeed(process.platform === "win32", "WINDOWS_V2_HOST_REQUIRED"); const result = await runFreshCliMetadataProof(plan); return result; }
+function outcome(plan: CurrentPlan, result: ProofRecord): ProofRecord {
+  return plan.schema === "easyeda-pro-control.fresh-cli-metadata-plan.v2" ? { schema: "easyeda-pro-control.fresh-cli-metadata-result.v2", evidenceBackend: plan.evidenceBackend, linuxEvidenceDirectory: plan.linuxEvidenceDirectory, hostWorkspaceDirectoryDurabilityProved: false, ...result } : result;
+}
+async function runFreshCliMetadataProof(plan: CurrentPlan): Promise<boolean> {
   proofNeed(process.arch === "x64" && process.platform === (plan.host === "windows" ? "win32" : "linux") && process.version === plan.expectedHostNodeVersion, "HOST_RUNTIME_MISMATCH");
   const hostNode = plan.host === "windows" ? plan.windowsNodeExecutable : plan.linuxNodeExecutable;
   proofNeed(hostNode !== undefined && await realpath(process.execPath) === hostNode, "EXPECTED_HOST_NODE_REQUIRED");
@@ -189,7 +209,9 @@ export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise
   const servers = proofRecord(mcp["mcpServers"], "MCP_SERVER_MAP"); proofNeed(Object.keys(servers).length === 1 && Object.hasOwn(servers, SERVER_NAME), "VERIFIED_SOLE_SERVER_REQUIRED");
   let systemRoot = "";
   if (plan.host === "windows") { const value = process.env["SystemRoot"]; proofNeed(hostPath(value, "windows"), "WINDOWS_SYSTEM_ROOT_REQUIRED"); systemRoot = value; }
-  const evidence = await createProofEvidence(plan.evidenceDirectory, plan.workspace); const state = evidence.state; const nonce = randomUUID();
+  const nonce = randomUUID();
+  const evidence = plan.schema === "easyeda-pro-control.fresh-cli-metadata-plan.v2" ? await createLinuxBrokerProofEvidence({ distribution: plan.distribution, linuxEvidenceDirectory: plan.linuxEvidenceDirectory, workspace: plan.workspace, nonce }) : await createProofEvidence(plan.evidenceDirectory, plan.workspace);
+  const state = evidence.state;
   const nodeDirectory = dirname(hostNode); const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => plan.host !== "windows" || key.toUpperCase() !== "PATH"));
   const environment = { ...inherited, PATH: `${nodeDirectory}${plan.host === "windows" ? ";" : ":"}${process.env["PATH"] ?? ""}` };
   const originals: OwnedProofProcess[] = []; let app: OwnedProofProcess | undefined; let linux: OwnedProofProcess | undefined; let windows: OwnedProofProcess | undefined;
@@ -198,12 +220,12 @@ export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise
   const facadeClosure = (): ProofFacadeClosure => ({ mayExist: facadeMayExist, pid: loadedFacadePid, originalPidfdHeld: linuxPidfdHeld, originalExitObserved: linuxExit });
   let activeAction: MetadataAction | null = null; const startedActions: MetadataAction[] = [];
   const originalStates = (): readonly ProofRecord[] => originals.map(item => ({ pid: item.child.pid ?? null, exit: item.exitResult ?? null, close: item.closeResult ?? null, protocolHealthy: item.protocolHealthy() }));
-  const status = (): ProofRecord => ({ schema: "easyeda-pro-control.fresh-cli-metadata-status.v1", nonce, phase, stopping, controlFile: evidence.controlFile,
+  const status = (): ProofRecord => ({ schema: plan.schema === "easyeda-pro-control.fresh-cli-metadata-plan.v2" ? "easyeda-pro-control.fresh-cli-metadata-status.v2" : "easyeda-pro-control.fresh-cli-metadata-status.v1", nonce, phase, stopping, controlFile: evidence.controlFile,
     driverPid: process.pid, hostNodeVersion: process.version, currentCliPid: app?.child.pid ?? null, activeAction, startedActions: [...startedActions], pendingRpc: app === undefined ? [] : [...app.pendingMethods.entries()], originals: originalStates(),
     linux: { ready: linuxReady, ackSent: linuxAckSent, originalExitObserved: linuxExit, released: linuxReleased }, windows: { ready: windowsReady, ackSent: windowsAckSent, originalExitObserved: windowsExit, released: windowsReleased },
     loadedFacade: facadeClosure(), loadedFacadeExitUnknown: facadeMayExist && !linuxExit, evidenceFailed: evidence.failed(), journals: evidence.snapshots(), modelTurnStarted: false, proofComplete: false });
   const publish = (): void => { const value = status(); state.put(value); emit(value); };
-  const normal = (): void => { proofNeed(!stopping && !evidence.failed(), "NORMAL_METADATA_FLOW_STOPPED"); };
+  const normal = async (): Promise<void> => { proofNeed(!stopping && !evidence.failed() && await evidence.flush() && !stopping && !evidence.failed(), "NORMAL_METADATA_FLOW_STOPPED"); };
   const closeCli = (): void => {
     proofNeed(startedActions.every((action, index) => action === ACTIONS[index]) && startedActions.length <= ACTIONS.length, "FIXED_METADATA_SEQUENCE_CHANGED");
     stopping = true;
@@ -242,11 +264,13 @@ export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise
   const stdin = (bytes: Buffer): void => { control(bytes, "stdin"); };
   const outputError = (): void => { state.put({ stage: "parent-output-unavailable", controlFile: evidence.controlFile, nonce }); };
   process.stdout.on("error", outputError); process.stdin.on("data", stdin);
-  const timer = setInterval(() => { control(evidence.readControl(), "file"); }, 200);
+    let controlRead: Promise<void> | undefined;
+  const readControl = async (): Promise<void> => { try { control(await evidence.readControl(), "file"); } catch { closeCli(); } finally { controlRead = undefined; } };
+  const timer = setInterval((): void => { controlRead ??= readControl(); }, 200);
   // This callback never logs before the original EOF and is active before spawn.
   const observeEvidenceFailure = async (): Promise<void> => { await evidence.failure; closeCli(); };
   void observeEvidenceFailure();
-  const finish = (): boolean => { if (!evidence.close()) { return false; } clearInterval(timer); process.stdin.off("data", stdin); process.stdin.pause(); return true; };
+  const finish = async (): Promise<boolean> => { if (!await evidence.close()) { return false; } clearInterval(timer); process.stdin.off("data", stdin); process.stdin.pause(); return true; };
   const observe = (which: "linux" | "windows") => (value: unknown): void => {
     if (value === null || typeof value !== "object" || Array.isArray(value)) { return; } const item = proofRecord(value, "WATCHER_EVENT"); if (item["nonce"] !== nonce) { return; }
     if (which === "linux") { if (item["kind"] === "linux-custody" && item["pid"] === loadedFacadePid && item["pidfdHeld"] === true) { linuxPidfdHeld = true; } if (item["kind"] === "linux-ready") { linuxReady = true; } if (item["kind"] === "linux-exited" && item["originalExitObserved"] === true) { linuxExit = true; } }
@@ -254,17 +278,17 @@ export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise
   };
   state.put({ stage: "fixed-control-ready", nonce, controlFile: evidence.controlFile }); publish();
   try {
-    normal(); phase = "cli-version";
+    await normal(); phase = "cli-version";
     const version = new OwnedProofProcess(plan.cliExecutable, ["--version"], plan.workspace, evidence.journal("cli-version.stdout.log"), evidence.journal("cli-version.stderr.log"), environment, "plain"); app = version; originals.push(version);
-    const versionClosed = await boundedProofWait(Promise.race([version.closed.promise, version.fault.promise]), 15_000, "CLI_VERSION_PENDING"); normal(); proofNeed(versionClosed.code === 0 && versionClosed.signal === null && version.text().trim() === CLI_VERSION, "REVIEWED_CLI_VERSION_REQUIRED");
+    const versionClosed = await boundedProofWait(Promise.race([version.closed.promise, version.fault.promise]), 15_000, "CLI_VERSION_PENDING"); await normal(); proofNeed(versionClosed.code === 0 && versionClosed.signal === null && version.text().trim() === CLI_VERSION, "REVIEWED_CLI_VERSION_REQUIRED");
     const active = new OwnedProofProcess(plan.cliExecutable, argumentsFor(plan), plan.workspace, evidence.journal("app-server.stdout.jsonl"), evidence.journal("app-server.stderr.log"), environment); app = active; originals.push(active); facadeMayExist = true;
-    phase = "initialize"; state.put({ stage: "original-cli-started", pid: active.child.pid, nonce, mergedCommit: plan.mergedCommit }); normal();
-    await boundedProofWait(active.rpc("initialize", { clientInfo: { name: "easyeda_release_metadata_proof", title: "EasyEDA release metadata proof", version: "1" }, capabilities: { experimentalApi: true } }), 30_000, "INITIALIZE_PENDING"); normal(); await active.notifyInitialized();
-    phase = "thread/start"; const started = proofRecord(await boundedProofWait(active.rpc("thread/start", { cwd: plan.workspace, ephemeral: true, sandbox: "read-only", approvalPolicy: "never" }), 60_000, "THREAD_START_PENDING"), "THREAD_REPLY"); normal();
+    phase = "initialize"; state.put({ stage: "original-cli-started", pid: active.child.pid, nonce, mergedCommit: plan.mergedCommit }); await normal();
+    await boundedProofWait(active.rpc("initialize", { clientInfo: { name: "easyeda_release_metadata_proof", title: "EasyEDA release metadata proof", version: "1" }, capabilities: { experimentalApi: true } }), 30_000, "INITIALIZE_PENDING"); await normal(); await active.notifyInitialized(); await normal();
+    phase = "thread/start"; const started = proofRecord(await boundedProofWait(active.rpc("thread/start", { cwd: plan.workspace, ephemeral: true, sandbox: "read-only", approvalPolicy: "never" }), 60_000, "THREAD_START_PENDING"), "THREAD_REPLY"); await normal();
     const threadId = proofRecord(started["thread"], "THREAD")["id"]; proofNeed(typeof threadId === "string", "THREAD_ID");
     phase = "mcpServerStatus/list"; const rows: ProofRecord[] = []; const cursors = new Set<string>(); let cursor: string | null = null;
     for (let pageNumber = 0; ; pageNumber += 1) {
-      normal(); proofNeed(pageNumber < 8, "MCP_STATUS_PAGE_BOUND");
+      await normal(); proofNeed(pageNumber < 8, "MCP_STATUS_PAGE_BOUND");
       const page = proofRecord(await boundedProofWait(active.rpc("mcpServerStatus/list", { threadId, serverName: SERVER_NAME, detail: "toolsAndAuthOnly", limit: 1, ...(cursor === null ? {} : { cursor }) }), 60_000, "MCP_STATUS_PENDING"), "MCP_STATUS");
       proofNeed(Array.isArray(page["data"]) && page["data"].length <= 1, "FIXED_SERVER_ROSTER"); for (const item of page["data"]) { rows.push(proofRecord(item, "MCP_SERVER")); } proofNeed(rows.length <= 1, "DUPLICATE_SERVER_ROSTER");
       const next = page["nextCursor"] ?? null; if (next === null) { break; } proofNeed(typeof next === "string" && next.length > 0 && next.length <= 1024 && !cursors.has(next), "MCP_STATUS_CURSOR_REPEATED"); cursors.add(next); cursor = next;
@@ -272,40 +296,40 @@ export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise
     const selected = rows[0]; proofNeed(rows.length === 1 && selected !== undefined && selected["name"] === SERVER_NAME && selected["pluginId"] === PLUGIN_ID, "EXACT_INSTALLED_PLUGIN_REQUIRED");
     const tools = proofRecord(selected["tools"], "ACTUAL_THREAD_TOOLS"); proofNeed(Object.hasOwn(tools, "easyeda_control_api") && Object.hasOwn(tools, "easyeda_control_session"), "ACTUAL_METADATA_TOOLS_REQUIRED");
     const call = async (action: MetadataAction): Promise<ProofRecord> => {
-      normal(); proofNeed(action === ACTIONS[startedActions.length], "FIXED_METADATA_SEQUENCE_ONLY"); activeAction = action; phase = action;
-      proofNeed(state.put({ stage: "metadata-action-intent", nonce, action, ordinal: startedActions.length + 1, threadId, server: SERVER_NAME }) && evidence.flush() && !evidence.failed(), "METADATA_ACTION_INTENT_NOT_DURABLE");
-      normal(); startedActions.push(action);
+      await normal(); proofNeed(action === ACTIONS[startedActions.length], "FIXED_METADATA_SEQUENCE_ONLY"); activeAction = action; phase = action;
+      proofNeed(state.put({ stage: "metadata-action-intent", nonce, action, ordinal: startedActions.length + 1, threadId, server: SERVER_NAME }) && await evidence.flush() && !evidence.failed(), "METADATA_ACTION_INTENT_NOT_DURABLE");
+      await normal(); startedActions.push(action);
       let request: ProofRecord = { action }; if (action === "retire") { request = { action, confirmRetire: true }; } else if (action === "close-retired") { request = { action, confirmCloseRetired: true }; }
       const reply = await boundedProofWait(active.rpc("mcpServer/tool/call", { threadId, server: SERVER_NAME, tool: action === "loaded-facade" ? "easyeda_control_api" : "easyeda_control_session", arguments: { request } }), 60_000, "MCP_CALL_PENDING_NO_RETRY");
       const result = payload(reply);
       if (action === "loaded-facade" && typeof result["pid"] === "number" && Number.isSafeInteger(result["pid"]) && result["pid"] > 0 && result["pid"] <= 2_147_483_647) { loadedFacadePid = result["pid"]; }
-      proofNeed(evidence.journal(REPLY_JOURNALS[action]).put(reply), "FULL_REPLY_EVIDENCE_PENDING"); activeAction = null; normal(); return result;
+      proofNeed(evidence.journal(REPLY_JOURNALS[action]).put(reply), "FULL_REPLY_EVIDENCE_PENDING"); activeAction = null; await normal(); return result;
     };
     const loaded = await call("loaded-facade"); proofNeed(loadedFacadePid !== null, "LOADED_FACADE_PID_REQUIRED");
-    phase = "original-watchers"; normal(); const linuxArgs = plan.host === "linux" ? ["-I", "-S", "-c", linuxMetadataWatcherProgram()] : ["--distribution", plan.distribution, "--exec", "/usr/bin/python3", "-I", "-S", "-c", linuxMetadataWatcherProgram()];
+    phase = "original-watchers"; await normal(); const linuxArgs = plan.host === "linux" ? ["-I", "-S", "-c", linuxMetadataWatcherProgram()] : ["--distribution", plan.distribution, "--exec", "/usr/bin/python3", "-I", "-S", "-c", linuxMetadataWatcherProgram()];
     linux = new OwnedProofProcess(plan.host === "linux" ? "/usr/bin/python3" : join(systemRoot, "System32", "wsl.exe"), linuxArgs, plan.workspace, evidence.journal("linux-watcher.jsonl"), evidence.journal("linux-watcher.stderr.log")); originals.push(linux); linux.onRecord = observe("linux");
     await linux.sendWatcherPacket({ nonce, pid: loaded["pid"], pluginRoot: plan.linuxPluginRoot, nodeExecutable: plan.linuxNodeExecutable, nodeSha256: plan.linuxNodeSha256, files: plan.files });
     const custody = await watcherMessage(linux, "linux-custody"); proofNeed(custody["nonce"] === nonce && custody["pid"] === loadedFacadePid && custody["pidfdHeld"] === true, "ORIGINAL_PIDFD_CUSTODY_REQUIRED"); linuxPidfdHeld = true;
-    const ready = await watcherMessage(linux, "linux-ready"); normal(); proofNeed(ready["nonce"] === nonce && ready["pid"] === loaded["pid"] && ready["pidfdHeld"] === true && ready["fileDescriptorsHeld"] === 6 && Array.isArray(ready["sixNamespaceFiles"]) && ready["sixNamespaceFiles"].length === 6 && ready["sixNamespaceFiles"].every((item: unknown, index: number) => { const row = proofRecord(item, "NAMESPACE_FILE"); const expected = plan.files[index]; return expected !== undefined && row["relativePath"] === expected.relativePath && row["bytes"] === expected.bytes && row["sha256"] === expected.sha256 && row["mode"] === expected.mode && row["nlink"] === 1; }), "ORIGINAL_LINUX_READY_DIFFERS");
+    const ready = await watcherMessage(linux, "linux-ready"); await normal(); proofNeed(ready["nonce"] === nonce && ready["pid"] === loaded["pid"] && ready["pidfdHeld"] === true && ready["fileDescriptorsHeld"] === 6 && Array.isArray(ready["sixNamespaceFiles"]) && ready["sixNamespaceFiles"].length === 6 && ready["sixNamespaceFiles"].every((item: unknown, index: number) => { const row = proofRecord(item, "NAMESPACE_FILE"); const expected = plan.files[index]; return expected !== undefined && row["relativePath"] === expected.relativePath && row["bytes"] === expected.bytes && row["sha256"] === expected.sha256 && row["mode"] === expected.mode && row["nlink"] === 1; }), "ORIGINAL_LINUX_READY_DIFFERS");
     proofNeed(loaded["schema"] === "easyeda-pro-control.loaded-facade.v1" && typeof loaded["pid"] === "number" && Number.isSafeInteger(loaded["pid"]) && loaded["pid"] > 0 && loaded["pid"] <= 2_147_483_647 && loaded["nodeVersion"] === "v24.18.0" && loaded["admissionGranted"] === false && typeof loaded["moduleUrl"] === "string", "LOADED_FACADE");
     const moduleUrl = new URL(loaded["moduleUrl"]); proofNeed(moduleUrl.protocol === "file:" && moduleUrl.hostname === "" && decodeURIComponent(moduleUrl.pathname) === posix.join(plan.linuxPluginRoot, "server/dist/server.mjs"), "SERVING_ROOT_DIFFERS");
     const inspected = await call("inspect"); proofNeed(inspected["schema"] === "easyeda-pro-control.session-retirement.v1" && inspected["state"] === "active" && inspected["activeCalls"] === 0, "SESSION_NOT_IDLE");
     if (plan.host === "windows") {
       windows = new OwnedProofProcess(join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"), ["-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(windowsMetadataWatcherProgram(), "utf16le").toString("base64")], plan.workspace, evidence.journal("windows-watcher.jsonl"), evidence.journal("windows-watcher.stderr.log")); originals.push(windows); windows.onRecord = observe("windows");
-      await windows.sendWatcherPacket({ nonce, cliPid: active.child.pid, nodeExecutable: plan.windowsNodeExecutable, nodeSha256: plan.windowsNodeSha256 }); const readyWindows = await watcherMessage(windows, "windows-ready"); normal(); proofNeed(readyWindows["nonce"] === nonce && readyWindows["originalHandlesHeld"] === true, "ORIGINAL_WINDOWS_HANDLES_REQUIRED");
-      windowsAckSent = true; await windows.sendWatcherPacket({ kind: "ack", nonce }); await watcherMessage(windows, "windows-acked");
+      await windows.sendWatcherPacket({ nonce, cliPid: active.child.pid, nodeExecutable: plan.windowsNodeExecutable, nodeSha256: plan.windowsNodeSha256 }); const readyWindows = await watcherMessage(windows, "windows-ready"); await normal(); proofNeed(readyWindows["nonce"] === nonce && readyWindows["originalHandlesHeld"] === true, "ORIGINAL_WINDOWS_HANDLES_REQUIRED");
+      await normal(); windowsAckSent = true; await windows.sendWatcherPacket({ kind: "ack", nonce }); await watcherMessage(windows, "windows-acked");
     }
-    normal(); linuxAckSent = true; await linux.sendWatcherPacket({ kind: "ack", nonce, pid: loaded["pid"], startTicks: ready["startTicks"] }); await watcherMessage(linux, "linux-acked"); normal(); state.put({ stage: "parent-ack-before-retirement", nonce, pid: loaded["pid"], startTicks: ready["startTicks"] });
+    await normal(); linuxAckSent = true; await linux.sendWatcherPacket({ kind: "ack", nonce, pid: loaded["pid"], startTicks: ready["startTicks"] }); await watcherMessage(linux, "linux-acked"); await normal(); state.put({ stage: "parent-ack-before-retirement", nonce, pid: loaded["pid"], startTicks: ready["startTicks"] });
     const retired = await call("retire"); proofNeed(retired["schema"] === "easyeda-pro-control.session-retirement.v1" && retired["state"] === "retired" && retired["activeCalls"] === 0 && retired["liveAdmissionOpen"] === false && retired["leaseReleaseAcknowledged"] === true, "RETIREMENT_ACK_REQUIRED");
     const scheduled = await call("close-retired"); proofNeed(scheduled["schema"] === "easyeda-pro-control.session-close-scheduled.v1" && scheduled["retirementState"] === "retired" && scheduled["leaseReleaseAcknowledged"] === true && scheduled["closeScheduled"] === true && scheduled["processExitProved"] === false && scheduled["deliveryAcknowledged"] === false && scheduled["retryAllowed"] === false, "CLOSE_SCHEDULED_ONLY");
     phase = "original-exits"; const exited = await watcherMessage(linux, "linux-exited"); proofNeed(exited["originalExitObserved"] === true, "ORIGINAL_PIDFD_EXIT_REQUIRED");
     if (windows !== undefined) { const exitedWindows = await watcherMessage(windows, "windows-exited"); proofNeed(exitedWindows["nodeExitCode"] === 0 && exitedWindows["wslExitCode"] === 0, "ORIGINAL_WINDOWS_EXITS_REQUIRED"); windowsReleased = true; await windows.settleWatcher({ kind: "release", nonce }); const windowsClosed = await windows.closed.promise; proofNeed(windowsClosed.code === 0, "WINDOWS_WATCHER_CLOSE_REQUIRED"); }
     linuxReleased = true; await linux.settleWatcher({ kind: "release", nonce }); const linuxClosed = await linux.closed.promise; proofNeed(linuxClosed.code === 0, "LINUX_WATCHER_CLOSE_REQUIRED");
-    phase = "thread/unsubscribe"; await boundedProofWait(active.rpc("thread/unsubscribe", { threadId }), 30_000, "UNSUBSCRIBE_PENDING"); active.closeInput(); const ended = await boundedProofWait(active.closed.promise, 60_000, "CLI_CLOSE_PENDING"); proofNeed(ended.code === 0 && ended.signal === null, "ORIGINAL_CLI_CLOSE_REQUIRED"); normal();
+    phase = "thread/unsubscribe"; await boundedProofWait(active.rpc("thread/unsubscribe", { threadId }), 30_000, "UNSUBSCRIBE_PENDING"); active.closeInput(); const ended = await boundedProofWait(active.closed.promise, 60_000, "CLI_CLOSE_PENDING"); proofNeed(ended.code === 0 && ended.signal === null, "ORIGINAL_CLI_CLOSE_REQUIRED"); await normal();
     proofNeed(originals.every(item => item.protocolHealthy()), "ORIGINAL_PROTOCOL_FAULT");
     phase = "complete"; state.put({ stage: phase, nonce, pid: loaded["pid"], originalPidfdExitObserved: true, originals: originalStates(), modelTurnStarted: false, desktopRefreshClaimed: false, admissionGranted: false });
     const terminalManifest = await evidence.terminalWorkspaceManifest(true, facadeClosure());
-    proofNeed(evidence.cleanup.put(terminalManifest) && evidence.flush() && !evidence.failed(), "TERMINAL_EVIDENCE_PENDING"); proofNeed(finish(), "ORIGINAL_EVIDENCE_SYNC_PENDING"); if (evidence.failed()) { emit({ ok: false, proofComplete: false, error: "original-evidence-close-failed", evidenceDirectory: plan.evidenceDirectory }); return false; } emit({ ok: true, evidenceDirectory: plan.evidenceDirectory, originalPidfdExitObserved: true, modelTurnStarted: false, admissionGranted: false }); return true;
+    proofNeed(evidence.cleanup.put(terminalManifest) && await evidence.flush() && !stopping && !evidence.failed(), "TERMINAL_EVIDENCE_PENDING"); proofNeed(await finish(), "ORIGINAL_EVIDENCE_SYNC_PENDING"); if (evidence.failed()) { emit(outcome(plan, { ok: false, proofComplete: false, error: "original-evidence-close-failed", evidenceDirectory: evidencePath(plan) })); return false; } emit(outcome(plan, { ok: true, evidenceDirectory: evidencePath(plan), originalPidfdExitObserved: true, modelTurnStarted: false, admissionGranted: false })); return true;
   } catch (error) {
     // Original EOF precedes even safe classification and fallible logging.
     closeCli();
@@ -321,7 +345,7 @@ export async function proveFreshCliMetadata(plan: FreshCliMetadataPlan): Promise
       if (closed) {
         phase = "incomplete-proof-original-transports-closed";
         if (!terminalWritten) { terminalWritten = true; state.put({ stage: phase, nonce, originals: originalStates(), proofComplete: false }); evidence.cleanup.put(await evidence.terminalWorkspaceManifest(true, facadeClosure())); publish(); }
-        if (evidence.flush() && !evidence.hasPending() && finish()) { emit({ ok: false, proofComplete: false, evidenceDirectory: plan.evidenceDirectory, loadedFacade: facadeClosure(), loadedFacadeExitUnknown: facadeMayExist && !linuxExit }); return false; }
+        if (await evidence.flush() && !evidence.hasPending() && await finish()) { emit(outcome(plan, { ok: false, proofComplete: false, evidenceDirectory: evidencePath(plan), loadedFacade: facadeClosure(), loadedFacadeExitUnknown: facadeMayExist && !linuxExit })); return false; }
       }
       await settlementTick(250);
       if (Date.now() - lastStatus >= 30_000) { publish(); lastStatus = Date.now(); }
@@ -332,9 +356,10 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2); let mode = "--preview"; let filename: string | undefined;
   if (args.length === 1) { filename = args[0]; } else if (args.length === 2) { mode = args[0] ?? ""; filename = args[1]; }
   proofNeed((mode === "--preview" || mode === "--prove") && filename !== undefined, "USAGE: node scripts/fresh-cli-metadata-proof.ts [--preview|--prove] PLAN.json");
-  const bytes = await readBounded(resolve(filename), 32 * 1024), text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes); const plan = parseFreshCliMetadataPlan(text);
+  const bytes = await readBounded(resolve(filename), 32 * 1024), text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  const header = proofRecord(JSON.parse(text), "PLAN_HEADER"); const plan = header["schema"] === "easyeda-pro-control.fresh-cli-metadata-plan.v2" ? parseFreshCliMetadataPlanV2(text) : parseFreshCliMetadataPlan(text);
   if (mode === "--preview") { emit(previewFreshCliMetadataProof(plan)); return; }
-  if (!await proveFreshCliMetadata(plan)) { process.exitCode = 1; }
+  if (!await (plan.schema === "easyeda-pro-control.fresh-cli-metadata-plan.v2" ? proveFreshCliMetadataV2(plan) : proveFreshCliMetadata(plan))) { process.exitCode = 1; }
 }
 if (import.meta.main) {
   // oxlint-disable-next-line node/no-top-level-await -- This private ESM CLI must retain its original process through every cleanup await.

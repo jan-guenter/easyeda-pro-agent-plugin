@@ -11,7 +11,8 @@ export type ProofMethod = "initialize" | "thread/start" | "mcpServerStatus/list"
 export interface OriginalClose { readonly code: number | null; readonly signal: NodeJS.Signals | null }
 export interface WatcherSettlement { readonly kind: "await-original-exit" | "release"; readonly nonce: string }
 const MAXIMUM_LINE_BYTES = 32 * 1024 * 1024;
-const JOURNALS = ["state.jsonl", "cli-version.stdout.log", "cli-version.stderr.log", "app-server.stdout.jsonl", "app-server.stderr.log", "linux-watcher.jsonl", "linux-watcher.stderr.log", "windows-watcher.jsonl", "windows-watcher.stderr.log", "cleanup-manifest.json", "loaded-facade-full-reply.json", "inspect-full-reply.json", "retire-full-reply.json", "close-retired-full-reply.json"] as const;
+export const PROOF_JOURNALS = ["state.jsonl", "cli-version.stdout.log", "cli-version.stderr.log", "app-server.stdout.jsonl", "app-server.stderr.log", "linux-watcher.jsonl", "linux-watcher.stderr.log", "windows-watcher.jsonl", "windows-watcher.stderr.log", "cleanup-manifest.json", "loaded-facade-full-reply.json", "inspect-full-reply.json", "retire-full-reply.json", "close-retired-full-reply.json"] as const;
+const JOURNALS = PROOF_JOURNALS;
 export type ProofJournalName = typeof JOURNALS[number];
 export function proofNeed(value: unknown, code: string): asserts value { if (value !== true) { throw new Error(code); } }
 function isProofRecord(value: unknown): value is ProofRecord { return value !== null && typeof value === "object" && !Array.isArray(value); }
@@ -42,13 +43,13 @@ export interface ProofEvidence {
   readonly state: ProofJournal;
   readonly cleanup: ProofJournal;
   readonly journal: (name: ProofJournalName) => ProofJournal;
-  readonly readControl: () => Buffer;
-  readonly flush: () => boolean;
+  readonly readControl: () => Promise<Buffer>;
+  readonly flush: () => Promise<boolean>;
   readonly hasPending: () => boolean;
   readonly failed: () => boolean;
   readonly snapshots: () => readonly ProofRecord[];
   readonly terminalWorkspaceManifest: (originalTransportsClosed: boolean, facade?: ProofFacadeClosure) => Promise<ProofRecord>;
-  readonly close: () => boolean;
+  readonly close: () => Promise<boolean>;
 }
 
 /** Allocate every evidence/control descriptor before any CLI owner exists.
@@ -120,12 +121,12 @@ export async function createProofEvidence(evidenceDirectory: string, workspace: 
     proofNeed(syncDirectories(), "INITIAL_DIRECTORY_SYNC_REQUIRED");
     const journal = (name: ProofJournalName): ProofJournal => { const item = journals.get(name); proofNeed(item !== undefined, "PREALLOCATED_JOURNAL_REQUIRED"); return item; };
     return { controlFile, failure: failure.promise, state: journal("state.jsonl"), cleanup: journal("cleanup-manifest.json"), journal,
-      readControl(): Buffer {
+      readControl(): Promise<Buffer> {
         try { const bytes = Buffer.alloc(8192), count = readSync(controlFd, bytes, 0, bytes.length, controlOffset); controlOffset += count;
-          if (controlOffset > 64 * 1024) { markFailure(); return Buffer.alloc(0); } return bytes.subarray(0, count);
-        } catch { markFailure(); return Buffer.alloc(0); }
+          if (controlOffset > 64 * 1024) { markFailure(); return Promise.resolve(Buffer.alloc(0)); } return Promise.resolve(bytes.subarray(0, count));
+        } catch { markFailure(); return Promise.resolve(Buffer.alloc(0)); }
       },
-      flush(): boolean { let complete = true; for (const item of journals.values()) { if (!item.flush()) { complete = false; } } const controlComplete = syncControl(); return syncDirectories() && controlComplete && complete; },
+      flush(): Promise<boolean> { let complete = true; for (const item of journals.values()) { if (!item.flush()) { complete = false; } } const controlComplete = syncControl(); return Promise.resolve(syncDirectories() && controlComplete && complete); },
       hasPending(): boolean { return directorySyncPending || controlSyncPending || states.some(item => item.pending.length > 0 || item.unsynced); }, failed(): boolean { return failed; },
       snapshots(): readonly ProofRecord[] { return [...journals.values()].map(item => item.snapshot()); },
       async terminalWorkspaceManifest(originalTransportsClosed, suppliedFacade): Promise<ProofRecord> {
@@ -139,11 +140,11 @@ export async function createProofEvidence(evidenceDirectory: string, workspace: 
         } catch { return { schema: "easyeda-pro-control.fresh-cli-closed-workspace.v1", workspace, createdByThisAttempt: true, originalTransportsClosed, originalsClosed, loadedFacade: facade, loadedFacadeExitUnknown, inspectionFailed: true,
           eligibleForEmptyDirectoryRemovalAfterDriverExit: false, recursiveDeletionPerformed: false, evidenceDirectory, evidencePreserved: true }; }
       },
-      close(): boolean { if (finished) { return true; }
+      close(): Promise<boolean> { if (finished) { return Promise.resolve(true); }
         let durable = true; for (const item of journals.values()) { if (!item.flush()) { durable = false; } }
-        const controlComplete = syncControl(); if (!syncDirectories() || !controlComplete || !durable) { return false; }
+        const controlComplete = syncControl(); if (!syncDirectories() || !controlComplete || !durable) { return Promise.resolve(false); }
         finished = true; for (const item of states) { item.closed = true; }
-        for (const fd of opened.toReversed()) { try { closeSync(fd); } catch { markFailure(); } } return true; },
+        for (const fd of opened.toReversed()) { try { closeSync(fd); } catch { markFailure(); } } return Promise.resolve(true); },
     };
   } catch (error) {
     // There is no CLI owner yet. Preserve partially created files/directories.

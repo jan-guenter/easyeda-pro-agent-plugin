@@ -1278,4 +1278,5 @@ layout. The connected ledger retains its generation and case anchors.
 
 - [Windows capsule nested user namespace](2026-11-15-windows-capsule-nested-user-namespace.md) — 2026-11-15; exact UID-map diagnostic, UID0-only private identity mapping with capabilities still dropped, and inert nested-sandbox regression.
 
+- 2026-11-16: [Windows metadata driver with a fixed Linux evidence broker](2026-11-16-windows-linux-evidence-broker.md).
 - [Maintained fresh CLI metadata proof](2026-11-15-through-2026-11-16-fresh-cli-metadata-proof-helper.md) — 2026-11-15 through 2026-11-16; portable default-preview coordinator, original pidfd/handle retirement, failure-safe evidence/control and bounded closed-workspace cleanup manifest.

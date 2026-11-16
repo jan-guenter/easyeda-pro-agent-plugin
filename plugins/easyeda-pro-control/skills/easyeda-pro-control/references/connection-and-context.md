@@ -753,8 +753,9 @@ and requires a writable file handle for [FlushFileBuffers](https://learn.microso
 file sync alone or a successful DrvFS call is not a supported NTFS namespace
 persistence proof. No privileged volume flush or storage setting change is used.
 Use a Linux fresh CLI/maintained manager, or preserve separately scoped Windows
-metadata observations with durable evidence captured by a Linux agent. A future
-fixed Linux evidence broker for a Windows driver remains unimplemented.
+metadata observations with durable evidence captured by a Linux agent. The v1 profile does not mount a Linux evidence broker. The separate v2 source
+profile below supplies that backend; its actual Windows admission remains a
+separate frozen-payload proof.
 Use the explicitly selected reviewed Windows host Node for preview; no developer
 node_modules is needed by these three builtin-only modules. Linux observation
 requires `/usr/bin/python3`; the Windows route also uses maintained WSL interop
@@ -819,3 +820,51 @@ observations and original process exits separate. None proves NTFS ACL custody,
 loaded JavaScript memory, continuous whole-package ownership or live runtime/CAD
 admission. Actual private Linux/Windows cases are recorded in the
 [installed handoff history](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-11-15-installed-fresh-cli-handoff.md).
+
+
+#### V2 Windows driver with Linux evidence
+
+The separate `easyeda-pro-control.fresh-cli-metadata-plan.v2` profile preserves
+v1 Linux operation and v1 Windows refusal. V2 accepts only a Windows host, keeps
+the same reviewed CLI/Node, installed-root, six-file and disabled-source inputs,
+and replaces `evidenceDirectory` with `linuxEvidenceDirectory` plus the fixed
+`evidenceBackend:"wsl-linux-fsync.v1"`. It accepts no program, executable, RPC or
+per-message filesystem selector. The Linux evidence path must be canonical,
+new, and below an existing trusted local parent in the selected existing distro.
+No duplicate Windows evidence directory is created. The empty Windows workspace
+has separate identity/emptiness observations; its NTFS directory durability and
+ACL custody remain unproved.
+
+The fixed broker starts through that distro's `/usr/bin/python3`, before any CLI
+owner. It retains original Linux file and directory FDs, precreates the complete
+journal/control whitelist and syncs files, the new directory and its parent.
+It matches retained directory FD `mnt_id` to bounded `/proc/self/mountinfo`, then
+rechecks the original descriptor identity. Its `local-persistent-linux.v1`
+filesystem profile accepts ext4, xfs or btrfs; DrvFS/9p, network/FUSE, tmpfs and
+unknown filesystems refuse. A pathname spelling or DrvFS fsync result cannot
+establish this profile. No mount, disk or global setting is changed.
+
+Only serial sequence-numbered initialization, bounded byte append to a fixed
+journal name, flush, bounded control read and original closure messages exist.
+Append carries at most 64 KiB of decoded bytes and the exact original offset.
+Unknown ACKs retain the same original Promise and bytes; append is never resent.
+Flush can settle only the original pending file suffix/sync. Normal coordinator
+sends and positive completion await original file+directory-sync ACKs and recheck
+stopped/failure state after that await. Failure still closes the original CLI
+stdin immediately, independently of a blocked broker, and retains original
+facade pidfds, Windows handles and fixed nonce controls through settlement.
+
+V2 preview/status/result and workspace-manifest profiles remain distinct from
+v1. `control.jsonl` and all raw journals live only in the Linux evidence directory;
+the original driver stdin remains a control route. During broker preallocation,
+its startup record exposes the original broker transport PID/nonce and permits
+only status or original stdin EOF before a CLI owner exists. No JSON can rebuild
+an original process handle or grant live CAD authority. After original broker
+closure and driver exit, retain unique raw evidence and follow the bounded
+closed-workspace manifest. The helper creates no runtime copies or clones.
+
+Inert Linux broker tests establish protocol, byte fidelity, sync ordering and
+original child closure. They do not establish actual Windows/WSL CLI acceptance;
+that needs a separately approved frozen-payload run after package admission.
+The inert broker fixtures require a TMPDIR on the same accepted local filesystem
+profile, rather than a tmpfs/DrvFS substitution.

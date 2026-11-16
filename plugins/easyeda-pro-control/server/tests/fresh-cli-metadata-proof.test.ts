@@ -72,10 +72,10 @@ void test("disk-full journal failures preserve bytes and original EOF/close rath
     fs.writeSync = originalWrite; syncBuiltinESMExports();
     if (peer !== undefined && peer.closeResult === undefined) { peer.closeInput(); await peer.closed.promise; }
   }
-  assert.equal(evidence.failed(), true); assert.equal(evidence.flush(), true); assert.equal(evidence.hasPending(), false);
+  assert.equal(evidence.failed(), true); assert.equal(await evidence.flush(), true); assert.equal(evidence.hasPending(), false);
   const stdout = await readFile(join(root, "evidence/app-server.stdout.jsonl"), "utf8"); assert.equal(stdout, '{"kind":"inert-ready"}\n');
   const manifest = await evidence.terminalWorkspaceManifest(true); assert.equal(manifest["eligibleForEmptyDirectoryRemovalAfterDriverExit"], true); assert.deepEqual(manifest["createdRuntimeCopies"], []); assert.deepEqual(manifest["createdClones"], []);
-  evidence.cleanup.put(manifest); assert.equal(evidence.flush(), true); evidence.close();
+  evidence.cleanup.put(manifest); assert.equal(await evidence.flush(), true); await evidence.close();
 });
 
 void test("fatal UTF-8 streaming and EOF validation preserve physical close while refusing malformed proof", async () => {
@@ -99,7 +99,7 @@ void test("fatal UTF-8 streaming and EOF validation preserve physical close whil
       assert.equal(peer.protocolHealthy(), index === 0);
       await assert.rejects(peer.notifyInitialized());
       assert.deepEqual(await readFile(join(root, `evidence-${index}`, "app-server.stdout.jsonl")), bytes);
-    } finally { peer.closeInput(); await peer.closed.promise; evidence.close(); }
+    } finally { peer.closeInput(); await peer.closed.promise; await evidence.close(); }
   }
 });
 
@@ -145,9 +145,9 @@ void test("original file/directory sync failures refuse before allocation or ret
   const evidence = await createProofEvidence(join(root, "evidence"), join(root, "workspace"));
   const peer = new OwnedProofProcess(process.execPath, ["--eval", "console.log(JSON.stringify({kind:'inert-ready'}));process.stdin.resume();process.stdin.on('end',()=>process.exit(0))"], join(root, "workspace"), evidence.journal("app-server.stdout.jsonl"), evidence.journal("app-server.stderr.log"));
   await peer.next(); fs.fsyncSync = (): never => { throw new Error("INERT_ORIGINAL_FILE_SYNC_FAILURE"); }; syncBuiltinESMExports();
-  try { assert.equal(evidence.state.put({ fixed: "unsynced original bytes" }), false); assert.equal(evidence.hasPending(), true); assert.equal(evidence.close(), false); peer.closeInput(); assert.deepEqual(await peer.closed.promise, { code: 0, signal: null }); }
+  try { assert.equal(evidence.state.put({ fixed: "unsynced original bytes" }), false); assert.equal(evidence.hasPending(), true); assert.equal(await evidence.close(), false); peer.closeInput(); assert.deepEqual(await peer.closed.promise, { code: 0, signal: null }); }
   finally { fs.fsyncSync = originalSync; syncBuiltinESMExports(); peer.closeInput(); await peer.closed.promise; }
-  assert.equal(evidence.failed(), true); assert.equal(evidence.flush(), true); assert.equal(evidence.hasPending(), false); assert.equal(evidence.close(), true);
+  assert.equal(evidence.failed(), true); assert.equal(await evidence.flush(), true); assert.equal(evidence.hasPending(), false); assert.equal(await evidence.close(), true);
   const data = { ...planData(root), host: "windows", cliExecutable: "C:\\trusted\\codex.exe", hostPluginRoot: "C:\\trusted\\plugin", evidenceDirectory: "C:\\new-evidence", workspace: "C:\\new-workspace", windowsNodeExecutable: "C:\\trusted\\node.exe", windowsNodeSha256: "0".repeat(64) };
   const windows = parseFreshCliMetadataPlan(JSON.stringify(data)); const preview = previewFreshCliMetadataProof(windows); assert.ok("durability" in preview);
   await assert.rejects(proveFreshCliMetadata(windows), /WINDOWS_DURABLE_DIRECTORY_SYNC_UNAVAILABLE/u);
