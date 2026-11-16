@@ -264,6 +264,8 @@ async function runFreshCliMetadataProof(plan: CurrentPlan): Promise<boolean> {
   const stdin = (bytes: Buffer): void => { control(bytes, "stdin"); };
   const outputError = (): void => { state.put({ stage: "parent-output-unavailable", controlFile: evidence.controlFile, nonce }); };
   process.stdout.on("error", outputError); process.stdin.on("data", stdin);
+  // The broker explicitly pauses this pipe; install our listener before resuming.
+  process.stdin.resume();
     let controlRead: Promise<void> | undefined;
   const readControl = async (): Promise<void> => { try { control(await evidence.readControl(), "file"); } catch { closeCli(); } finally { controlRead = undefined; } };
   const timer = setInterval((): void => { controlRead ??= readControl(); }, 200);

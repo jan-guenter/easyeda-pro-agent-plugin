@@ -167,3 +167,25 @@ focused regressions are recorded in the
 [broker review correction](2026-11-16-windows-linux-evidence-broker.md#subsequent-pr-review-corrections).
 These are additional findings after the seven initial/full-review issues above;
 a green CI check was not treated as permission to ignore the review.
+
+## Outside-diff control-input correction
+
+CodeRabbit's next review, attached to
+`96affbf1ebdf48a86534ed9c0cce900d813057f8`, found a further valid issue outside
+the incremental diff. Broker setup explicitly pauses stdin before handing it
+to the driver. Adding a data listener does not resume that explicitly paused
+stream, so operator controls could remain buffered. The maintained coordinator
+now resumes stdin immediately after installing its own listener; broker listener
+cleanup and the final driver pause are preserved.
+
+A real child-process stdin pipe reproduces the missing-control failure before
+the fix and delivers status/close controls afterward. It invokes the maintained
+coordinator with an inert version-only executable and an explicitly paused pipe,
+without `process.stdin.emit`, a real Codex app-server, serving facade or native
+owner. Its marked fallback unblocks the failing fixture and joins the original
+children without a signal. All ten metadata-helper cases pass with zero skips;
+both facade TypeScript projects and strict two-file type-aware lint pass with
+zero warnings/errors. The earlier six broker and eleven bootstrap checks retain
+their unchanged source coverage. All eleven reported issues, including this
+outside-diff item, are addressed locally; new exact-head CI/review remains
+required before merge and installation.

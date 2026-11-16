@@ -232,3 +232,49 @@ void test("malformed manifest or MCP UTF-8 refuses before any CLI allocation des
     assert.equal(allocations, 0); await assert.rejects(access(join(root, "evidence"))); await assert.rejects(access(join(root, "workspace")));
   }
 });
+
+void test("the maintained driver receives status and EOF controls through an explicitly paused real stdin pipe", async () => {
+  const root = await createTestTemporaryDirectory("fresh-cli-paused-input-"); const data = planData(root); const packageRoot = join(root, "package"); const files = [];
+  for (const [index, relativePath] of PATHS.entries()) {
+    const filename = join(packageRoot, relativePath); await mkdir(dirname(filename), { recursive: true });
+    const bytes = Buffer.from(relativePath === ".codex-plugin/plugin.json" ? '{"version":"0.3.0"}' : "inert paused input fixture"); await writeFile(filename, bytes); await chmod(filename, index === 2 ? 0o755 : 0o644);
+    files.push({ relativePath, bytes: bytes.length, sha256: await digest(bytes), mode: index === 2 ? 0o755 : 0o644 });
+  }
+  await writeFile(join(packageRoot, ".mcp.json"), '{"mcpServers":{"easyeda_pro_control":{}}}');
+  const releaseVersion = join(root, "release-version"), rescueInput = join(root, "rescue-input"), versionReady = join(root, "version-ready"); const executable = join(root, "inert-version-cli");
+  const versionProgram = `#!${process.execPath}
+import{existsSync,writeFileSync}from'node:fs';
+if(process.argv[2]!=='--version')throw Error('INERT_APP_SERVER_MUST_NOT_START');
+writeFileSync(${JSON.stringify(versionReady)},'ready');
+const timer=setInterval(()=>{if(existsSync(${JSON.stringify(releaseVersion)})){clearInterval(timer);console.log('codex-cli 0.168.0');process.exit(0)}},10);
+process.stdin.resume();process.stdin.on('end',()=>{clearInterval(timer);process.exit(0)});
+`;
+  await writeFile(executable, versionProgram, { mode: 0o755 }); await chmod(executable, 0o755);
+  data["files"] = files; data["linuxNodeSha256"] = await digest(await readFile(process.execPath)); data["cliExecutable"] = executable;
+  const driverProgram = `import{existsSync}from'node:fs';
+import{parseFreshCliMetadataPlan,proveFreshCliMetadata}from${JSON.stringify(new URL("../../scripts/fresh-cli-metadata-proof.ts", import.meta.url).href)};
+process.stdin.pause();let announced=false,rescueArmed=false;
+const guard=setInterval(()=>{if(!announced&&existsSync(${JSON.stringify(versionReady)})){announced=true;console.log(JSON.stringify({fixture:'version-ready'}))}if(!rescueArmed&&existsSync(${JSON.stringify(rescueInput)})){rescueArmed=true;const timer=setTimeout(()=>{console.log(JSON.stringify({fixture:'paused-input-rescue'}));process.stdin.resume()},5000);timer.unref()}},10);guard.unref();
+try{if(await proveFreshCliMetadata(parseFreshCliMetadataPlan(process.argv[1])))throw Error('INERT_CONTROL_MUST_STOP_PROOF')}finally{clearInterval(guard)}
+`;
+  const parentEvidence = await createProofEvidence(join(root, "parent-evidence"), join(root, "parent-workspace"));
+  const driver = new OwnedProofProcess(process.execPath, ["--input-type=module", "--eval", driverProgram, "--", JSON.stringify(data)], join(root, "parent-workspace"), parentEvidence.journal("app-server.stdout.jsonl"), parentEvidence.journal("app-server.stderr.log"));
+  let nonce: string | undefined; let closeControlSent = false;
+  try {
+    const first = await driver.next(); assert.ok(first !== null && typeof first === "object" && "nonce" in first && typeof first.nonce === "string"); nonce = first.nonce;
+    const ready = await driver.next(); assert.deepEqual(ready, { fixture: "version-ready" });
+    // The fallback resumes a regressed child after marking failure.
+    // It then closes the original version process without a signal.
+    await writeFile(rescueInput, "arm"); await driver.sendWatcherPacket({ nonce, action: "status" });
+    const status = await driver.next(); assert.ok(status !== null && typeof status === "object" && "schema" in status && "phase" in status && "stopping" in status);
+    assert.equal(status.schema, "easyeda-pro-control.fresh-cli-metadata-status.v1"); assert.equal(status.phase, "cli-version"); assert.equal(status.stopping, false);
+    closeControlSent = true; await driver.sendWatcherPacket({ nonce, action: "close-cli-stdin" });
+  } finally {
+    await writeFile(rescueInput, "arm");
+    try { if (nonce !== undefined && !closeControlSent && driver.closeResult === undefined) { closeControlSent = true; await driver.sendWatcherPacket({ nonce, action: "close-cli-stdin" }); } }
+    finally { await writeFile(releaseVersion, "release"); driver.closeInput(); await driver.closed.promise; await parentEvidence.close(); }
+  }
+  assert.deepEqual(driver.closeResult, { code: 0, signal: null });
+  const manifest: unknown = JSON.parse(await readFile(join(root, "evidence/cleanup-manifest.json"), "utf8")); assert.ok(manifest !== null && typeof manifest === "object" && "originalsClosed" in manifest && "loadedFacade" in manifest);
+  assert.equal(manifest.originalsClosed, true); assert.deepEqual(manifest.loadedFacade, { mayExist: false, pid: null, originalPidfdHeld: false, originalExitObserved: false });
+});
