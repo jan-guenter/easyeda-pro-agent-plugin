@@ -101,7 +101,7 @@ export class CurrentSchematicWireBboxCursor {
   /** Retain the exact supplied packet before advancing its bounded plan. */
   public accept(command: Command, raw: unknown): void {
     need(!this.#failed && this.#reserved && this.#pending === command);
-    try { const value = capture(raw).value; this.#packets.push(raw); const step = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (step.done === true) { this.#result = step.value; } else { this.#pending = step.value; } } catch (error) { this.#failed = true; throw error; }
+    try { const value = capture(raw).value; this.#packets.push(value); const step = this.#plan.next(value); this.#pending = null; this.#reserved = false; if (step.done === true) { this.#result = step.value; } else { this.#pending = step.value; } } catch (error) { this.#failed = true; throw error; }
   }
   /** Fulfillment comparisons remain separate from original bbox completion. */
   public requireCompleted(): CurrentSchematicWireBboxData { need(!this.#failed && !this.#reserved && this.#pending === null && this.#result !== null); return this.#result; }

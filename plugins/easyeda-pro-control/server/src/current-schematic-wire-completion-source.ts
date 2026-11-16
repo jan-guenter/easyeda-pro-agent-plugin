@@ -36,16 +36,19 @@ const packet = z.strictObject({ result: z.array(property).max(3), internalProper
 function need(value: boolean): asserts value { if (!value) { throw new Error("SCHEMATIC_WIRE_COMPLETION_SOURCE"); } }
 
 /** Qualify the complete installed bundle before all completion spans. */
-export function qualifyCurrentSchematicWireCompletionSource(input: unknown): 0 | 1 {
-  const variant = qualifyCurrentSchematicWireTransitionSource(input);
+/** Return the qualified immutable source text so downstream span checks need
+ * not recapture caller input. This supplies data, never original ownership. */
+export function captureQualifiedCurrentSchematicWireCompletionSource(input: unknown): Readonly<{variant: 0 | 1; scriptSource: string}> {
   const raw = captureCurrentSchematicDisplayAccessorSource(input);
+  const variant = qualifyCurrentSchematicWireTransitionSource(raw);
   const spans: Readonly<Record<CurrentSchematicWireCompletionRole, { readonly start: number; readonly end: number; readonly bytes: number; readonly sha256: string }>> = CURRENT_SCHEMATIC_WIRE_COMPLETION_SOURCE[variant].rows;
   for (const row of Object.values(spans)) {
     const text = raw.scriptSource.slice(row.start, row.end);
     need(Buffer.byteLength(text) === row.bytes && createHash("sha256").update(text).digest("hex") === row.sha256);
   }
-  return variant;
+  return Object.freeze({variant, scriptSource: raw.scriptSource});
 }
+export function qualifyCurrentSchematicWireCompletionSource(input: unknown): 0 | 1 { return captureQualifiedCurrentSchematicWireCompletionSource(input).variant; }
 export interface CurrentSchematicWireCompletionFunction { readonly objectId: string; readonly scopes: string; readonly parent: z.infer<typeof remote> }
 
 /** Compare complete function text, ordinary metadata, name, arity and exact

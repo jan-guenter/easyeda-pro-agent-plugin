@@ -187,7 +187,8 @@ function optionalClient(value: unknown): string | null {
   return text(value, 128);
 }
 
-function rejectDuplicateJsonKeys(source: string): void {
+/** Check duplicate decoded object keys before a bounded caller decodes a full JSON value. */
+export function rejectDuplicateJsonKeys(source: string): void {
   const containers: (Set<string> | null)[] = [];
   for (let index = 0; index < source.length; index += 1) {
     const character = source[index];

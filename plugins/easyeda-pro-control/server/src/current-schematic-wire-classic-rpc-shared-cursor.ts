@@ -3,6 +3,7 @@
  * Native event/service/Job custody remains with the eventual complete owner. */
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply as capture } from "./current-pcb-string-clock-reply.ts";
+import {captureCurrentSchematicWireClassicRpcLargeReply as captureLarge} from "./current-schematic-wire-classic-rpc-large-reply.ts";
 import { decodeCurrentFootprintCopyClockRpcV2Array as array, decodeCurrentFootprintCopyClockRpcV2ArrayCapture as tuple } from "./current-footprint-copy-clock-rpc-v2-protocol.ts";
 import { currentSchematicRelevanceRawHandle as object } from "./current-schematic-relevance-action-raw-replies.ts";
 import { CurrentSchematicWireClassicRpcSharedCensus as Census, wireClassicRpcFieldValue as value } from "./current-schematic-wire-classic-rpc-shared-census.ts";
@@ -188,7 +189,9 @@ export class CurrentSchematicWireClassicRpcSharedCursor {
  }
  public next():Command|null {need(!this.#failed&&!this.#reserved);if(this.#pending!==null){return this.#pending;}if(this.#result!==null){return null;}try{const row=this.#plan.next();need(row.done!==true);this.#pending=row.value;return row.value;}catch(error){this.#failed=true;throw error;}}
  public reserve(command:Command):void {need(!this.#failed&&!this.#reserved&&command===this.#pending&&this.#reads<this.#maximum);this.#reserved=true;this.#reads+=1;}
- public accept(command:Command,raw:unknown):void {need(!this.#failed&&this.#reserved&&command===this.#pending);try{this.#packets.push(raw);const row=this.#plan.next(command.phase==="classic-rpc-properties"&&command.kind==="large"?raw:capture(raw).value);this.#pending=null;this.#reserved=false;if(row.done===true){this.#result=row.value;}else{this.#pending=row.value;}}catch(error){this.#failed=true;throw error;}}
+ /** Snapshot decoded packet data without following opaque remote objectId handles.
+  * The separate profile preserves the existing 4,096-row census contract. */
+ public accept(command:Command,raw:unknown):void {need(!this.#failed&&this.#reserved&&command===this.#pending);try{const retained=command.phase==="classic-rpc-properties"&&command.kind==="large"?captureLarge(raw).value:capture(raw).value;this.#packets.push(retained);const row=this.#plan.next(retained);this.#pending=null;this.#reserved=false;if(row.done===true){this.#result=row.value;}else{this.#pending=row.value;}}catch(error){this.#failed=true;throw error;}}
  public requireCompleted():CurrentSchematicWireClassicRpcSharedData {need(!this.#failed&&!this.#reserved&&this.#pending===null&&this.#result!==null);return this.#result;}
  public retainedReplies():readonly unknown[] {need(this.#failed||this.#result!==null);return Object.freeze([...this.#packets]);}
  public fail():void {this.#failed=true;}

@@ -1,0 +1,22 @@
+/** A separate closed running-phase preparation vocabulary; no resume or arm. */
+import {z} from "zod";
+import {CURRENT_SCHEMATIC_WIRE_GROUP_PREPARATION_PROGRAMS as PROGRAMS} from "./current-schematic-wire-group-preparation-programs.ts";
+import {CURRENT_SCHEMATIC_WIRE_WRITER_FLAGS as FLAGS} from "./current-schematic-wire-writer-protocol.ts";
+import {captureCurrentPcbStringClockReply as capture} from "./current-pcb-string-clock-reply.ts";
+import {freezeDeep} from "./sqlite-inventory-core.ts";
+
+export const CURRENT_SCHEMATIC_WIRE_GROUP_PREPARATION_REQUESTS=Object.freeze({normalMaximum:52,cleanup:1,helperSourcesMaximum:14,scopeLimit:8,eventsMaximum:14,mapEntries:1,setEntries:1,ownKeys:256,prototypeDepth:12,pauses:0,resumes:0} as const);
+const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u),reference=z.strictObject({objectId:handle});
+const flags={objectGroup:z.literal(FLAGS.objectGroup),silent:z.literal(true),generatePreview:z.literal(false),throwOnSideEffect:z.literal(true)};
+const counts:Readonly<Record<keyof typeof PROGRAMS,number>>={scopeMain:1,scopeEditor:1,roots:3,collection:4,data:3,methods:7,snapshot:8,compared:5};
+function programRole(role:string):role is keyof typeof PROGRAMS{return Object.hasOwn(PROGRAMS,role);}
+const calls=Object.entries(PROGRAMS).map(([role,program])=>{if(!programRole(role)){throw new Error("WIRE_GROUP_PREPARATION_ROLE");}return z.strictObject({phase:z.literal("wire-group-preparation-call"),role:z.literal(role),method:z.literal("Runtime.callFunctionOn"),params:z.strictObject({...flags,objectId:handle,functionDeclaration:z.literal(program),arguments:z.array(reference).length(counts[role]),returnByValue:z.literal(role==="compared"),awaitPromise:z.literal(false),userGesture:z.literal(false)})});});
+const frame=z.strictObject({phase:z.literal("wire-group-preparation-frame"),method:z.literal("Debugger.evaluateOnCallFrame"),params:z.strictObject({...flags,callFrameId:handle,expression:z.literal("[this,t,r]"),returnByValue:z.literal(false),includeCommandLineAPI:z.literal(false)})});
+const schema=z.union([...calls,frame]);
+export type CurrentSchematicWireGroupPreparationCommand=Readonly<z.infer<typeof schema>>;
+export function validateCurrentSchematicWireGroupPreparationCommand(input:unknown):CurrentSchematicWireGroupPreparationCommand{return freezeDeep(schema.parse(capture(input).value));}
+export function currentSchematicWireGroupPreparationCall(role:keyof typeof PROGRAMS,receiver:string,refs:readonly string[]):CurrentSchematicWireGroupPreparationCommand{return validateCurrentSchematicWireGroupPreparationCommand({phase:"wire-group-preparation-call",role,method:"Runtime.callFunctionOn",params:{...FLAGS,objectId:receiver,functionDeclaration:PROGRAMS[role],arguments:refs.map(objectId=>({objectId})),returnByValue:role==="compared",awaitPromise:false,userGesture:false}});}
+export function currentSchematicWireGroupPreparationFrame(callFrameId:string):CurrentSchematicWireGroupPreparationCommand{return validateCurrentSchematicWireGroupPreparationCommand({phase:"wire-group-preparation-frame",method:"Debugger.evaluateOnCallFrame",params:{...FLAGS,callFrameId,expression:"[this,t,r]",returnByValue:false,includeCommandLineAPI:false}});}
+export interface CurrentSchematicWireGroupPreparationHeldData{
+ readonly schema:"private.schematic-wire-group-preparation-held.v1";readonly originalRunningMethodLexicalConstructorAndBaseCompared:true;readonly originalConstructorAndPrototypeLinksCompared:true;readonly originalMapGetAndSetAndStackAddCompared:true;readonly nativeMapAndSetMethodsComparedOnFreshCollections:true;readonly completeCurrentCollectionMembershipAndPeerDescriptorsCompared:true;readonly originalCallbackAndHeldOperandsRecompared:true;readonly branch:"missing"|"existing";readonly scopeReads:number;readonly normalRequests:number;readonly cleanupRequests:0;readonly helperSources:number;readonly originalGroupHistoryMethodEntryStillHeld:true;readonly methodBodyResumed:false;readonly commandConstructorJoined:false;readonly initOldDataJoined:false;readonly groupBodyReturned:false;readonly historyBodyReturned:false;readonly actualSamePromiseStillPending:true;readonly originalTickPointRetained:true;readonly tickBodyResumed:false;readonly callbackReturned:false;readonly fullSetterComplete:false;readonly workerCompleted:false;readonly modifyCompleted:false;readonly suppliedTransportOnly:true;readonly originalNativeOwnerJoined:false;readonly continuousGlobalsVerified:false;readonly saveAuthorized:false;
+}
