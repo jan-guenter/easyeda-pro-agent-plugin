@@ -20,7 +20,7 @@ export interface CurrentSchematicWireParserRpcTransport {
 }
 interface Input {readonly sessionId:string;readonly scriptId:string;readonly holder:string;readonly native:string;readonly variant:0|1;readonly source:unknown;readonly busScriptId:string;readonly busSource:unknown}
 interface Attempt {readonly owner:Owner;readonly command:CurrentSchematicWireParserRpcCommand;pending?:Promise<unknown>;raw?:unknown;cause?:unknown}
-interface Resume {readonly owner:Owner;ackObserved:boolean;eventObserved:boolean}
+interface Resume {readonly owner:Owner;readonly complete:PromiseWithResolvers<null>;ackObserved:boolean;eventObserved:boolean}
 export interface CurrentSchematicWireParserRpcData {
  readonly schema:"private.schematic-wire-parser-rpc-coordinator.v1";readonly registrations:CurrentSchematicWireServiceRegistrationData;
  readonly parser:CurrentSchematicWireParserDriverData;readonly rpc:CurrentSchematicWireClassicRpcDriverData;readonly joined:CurrentSchematicWireParserRpcJoinData;
@@ -66,7 +66,7 @@ export class CurrentSchematicWireParserRpcCoordinator {
   Object.freeze(this);
  }
  #current(cleanup=false):void{need(methods(this.#transport).every((value,index)=>value===this.#methods[index]));if(!cleanup){need(!this.#closing&&this.#failure===null);this.#transport.assertCurrent();}}
- #fail(cause:unknown):void{if(this.#failure!==null){return;}this.#failure=Object.freeze({cause});this.#registrationCursor?.fail();this.#fault.reject(cause);try{this.#transport.fail(cause);}catch(error){this.#notificationFailure=Object.freeze({cause:error});}}
+ #fail(cause:unknown):void{if(this.#failure!==null){return;}this.#failure=Object.freeze({cause});this.#registrationCursor?.fail();this.#fault.reject(cause);this.#resume?.complete.reject(cause);try{this.#transport.fail(cause);}catch(error){this.#notificationFailure=Object.freeze({cause:error});}}
  #send(owner:Owner,command:CurrentSchematicWireParserRpcCommand):Promise<unknown>{
   // Drivers validate their exact reserved vocabulary before entering here.
   const attempt:Attempt={owner,command};this.#attempts.push(attempt);
@@ -79,12 +79,12 @@ export class CurrentSchematicWireParserRpcCoordinator {
   let generated=false;let resume:Resume|null=null;
   try{
    if(command.method==="Runtime.callFunctionOn"){need(this.#sourceOwner===null);this.#sourceOwner=owner;generated=true;}
-   if(command.method==="Debugger.resume"){need(this.#resume===null);resume={owner,ackObserved:false,eventObserved:false};this.#resume=resume;}
+   if(command.method==="Debugger.resume"){while(this.#resume!==null){await this.#resume.complete.promise;this.#current(cleanup);}resume={owner,complete:Promise.withResolvers<null>(),ackObserved:false,eventObserved:false};void settled(resume.complete.promise);this.#resume=resume;}
    const pending=this.#transport.request(command);need(types.isPromise(pending));attempt.pending=pending;
    const raw=await pending;attempt.raw=raw;this.#current(cleanup);
    if(command.method==="Debugger.setBreakpoint"){const id=allocation.parse(capture(raw).value).breakpointId;need(!this.#points.has(id));this.#points.set(id,owner);}
    else if(command.method==="Debugger.removeBreakpoint"){need(this.#points.get(command.params.breakpointId)===owner);this.#points.delete(command.params.breakpointId);}
-   if(resume!==null){resume.ackObserved=true;if(resume.eventObserved){need(this.#resume===resume);this.#resume=null;}}
+   if(resume!==null){resume.ackObserved=true;if(resume.eventObserved){need(this.#resume===resume);this.#resume=null;resume.complete.resolve(null);}}
    return raw;
   }catch(error){attempt.cause=error;this.#fail(error);throw error;}finally{if(generated){need(this.#sourceOwner===owner);this.#sourceOwner=null;}}
  }
@@ -94,7 +94,7 @@ export class CurrentSchematicWireParserRpcCoordinator {
    this.#current();const event=eventSchema.parse(capture(input).value);if(event.sessionId!==this.#input.sessionId){return false;}
    let owner:Owner|null=null;
    if(event.method==="Debugger.scriptParsed"){owner=this.#sourceOwner;if(owner===null){return false;}}
-   else if(event.method==="Debugger.resumed"){const original=this.#resume;need(original!==null&&!original.eventObserved);owner=original.owner;original.eventObserved=true;if(original.ackObserved){this.#resume=null;}}
+   else if(event.method==="Debugger.resumed"){const original=this.#resume;need(original!==null&&!original.eventObserved);owner=original.owner;original.eventObserved=true;if(original.ackObserved){this.#resume=null;original.complete.resolve(null);}}
    else{const id=paused.parse(event.params).hitBreakpoints[0];need(id!==undefined);owner=this.#points.get(id)??null;if(owner===null){return false;}}
    this.#events.push(input);retained=true;let accepted:boolean;
    if(owner==="registration"){const active=this.#registrationProgram,actual=generatedScript.parse(event.params);if(active===null||actual.url!==""||actual.length!==active.program.length+2){return false;}need(!active.scripts.includes(actual.scriptId));active.scripts.push(actual.scriptId);need(active.scripts.length===1);accepted=true;}

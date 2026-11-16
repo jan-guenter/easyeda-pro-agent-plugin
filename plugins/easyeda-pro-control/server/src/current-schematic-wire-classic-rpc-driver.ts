@@ -115,7 +115,7 @@ export class CurrentSchematicWireClassicRpcDriver {
    const ack=allocated.parse(capture(await this.#send({phase:"wire-rpc-driver-arm",point:kind,variant:2,method:"Debugger.setBreakpoint",params:{location:{scriptId:this.#input.busScriptId,...point}}})).value);
    need(!this.#points.some(row=>row.id===ack.breakpointId));this.#points.push({kind,id:ack.breakpointId,removeAttempted:false,removed:false});this.#allocationUncertain=false;
    need(ack.actualLocation.scriptId===this.#input.busScriptId&&ack.actualLocation.lineNumber===point.lineNumber&&ack.actualLocation.columnNumber===point.columnNumber);
-  }this.#armed=true;}catch(error){this.#fail(error);throw error;}})();this.#armTask=task;return task;
+  }this.#armed=true;}catch(error){this.#fail(error);try{await this.#cleanupOnce();}catch(cleanupError){this.#notificationFailure??=Object.freeze({cause:cleanupError});}throw error;}})();this.#armTask=task;return task;
  }
  public observe(input:unknown):boolean{
   if(this.#closing){return false;}let retained=false;

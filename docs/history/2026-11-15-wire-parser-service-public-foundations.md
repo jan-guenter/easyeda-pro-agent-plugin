@@ -144,3 +144,43 @@ cold verification remain unavailable as described above. The actual release and
 installation of PR215 are separate evidence, not validation of these unmounted
 components. Complete final CI and CodeRabbit review remain pending publication.
 
+## CodeRabbit source and fixture review corrections
+
+The full PR216 review of 147 included paths at
+`3033e01fd33b54f85ef3f4ffef4d67a71ab91299` reported six valid issues, all accepted:
+
+- Direct classic-RPC arming now attempts known-breakpoint removal and group
+  release on failure, while retaining unacknowledged-allocation uncertainty.
+- The parser/RPC router serializes successive resume records until both the
+  original ACK and resumed event settle. A failed original request rejects
+  waiting work; events remain routed to their original child.
+- Requested tree, title and shared-FT preparation settles before any child
+  breakpoint arm. Failed preparation therefore stays before allocation.
+- Title cleanup independently attempts FT and title breakpoint removal.
+  The primary failure remains unchanged; every cleanup/notification error is
+  retained through the existing diagnostic cause projection.
+- The classic-RPC inert worker serializes only source-attributed function calls,
+  so detached settlement reads cannot overwrite another call's source state.
+- Five related inert workers publish terminal results only after original
+  retirement/cleanup settles. Their original run rejection is observed as soon
+  as it exists, preserving the original Promise while another arm task waits.
+  Parent tests also reject explicit cleanup failures in refusal cases.
+
+Six focused production-method/constructor regressions pass, including both
+resume event/ACK orders, failed direct arming, independent cleanup and requested
+preparation ordering. The method VM substitutes prerequisite custody and proves
+JavaScript scheduling only. Forty-eight separately frozen worker cases pass
+without skips on pinned installed source. Counterfactual fixture ordering checks
+fail unsafe code while draining their original tasks. An earlier failed worker
+run exposed the unobserved original run rejection; its raw failure and corrected
+terminal run remain retained. The first production-method fixture omitted its
+capture binding; its corrected six-case run and original failure are retained.
+
+These corrections supersede the earlier 143-file payload digest for current
+source bytes; the original digest remains valid for the earlier preparation.
+Released result literals, fixed programs, budgets and unavailable execution
+flags are preserved. This source batch still changes no mounted runtime bundle,
+external pin or plugin version. Final combined focused checks, reproducibility,
+source-tree compatibility refresh, exact-head CI and the updated CodeRabbit
+review remain required before merge.
+
