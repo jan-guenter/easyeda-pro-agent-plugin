@@ -269,6 +269,8 @@ try{if(await proveFreshCliMetadata(parseFreshCliMetadataPlan(process.argv[1])))t
     const status = await driver.next(); assert.ok(status !== null && typeof status === "object" && "schema" in status && "phase" in status && "stopping" in status);
     assert.equal(status.schema, "easyeda-pro-control.fresh-cli-metadata-status.v1"); assert.equal(status.phase, "cli-version"); assert.equal(status.stopping, false);
     closeControlSent = true; await driver.sendWatcherPacket({ nonce, action: "close-cli-stdin" });
+    const stopped = await driver.next(); assert.ok(stopped !== null && typeof stopped === "object" && "schema" in stopped && "stopping" in stopped);
+    assert.equal(stopped.schema, "easyeda-pro-control.fresh-cli-metadata-status.v1"); assert.equal(stopped.stopping, true);
   } finally {
     await writeFile(rescueInput, "arm");
     try { if (nonce !== undefined && !closeControlSent && driver.closeResult === undefined) { closeControlSent = true; await driver.sendWatcherPacket({ nonce, action: "close-cli-stdin" }); } }

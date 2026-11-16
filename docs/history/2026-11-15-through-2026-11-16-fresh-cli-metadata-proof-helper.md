@@ -189,3 +189,11 @@ zero warnings/errors. The earlier six broker and eleven bootstrap checks retain
 their unchanged source coverage. All eleven reported issues, including this
 outside-diff item, are addressed locally; new exact-head CI/review remains
 required before merge and installation.
+
+The subsequent review strengthened the real-pipe fixture's close-control proof:
+its normal path now waits for an actual stopping status before releasing the
+version fixture. Unconditional fixture release remains only as failure recovery,
+so natural fixture completion cannot masquerade as observed close delivery.
+All ten cases and strict test-file lint pass again with zero skips/warnings.
+This twelfth accepted item changes only test synchronization; runtime source
+and bundle/compatibility pins remain unchanged from the preceding correction.
