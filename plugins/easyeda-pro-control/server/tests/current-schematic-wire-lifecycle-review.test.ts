@@ -374,6 +374,7 @@ function receiptOwner(resume: Promise<unknown>, exited: () => boolean): Promise<
     #packet=null;#finishTask=null;#finishSettled=false;#retirementTask=null;#armTask=null;#runTask=null;#joinTask=null;
     #cleanupTask=null;#removeTask=null;#releaseTask=null;#tail=Promise.resolve();#functionTail=Promise.resolve();#settlements=[];
     #attempts=bindings.attempts;#received=0;#resumes=0;#normal=0;#cleanup=0;#released=false;#allocationUncertain=false;
+    #notificationFailure=null;#cleanupOnce(){throw new Error("receipt fixture owns no arm");}
     #fail(cause){this.#failure??=Object.freeze({cause});}
     retained(){return{attempts:this.#attempts};}
     settle(){this.#settled=true;this.#packet={};}
@@ -615,4 +616,41 @@ for (const row of lifecycleCases) {
       assert.equal(commands.length, 2 + points.length + Number(row.group));
     });
   }
+}
+
+for (const mode of ["armed", "unavailable", "unarmed"] as const) {
+  void test(`Wire actual classic RPC retirement drains a successful arm without run / ${mode}`, async context => {
+    const source = await readConfiguredEasyedaAsset(SOURCE[0].relativePath);
+    const bus = await readConfiguredEasyedaAsset(SOURCE[2].relativePath);
+    if (source === null || bus === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
+    const commands: CurrentSchematicWireClassicRpcDriverCommand[] = [];
+    const cleanup = new Error("original RPC cleanup unavailable");
+    let exited = false;
+    let allocations = 0;
+    const driver = new CurrentSchematicWireClassicRpcDriver({ sessionId: "123.session", scriptId: "123.sch", holder: "123.holder", native: "123.native", variant: 0, source: { scriptSource: source }, busScriptId: "123.bus", busSource: { scriptSource: bus } }, {
+      request: (command): Promise<unknown> => {
+        commands.push(command);
+        if (command.method === "Debugger.setBreakpoint") { allocations += 1; return Promise.resolve({ breakpointId: `123.arm${String(allocations)}`, actualLocation: command.params.location }); }
+        assert.ok(command.method === "Debugger.removeBreakpoint" || command.method === "Runtime.releaseObjectGroup");
+        return mode === "unavailable" ? Promise.reject(cleanup) : Promise.resolve({});
+      },
+      assertCurrent: (): void => { assert.equal(exited, false); }, assertOriginalExit: (): void => { assert.equal(exited, true); },
+      fail: (): void => {
+        // Retirement keeps the original lifecycle failure; it grants no run.
+      },
+    });
+    context.after(async () => { exited = true; await driver.retireAfterOriginalExit(); });
+    if (mode !== "unarmed") { await driver.arm(); assert.equal(commands.length, 6); }
+    exited = true; const retired = driver.retireAfterOriginalExit(); await retired;
+    assert.equal(driver.retireAfterOriginalExit(), retired);
+    const removals = commands.filter(command => command.method === "Debugger.removeBreakpoint");
+    const releases = commands.filter(command => command.method === "Runtime.releaseObjectGroup");
+    assert.deepEqual(removals.map(command => command.params.breakpointId), mode === "unarmed" ? [] : Array.from({ length: 6 }, (_, index) => `123.arm${String(index + 1)}`));
+    assert.equal(releases.length, mode === "unarmed" ? 0 : 1); assert.equal(commands.length, mode === "unarmed" ? 0 : 13);
+    assert.equal(driver.inspect().objectGroupReleased, mode === "armed");
+    assert.equal(driver.inspect().allocationUncertain, false); assert.equal(driver.inspect().rpcCompleted, false);
+    assert.equal(driver.inspect().saveAuthorized, false);
+    assert.equal(driver.retained().notificationFailure?.cause, mode === "unavailable" ? cleanup : undefined);
+    assert.equal(driver.retained().attempts.filter(attempt => attempt.cleanup && attempt.cause === cleanup).length, mode === "unavailable" ? 7 : 0);
+  });
 }
