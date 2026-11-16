@@ -91,7 +91,7 @@ def emit(seq,kind,ok,**more):
   except OSError:durable=False
   if not durable:
    result['ok']=False;result['protocolSyncPending']=True;raw=(json.dumps(result,separators=(',',':'),ensure_ascii=True)+'\n').encode('ascii');require(protocol_state['received']+len(raw)<=8388608);protocol_state['received']+=len(raw);protocol_state['pending'].append(raw);flush_state(protocol_state)
- sys.stdout.buffer.write(raw);sys.stdout.buffer.flush()
+ sys.stdout.buffer.write(raw);sys.stdout.buffer.flush();return result['ok']
 try:
  p=read_packet();require(type(p) is dict and set(p)=={'schema','seq','op','directory','nonce'} and p['schema']==PROFILE and type(p['seq']) is int and p['seq']==1 and p['op']=='initialize' and type(p['nonce']) is str and re.fullmatch('[a-f0-9-]{36}',p['nonce']))
  path=p['directory'];require(type(path) is str and len(path)<=4096 and path.startswith('/') and '\x00' not in path and all(x not in ('','.', '..') for x in path[1:].split('/')))
@@ -115,9 +115,12 @@ try:
   elif op=='flush':
    require(set(p)=={'seq','op'});ok=flush_all();emit(seq,'flush',ok,journals=[metrics(s) for s in states.values()],fileAndDirectorySync=ok)
   elif op=='read-control':
-   require(set(p)=={'seq','op'} and control_at<=65536);data=os.pread(control,8192,control_at);control_at+=len(data);require(control_at<=65536);os.fsync(control);emit(seq,'control',True,bytes=base64.b64encode(data).decode('ascii'))
+   require(set(p)=={'seq','op'} and control_at<=65536);data=b'';ok=True
+   try:data=os.pread(control,8192,control_at);require(control_at+len(data)<=65536);os.fsync(control)
+   except OSError:ok=False
+   if emit(seq,'control',ok,bytes=base64.b64encode(data).decode('ascii')):control_at+=len(data)
   elif op=='close':
-   require(set(p)=={'seq','op'});ok=flush_all();emit(seq,'close-ready',ok,journals=[metrics(s) for s in states.values()],fileAndDirectorySync=ok);closing=ok
+   require(set(p)=={'seq','op'});ok=flush_all();closing=emit(seq,'close-ready',ok,journals=[metrics(s) for s in states.values()],fileAndDirectorySync=ok)
   else:raise ValueError('FIXED_BROKER_OPERATION_REFUSED')
  require(flush_all())
 except BaseException:
@@ -145,19 +148,6 @@ export async function createLinuxBrokerProofEvidence(options: BrokerOptions): Pr
   const failure = Promise.withResolvers<null>(); let failed = false; let closed = false; let closing = false; let sequence = 0; let pendingBytes = 0;
   const states = new Map<ProofJournalName, JournalState>(); const journals = new Map<ProofJournalName, ProofJournal>(); let tail: Promise<unknown> = Promise.resolve(null); let filesystemType: string | undefined; let closeAck: Promise<ProofRecord> | undefined; let flushAck: Promise<ProofRecord> | undefined;
   const markFailure = (): void => { failed = true; failure.resolve(null); };
-  const receive = async (packet: ProofRecord, kind: string): Promise<ProofRecord> => {
-    sequence += 1; const seq = sequence; proofNeed(seq <= 2_147_483_647, "BROKER_SEQUENCE_BOUND");
-    await peer.sendWatcherPacket({ ...packet, seq }); const response = proofRecord(await peer.next(), "BROKER_RESPONSE");
-    proofNeed(response["schema"] === PROFILE && response["seq"] === seq && response["kind"] === kind && typeof response["ok"] === "boolean", "ORIGINAL_BROKER_ACK_DIFFERS"); return response;
-  };
-  const observeFailure = async (original: Promise<unknown>): Promise<void> => { try { await original; } catch { markFailure(); } };
-  const enqueue = (packet: ProofRecord, kind: string): Promise<ProofRecord> => {
-    const previous = tail; const original = (async (): Promise<ProofRecord> => { await previous; return receive(packet, kind); })(); tail = original;
-    void observeFailure(original); return original;
-  };
-  const bounded = async <Value>(original: Promise<Value>): Promise<Value> => {
-    try { return await boundedProofWait(original, 30_000, "ORIGINAL_BROKER_ACK_PENDING_NO_REPLAY"); } catch (error) { markFailure(); throw error; }
-  };
   const update = (value: unknown): void => {
     const metric = proofRecord(value, "BROKER_METRIC"); const name = metric["name"];
     proofNeed(typeof name === "string", "BROKER_JOURNAL_NAME"); const state = [...states.values()].find(item => item.name === name); proofNeed(state !== undefined, "BROKER_JOURNAL_WHITELIST");
@@ -166,13 +156,57 @@ export async function createLinuxBrokerProofEvidence(options: BrokerOptions): Pr
     state.durable = durable;
     while (state.retained[0] !== undefined && state.retained[0].end <= durable) { const first = state.retained.shift(); if (first !== undefined) { pendingBytes -= first.bytes.length; } }
   };
+  const acceptMetrics = (packet: ProofRecord, kind: string, response: ProofRecord, expectedReceived?: number): void => {
+    if (kind === "append") {
+      const metric = proofRecord(response["journal"], "BROKER_APPEND_METRIC"); proofNeed(expectedReceived !== undefined && metric["name"] === packet["journal"] && metric["receivedBytes"] === expectedReceived, "BROKER_APPEND_OFFSET_DIFFERS"); update(metric);
+    } else if (kind === "flush" || kind === "close-ready") {
+      proofNeed(Array.isArray(response["journals"]) && response["journals"].length === PROOF_JOURNALS.length, "BROKER_FLUSH_ROSTER");
+      const metrics: unknown[] = response["journals"]; const names = new Set<string>();
+      for (const value of metrics) { const metric = proofRecord(value, "BROKER_METRIC"); const name = metric["name"]; proofNeed(typeof name === "string" && !names.has(name), "BROKER_FLUSH_ROSTER"); names.add(name); update(metric); }
+    }
+    // Close settlement clears closing before it reports a negative close ACK.
+    if ((kind === "append" || kind === "flush") && response["ok"] !== true) { markFailure(); }
+  };
+  const receive = async (packet: ProofRecord, kind: string, expectedReceived?: number): Promise<ProofRecord> => {
+    sequence += 1; const seq = sequence; proofNeed(seq <= 2_147_483_647, "BROKER_SEQUENCE_BOUND");
+    await peer.sendWatcherPacket({ ...packet, seq }); const response = proofRecord(await peer.next(), "BROKER_RESPONSE");
+    proofNeed(response["schema"] === PROFILE && response["seq"] === seq && response["kind"] === kind && typeof response["ok"] === "boolean", "ORIGINAL_BROKER_ACK_DIFFERS"); acceptMetrics(packet, kind, response, expectedReceived); return response;
+  };
+  const observeFailure = async (original: Promise<unknown>): Promise<void> => { try { await original; } catch { markFailure(); } };
+  const enqueue = (packet: ProofRecord, kind: string, expectedReceived?: number): Promise<ProofRecord> => {
+    const previous = tail; const original = (async (): Promise<ProofRecord> => { await previous; return receive(packet, kind, expectedReceived); })(); tail = original;
+    void observeFailure(original); return original;
+  };
+  const bounded = async <Value>(original: Promise<Value>): Promise<Value> => {
+    try { return await boundedProofWait(original, 30_000, "ORIGINAL_BROKER_ACK_PENDING_NO_REPLAY"); } catch (error) { markFailure(); throw error; }
+  };
+  let flushBarrier: Promise<boolean> | undefined;
   const flush = async (): Promise<boolean> => {
     if (closed) { return pendingBytes === 0; }
     if (closing) { return await closeEvidence() && pendingBytes === 0; }
-    try { flushAck ??= enqueue({ op: "flush" }, "flush"); const response = await bounded(flushAck); flushAck = undefined; proofNeed(Array.isArray(response["journals"]) && response["journals"].length === PROOF_JOURNALS.length, "BROKER_FLUSH_ROSTER");
-      for (const metric of response["journals"]) { update(metric); } if (response["ok"] !== true || response["fileAndDirectorySync"] !== true) { markFailure(); return false; }
-      return pendingBytes === 0;
-    } catch { markFailure(); return false; }
+    if (flushBarrier !== undefined) { return flushBarrier; }
+    let expired = false; const deadline = performance.now() + 30_000;
+    const drain = async (): Promise<boolean> => {
+      for (;;) {
+        proofNeed(!expired && performance.now() < deadline, "BROKER_FLUSH_BARRIER_DEADLINE");
+        if (flushAck === undefined) {
+          const originalSuffix = tail; await originalSuffix;
+          proofNeed(!expired && performance.now() < deadline, "BROKER_FLUSH_BARRIER_DEADLINE");
+          flushAck = enqueue({ op: "flush" }, "flush");
+        }
+        const originalAck = flushAck; const response = await originalAck;
+        if (flushAck === originalAck) { flushAck = undefined; }
+        proofNeed(!expired && performance.now() < deadline, "BROKER_FLUSH_BARRIER_DEADLINE");
+        if (response["ok"] !== true || response["fileAndDirectorySync"] !== true) { markFailure(); return false; }
+        if (pendingBytes === 0) { return true; }
+      }
+    };
+    const originalDrain = drain();
+    flushBarrier = (async (): Promise<boolean> => {
+      try { return await bounded(originalDrain); } catch { markFailure(); return false; }
+      finally { expired = true; flushBarrier = undefined; }
+    })();
+    return flushBarrier;
   };
   let preownerAborted = false; let preownerBuffer = "";
   const abortPreowner = (): void => { preownerAborted = true; peer.closeInput(); markFailure(); };
@@ -197,7 +231,6 @@ export async function createLinuxBrokerProofEvidence(options: BrokerOptions): Pr
   const observeClose = async (): Promise<void> => { await peer.closed.promise; if (!closing) { markFailure(); } };
   const observeProtocol = async (): Promise<void> => { try { await peer.fault.promise; } catch { if (!closing) { markFailure(); peer.closeInput(); } } };
   void observeClose(); void observeProtocol();
-  const observeAppend = async (original: Promise<ProofRecord>, expectedReceived: number): Promise<void> => { try { const response = await original; const metric = proofRecord(response["journal"], "BROKER_APPEND_METRIC"); proofNeed(metric["receivedBytes"] === expectedReceived, "BROKER_APPEND_OFFSET_DIFFERS"); update(metric); if (response["ok"] !== true) { markFailure(); } } catch { markFailure(); } };
   const createJournal = (name: ProofJournalName): ProofJournal => {
     let limit = 2 * 1024 * 1024; if (name === "app-server.stdout.jsonl") { limit = 64 * 1024 * 1024; } else if (name.endsWith("stderr.log")) { limit = 4 * 1024 * 1024; }
     const state: JournalState = { name, limit, hash: createHash("sha256"), retained: [], received: 0, durable: 0, overflow: 0 }; states.set(name, state);
@@ -205,8 +238,7 @@ export async function createLinuxBrokerProofEvidence(options: BrokerOptions): Pr
       append(bytes): boolean {
         state.hash.update(bytes); if (closed || closing || bytes.length > state.limit - state.received || bytes.length > MAXIMUM_PENDING - pendingBytes) { state.overflow += bytes.length; markFailure(); return false; }
         for (let at = 0; at < bytes.length; at += CHUNK) { const copy = Buffer.from(bytes.subarray(at, at + CHUNK)); const offset = state.received; state.received += copy.length; pendingBytes += copy.length; state.retained.push({ end: state.received, bytes: copy });
-          const original = enqueue({ op: "append", journal: name, offset, bytes: copy.toString("base64") }, "append");
-          void observeAppend(original, offset + copy.length);
+          void enqueue({ op: "append", journal: name, offset, bytes: copy.toString("base64") }, "append", offset + copy.length);
         } return true;
       },
       put(value): boolean { try { return journal.append(Buffer.from(`${JSON.stringify(value)}\n`)); } catch { markFailure(); return false; } },
@@ -219,7 +251,7 @@ export async function createLinuxBrokerProofEvidence(options: BrokerOptions): Pr
   async function closeEvidence(): Promise<boolean> {
       if (closed) { return true; }
       if (closeAck === undefined) { if (!await flush()) { return false; } closing = true; closeAck = enqueue({ op: "close" }, "close-ready"); }
-      try { const response = await bounded(closeAck); if (response["ok"] !== true || response["fileAndDirectorySync"] !== true) { markFailure(); closeAck = undefined; closing = false; return false; }
+      try { const response = await bounded(closeAck); if (response["ok"] !== true || response["fileAndDirectorySync"] !== true) { closeAck = undefined; closing = false; markFailure(); return false; }
         peer.closeInput(); const result = await peer.closed.promise; closed = true; if (result.code !== 0 || result.signal !== null || !peer.protocolHealthy()) { markFailure(); } return true;
       } catch { markFailure(); if (peer.closeResult !== undefined && pendingBytes === 0) { closed = true; return true; } return false; }
   }

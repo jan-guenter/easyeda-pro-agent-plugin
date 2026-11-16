@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { createLinuxBrokerProofEvidence, linuxEvidenceBrokerProgram } from "../../scripts/fresh-cli-metadata-proof-broker.ts";
 import { parseFreshCliMetadataPlan, parseFreshCliMetadataPlanV2, previewFreshCliMetadataProof } from "../../scripts/fresh-cli-metadata-proof.ts";
-import { OwnedProofProcess } from "../../scripts/fresh-cli-metadata-proof-resources.ts";
-import type { ProofJournal } from "../../scripts/fresh-cli-metadata-proof-resources.ts";
+import { OwnedProofProcess, proofRecord } from "../../scripts/fresh-cli-metadata-proof-resources.ts";
+import type { ProofJournal, ProofRecord } from "../../scripts/fresh-cli-metadata-proof-resources.ts";
 import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 
 const NONCE = "00000000-0000-4000-8000-000000000001";
@@ -72,4 +72,73 @@ void test("accepted pre-owner abort remains sticky when the original ready ACK h
     await assert.rejects(originalSetup, /ORIGINAL_LINUX_EVIDENCE_BROKER_SETUP_FAILED/u);
     assert.ok(originalBroker !== undefined); assert.equal(originalBroker.child.stdin.writableEnded, true); assert.deepEqual(originalBroker.closeResult, { code: 1, signal: null });
   } finally { OwnedProofProcess.prototype.next = originalNext; originalBroker?.closeInput(); if (originalBroker !== undefined) { await originalBroker.closed.promise; } }
+});
+
+
+async function brokerPacket(peer: OwnedProofProcess, seq: number, packet: ProofRecord, kind: string): Promise<ProofRecord> {
+  const written = peer.sendWatcherPacket({ ...packet, seq }); await written;
+  const response = proofRecord(await peer.next(), "INERT_BROKER_RESPONSE"); assert.equal(response["seq"], seq); assert.equal(response["kind"], kind); return response;
+}
+async function oneShotFsyncBroker(root: string, target: "control" | "close-protocol"): Promise<OwnedProofProcess> {
+  const workspace = join(root, "workspace"); await mkdir(workspace);
+  const condition = target === "control" ? "fd==globals().get('control') and globals().get('op')=='read-control'" : "fd==globals().get('protocol') and globals().get('op')=='close' and sys._getframe(2).f_code.co_name=='emit'";
+  const prefix = `import os,sys
+_fixture_original_fsync=os.fsync;_fixture_failed=False
+def _fixture_fsync(fd):
+ global _fixture_failed
+ if not _fixture_failed and (${condition}):
+  _fixture_failed=True;raise OSError('INERT_ONE_SHOT_FSYNC_FAILURE')
+ return _fixture_original_fsync(fd)
+os.fsync=_fixture_fsync
+`;
+  const peer = new OwnedProofProcess("/usr/bin/python3", ["-I", "-S", "-c", prefix + linuxEvidenceBrokerProgram()], workspace, capture(), capture());
+  try { const ready = await brokerPacket(peer, 1, { schema: "easyeda-pro-control.fresh-cli-linux-evidence-broker.v1", op: "initialize", directory: join(root, "evidence"), nonce: NONCE }, "ready"); assert.equal(ready["ok"], true); return peer; }
+  catch (error) { peer.closeInput(); await peer.closed.promise; throw error; }
+}
+
+void test("negative control fsync ACK retains bytes and the original broker for evidence settlement", async () => {
+  const root = await createTestTemporaryDirectory("fresh-cli-control-sync-"); const peer = await oneShotFsyncBroker(root, "control");
+  const first = Buffer.from("original € journal\n"); const suffix = Buffer.from("retained suffix\n"); const control = Buffer.from(`${JSON.stringify({ nonce: NONCE, action: "status" })}\n`);
+  try {
+    const appended = await brokerPacket(peer, 2, { op: "append", journal: "state.jsonl", offset: 0, bytes: first.toString("base64") }, "append"); assert.equal(appended["ok"], true);
+    await appendFile(join(root, "evidence/control.jsonl"), control);
+    const negative = await brokerPacket(peer, 3, { op: "read-control" }, "control"); assert.equal(negative["ok"], false); assert.equal(negative["bytes"], control.toString("base64")); assert.equal(peer.closeResult, undefined);
+    const appendedSuffix = await brokerPacket(peer, 4, { op: "append", journal: "state.jsonl", offset: first.length, bytes: suffix.toString("base64") }, "append"); assert.equal(appendedSuffix["ok"], true);
+    const flushed = await brokerPacket(peer, 5, { op: "flush" }, "flush"); assert.equal(flushed["ok"], true);
+    const retry = await brokerPacket(peer, 6, { op: "read-control" }, "control"); assert.equal(retry["ok"], true); assert.equal(retry["bytes"], control.toString("base64"));
+    const drained = await brokerPacket(peer, 7, { op: "read-control" }, "control"); assert.equal(drained["ok"], true); assert.equal(drained["bytes"], "");
+    const closeReady = await brokerPacket(peer, 8, { op: "close" }, "close-ready"); assert.equal(closeReady["ok"], true); peer.closeInput(); assert.deepEqual(await peer.closed.promise, { code: 0, signal: null });
+    assert.deepEqual(await readFile(join(root, "evidence/state.jsonl")), Buffer.concat([first, suffix]));
+  } finally { peer.closeInput(); await peer.closed.promise; }
+});
+
+void test("a downgraded close ACK leaves Python retryable after one protocol fsync failure", async () => {
+  const root = await createTestTemporaryDirectory("fresh-cli-close-sync-"); const peer = await oneShotFsyncBroker(root, "close-protocol"); const bytes = Buffer.from("original close journal\n");
+  try {
+    const appended = await brokerPacket(peer, 2, { op: "append", journal: "state.jsonl", offset: 0, bytes: bytes.toString("base64") }, "append"); assert.equal(appended["ok"], true);
+    const flushed = await brokerPacket(peer, 3, { op: "flush" }, "flush"); assert.equal(flushed["ok"], true);
+    const negative = await brokerPacket(peer, 4, { op: "close" }, "close-ready"); assert.equal(negative["ok"], false); assert.equal(negative["protocolSyncPending"], true); assert.equal(peer.closeResult, undefined);
+    const recovered = await brokerPacket(peer, 5, { op: "flush" }, "flush"); assert.equal(recovered["ok"], true);
+    const retryClose = await brokerPacket(peer, 6, { op: "close" }, "close-ready"); assert.equal(retryClose["ok"], true); peer.closeInput(); assert.deepEqual(await peer.closed.promise, { code: 0, signal: null });
+    assert.deepEqual(await readFile(join(root, "evidence/state.jsonl")), bytes);
+  } finally { peer.closeInput(); await peer.closed.promise; }
+});
+
+void test("concurrent callers share a bounded barrier through late status appends without stale metrics", async () => {
+  const root = await createTestTemporaryDirectory("fresh-cli-late-status-"); const directory = join(root, "evidence");
+  const evidence = await createLinuxBrokerProofEvidence({ distribution: "Ubuntu-24.04", linuxEvidenceDirectory: directory, workspace: join(root, "workspace"), nonce: NONCE });
+  // oxlint-disable-next-line typescript/unbound-method -- Hold the exact original receiver-bound read at the already-received prefix ACK, then restore it.
+  const originalNext = OwnedProofProcess.prototype.next; const prefixSeen = Promise.withResolvers<null>(), releasePrefix = Promise.withResolvers<null>(); let hold = true;
+  OwnedProofProcess.prototype.next = async function next(this: OwnedProofProcess): Promise<unknown> {
+    const value = await originalNext.call(this); if (hold && value !== null && typeof value === "object" && "kind" in value && value.kind === "flush") { hold = false; prefixSeen.resolve(null); await releasePrefix.promise; } return value;
+  };
+  try {
+    const first = Buffer.from('{"stage":"initial"}\n'), late = Buffer.from('{"stage":"concurrent-status"}\n'); assert.equal(evidence.state.append(first), true);
+    const originalBarrier = evidence.flush(); const concurrentBarrier = evidence.flush(); await prefixSeen.promise; assert.equal(evidence.state.append(late), true);
+    releasePrefix.resolve(null); assert.deepEqual(await Promise.all([originalBarrier, concurrentBarrier]), [true, true]); assert.equal(evidence.failed(), false); assert.equal(evidence.hasPending(), false);
+    assert.deepEqual(await readFile(join(directory, "state.jsonl")), Buffer.concat([first, late]));
+    const protocol = await readFile(join(directory, "broker-protocol.jsonl"), "utf8"); const records: unknown[] = protocol.trim().split("\n").map((line: string): unknown => JSON.parse(line));
+    assert.equal(records.filter(value => value !== null && typeof value === "object" && "kind" in value && value.kind === "flush").length, 2);
+    assert.equal(await evidence.close(), true); assert.equal(evidence.failed(), false);
+  } finally { releasePrefix.resolve(null); OwnedProofProcess.prototype.next = originalNext; await evidence.close(); }
 });
