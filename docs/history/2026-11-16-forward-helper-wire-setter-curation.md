@@ -110,3 +110,20 @@ removed after their original test processes exited. Full logs, raw reply,
 initial failed campaign roots and terminal receipts remain private.
 Exact-head CI and CodeRabbit review are still required before merge;
 installation remains deliberately deferred across the backend/surface work.
+
+## CI classification regression dependency correction
+
+The initial helper PR head `bd12df96ca57f145969fa45b557e909dcd4710ec`
+failed facade shard 2: the existing complete-tail dispatch regression still
+expected 17 fixed complete-only actions, while the genuine complete helper
+now has 18, including its pre-Create escaped-body capacity control. The
+original full source already carried the paired regression. That complete
+file is now included with the actual helper emitter/classification change,
+without removing assertions or changing a runtime limit. The helper unit
+therefore has 64 paths; the three genuine Core-dependent files remain with
+the backend. The original failed CI log is retained privately.
+
+This correction changes only the test and this record. Runtime source,
+generated native helpers, bundle bytes and compatibility pins are unchanged.
+Exact-head CI and review are still required; the earlier local and CI
+attempts are not presented as final successful integration.
