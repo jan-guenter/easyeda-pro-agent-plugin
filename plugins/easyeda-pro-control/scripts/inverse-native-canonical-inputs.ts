@@ -56,5 +56,5 @@ ${compilerSource}
 /** Exact fork parity refuses drift in a codec or driver. A deliberate new
  * canonical source version requires its own reviewed input/output provenance. */
 export function requireCurrentInverseNativeCanonicalOutput(layout:CurrentInverseNativeCanonicalLayout,helper:string,review:string):void{
- const row=baseline(layout);exact(helper,row.originalHelper,HELPER_MAXIMUM);exact(review,row.originalReview,layout==="inverse-native-continuation.v4"?V4_REVIEW:HELPER_MAXIMUM);
+ const row=baseline(layout);exact(helper,row.outputHelper,HELPER_MAXIMUM);exact(review,row.outputReview,layout==="inverse-native-continuation.v4"?V4_REVIEW:HELPER_MAXIMUM);
 }

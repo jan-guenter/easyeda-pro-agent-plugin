@@ -15,8 +15,7 @@ import type {CurrentFootprintInverseLookupRemote as Remote} from "./current-foot
 import {requireCurrentFootprintInverseInitializedGetDescription as description} from "./current-footprint-inverse-initialized-get-source.ts";
 import type {CurrentFootprintInverseInitializedGetRole as Role} from "./current-footprint-inverse-initialized-get-source.ts";
 import {decodeCurrentFootprintInverseInitializedGetFunction as metadata} from "./current-footprint-inverse-initialized-get-replies.ts";
-import {z} from "zod";
-import {captureCurrentFootprintInversePreferenceReply as capture} from "./current-footprint-inverse-public-preferences-replies.ts";
+import {captureCurrentSchematicDisplayAccessorSource as captureSource} from "./current-schematic-display-accessor-replies.ts";
 import {requireCurrentFootprintInversePublicServiceTrue as truth} from "./current-footprint-inverse-public-service-replies.ts";
 
 interface Tuple{readonly id:string;readonly values:readonly Remote[];readonly packets:readonly unknown[]}
@@ -35,6 +34,14 @@ export interface CurrentFootprintInverseNativeReferenceNextDependencyGraph{
  readonly callbackLiveEntryProved:false;readonly bodyAuthorized:false;readonly runtimeJobIssued:false;
 }
 function need(value:boolean):asserts value{if(!value){throw new Error("INVERSE_NATIVE_NEXT_DEPENDENCIES");}}
+/** Full schematic sources bypass the ordinary metadata scalar copier. The
+ * maintained descriptor reader retains the tighter 6,472,538-byte pinned
+ * bundle envelope, rejects proxies/accessors and checks well-formed UTF-8. */
+export async function readCurrentFootprintInverseNativeReferenceNextSource(b:Pick<CurrentFootprintInverseNativeReferenceNextDependenciesBindings,"kind"|"current"|"sourceBound"|"request">,scriptId:string):Promise<string>{
+ b.current();await b.sourceBound(scriptId);b.current();
+ const raw=await b.request(validate({queryKind:b.kind,phase:"inverse-native-reference-next-dependencies-source",method:"Debugger.getScriptSource",params:{scriptId}}));b.current();
+ return captureSource(raw).scriptSource;
+}
 /** Every opaque subject receives fresh non-Proxy metadata before traversal.
  * Full SCH source is independently qualified by the shared pure collector;
  * every async helper is enclosed in this original held-native current proof. */
@@ -49,8 +56,8 @@ export async function collectCurrentFootprintInverseNativeReferenceNextDependenc
  for(const[index,role]of(["uiBusClass","uiTaskClass","uiClone","uiEnsureArray","uiEnsure","uiRemove","uiWeakRef","uiDeref"] as const).entries()){qualify(module,index,role);}
  const selected=await tuple("selected",[b.sender.roots,b.sender.context,b.sender.bus,b.sender.methods,module.id],4);qualify(selected,2,"uiBusClass");
  properties(await props(b.managerChannel));properties(await props(b.managerRegistry));
- const dispatch=await collectCurrentFootprintInverseReferenceDispatch({selected:selected.id,module:module.id,asyncPrototype:b.asyncPrototype,nativeRoots:b.nativeRoots,managerChannel:b.managerChannel,managerRegistry:b.managerRegistry,profile:"ui",uiScriptId:b.uiScriptId,managerScriptId:b.managerScriptId,current:b.current,properties:props,call,script:async(scriptId):Promise<string>=>{
-  b.current();need((sources+=1)===1);await b.sourceBound(scriptId);b.current();const raw=await send({queryKind:b.kind,phase:"inverse-native-reference-next-dependencies-source",method:"Debugger.getScriptSource",params:{scriptId}});b.current();const parsed=z.strictObject({scriptSource:z.string().max(8_388_608)}).parse(capture(raw)).scriptSource;return parsed;
+ const dispatch=await collectCurrentFootprintInverseReferenceDispatch({selected:selected.id,module:module.id,asyncPrototype:b.asyncPrototype,nativeRoots:b.nativeRoots,managerChannel:b.managerChannel,managerRegistry:b.managerRegistry,profile:"ui",uiScriptId:b.uiScriptId,managerScriptId:b.managerScriptId,current:b.current,properties:props,call,script:(scriptId):Promise<string>=>{
+  need((sources+=1)===1);return readCurrentFootprintInverseNativeReferenceNextSource({kind:b.kind,current:b.current,sourceBound:b.sourceBound,request:send},scriptId);
  }});
  need((frames+=1)===1);const fresh=result(await send({queryKind:b.kind,phase:"inverse-native-reference-next-dependencies-frame",method:"Debugger.evaluateOnCallFrame",params:{callFrameId:b.rpcFrame,expression:ENTRY,objectGroup:FLAGS.objectGroup,silent:true,generatePreview:false,throwOnSideEffect:true,returnByValue:false,includeCommandLineAPI:false}}),20);array(await props(fresh),20);
  truth(await call("join",[fresh,module.id,b.sender.prepared,b.sender.bus,b.sender.taskMethods,b.nativeRoots,b.originalFrame]));

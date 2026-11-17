@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {readFile} from "node:fs/promises";
 import {stripTypeScriptTypes} from "node:module";
-import {dirname,resolve} from "node:path";
+import {basename,dirname,resolve} from "node:path";
 import {test} from "node:test";
 import {fileURLToPath} from "node:url";
 import {parse} from "acorn";
@@ -19,12 +19,12 @@ import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_BEGIN_BOOKKEEPING as BEGIN_
 
 const hash=(source:string):string=>createHash("sha256").update(source).digest("hex");
 for(const layout of ["inverse-native-continuation.v4","inverse-native-delete-cold-ui.v1"]as const){
- void test(`independent ${layout} canonical sources reproduce exact previously proved compiler bytes`,async()=>{
+ void test(`independent ${layout} canonical sources reproduce their exact reviewed compiler bytes`,async()=>{
   const input=await readCurrentInverseNativeCanonicalInputs(layout),pin=BASELINES[layout];assert.ok(Object.isFrozen(input)&&Object.isFrozen(pin)&&Object.isFrozen(pin.owner));
   let driverReads=0,ownerReads=0;const changing={get ownerSource():string{ownerReads+=1;return ownerReads===1?input.ownerSource:"changed-after-validation";},get driverSource():string{driverReads+=1;return driverReads===1?input.driverSource:"changed-after-validation";}};
   assert.equal(hash(composeCurrentInverseNativeCanonicalSource(layout,changing)),hash(composeCurrentInverseNativeCanonicalSource(layout,input)));assert.equal(ownerReads,1);assert.equal(driverReads,1);
   const data=layout==="inverse-native-continuation.v4"?generateFootprintInverseNativeContinuationV4Source(input):generateFootprintInverseNativeDeleteColdUiSource(input);
-  assert.equal(hash(data.helper),pin.originalHelper.sha256);assert.equal(data.review,input.ownerSource);assert.equal(hash(data.compiler),layout==="inverse-native-continuation.v4"?"3999a4872ba250623992f02455212c1a0333c3df2f05b0cfb5d945b5a8c3039c":"685374ff80e5ae3191e6a504f1dbefa61ec1b0ab48c6d39e7010d4fd95e5c252");
+  assert.equal(hash(data.helper),pin.outputHelper.sha256);assert.equal(data.review,input.ownerSource);assert.equal(hash(data.compiler),layout==="inverse-native-continuation.v4"?"633d87dbef954718cec0911a2837788d56d3c1dd2d014da2d3e613b899235fef":"2d8d79ec33e2f05975fb866fec1c3e4d7096670250a6ef8551042d161c299085");
   for(const key of ["ownerSource","driverSource"]as const){assert.throws(()=>requireCurrentInverseNativeCanonicalInputs(layout,{...input,[key]:`${input[key]} `}),/INVERSE_NATIVE_CANONICAL_SOURCE/u);}
   const foreign=layout==="inverse-native-continuation.v4"?"inverse-native-delete-cold-ui.v1":"inverse-native-continuation.v4";assert.throws(()=>requireCurrentInverseNativeCanonicalInputs(foreign,input),/INVERSE_NATIVE_CANONICAL_SOURCE/u);
   assert.throws(()=>Reflect.apply(requireCurrentInverseNativeCanonicalInputs,undefined,[layout,{...input,targetPath:"not-a-build-input"}]),/INVERSE_NATIVE_CANONICAL_SOURCE/u);
@@ -48,8 +48,8 @@ void test("maintained generators and new default profile data have no legacy inv
  while(queue.length>0){const path=queue.shift();assert.ok(typeof path==="string"&&path.length>0);if(!seen.has(path)){assert.ok(seen.size<128,"new input closure unexpectedly imports an implementation registry");seen.add(path);const source=await readFile(path,"utf8");
   const dependencies=imports(parse(stripTypeScriptTypes(source,{mode:"transform"}),{ecmaVersion:"latest",sourceType:"module"}));for(const dependency of dependencies){if(dependency.startsWith(".")){queue.push(resolve(dirname(path),dependency));}}
  }}
- for(const forbidden of ["generate-worker-startup-protocol.ts","footprint-inverse-native-source.ts","current-footprint-inverse-native-profile.ts","current-footprint-inverse-native-lifecycle-profile.ts","current-footprint-inverse-native-continuation-profile.ts","current-footprint-inverse-native-continuation-v3-profile.ts","current-footprint-inverse-native-identity.ts","current-pcb-diagnostic-owner.ts","current-pcb-diagnostic-pipe.ts"]){assert.equal([...seen].some(path=>path.endsWith(`/${forbidden}`)),false,forbidden);}
- assert.ok([...seen].some(path=>path.endsWith("/inverse-native-canonical-inputs.ts")));
+ for(const forbidden of ["generate-worker-startup-protocol.ts","footprint-inverse-native-source.ts","current-footprint-inverse-native-profile.ts","current-footprint-inverse-native-lifecycle-profile.ts","current-footprint-inverse-native-continuation-profile.ts","current-footprint-inverse-native-continuation-v3-profile.ts","current-footprint-inverse-native-identity.ts","current-pcb-diagnostic-owner.ts","current-pcb-diagnostic-pipe.ts"]){assert.equal([...seen].some(path=>basename(path)===forbidden),false,forbidden);}
+ assert.ok([...seen].some(path=>basename(path)==="inverse-native-canonical-inputs.ts"));
 });
 
 void test("isolated inverse source fork admits only exact fixed Main catalogues above the shared scalar bound",()=>{

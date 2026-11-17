@@ -1,6 +1,10 @@
 /** The natural undefined-argument sync after this original upload finally.
  * It has one history request, supports2..8 heads and preserves every old
- * docs/editHead/docIds reference. No parser or application method is invoked. */
+ * docs/editHead/docIds reference and content. Every retained history head,
+ * including the old first head, must keep its exact num. Replay extensions
+ * that mutate shared editHead/docIds arrays are outside this profile; the
+ * complete old-content check deliberately refuses them.
+ * No parser or application method is invoked by these comparison programs. */
 import{CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_DRAIN_CHECK as CHECK}from"./current-footprint-inverse-native-delete-drain-programs.ts";
 import{CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_DRAIN_JSON_CHECK as JSON_CHECK}from"./current-footprint-inverse-native-delete-drain-cache-programs.ts";
 import{CURRENT_PCB_VIA_POST_HISTORY_SYNC_CALLEES as CALLEES}from"./current-pcb-via-post-history-sync-source.ts";

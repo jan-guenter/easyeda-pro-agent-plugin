@@ -106,3 +106,81 @@ review time; no external or native pin changed. A separate bounded adversarial
 review found no issues. This is source/build evidence only: no native process,
 application, connected inverse or cold-UI lifecycle was executed. No separate
 installation is planned for this foundation-only cut.
+
+## PR #223 review corrections
+
+Initial head `4d943a5bd79da35d6606609fad018ff561bbb7e1` passed all thirteen
+CI checks. CodeRabbit reported four distinct issues, presented in two review
+objects with one outside-diff comment; they are four findings, not seven.
+Its eighty-path selection explicitly excluded three oversized files: the V4
+canonical owner and its two generated native outputs. Selection is not proof
+that those files were processed, and no complete CodeRabbit review of them is
+claimed. The native correction below has separate bounded code review,
+actual-method component evidence and whole-source strict compilation.
+
+The full schematic source callback previously passed its reply through a
+65,536-code-unit metadata copier before reaching its larger source schema.
+It now uses the existing descriptor-only schematic source reader with its
+unchanged 6,472,538-byte pinned maximum. Ordinary metadata limits remain
+unchanged. The actual maintained callback boundary receives regression cases
+at both pinned full-source sizes, malformed/accessor/proxy and UTF-8 byte
+limits, and owner drift at both asynchronous boundaries. No handler or native
+callback is invoked by those inert request fixtures.
+
+The canonical-input dependency test now compares native basenames, preserving
+its negative import checks on Windows. The sync comparison's scope is explicit:
+all retained history heads, including the old first head, must retain their
+exact `num`; replay extensions that mutate shared editHead/docIds arrays remain
+unsupported. Its fixed runtime programs and complete old-content check remain
+unchanged. This follows the review's explicit restricted-profile alternative;
+no larger replay scope is implied.
+
+The same socket-reader defect existed in both new canonical owners. Each read
+now fits the remaining incoming-buffer capacity before the existing parser
+consumes frames; frame, aggregate and EOF guards remain intact. A real-loopback
+C#5 fixture executes the actual methods, reproduces the old `received-bound`
+refusal, then accepts the complete 4 MiB frame and coalesced following frame
+with the fix. An initial fixture compile missing an explicit System reference
+is retained. Both entire corrected canonical owners separately compile under
+Windows Framework C#5 with warnings as errors, System.dll and System.Core.dll;
+the resulting assemblies were never loaded and no application methods ran.
+The same compile-only check is added to Windows CI.
+
+Canonical source revision `bounded-websocket-receive.v2` keeps the original
+ancestor helper/review identities as immutable provenance and pins the amended
+owner/current output identities separately. Both maintained generators rebuild
+the six targets. V4 helper/compiler are now 1,858,684/2,436,796 bytes; cold-UI
+helper/compiler are 690,866/1,009,125 bytes, within unchanged maxima. No old shared
+or published native input changes, and earlier exact-byte compiler statements
+remain attached to their earlier payloads.
+
+All eight focused cases passed after these functional corrections. The first
+strict check then identified fourteen fixture async/empty-body diagnostics;
+those are corrected without a lint-rule relaxation. Final unchanged-payload
+checks and current-head CI/review follow. None of this proves native ownership,
+connected application behavior, saved persistence or ordinary-project support.
+
+### Final corrected local payload
+
+Both TypeScript projects, the complete build, bridge checks, API coverage,
+compatibility, repository/MCP/all-skill validation and all eight cases in the
+two whole focused files pass on the corrected payload. All three bundles
+reproduce, and all seven official quick validators pass. The 5,442-file global
+strict run reported only three further style diagnostics in the new fixture;
+that exact file was corrected and its final complete strict check reports zero
+warnings/errors. All other files remain unchanged from the global scan. The
+failed global/scoped outputs remain retained, and exact-final CI still runs
+full global lint. No rule was relaxed. A first reproducibility runner named a
+nonexistent npm script and stopped before rebuilding; the actual maintained
+server/manager builders subsequently reproduced the unchanged bundles.
+
+The final package contains 5,758 files and 118,982,029 bytes, with file/mode
+manifest SHA-256
+`cc6e73b782d3cff5933b27b6640c5cd89966eab9cefc678fc0e98c2b0511924c`.
+Compatibility changes remain limited to facade projections and review time.
+The new CI block parses under Windows PowerShell 5.1; its separate whole-owner
+strict compilation evidence is recorded above. Independent review of all four
+corrections found no remaining issue, including the final clarification that
+only the ancestor seed remains unchanged while output identities advance.
+Current-head CI and CodeRabbit review remain required before merge. Installation
+continues to be deferred until the genuine runtime integration is ready.

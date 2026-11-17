@@ -1569,7 +1569,7 @@ Need(requests<normalLimit+cleanupLimit&&(cleanup?cleanupRequests<cleanupLimit:no
 }
 internal string Poll(bool cleanup){
 Budget(cleanup);AssertConnection();Need(++polls<=(cleanup?24000:21000),"poll-budget");string ready=ReadFrame();if(ready!=null){AssertConnection();return ready;}
-if(!socket.Poll(0,System.Net.Sockets.SelectMode.SelectRead))return null;byte[] bytes=new byte[65536];int read=socket.Receive(bytes);Need(read>0,"socket-eof");totalReceived+=read;Need(totalReceived<=33554432L&&incoming.Count+read<=4194304+14,"received-bound");
+if(!socket.Poll(0,System.Net.Sockets.SelectMode.SelectRead))return null;int capacity=4194304+14-incoming.Count;Need(capacity>0,"received-bound");byte[] bytes=new byte[System.Math.Min(65536,capacity)];int read=socket.Receive(bytes);Need(read>0,"socket-eof");totalReceived+=read;Need(totalReceived<=33554432L&&incoming.Count+read<=4194304+14,"received-bound");
 for(int i=0;i<read;i++)incoming.Add(bytes[i]);ready=ReadFrame();AssertConnection();return ready;
 }
 string ReadFrame(){

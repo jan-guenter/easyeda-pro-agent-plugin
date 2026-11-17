@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "28588a23ebae6547295e76c2e65e06db1758cdeabf5f8c13fb798ccfdc2ea11f",
+      "sha256": "5ed9d403ac6e06f80393258ccc98914cb6f4473ff292f66c449965a2f13de6e9",
       "fileCount": 3173,
       "files": [
         {
@@ -3734,7 +3734,7 @@
         {
           "relativePath": "current-footprint-inverse-native-continuation-v4-identity.ts",
           "bytes": 1293,
-          "sha256": "0055b319e0cad88089d6857e9a1f0a7eaec7930238c8ebbfa6066448d521c01c"
+          "sha256": "0163ee29aba0f082bb9ba35e297750a191babc9f205aa682807c48edd26ea4c6"
         },
         {
           "relativePath": "current-footprint-inverse-native-continuation-v4-profile.ts",
@@ -3929,7 +3929,7 @@
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-ui-helper-identity.ts",
           "bytes": 739,
-          "sha256": "dce6c8d51968cdeea10ef48380bd782855c194fb0a876b45b6d17feef30dfe0c"
+          "sha256": "a0559a49e4de0bfc7d013d624929ab407ad8c46bab78a1c5506340d892dd665a"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-ui-helper-profile.ts",
@@ -4023,8 +4023,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-drain-sync-programs.ts",
-          "bytes": 8912,
-          "sha256": "3491056c5a8078bf9c3cbf0757ac4b7dfd391843c5bd72f69b09f404fb8e31ee"
+          "bytes": 9193,
+          "sha256": "95b24d09acc1c7b756de9f5ea4c550b1afabecf99cc028b61161a413db87c0ba"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-execution-accept-collector.ts",
@@ -5003,8 +5003,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-dependencies-collector.ts",
-          "bytes": 9412,
-          "sha256": "d2748f6a8e2524169fe8b864b389510c0d587938fafee830760f9cfa6f52a565"
+          "bytes": 9914,
+          "sha256": "2cf1da68ecf2ebe59632fe0e89b2abeed77ccfedff569e9780ef600fe3f9c52f"
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-dependencies-native.ts",
@@ -15898,7 +15898,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-17T05:50:43.352Z",
+  "reviewedAt": "2026-11-17T06:41:35.312Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {
