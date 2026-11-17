@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { CurrentFootprintForwardWriterCoordinator } from "./current-footprint-forward-writer-coordinator.ts";
+import { CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL, currentFootprintForwardWriterControlActionSchema, currentFootprintForwardWriterControlResultSchema } from "./current-footprint-forward-writer-control-contract.ts";
 import { CurrentPcbViaWriteCoordinator } from "./current-pcb-via-write-coordinator.ts";
 import { CurrentSchematicRelevanceDisplayWriteCoordinator } from "./current-schematic-relevance-display-write-coordinator.ts";
 import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL, currentSchematicRelevanceDisplayWriteActionSchema, currentSchematicRelevanceDisplayWriteResultSchema } from "./current-schematic-relevance-display-write-contract.ts";
@@ -329,6 +331,7 @@ let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefin
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
 let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
 let currentPcbViaWriteCoordinator: CurrentPcbViaWriteCoordinator | undefined;
+let currentFootprintForwardWriterCoordinator:CurrentFootprintForwardWriterCoordinator|undefined;
 let currentSchematicRelevanceDisplayWriteCoordinator: CurrentSchematicRelevanceDisplayWriteCoordinator | undefined;
 let scheduledShutdown: Promise<void> | undefined;
 let assertUnusedForwardSourceHistoricalRetirement: (() => void) | undefined;
@@ -362,6 +365,17 @@ function assertViaWriteMethods(owner: CurrentPcbViaWriteCoordinator): void {
     CurrentPcbViaWriteCoordinator.prototype.hasActiveReservation !== viaWriteMethods.active || CurrentPcbViaWriteCoordinator.prototype.shutdownOriginal !== viaWriteMethods.shutdown || CurrentPcbViaWriteCoordinator.prototype.diagnostic !== viaWriteMethods.diagnostic || Object.getOwnPropertyDescriptor(CurrentPcbViaWriteCoordinator.prototype,"mainFailure")?.value!==viaWriteMethods.mainFailure) {
     throw new Error("Original disposable Via coordinator methods changed.");
   }
+}
+/* oxlint-disable typescript/unbound-method -- Captured methods are called only on the same retained private-field coordinator. */
+const footprintForwardMethods=Object.freeze({run:CurrentFootprintForwardWriterCoordinator.prototype.run,inspect:CurrentFootprintForwardWriterCoordinator.prototype.inspect,active:CurrentFootprintForwardWriterCoordinator.prototype.hasActiveReservation,shutdown:CurrentFootprintForwardWriterCoordinator.prototype.shutdownOriginal});
+/* oxlint-enable typescript/unbound-method */
+function assertFootprintForwardMethods(owner:CurrentFootprintForwardWriterCoordinator):void{
+ if(Object.getPrototypeOf(owner)!==CurrentFootprintForwardWriterCoordinator.prototype||Reflect.ownKeys(owner).length > 0||!Object.isFrozen(owner)||
+  CurrentFootprintForwardWriterCoordinator.prototype.run!==footprintForwardMethods.run||CurrentFootprintForwardWriterCoordinator.prototype.inspect!==footprintForwardMethods.inspect||
+  CurrentFootprintForwardWriterCoordinator.prototype.hasActiveReservation!==footprintForwardMethods.active||CurrentFootprintForwardWriterCoordinator.prototype.shutdownOriginal!==footprintForwardMethods.shutdown){throw new Error("Original complete footprint coordinator changed.");}
+}
+function hasFootprintForwardWriteCustody():boolean{
+ const owner=currentFootprintForwardWriterCoordinator;if(owner===undefined){return false;}assertFootprintForwardMethods(owner);return footprintForwardMethods.active.call(owner);
 }
 function hasViaWriteCustody(): boolean {
   const owner = currentPcbViaWriteCoordinator; if (owner === undefined) { return false; }
@@ -404,13 +418,14 @@ const projectOpenExecutor = new ProjectOpenExecutor(engine);
 const bridgeGate = new SerializedGate();
 /** Recheck exclusive data custody after entering the original serialized gate.
  * A call queued before that reservation must not enter a competing workflow. */
-function runFacadeGate<T>(task: () => Promise<T>, allowClosedGeneratedDataCustody = false, allowViaWriteCustody = false, allowSchematicDisplayWriteCustody = false): Promise<T> {
+function runFacadeGate<T>(task: () => Promise<T>, allowClosedGeneratedDataCustody = false, allowViaWriteCustody = false, allowSchematicDisplayWriteCustody = false, allowFootprintForwardWriteCustody=false): Promise<T> {
   return bridgeGate.run(() => {
     if (!allowClosedGeneratedDataCustody && hasClosedGeneratedDataCustody()) {
       throw new Error("The original closed generated-data owner reserves this serialized workflow.");
     }
     if (!allowViaWriteCustody && hasViaWriteCustody()) { throw new Error("Use the original disposable Via controller while its preparation, native work or cleanup is pending."); }
     if (!allowSchematicDisplayWriteCustody && hasSchematicDisplayWriteCustody()) { throw new Error("Use the original schematic display controller while its preparation, native work or cleanup is pending."); }
+    if(!allowFootprintForwardWriteCustody&&hasFootprintForwardWriteCustody()){throw new Error("Use the original complete footprint controller while its work or cleanup is pending.");}
     return task();
   });
 }
@@ -467,7 +482,7 @@ const closedSymbolUnreservedFailure: { observed: boolean; original: unknown } = 
 /** Retirement requires each original native workflow to have completed its
  * own cleanup. It never releases, adopts or terminates a native owner. */
 function assertSessionRetirementNativeOwnersSettled(): void {
-  if (scheduledShutdown !== undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || hasViaWriteCustody() || hasSchematicDisplayWriteCustody() || hasClosedGeneratedDataCustody() || hasFixtureImportCustody() || hasGeneratedSchematicCustody() ||
+  if (scheduledShutdown !== undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || hasFootprintForwardWriteCustody() || hasViaWriteCustody() || hasSchematicDisplayWriteCustody() || hasClosedGeneratedDataCustody() || hasFixtureImportCustody() || hasGeneratedSchematicCustody() ||
       closedSymbolIndexReservation !== undefined && closedSymbolIndexReservation.entry?.isRuntimeDisposed() !== true || closedSymbolUnreservedFailure.observed ||
       currentDisposableOpenCoordinator !== undefined && !currentDisposableOpenCoordinator.isRuntimeDisposed() ||
       currentPcbRenameOperationCoordinator !== undefined && !currentPcbRenameOperationCoordinator.isRuntimeDisposed() ||
@@ -575,6 +590,7 @@ function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: 
 /** Reserve ordinary startup against every active diagnostic purpose and consumed
  * closed-symbol attempt. Read-only diagnostics still own their app allocation. */
 function assertOrdinaryRuntimeAllocationAllowed(): void {
+  if(hasFootprintForwardWriteCustody()){throw new Error("The original complete footprint workflow reserves native startup.");}
   if (hasViaWriteCustody()) { throw new Error("The original disposable Via workflow reserves native startup."); }
   if (hasSchematicDisplayWriteCustody()) { throw new Error("The original disposable schematic display workflow reserves native startup."); }
   if (stagedComponentOpeningSource !== undefined) { throw new Error("Staged Component data requires its dedicated native reader birth."); }
@@ -1316,6 +1332,7 @@ function guarded<Input>(
   allowClosedGeneratedDataCustody = false,
   allowViaWriteCustody = false,
   allowSchematicDisplayWriteCustody = false,
+  allowFootprintForwardWriteCustody = false,
 ): (input: Input) => Promise<CallToolResult> {
   return async (input: Input): Promise<CallToolResult> => {
     try {
@@ -1324,6 +1341,7 @@ function guarded<Input>(
       }
       if (!allowViaWriteCustody && hasViaWriteCustody()) { throw new Error("Use the original disposable Via tool to inspect or finish its pending resources."); }
       if (!allowSchematicDisplayWriteCustody && hasSchematicDisplayWriteCustody()) { throw new Error("Use the original schematic display tool to inspect or finish its pending resources."); }
+      if(!allowFootprintForwardWriteCustody&&hasFootprintForwardWriteCustody()){throw new Error("Use the original complete footprint tool to inspect or finish its pending resources.");}
       return success(await handler(input));
     } catch (error) {
       let diagnostics: ReturnType<UpstreamEasyedaClient["processDiagnostics"]>;
@@ -2213,6 +2231,7 @@ const artifactReadSuccessOutputSchema = z
   .strict();
 const currentSymbolOperationToolOutputSchema = z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).strict();
 const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
+  [CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL]:z.object({result:currentFootprintForwardWriterControlResultSchema.optional(),...optionalFailureOutputShape}).strict(),
   [CURRENT_PCB_VIA_WRITE_TOOL]: z.object({ result: currentPcbViaWriteResultSchema.optional(), diagnostic: currentPcbViaWriteDiagnosticSchema.optional(),mainFailure:currentPcbViaWriteMainFailureSchema.nullable().optional(), ...optionalFailureOutputShape }).strict(),
   [CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL]: z.object({ result: currentSchematicRelevanceDisplayWriteResultSchema.optional(), diagnostic: currentSchematicRelevanceDisplayWriteDiagnosticSchema.optional(), ...optionalFailureOutputShape }).strict(),
   easyeda_control_validate_closed_symbol: closedSymbolDisposableOutputSchema,
@@ -2441,7 +2460,7 @@ registerFacadeTool(
       }
       return queryOfflineApi(request);
     }
-    if (hasViaWriteCustody() || hasSchematicDisplayWriteCustody()) {
+    if (hasFootprintForwardWriteCustody() || hasViaWriteCustody() || hasSchematicDisplayWriteCustody()) {
       if (request.action === "project-symbol-prepare" || request.action === "baseline-analyze") {
         throw new Error("The original disposable writer reserves native and managed-file work; source/reference queries remain available.");
       }
@@ -3279,7 +3298,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         if (windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || ordinaryLaunchCoordinator !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
-            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || resettableDiagnosticOwnerAllocated || original !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentFootprintForwardWriterCoordinator!==undefined || resettableDiagnosticOwnerAllocated || original !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
             currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined || currentFootprintForwardSourceValidation !== undefined ||
             currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
             mainOriginal !== undefined || startupOriginal !== undefined || startupCalls !== 0 || fixtureImportCoordinator !== undefined || hasFixtureImportCustody() ||
@@ -3347,7 +3366,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         if (windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || ordinaryLaunchCoordinator !== undefined ||
             closedGeneratedDataCoordinator !== undefined || closedGeneratedDataAllocation !== undefined || currentPcbViaWriteCoordinator !== undefined || currentSchematicRelevanceDisplayWriteCoordinator !== undefined || currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
-            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || resettableDiagnosticOwnerAllocated || original !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentFootprintForwardWriterCoordinator!==undefined || resettableDiagnosticOwnerAllocated || original !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
             currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined || currentFootprintForwardSourceValidation !== undefined ||
             currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
             mainOriginal !== undefined || startupOriginal !== undefined || startupCalls !== 0 || fixtureImportCoordinator !== undefined || hasFixtureImportCustody() ||
@@ -3493,7 +3512,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
             currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined || currentFootprintForwardSourceValidation !== undefined ||
             currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
-            resettableDiagnosticOwnerAllocated || heldCacheOriginal !== undefined || headAgeOriginal !== undefined ||
+            currentFootprintForwardWriterCoordinator!==undefined || resettableDiagnosticOwnerAllocated || heldCacheOriginal !== undefined || headAgeOriginal !== undefined ||
             heldCacheCalls !== 0 || headAgeCalls !== 0 || combinedHistoricalOriginal !== undefined ||
             mainOriginal !== undefined || startupOriginal !== undefined || startupCalls !== 0) {
           throw new Error("Forward opening historical relinquishment requires a fresh facade with no application-owner allocation or reservation.");
@@ -3573,7 +3592,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
             currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined || currentFootprintHeldCacheValidation !== undefined || currentFootprintHeadAgeValidation !== undefined || currentFootprintForwardSourceValidation !== undefined ||
             currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
-            resettableDiagnosticOwnerAllocated || heldCacheOriginal !== undefined || headAgeOriginal !== undefined ||
+            currentFootprintForwardWriterCoordinator!==undefined || resettableDiagnosticOwnerAllocated || heldCacheOriginal !== undefined || headAgeOriginal !== undefined ||
             heldCacheCalls !== 0 || headAgeCalls !== 0 || combinedHistoricalOriginal !== undefined ||
             mainOriginal !== undefined || startupOriginal !== undefined || startupCalls !== 0) {
           throw new Error("Forward source historical relinquishment requires a fresh facade with no application-owner allocation or reservation.");
@@ -5578,8 +5597,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_project_schematic_rename")
 /** This data route starts with a fresh facade. A released data coordinator may
  * retain inspection metadata, but no application allocation can overlap its
  * fresh file/proof-helper reservation. */
-function assertFreshClosedGeneratedDataEnvironment(originalVia?: CurrentPcbViaWriteCoordinator, originalSchematicDisplay?: CurrentSchematicRelevanceDisplayWriteCoordinator): void {
-  if (scheduledShutdown !== undefined || currentPcbViaWriteCoordinator !== undefined && currentPcbViaWriteCoordinator !== originalVia ||
+function assertFreshClosedGeneratedDataEnvironment(originalVia?: CurrentPcbViaWriteCoordinator, originalSchematicDisplay?: CurrentSchematicRelevanceDisplayWriteCoordinator,originalFootprint?:CurrentFootprintForwardWriterCoordinator): void {
+  if (scheduledShutdown !== undefined || currentFootprintForwardWriterCoordinator!==undefined&&currentFootprintForwardWriterCoordinator!==originalFootprint || currentPcbViaWriteCoordinator !== undefined && currentPcbViaWriteCoordinator !== originalVia ||
     currentSchematicRelevanceDisplayWriteCoordinator !== undefined && currentSchematicRelevanceDisplayWriteCoordinator !== originalSchematicDisplay || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || ordinaryLaunchCoordinator !== undefined ||
     fixtureImportCoordinator !== undefined || stagedFixtureOpeningSource !== undefined || stagedSchematicOpeningSource !== undefined || stagedComponentOpeningSource !== undefined ||
     generatedSchematicOpening !== undefined || generatedSchematicAllocation !== undefined || closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed ||
@@ -5592,6 +5611,49 @@ function assertFreshClosedGeneratedDataEnvironment(originalVia?: CurrentPcbViaWr
 
 // The finite controller is registered only when its reviewed mode explicitly
 // Admits the route. Its private implementation grants no discovery-only enable.
+if(facadeMode==="public-utilities-only"&&facadeToolRegistered(facadeMode,CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL)){
+ registerFacadeTool(CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL,{
+  title:"Copy one footprint in an exact controlled disposable project",
+  description:"Validation only; connected and ordinary-project support remain unclaimed. Prepare one exact explicitly disposable target and source digest with its footprint UUID. Execute confirms one original copy-triggered persistence path with no explicit Save. The original controller retains source/startup/clock/Main/producer work, independent closed SQL and a separate fresh held cold reader. Execute and cleanup return promptly; inspect and settle-publication use only that same retained operation. Cleanup targets only its original Jobs. No caller code, callbacks, owners, binding reconstruction, future UUID, native command, replay, general SDK writer or inverse.",
+  inputSchema:{request:currentFootprintForwardWriterControlActionSchema},
+  annotations:{readOnlyHint:false,destructiveHint:true,idempotentHint:false,openWorldHint:false},
+ },guarded(({request})=>{
+  const run=async():Promise<{result:z.infer<typeof currentFootprintForwardWriterControlResultSchema>}>=>{
+   if(currentFootprintForwardWriterCoordinator===undefined){
+    if(request.action!=="prepare"){throw new Error("Footprint forward actions require this facade's retained original preparation.");}
+    assertFreshClosedGeneratedDataEnvironment();
+    const environment=process.env,originalEngine=engine,originalGate=bridgeGate,originalUpstream=upstream;
+    const assetsRoot=environment["EASYEDA_ASSETS_ROOT"],distribution=environment["WSL_DISTRO_NAME"];
+    const authority=disposableOwnData(engine,"executionAuthorityValidator"),fingerprint=disposableOwnData(engine,"controlFingerprintPromise");
+    const controlPath=retainedControlRoot.path,pluginRoot=resolve(import.meta.dirname,"../..");
+    if(assetsRoot===undefined){throw new Error("Configure the pinned installation before controlled footprint preparation.");}
+    // oxlint-disable-next-line eslint/prefer-const -- The constructor invokes this identity guard before the original owner is assigned.
+    let originalOwner:CurrentFootprintForwardWriterCoordinator|undefined;
+    const assertLocal=():void=>{
+     if(engine!==originalEngine||bridgeGate!==originalGate||upstream!==originalUpstream||disposableOwnData(engine,"upstream")!==originalUpstream||
+      disposableOwnData(engine,"executionAuthorityValidator")!==authority||disposableOwnData(engine,"controlFingerprintPromise")!==fingerprint||
+      process.env!==environment||environment["EASYEDA_ASSETS_ROOT"]!==assetsRoot||environment["WSL_DISTRO_NAME"]!==distribution||
+      retainedControlRoot.path!==controlPath||controlDataDirectory()!==controlPath||resolve(import.meta.dirname,"../..")!==pluginRoot||
+      currentFootprintForwardWriterCoordinator!==originalOwner){throw new Error("Original controlled footprint facade/source configuration changed.");}
+     if(originalOwner!==undefined){assertFootprintForwardMethods(originalOwner);}
+    };
+    const assertAllowed=async():Promise<void>=>{
+     assertLocal();assertFreshClosedGeneratedDataEnvironment(undefined,undefined,originalOwner);await engine.assertDiagnosticLaunchOtherOperationsSettled();assertLocal();assertFreshClosedGeneratedDataEnvironment(undefined,undefined,originalOwner);
+     await assertNoUnresolvedOrdinaryLaunches();assertLocal();assertFreshClosedGeneratedDataEnvironment(undefined,undefined,originalOwner);
+    };
+    await assertAllowed();assertLocal();
+    const owner=new CurrentFootprintForwardWriterCoordinator(Object.freeze({pluginRoot,assetsRoot,powershellSha256:CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256,powershellBytes:CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes,
+     ...(distribution===undefined?{}:{wslDistribution:distribution}),assertLocalAllowed:assertLocal,assertAllowed,assertOtherLaunchesSettled:assertAllowed}),request);
+    originalOwner=owner;currentFootprintForwardWriterCoordinator=owner;assertLocal();
+   }
+   const owner=currentFootprintForwardWriterCoordinator;assertFootprintForwardMethods(owner);
+   const result=await footprintForwardMethods.run.call(owner,request);assertFootprintForwardMethods(owner);
+   if(currentFootprintForwardWriterCoordinator!==owner){throw new Error("Original controlled footprint coordinator changed during its action.");}return {result};
+  };
+  return request.action==="prepare"||request.action==="execute"?runFacadeGate(run,false,false,false,true):run();
+ },undefined,false,false,false,true));
+}
+
 if (facadeMode === "public-utilities-only" && facadeToolRegistered(facadeMode, CURRENT_PCB_VIA_WRITE_TOOL)) {
   registerFacadeTool(CURRENT_PCB_VIA_WRITE_TOOL, {
     title: "Write one Via in an original disposable PCB fixture",
@@ -5837,6 +5899,11 @@ const transport = new StdioServerTransport();
 const shutdown = createSerializedShutdown(
   server,
   [upstream, { close: async (): Promise<void> => { await windowsRuntime?.release(); } },
+    {close:async():Promise<void>=>{
+      const owner=currentFootprintForwardWriterCoordinator;if(owner===undefined){return;}
+      assertFootprintForwardMethods(owner);await footprintForwardMethods.shutdown.call(owner);assertFootprintForwardMethods(owner);
+      if(currentFootprintForwardWriterCoordinator!==owner||footprintForwardMethods.active.call(owner)){throw new Error("Original complete footprint cleanup remains pending during shutdown.");}
+    }},
     { close: async (): Promise<void> => {
       const owner = currentPcbViaWriteCoordinator; if (owner === undefined) { return; }
       assertViaWriteMethods(owner); await viaWriteMethods.shutdown.call(owner); assertViaWriteMethods(owner);

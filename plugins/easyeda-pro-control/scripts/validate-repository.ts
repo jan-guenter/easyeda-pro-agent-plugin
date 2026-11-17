@@ -205,6 +205,7 @@ const required = [
   "scripts/footprint-forward-cold-execution/native-core.cs",
   "scripts/footprint-forward-cold-execution/native-phase.cs",
   "scripts/footprint-forward-cold-execution-smoke.ps1",
+  "scripts/control-session-footprint-forward-writer-adapter.ts",
   "scripts/generate-footprint-forward-writer-native.ts",
   "scripts/generate-footprint-forward-writer-complete-native.ts",
   "scripts/footprint-forward-writer-smoke.ps1",

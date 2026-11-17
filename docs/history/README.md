@@ -1348,4 +1348,8 @@ layout. The connected ledger retains its generation and case anchors.
 
 - [Reviewed Wire setter delivery composition](2026-11-16-wire-setter-review-composition.md).
 
+- [Controlled disposable footprint forward source mount — 2026-11-16](2026-11-16-through-2026-11-17-controlled-footprint-forward-source-mount.md)
+
+- [Original Wire callback exit and real runner to held first tick](2026-11-16-through-2026-11-17-wire-real-runner-first-tick.md)
+
 - [2026-11-16 through 2026-11-17: genuine forward backend, retained validation and public review](2026-11-16-through-2026-11-17-genuine-forward-backend.md).
