@@ -12,7 +12,8 @@ import {canonicalJson} from "../src/core.ts";
 import {currentFootprintCopyNativeCreateCommand as command,currentFootprintCopyNativeCreateWire as wire} from "../src/current-footprint-copy-native-create-wire.ts";
 import {requireOriginalCurrentFootprintForwardWriterMainRequestReservationCopy} from "../src/current-footprint-forward-writer-main-request-plan.ts";
 import {deriveCurrentFootprintForwardWriterCompleteCapacity as deriveCapacity,requirePrecreateCurrentFootprintForwardWriterCompleteCapacity as requirePrecreate} from "../src/current-footprint-forward-writer-complete-capacity.ts";
-import {completeCapacityFixture} from "./helpers/footprint-forward-complete-capacity-fixture.ts";
+import {completeCapacityPublicationFixture} from "./helpers/footprint-forward-complete-capacity-fixture.ts";
+import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAssets} from "./helpers/installed-easyeda-source.ts";
 
 interface Attempt{dispatch:Promise<object>;join:Promise<string>|null;failed:boolean;failure:unknown}
 interface Fixture{
@@ -20,10 +21,10 @@ interface Fixture{
  origin:object;intent:object;pending:object;request:object;fs:PromiseWithResolvers<unknown>;result:PromiseWithResolvers<string>;attempt:()=>Attempt|undefined;
  state:{dispatchCalls:number;writes:number;joins:number;proofs:number;fence:boolean;whole:boolean;failAck:boolean;tail:boolean};
 }
-async function fixture():Promise<Fixture>{
+async function fixture(worker:string):Promise<Fixture>{
  const source=await readFile(new URL("../src/current-pcb-diagnostic-owner.ts",import.meta.url),"utf8");const a=source.indexOf("  /** Same original complete route only;"),b=source.indexOf("  #endFootprintForwardWriterClock()",a);assert.ok(a>0&&b>a);
  const methods=source.slice(a,b).replaceAll("#","_").replace("_reproveForwardWriterCreateAtWrite","reproveForTest");
- const f=await completeCapacityFixture();const copy=requireOriginalCurrentFootprintForwardWriterMainRequestReservationCopy(f.reservation);const capacity=deriveCapacity(f.reservation,f.input,f.flow,f.publication);
+ const f=await completeCapacityPublicationFixture(worker);const copy=requireOriginalCurrentFootprintForwardWriterMainRequestReservationCopy(f.reservation);const capacity=deriveCapacity(f.reservation,f.input,f.flow,f.publication);
  const coldCapacity=deriveCurrentFootprintForwardWriterColdCapacity(capacity,copy);
  const env={coldCapacity,requireCold:requireOriginalCurrentFootprintForwardWriterColdCapacity,canonicalJson,command,wire,copy,capacity,input:f.input,flow:f.flow,maximum:f.publication,reservation:f.reservation,requirePrecreate};
  const prelude=String.raw`
@@ -76,17 +77,26 @@ class ActualCoreCreateFixture{
 async function handled(pending:Promise<unknown>):Promise<void>{try{await pending;}catch{
  // The exact same failure remains available to the test assertions.
 }}
-void test("Core retains the sole original dispatch while filesystem reproof blocks, then joins only its actual pending token",async()=>{
- const f=await fixture();const dispatch=f.owner.dispatchFootprintForwardWriterCreate(f.origin,f.intent);void handled(dispatch);assert.equal(f.attempt()?.dispatch,dispatch);await nextTurn();assert.equal(f.state.proofs,1);assert.equal(f.state.writes,0);await assert.rejects(f.owner.reproveForTest(f.request),/WRITE_ONCE/u);
+void test("Core retains the sole original dispatch while filesystem reproof blocks, then joins only its actual pending token",async context=>{
+ const assets=await readConfiguredEasyedaAssets(["pro-mgr/3.2.185.bf63a159/js/project-worker.js"]);
+ if(assets===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
+ const [worker]=assets;assert.ok(worker!==undefined);
+ const f=await fixture(worker);const dispatch=f.owner.dispatchFootprintForwardWriterCreate(f.origin,f.intent);void handled(dispatch);assert.equal(f.attempt()?.dispatch,dispatch);await nextTurn();assert.equal(f.state.proofs,1);assert.equal(f.state.writes,0);await assert.rejects(f.owner.reproveForTest(f.request),/WRITE_ONCE/u);
  f.fs.resolve(null);const pending=await dispatch;assert.equal(pending,f.pending);assert.equal(f.state.writes,1);await assert.rejects(f.owner.dispatchFootprintForwardWriterCreate(f.origin,f.intent),/CONSUMED_OR_WHOLE/u);
  await assert.rejects(f.owner.joinFootprintForwardWriterCreate(f.origin,{...pending}),/ORIGINAL_PENDING/u);f.state.fence=false;f.state.tail=true;
  const joined=f.owner.joinFootprintForwardWriterCreate(f.origin,pending);assert.equal(f.attempt()?.join,joined);await nextTurn();assert.equal(f.state.joins,1);f.result.resolve('{"inert":true}');assert.equal(await joined,'{"inert":true}');assert.equal(f.state.proofs,1);
 });
-void test("lost native ACK and raw null/undefined filesystem failures never restore the original dispatch",async()=>{
- const lost=await fixture();lost.state.failAck=true;lost.fs.resolve(null);await assert.rejects(lost.owner.dispatchFootprintForwardWriterCreate(lost.origin,lost.intent),/inert-native-ack-lost/u);assert.equal(lost.state.writes,1);await assert.rejects(lost.owner.dispatchFootprintForwardWriterCreate(lost.origin,lost.intent),/CONSUMED_OR_WHOLE/u);assert.equal(lost.state.dispatchCalls,1);
- for(const cause of[null,undefined]){const f=await fixture();const pending=f.owner.dispatchFootprintForwardWriterCreate(f.origin,f.intent);void handled(pending);await nextTurn();f.fs.reject(cause);await assert.rejects(pending,error=>error===cause);assert.equal(f.attempt()?.failed,true);assert.equal(f.attempt()?.failure,cause);assert.equal(f.state.writes,0);}
+void test("lost native ACK and raw null/undefined filesystem failures never restore the original dispatch",async context=>{
+ const assets=await readConfiguredEasyedaAssets(["pro-mgr/3.2.185.bf63a159/js/project-worker.js"]);
+ if(assets===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
+ const [worker]=assets;assert.ok(worker!==undefined);
+ const lost=await fixture(worker);lost.state.failAck=true;lost.fs.resolve(null);await assert.rejects(lost.owner.dispatchFootprintForwardWriterCreate(lost.origin,lost.intent),/inert-native-ack-lost/u);assert.equal(lost.state.writes,1);await assert.rejects(lost.owner.dispatchFootprintForwardWriterCreate(lost.origin,lost.intent),/CONSUMED_OR_WHOLE/u);assert.equal(lost.state.dispatchCalls,1);
+ for(const cause of[null,undefined]){const f=await fixture(worker);const pending=f.owner.dispatchFootprintForwardWriterCreate(f.origin,f.intent);void handled(pending);await nextTurn();f.fs.reject(cause);await assert.rejects(pending,error=>error===cause);assert.equal(f.attempt()?.failed,true);assert.equal(f.attempt()?.failure,cause);assert.equal(f.state.writes,0);}
 });
-void test("missing whole reservation and a replaced prewrite users fence refuse before native write",async()=>{
- const whole=await fixture();whole.state.whole=false;await assert.rejects(whole.owner.dispatchFootprintForwardWriterCreate(whole.origin,whole.intent),/WHOLE_RESERVATION/u);assert.equal(whole.state.dispatchCalls,0);
- const changed=await fixture();const pending=changed.owner.dispatchFootprintForwardWriterCreate(changed.origin,changed.intent);void handled(pending);await nextTurn();changed.state.fence=false;changed.fs.resolve(null);await assert.rejects(pending,/inert-original-fence-ended/u);assert.equal(changed.state.writes,0);
+void test("missing whole reservation and a replaced prewrite users fence refuse before native write",async context=>{
+ const assets=await readConfiguredEasyedaAssets(["pro-mgr/3.2.185.bf63a159/js/project-worker.js"]);
+ if(assets===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
+ const [worker]=assets;assert.ok(worker!==undefined);
+ const whole=await fixture(worker);whole.state.whole=false;await assert.rejects(whole.owner.dispatchFootprintForwardWriterCreate(whole.origin,whole.intent),/WHOLE_RESERVATION/u);assert.equal(whole.state.dispatchCalls,0);
+ const changed=await fixture(worker);const pending=changed.owner.dispatchFootprintForwardWriterCreate(changed.origin,changed.intent);void handled(pending);await nextTurn();changed.state.fence=false;changed.fs.resolve(null);await assert.rejects(pending,/inert-original-fence-ended/u);assert.equal(changed.state.writes,0);
 });

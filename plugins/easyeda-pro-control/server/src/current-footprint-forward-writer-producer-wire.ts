@@ -7,6 +7,7 @@ import { validateCurrentProjectSaveProducerGuardCommand } from "./current-projec
 import type { CurrentProjectSaveProducerCommand } from "./current-project-save-producer-protocol.ts";
 import type { CurrentProjectSaveProducerGuardCommand } from "./current-project-save-producer-guard-protocol.ts";
 import { currentFootprintForwardWriterProfile } from "./current-footprint-forward-writer-profile.ts";
+import { currentFootprintForwardWriterCompleteProfile } from "./current-footprint-forward-writer-complete-profile.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { currentFootprintInverseInitialCacheTemplate } from "./current-footprint-inverse-initial-cache-wire.ts";
@@ -21,11 +22,11 @@ import { z } from "zod";
 
 export type CurrentFootprintForwardWriterProducerChannelCommand = (CurrentProjectSaveProducerCommand | CurrentProjectSaveProducerGuardCommand | CurrentFootprintInverseInitialCacheCommand | CurrentFootprintInverseInitialSyncCommand | CurrentFootprintForwardWriterFrontierChannelCommand) & Readonly<{ sessionId: string }>;
 /** Project only an original fixed producer command into the new native action. */
-export function currentFootprintForwardWriterProducerWire(input: unknown, id: number, sessionId: string): Readonly<{
+export function currentFootprintForwardWriterProducerWire(input: unknown, id: number, sessionId: string, requestLimit=currentFootprintForwardWriterProfile().renderer.requestLimit): Readonly<{
   command: CurrentFootprintForwardWriterProducerChannelCommand & Readonly<{ id: number }>;
   request: Readonly<Record<string, string | number>>;
 }> {
-  if (!Number.isSafeInteger(id) || id < 1 || id > currentFootprintForwardWriterProfile().renderer.requestLimit || !/^[A-Za-z\d_.:-]{1,256}$/u.test(sessionId)) { throw new Error("FORWARD_WRITER_PRODUCER_WIRE"); }
+  if (!Number.isSafeInteger(id) || !Number.isSafeInteger(requestLimit) || typeof sessionId!=="string" || id < 1 || id > requestLimit || requestLimit!==currentFootprintForwardWriterProfile().renderer.requestLimit&&requestLimit!==currentFootprintForwardWriterCompleteProfile().renderer.requestLimit || !/^[A-Za-z\d_.:-]{1,256}$/u.test(sessionId)) { throw new Error("FORWARD_WRITER_PRODUCER_WIRE"); }
   const inert = captureCurrentPcbStringClockReply(input).value;
   if (inert !== null && typeof inert === "object" && Object.hasOwn(inert, "forwardStartupFrontier")) {
     const { forwardStartupFrontier, ...command } = z.record(z.string(), z.unknown()).parse(inert);

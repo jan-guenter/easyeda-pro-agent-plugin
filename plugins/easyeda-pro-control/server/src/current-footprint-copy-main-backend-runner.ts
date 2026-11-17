@@ -3620,7 +3620,9 @@ export class CurrentFootprintCopyMainBackendRunner {
         this.#forwardWriterSqlCurrent();const held=this.#forwardWriterSqlPause;
         need(held!==null&&this.#pause===held.identity&&!held.identity.resumeAttempted&&!held.identity.resumed,"FORWARD_WRITER_SQL_RESUME_CONSUMED");
         held.identity.resumeAttempted=true;empty.parse(await this.#request({phase:"forward-writer-sql-step",method:"Debugger.resume",params:{}}));
-        await this.#wait(()=>held.identity.resumed);this.#forwardWriterSqlCurrent();need(this.#forwardWriterSqlPause===held,"FORWARD_WRITER_SQL_PAUSE_CHANGED");this.#sqlHeld=null;
+        await this.#wait(()=>held.identity.resumed);this.#forwardWriterSqlCurrent();
+        // A single original transport chunk can already have installed the next pause.
+        if(this.#sqlHeld===held.identity){this.#sqlHeld=null;}
       }};
   }
   async #serveForwardWriterSql(): Promise<void> {

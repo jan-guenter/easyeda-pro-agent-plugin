@@ -201,7 +201,23 @@ export class CurrentFootprintForwardWriterTicketTimerJournal {
   }
   async #settlePending(): Promise<void> {
     need(this.#reserveAttempted && this.#reservationEntered && !this.#reservationConflict, "ORIGINAL_RESERVATION_REQUIRED");
-    let actual = await loadOperation(this.#request.operationId);
+    let actual: OperationJournal | undefined;
+    try { actual = await loadOperation(this.#request.operationId); }
+    catch (error) {
+      if (this.#reserved || !(error instanceof Error && "code" in error && error.code === "ENOENT")) { throw error; }
+    }
+    if (actual === undefined) {
+      need(this.#pending === null && parse(this.#operation).length === 0, "INITIAL_RESERVATION_REQUIRED");
+      // The original create may have failed before its exclusive link existed.
+      // Republish only this instance's retained initial bytes.
+      // A competing link remains a conflict and can never be adopted.
+      try { await createOperation(this.#operation); }
+      catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "EEXIST") { this.#reservationConflict = true; }
+        throw error;
+      }
+      actual = await loadOperation(this.#request.operationId);
+    }
     if (!this.#reserved) { need(core(actual) === core(this.#operation), "RESERVATION_CHANGED"); this.#reserved = true; }
     let pending = this.#pending;
     if (pending === null) {

@@ -38,6 +38,7 @@ void test("only original pending component bytes settle after real publication f
  await journal.append("release-result",released);await isolated();await globalLaunches();const completed=await history(selected.operationId);assert.equal(completed.operation["state"],"completed");
  await assert.rejects(journal.append("failure",{phase:"publication",originalErrorRetained:true}),/CHAIN_IDENTITY/u);
 });
+function rechain(rows:readonly Entry[]):Entry[]{const result:Entry[]=[];for(const row of rows){const prior=result.at(-1);result.push({...row,sequence:result.length,previousSha256:prior===undefined?null:sha256Json(prior)});}return result;}
 function capacity(calls:number,bound:number):Entry[]{
  const selected=input("capacity-historical");const out:Entry[]=[];let ordinal=0;
  const add=(kind:Phase,evidence:Readonly<Record<string,unknown>>):void=>{const prior=out.at(-1);out.push(record.parse({schema:"easyeda-pro-control.footprint-forward-writer-publication-record.v1",operationId:selected.operationId,sequence:out.length,previousSha256:prior===undefined?null:sha256Json(prior),kind,evidence,executionAuthorized:false,saveAuthorized:false}));};
@@ -51,5 +52,5 @@ void test("separate two-pass bound fits while zero original callback runs requir
  const all=capacity(512,256);assert.equal(all.length,3083);assert.equal(all.length,BUDGET.records);assert.ok(BUDGET.manifestBytes<64*1024*1024);assert.equal(BUDGET.rendererRequests,10_755);assert.equal(BUDGET.callbackArms,0);assert.equal(BUDGET.timerCommands,0);assert.doesNotThrow(()=>{chain(all)});
  assert.doesNotThrow(()=>{chain(capacity(0,1))});assert.doesNotThrow(()=>{chain(capacity(1,256))});assert.equal(record.safeParse({...all.at(-1),sequence:BUDGET.records}).success,false);
  const impossible=capacity(0,1);const queue=impossible.findIndex(row=>row.kind==="queue-result");const actual=impossible[queue];assert.ok(actual!==undefined);impossible[queue]={...actual,evidence:{...actual.evidence,finalizers:1}};assert.throws(()=>{ chain(impossible); });
- const noBody=capacity(1,1).filter(row=>row.kind!=="body-result");assert.throws(()=>{ chain(noBody); });assert.equal(request.safeParse({...input("wrong-parent"),parentOperationId:"footprint-forward-writer-foreign-parent"}).success,false);
+ const noBody=rechain(capacity(1,1).filter(row=>row.kind!=="body-result"));assert.throws(()=>{ chain(noBody); },/BODY_REQUIRED/u);assert.equal(request.safeParse({...input("wrong-parent"),parentOperationId:"footprint-forward-writer-foreign-parent"}).success,false);
 });

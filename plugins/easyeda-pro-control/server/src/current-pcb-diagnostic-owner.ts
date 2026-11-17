@@ -10,7 +10,7 @@ import { CURRENT_FOOTPRINT_FORWARD_WRITER_MAIN_MUTATION_REQUESTS, currentFootpri
 import type { CurrentFootprintForwardWriterMainMutationCommand } from "./current-footprint-forward-writer-main-mutation-protocol.ts";
 import { decodeCurrentFootprintCopyV2NativeResult } from "./current-footprint-copy-v2-native-result.ts";
   // oxlint-disable-next-line import/no-cycle -- Original capability registries are read only by later same-owner methods after module initialization; this import creates no owner or native work.
-import { CurrentFootprintForwardWriterTicketTimerDriver } from "./current-footprint-forward-writer-ticket-timer-driver.ts";
+import { CurrentFootprintForwardWriterTicketTimerDriver, assertOriginalCurrentFootprintForwardWriterTicketTimerDriverClass } from "./current-footprint-forward-writer-ticket-timer-driver.ts";
 import { CurrentFootprintForwardWriterTicketTimerJournal } from "./current-footprint-forward-writer-ticket-timer-journal.ts";
 import { currentFootprintForwardWriterTicketTimerRecordSchema } from "./current-footprint-forward-writer-ticket-timer-contract.ts";
 import type { CurrentFootprintForwardWriterTicketTimerBindings, CurrentFootprintForwardWriterTicketTimerOrigin } from "./current-footprint-forward-writer-ticket-timer-origin.ts";
@@ -2807,20 +2807,26 @@ const forwardWriterTicketTimers=new WeakMap<object,ForwardWriterTicketTimerCompo
 
 const forwardWriterTicketTimerOrigins=new WeakMap<CurrentFootprintForwardWriterTicketTimerOrigin,ForwardWriterTicketTimerComponent>();
 
-const forwardWriterTicketDriverDescriptors=Object.getOwnPropertyDescriptors(CurrentFootprintForwardWriterTicketTimerDriver.prototype);
-
-const forwardWriterTicketDriverStaticDescriptors=Object.getOwnPropertyDescriptors(CurrentFootprintForwardWriterTicketTimerDriver);
-
 const forwardWriterTicketJournalDescriptors=Object.getOwnPropertyDescriptors(CurrentFootprintForwardWriterTicketTimerJournal.prototype);
 
 function assertOriginalForwardWriterTicketClasses():void{
- if(!originalFootprintDescriptors(CurrentFootprintForwardWriterTicketTimerDriver.prototype,forwardWriterTicketDriverDescriptors)||!originalFootprintDescriptors(CurrentFootprintForwardWriterTicketTimerDriver,forwardWriterTicketDriverStaticDescriptors)||!originalFootprintDescriptors(CurrentFootprintForwardWriterTicketTimerJournal.prototype,forwardWriterTicketJournalDescriptors)){throw error("FORWARD_TICKET_TIMER_ORIGINAL_CLASSES");}
+ assertOriginalCurrentFootprintForwardWriterTicketTimerDriverClass();
+ if(!originalFootprintDescriptors(CurrentFootprintForwardWriterTicketTimerJournal.prototype,forwardWriterTicketJournalDescriptors)){throw error("FORWARD_TICKET_TIMER_ORIGINAL_CLASSES");}
 }
 
 export function requireOriginalCurrentFootprintForwardWriterTicketTimerOrigin(origin:CurrentFootprintForwardWriterTicketTimerOrigin,owner:object,operation:object):CurrentFootprintForwardWriterTicketTimerBindings{
  const component=forwardWriterTicketTimerOrigins.get(origin);
  if(component===undefined||component.owner!==owner||component.scope?.bootstrap!==operation||component.origin!==origin||component.bindings===null||forwardWriterTicketTimers.get(owner)!==component||component.retired||component.failed||!footprintForwardWriterCompleteFactories.has(owner)){throw error("FORWARD_TICKET_TIMER_ORIGINAL_ORIGIN");}
  assertOriginalCurrentFootprintForwardWriterNativeOwner(component.owner);assertOriginalForwardWriterTicketClasses();return component.bindings;
+}
+
+/** Every failure wakes the original pending readers, even after another
+ * component latched failure. Keep the first raw cause and fail the source once. */
+function failForwardWriterProducerScope(scope:ForwardWriterProducerScope,cause:unknown):void{
+ const first=!scope.failed;if(first){scope.failed=true;scope.firstFailure=cause;}
+ const waiter=scope.waiter;scope.waiter=null;waiter?.reject(scope.firstFailure);
+ const resume=scope.resumeWaiter;scope.resumeWaiter=null;resume?.reject(scope.firstFailure);
+ if(first){scope.source.fail();}
 }
 
 const forwardWriterProducerScopes = new WeakMap<CurrentFootprintForwardWriterProducerBootstrap, ForwardWriterProducerScope>();
@@ -3056,7 +3062,7 @@ export async function continueOriginalCurrentFootprintForwardWriterCopyLocalCall
   if (local === undefined || local.owner !== owner || local.operation !== operation || local.cursor === null || local.failed) { throw error("FORWARD_COPY_LOCAL_ORIGINAL_CURSOR"); }
   try { await local.cursor.continue(packet); }
   catch (caughtError) { local.failed = true; local.failure = caughtError;
-    const scope = forwardWriterProducerScopes.get(local.operation); if (scope !== undefined) { scope.failed = true; scope.firstFailure = caughtError; } throw caughtError;
+    const scope = forwardWriterProducerScopes.get(local.operation); if (scope !== undefined) { failForwardWriterProducerScope(scope,caughtError); } throw caughtError;
   }
 }
 
@@ -5999,8 +6005,7 @@ class CurrentPcbRetainedOwnerCore {
       resumeOriginal: null, syncCursor: null, continueInitialSyncCall: null };
     forwardWriterProducerScopes.set(bootstrap, scope); forwardWriterProducerOwners.set(this, scope);
     const fail = (caught: unknown): void => {
-      if (scope.failed) { return; } scope.failed = true; scope.firstFailure = caught;
-      scope.waiter?.reject(error("FORWARD_WRITER_PRODUCER_ENDED")); scope.waiter = null; scope.resumeWaiter?.reject(caught); source.fail();
+      failForwardWriterProducerScope(scope,caught);
     };
     const fresh = async (): Promise<void> => { current(); await source.assertCurrent(); await channel.assertCurrent(); current(); };
     const held = (role: ForwardWriterProducerRole): string => {
@@ -6033,7 +6038,7 @@ class CurrentPcbRetainedOwnerCore {
       const events: NonNullable<ForwardWriterProducerScope["events"]> = Object.freeze({
         acceptsPause: (input: unknown): boolean => {
           try { const value = captureCurrentPcbStringClockReply(input).value; if (!record(value) || !Array.isArray(value["hitBreakpoints"]) || value["hitBreakpoints"].length !== 1) { return false; }
-            const id: unknown = value["hitBreakpoints"][0]; return forwardWriterPublications.get(this)?.driver?.acceptsPause(input) === true || forwardWriterFrontiers.get(this)?.driver?.acceptsPause(input) === true || typeof id === "string" && ([...scope.points.values()].includes(id)||[...forwardWriterCopyTailObservations.get(this)?.points.values()??[]].includes(id));
+            const id: unknown = value["hitBreakpoints"][0]; return forwardWriterTicketTimers.get(this)?.driver?.acceptsPause(input) === true || forwardWriterPublications.get(this)?.driver?.acceptsPause(input) === true || forwardWriterFrontiers.get(this)?.driver?.acceptsPause(input) === true || typeof id === "string" && ([...scope.points.values()].includes(id)||[...forwardWriterCopyTailObservations.get(this)?.points.values()??[]].includes(id));
           } catch { return false; }
         },
         paused: (input: unknown): void => {
@@ -6269,7 +6274,7 @@ class CurrentPcbRetainedOwnerCore {
       else { await observer.continueFootprintForwardWriterCopyUploadCall(packet); }
       scope.assertOriginal();
       const read = observer.observeHeldCall(); scope.read = read; void (async (): Promise<void> => { try { await read; } catch (caughtError) {
-        scope.failed = true; scope.firstFailure = caughtError; scope.source.fail();
+        failForwardWriterProducerScope(scope,caughtError);
       } })();
     })(); scope.continuation = work;
     void (async (): Promise<void> => { try { await work; } catch {
@@ -6324,7 +6329,7 @@ class CurrentPcbRetainedOwnerCore {
         while (!completion.done) { current(); if (performance.now() - started >= 20_000 || polls >= 1024) { throw error("FORWARD_WRITER_SYNC_HISTORY_DEADLINE"); } polls += 1; await runner.pumpSelectedSqlFence(); current(); }
         await fresh(); if (completion.rows === null || runner.requireFootprintForwardWriterInitialHistoryRows(ordinal) !== completion.rows) { throw error("FORWARD_WRITER_SYNC_ORIGINAL_HISTORY"); } return completion.rows;
       }, requireHistory: (ordinal: 1 | 2 | 3 | 4): CurrentFootprintInverseMainHistoryRows => { current(); return runner.requireFootprintForwardWriterInitialHistoryRows(ordinal); },
-      complete: () => control("complete"), fail: (): void => { runner.failFootprintForwardWriterInitialHistory(); scope.failed = true; scope.firstFailure = error("FORWARD_WRITER_SYNC_CURSOR_FAILED"); scope.source.fail(); } }));
+      complete: () => control("complete"), fail: (): void => { runner.failFootprintForwardWriterInitialHistory(); failForwardWriterProducerScope(scope,error("FORWARD_WRITER_SYNC_CURSOR_FAILED")); } }));
     scope.syncCursor = cursor;
     scope.continueInitialSyncCall = async (packet: CurrentProjectSaveProducerHeldCall): Promise<void> => { const held = requireHeld(packet); await control("hold", held.role); await cursor.continue(packet); await fresh(); };
     return scope;
@@ -9950,7 +9955,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
       await this.#ticketTimerJournal(component,"ws-result",{privateDeployment:false,sourceInitializations:1,originalLexicalFrameRetained:true,websocketPublicationExcluded:true});current();component.wsObserved=true;
       // oxlint-disable-next-line unicorn/no-useless-undefined -- Exact original retained undefined receipt.
       completion.resolve(undefined);
-    }catch(caughtError){component.failed=true;component.failure=caughtError;scope.failed=true;scope.firstFailure=caughtError;scope.source.fail();completion.reject(caughtError);}})();return completion.promise;
+    }catch(caughtError){component.failed=true;component.failure=caughtError;failForwardWriterProducerScope(scope,caughtError);completion.reject(caughtError);}})();return completion.promise;
   }
   /** Original natural-timer preparation remains disjoint from startup's
    * cancellation journal and the old six-role factory. */
@@ -9974,11 +9979,11 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
         originalCreateWritten:():boolean=>{current();return originalCurrentFootprintForwardWriterCreateWritten(scope.source.dependency);},
         requireOriginalCallbacksCompleted:():void=>{current();const drain=forwardWriterCopyDrains.get(scope.origin),publication=forwardWriterPublications.get(this);if(drain?.cursor===null||drain===undefined||drain.post===null||!drain.postCompleted||!drain.nativeCompleted||!drain.publicationCompleted||publication?.driver?.status()["completed"]!==true||!drain.cursor.progress().completed||!drain.post.progress().completed){throw error("FORWARD_TICKET_TIMER_ORIGINAL_COMPLETION");}},
         assertOriginalGenerationExited:async():Promise<void>=>{assertOriginalCurrentFootprintForwardWriterNativeOwner(this);if(forwardWriterTicketTimers.get(this)!==component||!this.#terminationObserved||this.#terminationObservation?.terminated!==true){throw error("FORWARD_TICKET_TIMER_RETAIN_JOB");}await scope.source.observeExited();},
-        fail:(caughtError):void=>{if(this.#terminationObserved){return;}component.failed=true;component.failure=caughtError;scope.failed=true;scope.firstFailure=caughtError;scope.source.fail();},
+        fail:(caughtError):void=>{if(this.#terminationObserved){return;}if(!component.failed){component.failed=true;component.failure=caughtError;}failForwardWriterProducerScope(scope,caughtError);},
       });component.bindings=bindings;forwardWriterTicketTimerOrigins.set(origin,component);component.driver=new CurrentFootprintForwardWriterTicketTimerDriver(origin,this,scope.bootstrap);
       void(async():Promise<void>=>{try{await component.driver?.prepare();await fresh();
         // oxlint-disable-next-line unicorn/no-useless-undefined -- Exact original retained undefined receipt.
-        completion.resolve(undefined);}catch(caughtError){component.failed=true;component.failure=caughtError;scope.failed=true;scope.firstFailure=caughtError;scope.source.fail();completion.reject(caughtError);}})();return completion.promise;
+        completion.resolve(undefined);}catch(caughtError){component.failed=true;component.failure=caughtError;failForwardWriterProducerScope(scope,caughtError);completion.reject(caughtError);}})();return completion.promise;
     }catch(caughtError){
       // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Preserve the exact original synchronous custody failure.
       return Promise.reject(caughtError);
@@ -10032,7 +10037,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
         retained.capture=captured;retained.roots=Object.freeze({tuple:captured.tuple,root:captured.root,projectObjectId:startup.projectObjectId,sessionId:startup.sessionId,uniqueContextId:startup.uniqueContextId});current();
         // oxlint-disable-next-line unicorn/no-useless-undefined -- The original retained undefined Promise requires its exact explicit settlement.
         completion.resolve(undefined);
-      }catch(caughtError){retained.failed=true;retained.failure=caughtError;scope.failed=true;scope.firstFailure=caughtError;scope.source.fail();completion.reject(caughtError);}})();return completion.promise;
+      }catch(caughtError){retained.failed=true;retained.failure=caughtError;failForwardWriterProducerScope(scope,caughtError);completion.reject(caughtError);}})();return completion.promise;
     }catch(caughtError){
       // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Preserve the original custody failure without substituting a retry.
       return Promise.reject(caughtError);
@@ -10071,11 +10076,11 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
         current(); const completion = await runner.originalFootprintForwardWriterBranchCompletion(); current();
         if (completion === null || runner.requireFootprintForwardWriterBranchRead(origin) !== completion || requireOriginalCurrentFootprintForwardWriterBranchData(origin, this, runner) !== completion) { throw error("FORWARD_BRANCH_QUERY_ORIGINAL_MAIN_RESULT"); }
         return completion.body;
-      }, fail: (cause: unknown): void => { scope.failed = true; scope.firstFailure = cause; scope.source.fail(); },
+      }, fail: (cause: unknown): void => { failForwardWriterProducerScope(scope,cause); },
     }));
     this.#forwardWriterBranchQuery = Object.freeze({ origin, runner, cursor });
     try { current(); await runner.armFootprintForwardWriterBranchRead(origin); current(); const body = await cursor.start(); current(); return body; }
-    catch (caughtError) { scope.failed = true; scope.firstFailure = caughtError; scope.source.fail(); throw caughtError; }
+    catch (caughtError) { failForwardWriterProducerScope(scope,caughtError); throw caughtError; }
   }
   public retainedFootprintForwardWriterBranchQuery(): Readonly<Record<string, unknown>> {
     assertOriginalCurrentFootprintForwardWriterNativeOwner(this);
@@ -10113,10 +10118,10 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
         current();if(tail.retained||tail.capture!==capture||tail.event===null||tail.role!==role||scope.event!==tail.event||!scope.delivered){throw error("FORWARD_COPY_TAIL_ORIGINAL_CAPTURE");}
         const event=tail.event;tail.retained=true;scope.heldRetained=true;const packet:CurrentProjectSaveProducerHeldCall=Object.freeze({profile:"private.current-project-save-producer-held-call.v1"});
         forwardWriterCopyTailHeldCalls.set(packet,Object.freeze({tail,role,event,capture,assertOriginal:():void=>{current();if(tail.event!==event||scope.event!==event||tail.role!==role||tail.capture!==capture||!tail.retained||!scope.heldRetained){throw error("FORWARD_COPY_TAIL_CAPTURE_CHANGED");}}}));return packet;
-      },assertCurrent:fresh,fail:():void=>{tail.failed=true;scope.failed=true;scope.source.fail();},
+      },assertCurrent:fresh,fail:():void=>{tail.failed=true;failForwardWriterProducerScope(scope,error("FORWARD_WRITER_PRODUCER_ENDED"));},
     }));tail.cursor=cursor;
     tail.bindings=Object.freeze({additionalHeadJobs:4,additionalSharedRequests:56,arm:()=>cursor.arm(),originalBreakpoint:(role:CurrentPcbViaSaveTailDeleteRole)=>cursor.originalBreakpoint(role),captureHeldCall:(role:CurrentPcbViaSaveTailDeleteRole)=>cursor.captureHeldCall(role),assertCurrent:fresh});
-    const observer=scope.observer;const pending=(async():Promise<void>=>{try{current();await observer.enrollFootprintForwardWriterCopyTailObservation();await fresh();if(tail.points.size!==3){throw error("FORWARD_COPY_TAIL_POINT_ROSTER");}}catch(caughtError){tail.failed=true;tail.failure=caughtError;scope.failed=true;scope.firstFailure=caughtError;scope.source.fail();throw caughtError;}})();tail.preparation=pending;return pending;
+    const observer=scope.observer;const pending=(async():Promise<void>=>{try{current();await observer.enrollFootprintForwardWriterCopyTailObservation();await fresh();if(tail.points.size!==3){throw error("FORWARD_COPY_TAIL_POINT_ROSTER");}}catch(caughtError){tail.failed=true;tail.failure=caughtError;failForwardWriterProducerScope(scope,caughtError);throw caughtError;}})();tail.preparation=pending;return pending;
   }
 
   /** Prepare the separate ready publication component under its original
@@ -10159,7 +10164,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
         control:async(operation:Parameters<CurrentFootprintForwardWriterPublicationBindings["control"]>[0],role?:Parameters<CurrentFootprintForwardWriterPublicationBindings["control"]>[1]):Promise<void>=>{await this.#reproveFootprintForwardWriterPublication(component);const reply=await this.#request({action:"footprint-forward-copy-publication-control",operation,...(role===undefined?{}:{role})});await this.#reproveFootprintForwardWriterPublication(component);if(!exact(reply,["written"])||reply["written"]!==true){throw error("FORWARD_PUBLICATION_CONTROL_ACK");}},
         journal:(kind:string,evidence:Readonly<Record<string,unknown>>)=>this.#appendFootprintForwardWriterPublication(component,kind,evidence),assertCurrent:()=>{this.#requireFootprintForwardWriterPublication(component);},
         assertOriginalGenerationExited:async():Promise<void>=>{assertOriginalCurrentFootprintForwardWriterNativeOwner(this);if(forwardWriterPublications.get(this)!==component||!this.#terminationObserved||this.#terminationObservation?.terminated!==true){throw error("FORWARD_PUBLICATION_ORIGINAL_EXIT");}await scope.source.observeExited();},
-        fail:(cause?:unknown):void=>{if(!this.#terminationObserved&&!component.failed){component.failed=true;component.failure=cause;scope.failed=true;scope.firstFailure=cause;scope.source.fail();}},
+        fail:(cause?:unknown):void=>{if(!this.#terminationObserved){if(!component.failed){component.failed=true;component.failure=cause;}failForwardWriterProducerScope(scope,cause);}},
       });
       forwardWriterPublicationOrigins.set(origin,Object.freeze({component,bindings}));component.driver=new CurrentFootprintForwardWriterPublicationDriver(origin,this,scope.bootstrap);
       const reply=await this.#request({action:"footprint-forward-copy-publication-control",operation:"bind",records:2*lines});current();if(!exact(reply,["written"])||reply["written"]!==true){throw error("FORWARD_PUBLICATION_BIND_ACK");}
@@ -10283,9 +10288,9 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
         resume: async (actual: CurrentFootprintForwardWriterCopyLocalHeld, command: CurrentFootprintForwardWriterCopyLocalCommand): Promise<void> => {
           current(); if (requireHeld(actual.packet) !== actual || scope.resumeOriginal === null || command.phase !== "forward-copy-local-resume") { throw error("FORWARD_COPY_LOCAL_RESUME"); }
           await scope.resumeOriginal(actual.packet, command); await fresh();
-        }, fail: (): void => { local.failed = true; scope.failed = true; scope.source.fail(); },
+        }, fail: (): void => { local.failed = true; failForwardWriterProducerScope(scope,error("FORWARD_WRITER_PRODUCER_ENDED")); },
       })); current();
-    } catch (caughtError) { local.failed = true; local.failure = caughtError; scope.failed = true; scope.firstFailure = caughtError; scope.source.fail(); throw caughtError; }
+    } catch (caughtError) { local.failed = true; local.failure = caughtError; failForwardWriterProducerScope(scope,caughtError); throw caughtError; }
   }
   public continueFootprintForwardWriterCopyLocal(packet: CurrentProjectSaveProducerHeldCall): Promise<void> {
     return this.#continueFootprintForwardWriterProducer(packet, "local");
@@ -10341,9 +10346,9 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
         resume: async (actual: CurrentPcbViaUploadRequestHeld, command: CurrentPcbViaUploadRequestCommand): Promise<void> => {
           if (requireHeld(actual.packet) !== actual || scope.resumeOriginal === null || command.phase !== "via-upload-resume") { throw error("FORWARD_COPY_UPLOAD_RESUME"); }
           await scope.resumeOriginal(actual.packet, command); await fresh();
-        }, fail: (): void => { upload.failed = true; scope.failed = true; scope.source.fail(); },
+        }, fail: (): void => { upload.failed = true; failForwardWriterProducerScope(scope,error("FORWARD_WRITER_PRODUCER_ENDED")); },
       })); await fresh();
-    } catch (caughtError) { upload.failed = true; upload.failure = caughtError; scope.failed = true; scope.firstFailure = caughtError; scope.source.fail(); throw caughtError; }
+    } catch (caughtError) { upload.failed = true; upload.failure = caughtError; failForwardWriterProducerScope(scope,caughtError); throw caughtError; }
   }
   public continueFootprintForwardWriterCopyUpload(packet: CurrentProjectSaveProducerHeldCall): Promise<void> { return this.#continueFootprintForwardWriterProducer(packet, "upload"); }
   public footprintForwardWriterCopyUploadProgress(): Readonly<Record<string, unknown>> {
@@ -10363,7 +10368,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
     forwardWriterCopyDrains.set(scope.origin,drain);
     void(async():Promise<void>=>{try{await this.#prepareFootprintForwardWriterCopyDrain(drain);
       // oxlint-disable-next-line unicorn/no-useless-undefined -- The retained undefined Promise requires its explicit exact settlement.
-      completion.resolve(undefined);}catch(caughtError){drain.failed=true;drain.failure=caughtError;scope.failed=true;scope.firstFailure=caughtError;main.failFootprintForwardWriterPostBranchRead();main.failFootprintForwardWriterLiveHistory();scope.source.fail();completion.reject(caughtError);}})();return completion.promise;
+      completion.resolve(undefined);}catch(caughtError){drain.failed=true;drain.failure=caughtError;main.failFootprintForwardWriterPostBranchRead();main.failFootprintForwardWriterLiveHistory();failForwardWriterProducerScope(scope,caughtError);completion.reject(caughtError);}})();return completion.promise;
   }
   async #prepareFootprintForwardWriterCopyDrain(drain:ForwardWriterCopyDrainRecord):Promise<void>{
     const {scope,main,origin,postOrigin}=drain;const local=forwardWriterCopyLocalRecords.get(scope.origin);const upload=forwardWriterCopyUploadRecords.get(scope.origin);const tail=forwardWriterCopyTailObservations.get(this);const publication=forwardWriterPublications.get(this);
@@ -10411,7 +10416,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
       historyResult:()=>live.historyResult(),liveData:()=>live.liveData(),postSyncProgress:()=>drain.post?.progress()??Object.freeze({replayResumed:false,completed:false}),
       request:async(command:CurrentPcbViaSaveDrainCommand):Promise<unknown>=>{await fresh();const result=await requestCurrentFootprintForwardWriterCopyDrain(scope.source.dependency,command);await fresh();return result;},
       resume:(held:CurrentPcbViaSaveDrainHeld,command:CurrentPcbViaSaveDrainCommand)=>resume(requireHeld(held.packet).packet,command),continueDelete,
-      complete:async():Promise<void>=>{current();if(drain.nativeCompleted||!deleteReturned){throw error("FORWARD_COPY_DRAIN_NATIVE_ONCE");}await control("drain-complete");drain.nativeCompleted=true;},fail:():void=>{drain.failed=true;scope.failed=true;scope.source.fail();},
+      complete:async():Promise<void>=>{current();if(drain.nativeCompleted||!deleteReturned){throw error("FORWARD_COPY_DRAIN_NATIVE_ONCE");}await control("drain-complete");drain.nativeCompleted=true;},fail:():void=>{drain.failed=true;failForwardWriterProducerScope(scope,error("FORWARD_WRITER_PRODUCER_ENDED"));},
     }));
     const post=():CurrentFootprintForwardWriterPostHistorySyncCursor=>{
       current();if(drain.post!==null){return drain.post;}if(!drain.postStarted){throw error("FORWARD_COPY_POST_NOT_STARTED");}
@@ -10421,7 +10426,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
         request:async(command:CurrentPcbViaPostHistorySyncCommand):Promise<unknown>=>{await fresh();if(command.phase==="via-post-sync-replay"){if(scope.role!=="syncMerged"||!scope.heldRetained||scope.joinedId===null){throw error("FORWARD_COPY_POST_ORIGINAL_REPLAY");}await control("replay-bound",{originalBody:bodyObject,merged:scope.joinedId});}const result=await requestCurrentFootprintForwardWriterCopyPost(scope.source.dependency,command);await fresh();return result;},
         resume:(held:CurrentFootprintForwardWriterPostHistorySyncHeld,command:CurrentPcbViaPostHistorySyncCommand)=>resume(requirePost(held.packet).packet,command),
         complete:async():Promise<void>=>{current();if(drain.postCompleted){throw error("FORWARD_COPY_POST_COMPLETE_ONCE");}main.requireFootprintForwardWriterLiveHistoryRows(1);await control("post-complete");drain.postCompleted=true;},
-        fail:():void=>{main.failFootprintForwardWriterPostBranchRead();main.failFootprintForwardWriterLiveHistory();drain.failed=true;scope.failed=true;scope.source.fail();},
+        fail:():void=>{main.failFootprintForwardWriterPostBranchRead();main.failFootprintForwardWriterLiveHistory();drain.failed=true;failForwardWriterProducerScope(scope,error("FORWARD_WRITER_PRODUCER_ENDED"));},
       }));return drain.post;
     };
     drain.continueCall=async(packet:object):Promise<void>=>{
@@ -10450,7 +10455,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
       void(async():Promise<void>=>{try{await settle();
         // oxlint-disable-next-line unicorn/no-useless-undefined -- The retained undefined Promise requires explicit exact settlement.
         completion.resolve(undefined);
-      }catch(caughtError){drain.failed=true;drain.failure=caughtError;drain.scope.failed=true;drain.scope.firstFailure=caughtError;drain.main.failFootprintForwardWriterPostBranchRead();drain.main.failFootprintForwardWriterLiveHistory();drain.scope.source.fail();completion.reject(caughtError);}
+      }catch(caughtError){drain.failed=true;drain.failure=caughtError;drain.main.failFootprintForwardWriterPostBranchRead();drain.main.failFootprintForwardWriterLiveHistory();failForwardWriterProducerScope(drain.scope,caughtError);completion.reject(caughtError);}
       finally{if(drain.settling===pending){drain.settling=null;}}})();return pending;
     }catch(caughtError){
       // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Keep the exact original custody failure in this retained Promise API.
@@ -18113,9 +18118,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
     this.#failure ??= reason; this.#buffer = Buffer.alloc(0);
     forwardWriterProducerReady.get(this)?.reject(error(this.#failure));
     const producer = forwardWriterProducerOwners.get(this);
-    if (producer !== undefined && !producer.failed) {
-      producer.failed = true; producer.firstFailure = error(this.#failure); producer.waiter?.reject(producer.firstFailure); producer.waiter = null; producer.resumeWaiter?.reject(producer.firstFailure); producer.source.fail();
-    }
+    if(producer!==undefined){failForwardWriterProducerScope(producer,error(this.#failure));}
     if (this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE) { this.#failViaOriginalWaiters(); }
     if (bornFootprintTransport(this.#purpose) && this.#combinedReadyPacket === null) {
       this.#combinedReadyAbandoned = true; this.#combinedReady.reject(error(this.#failure ?? reason));
@@ -20516,7 +20519,7 @@ export async function continueOriginalCurrentFootprintForwardWriterInitialSyncCa
 export async function continueOriginalCurrentFootprintForwardWriterCopyDrainCall(origin:CurrentProjectSaveProducerOrigin,owner:object,operation:object,packet:CurrentProjectSaveProducerHeldCall):Promise<void>{
  requireOriginalCurrentProjectSaveProducerOrigin(origin,owner,operation);const original=forwardWriterCopyDrains.get(origin);
  if(original===undefined||original.owner!==owner||original.scope.bootstrap!==operation||original.continueCall===null||original.failed){throw error("FORWARD_COPY_DRAIN_ORIGINAL_CURSOR");}
- try{await original.continueCall(packet);}catch(caughtError){original.failed=true;original.failure=caughtError;original.scope.failed=true;original.scope.firstFailure=caughtError;original.scope.source.fail();throw caughtError;}
+ try{await original.continueCall(packet);}catch(caughtError){original.failed=true;original.failure=caughtError;failForwardWriterProducerScope(original.scope,caughtError);throw caughtError;}
 }
 
 export async function continueOriginalCurrentFootprintForwardWriterCopyUploadCall(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object,
@@ -20526,6 +20529,6 @@ export async function continueOriginalCurrentFootprintForwardWriterCopyUploadCal
   if (upload === undefined || upload.owner !== owner || upload.operation !== operation || upload.cursor === null || upload.failed) { throw error("FORWARD_COPY_UPLOAD_ORIGINAL_CURSOR"); }
   try { await upload.cursor.continue(packet); }
   catch (caughtError) { upload.failed = true; upload.failure = caughtError;
-    const scope = forwardWriterProducerScopes.get(upload.operation); if (scope !== undefined) { scope.failed = true; scope.firstFailure = caughtError; } throw caughtError;
+    const scope = forwardWriterProducerScopes.get(upload.operation); if (scope !== undefined) { failForwardWriterProducerScope(scope,caughtError); } throw caughtError;
   }
 }

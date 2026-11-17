@@ -1,5 +1,7 @@
+/* oxlint-disable import/max-dependencies -- Eleven independent fixed callback/source contracts include the eager original-prototype snapshot; combining them would hide their separately reviewed boundaries. */
 /** Same full worker startup callbacks and original serial Promise drain.
  * This original cursor supplies no inverse owner or complete writer frontier. */
+import {captureCurrentFootprintForwardExecutionPrototypes,requireCurrentFootprintForwardExecutionPrototypes} from "./current-footprint-forward-execution-opening-identity.ts";
 import { CURRENT_FOOTPRINT_INVERSE_STARTUP_QUEUE_CALL, currentFootprintInverseStartupQueueBudget, validateCurrentFootprintInverseStartupQueueCommand } from "./current-footprint-inverse-startup-queue-protocol.ts";
 import { currentProjectSaveProducerCachePromiseHandle, decodeCurrentProjectSaveProducerCachePromise } from "./current-project-save-producer-cache-replies.ts";
 import { types } from "node:util";
@@ -124,3 +126,7 @@ export class CurrentFootprintForwardWriterStartupCallbacks {
     return Object.freeze({ calls: this.#calls, outstanding: this.#outstanding, active: this.#active !== null, failed: this.#failed, originalFinalizersObserved: this.#finalizerFrames.length, completeQueuedPromiseFulfillmentVerified: false, completeProducerFrontierVerified: false });
   }
 }
+
+/** Eager defining-module snapshot avoids cyclic import TDZ and first-use trust. */
+const originalClassPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintForwardWriterStartupCallbacks.prototype);
+export function assertOriginalCurrentFootprintForwardWriterStartupCallbacksClass():void{requireCurrentFootprintForwardExecutionPrototypes(originalClassPrototype);}

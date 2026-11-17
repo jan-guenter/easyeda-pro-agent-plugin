@@ -7,13 +7,11 @@ import { requireCurrentFootprintForwardWriterMainRequestReservation, reserveCurr
 import { deriveCurrentFootprintMutationPublicationData } from "../../src/current-footprint-mutation-publication-data.ts";
 import { qualifyCurrentFootprintMutationPublicationSource } from "../../src/current-footprint-mutation-publication-source.ts";
 import { IDS, encrypted, fixture, inventory, mutate } from "./symbol-sql-fixture.ts";
-import { readConfiguredEasyedaAssets } from "./installed-easyeda-source.ts";
 
 const defaultLabels=Object.freeze({username:"synthetic-user",nickname:"Synthetic"});
 function quote(value:string):string{return `'${value.replaceAll("'","''")}'`;}
 export async function completeCapacityFixture(labels:Readonly<{username:string;nickname:string}>=defaultLabels):Promise<Readonly<{
  reservation:ReturnType<typeof reserveCurrentFootprintForwardWriterMainRequestPlan>;
- publication:ReturnType<typeof deriveCurrentFootprintMutationPublicationData>;
  input:ReturnType<typeof captureCurrentFootprintSavedFlowCacheInput>;
  flow:ReturnType<typeof deriveCurrentFootprintSavedFlowCacheData>;
  maximum:ReturnType<typeof requireCurrentFootprintForwardWriterMainRequestReservation>;
@@ -32,12 +30,18 @@ export async function completeCapacityFixture(labels:Readonly<{username:string;n
  const copy=await prepareCurrentFootprintCopyV2Plan(before,source,{client,content:[head(101),meta,head(100),pad].join("|\n")});
  const reservation=reserveCurrentFootprintForwardWriterMainRequestPlan(copy,{projectUuid,branchUuid,projectKey:projectUuid,path:"inert-capacity"},{minimum:1_700_000_000_000,maximum:1_700_000_000_010});
  const maximum=requireCurrentFootprintForwardWriterMainRequestReservation(reservation);
- const split=maximum.dataStr.indexOf('{"type":"DOCHEAD"',1);
- if(split<2){throw new Error("SYNTHETIC_COPY_SECOND_HEADER");}
- const assets=await readConfiguredEasyedaAssets(["pro-mgr/3.2.185.bf63a159/js/project-worker.js"]);
- const worker=assets?.[0];
- if(worker===undefined){throw new Error("INSTALLED_EASYEDA_SOURCE_REQUIRED");}
- const publication=deriveCurrentFootprintMutationPublicationData(qualifyCurrentFootprintMutationPublicationSource(worker),[maximum.dataStr.slice(0,split-2),maximum.dataStr.slice(split)]);
  const input=captureCurrentFootprintSavedFlowCacheInput({projectUuid,branchUuid,headHistoryUuid:IDS.oldHead,heads:[{id:5,uuid:IDS.oldHead,parent:null,key:IDS.oldKey,is_lock:1,num:0,snapshot_num:0,created_at:"2020-01-01 00:00:00",updated_at:"2020-01-01 00:00:00",lock_time:"1970-01-01 08:00:00"}],chunks:[{historyUuid:IDS.oldHead,ordinal:0,plaintext,plaintextSha256:sha256Text(plaintext)}]});
- return {reservation,publication,input,flow:deriveCurrentFootprintSavedFlowCacheData(input),maximum};
+ return {reservation,input,flow:deriveCurrentFootprintSavedFlowCacheData(input),maximum};
+}
+
+/** Only parser-qualified publication cases require explicitly configured installed source. */
+export async function completeCapacityPublicationFixture(worker:string,labels:Readonly<{username:string;nickname:string}>=defaultLabels):Promise<Readonly<Awaited<ReturnType<typeof completeCapacityFixture>>&{
+ publication:ReturnType<typeof deriveCurrentFootprintMutationPublicationData>;
+}>>{
+ const source=qualifyCurrentFootprintMutationPublicationSource(worker);
+ const data=await completeCapacityFixture(labels);
+ const split=data.maximum.dataStr.indexOf('{"type":"DOCHEAD"',1);
+ if(split<2){throw new Error("SYNTHETIC_COPY_SECOND_HEADER");}
+ const publication=deriveCurrentFootprintMutationPublicationData(source,[data.maximum.dataStr.slice(0,split-2),data.maximum.dataStr.slice(split)]);
+ return {...data,publication};
 }

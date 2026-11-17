@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- This original ready cursor joins the fixed callback, native Promise and serial closure codecs with separate original Core custody. */
 /** Same full worker ready callbacks and original serial Promise drain.
  * This original cursor supplies no inverse owner or complete writer frontier. */
+import {captureCurrentFootprintForwardExecutionPrototypes,requireCurrentFootprintForwardExecutionPrototypes} from "./current-footprint-forward-execution-opening-identity.ts";
 import { CURRENT_FOOTPRINT_INVERSE_STARTUP_QUEUE_CALL, currentFootprintInverseStartupQueueBudget, validateCurrentFootprintInverseStartupQueueCommand } from "./current-footprint-inverse-startup-queue-protocol.ts";
 import { currentProjectSaveProducerCachePromiseHandle, decodeCurrentProjectSaveProducerCachePromise } from "./current-project-save-producer-cache-replies.ts";
 import { types } from "node:util";
@@ -117,3 +118,7 @@ export class CurrentFootprintForwardWriterPublicationCallbacks {
 }
 
 Object.freeze(CurrentFootprintForwardWriterPublicationCallbacks.prototype);Object.freeze(CurrentFootprintForwardWriterPublicationCallbacks);
+
+/** Eager defining-module snapshot avoids cyclic import TDZ and first-use trust. */
+const originalClassPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintForwardWriterPublicationCallbacks.prototype);
+export function assertOriginalCurrentFootprintForwardWriterPublicationCallbacksClass():void{requireCurrentFootprintForwardExecutionPrototypes(originalClassPrototype);}

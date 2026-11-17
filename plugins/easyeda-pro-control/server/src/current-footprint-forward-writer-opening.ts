@@ -55,9 +55,9 @@ export class CurrentFootprintForwardWriterOpeningProvider {
  #frontierPreparation:ReturnType<CurrentFootprintForwardWriterNativeOwner["prepareFootprintForwardWriterStartupFrontier"]>|null=null;
  #clockPending:Promise<unknown>|null=null;#clockPreparationAttempted=false;#clockReservation:CurrentFootprintForwardWriterClockPreparationReservation|null=null;
  #stage:Stage="new";#busy=false;#cleanupBusy=false;#failed=false;#failure:unknown;#launchInvoked=false;#factoryInvoked=false;#factorySettled=false;#failureRecordAttempted=false;
- #opening:CurrentFootprintCopyStartupOpening|null=null;#openingCurrent:(()=>void)|null=null;#openingPending:Promise<Outcome>|null=null;#openingOutcome:Outcome|null=null;#openingRelease:Promise<void>|null=null;
+ #opening:CurrentFootprintCopyStartupOpening|null=null;#openingInvoked=false;#openingCurrent:(()=>void)|null=null;#openingPending:Promise<Outcome>|null=null;#openingOutcome:Outcome|null=null;#openingRelease:Promise<void>|null=null;
  #producerOrdinal=0;#held:CurrentProjectSaveProducerHeldCall|null=null;#read:Promise<CurrentProjectSaveProducerHeldCall>|null=null;
- #normalCloseAttempted=false;#normalCloseDispatched=false;#normalClosePending:Promise<void>|null=null;
+ #normalCloseAttempted=false;#normalCloseDispatched=false;#normalCloseAcknowledged=false;#normalClosePending:Promise<void>|null=null;
  #abort:CurrentFootprintCombinedAbortReservation|null=null;#abortDispatched=false;#abortAcknowledged=false;
  #terminationOrdinal=0;#terminationPending:{ordinal:number;dispatched:boolean;result:boolean|null}|null=null;#terminated=false;
  #settleCacheAttempted=false;#settleSyncAttempted=false;
@@ -161,7 +161,7 @@ export class CurrentFootprintForwardWriterOpeningProvider {
   requireCurrentFootprintForwardExecutionPrototypes(openingPrototype);const opening=new CurrentFootprintCopyStartupOpening(handoff);this.#opening=opening;
   this.#openingCurrent=captureCurrentFootprintForwardExecutionReceiver(opening,openingPrototype,["open","proveCurrentAssignments","observeFootprintState","observeFootprintSource","requireFootprintSource","releaseAfterTermination","status"]);
   await this.#journal.append("opening-intent",{target:prepared.sealedTarget});this.#current();
-  const pending=opening.open(prepared.sealedTarget,async()=>{await this.#preparedCurrent(false);await this.#journal.assertCurrent();this.#current();});
+  this.#openingInvoked=true;const pending=opening.open(prepared.sealedTarget,async()=>{await this.#preparedCurrent(false);await this.#journal.assertCurrent();this.#current();});
   this.#openingPending=(async():Promise<Outcome>=>{
    let outcome:Outcome;try { outcome=Object.freeze({value:await pending}); }catch(error) { if(!this.#failed) { this.#failed=true;this.#failure=error; }outcome=Object.freeze({error}); }
    this.#openingOutcome=outcome;return outcome;
@@ -176,6 +176,13 @@ export class CurrentFootprintForwardWriterOpeningProvider {
   need(this.#read!==null&&this.#held===null,"ORIGINAL_PRODUCER_READ");const pending=this.#read;const packet=await pending;this.#current();need(this.#read===pending,"READ_CHANGED");this.#held=packet;
   return Object.freeze({role:this.#requiredOwner().footprintForwardWriterHeldProducerRole(packet)});
  }); }
+ /** Original admitted cardinality, available before source capture; no continuation. */
+ public startupCacheJobs():number {
+  this.#current();need(this.#openingInvoked&&this.#openingPending!==null,"ORIGINAL_STARTUP_REQUIRED");
+  const progress=this.#requiredOwner().footprintForwardWriterProducerProgress();const cache=progress.cache;
+  need(progress.armed&&!progress.failed&&cache!==null&&!cache.failed&&Number.isSafeInteger(cache.jobs)&&cache.jobs>=2&&cache.jobs<=8,"ORIGINAL_CACHE_JOB_COUNT");
+  return cache.jobs;
+ }
  public continueStartup(kind:"cache"|"sync"):Promise<void> { return this.#normal(async()=>{
   need(kind==="cache"||kind==="sync","STARTUP_KIND");
   need(this.#held!==null&&this.#read!==null,"ORIGINAL_HELD_REQUIRED");const owner=this.#requiredOwner(),packet=this.#held;
@@ -207,7 +214,7 @@ export class CurrentFootprintForwardWriterOpeningProvider {
   const assignments=await this.#stageCall("assignments",{},()=>opening.proveCurrentAssignments(outcome.value));
   await this.#stageCall("ui",{},async()=>{const packet=await owner.observeFootprintCopyUi(opening,outcome.value);this.#current();await owner.requireFootprintCopyUi(packet);this.#current();return packet;});
   const state=await this.#stageCall("state",{},()=>opening.observeFootprintState(outcome.value,assignments));
-  const prepared=await this.#preparedCurrent(false);owner.assertFootprintForwardWriterSourceCapacity();this.#current();
+  const prepared=await this.#preparedCurrent(true);owner.assertFootprintForwardWriterSourceCapacity();this.#current();
   const plan=prepared.source.sourcePlan;need(plan.maximumTicket===state.maximumTicket,"SOURCE_BASELINE_CHANGED");
   const source=await this.#stageCall("source",{sourcePlanSha256:sha256Json(plan)},()=>opening.observeFootprintSource(outcome.value,assignments,state,plan));
   const preparation=await this.#stageCall("preparation",{},()=>prepareCurrentFootprintCopyOwned(Object.freeze({opening,result:outcome.value,assignments,state,sourcePlan:plan,source,before:prepared.source.before})));
@@ -251,6 +258,7 @@ export class CurrentFootprintForwardWriterOpeningProvider {
  public async settleRecords():Promise<void> {
   this.#current(true);need(!this.#busy&&!this.#cleanupBusy,"SETTLEMENT_BUSY");this.#cleanupBusy=true;
   try { await this.#journal.settle();this.#current(true);
+   if(this.#normalCloseAcknowledged&&!this.#journal.retained().records.some(entry=>entry.kind==="close-result")) { await this.#journal.append("close-result",{requested:true}); }
    if(this.#abortAcknowledged&&!this.#journal.retained().records.some(entry=>entry.kind==="abort-result")) { await this.#journal.append("abort-result",{requested:true,originalJobOnly:true}); }
    const pending=this.#terminationPending;if(pending!==null&&pending.result!==null) {
     if(!this.#journal.retained().records.some(entry=>entry.kind==="termination-result"&&entry.evidence["ordinal"]===pending.ordinal)) { await this.#journal.append("termination-result",{ordinal:pending.ordinal,terminated:pending.result}); }
@@ -282,7 +290,7 @@ export class CurrentFootprintForwardWriterOpeningProvider {
   void(async():Promise<void>=>{try{
    await this.#journal.settle();this.#current(true);const owner=this.#requiredOwner();const hwnd=await owner.observeApplicationWindow();this.#current(true);need(hwnd!==null,"ORIGINAL_CLOSE_WINDOW");
    await this.#journal.append("close-intent",{hwnd});this.#current(true);this.#normalCloseDispatched=true;
-   await owner.requestNormalClose(hwnd);await this.#journal.append("close-result",{requested:true});
+   await owner.requestNormalClose(hwnd);this.#normalCloseAcknowledged=true;await this.#journal.append("close-result",{requested:true});
    // oxlint-disable-next-line unicorn/no-useless-undefined -- Preserve the retained undefined completion Promise.
    completion.resolve(undefined);
   }catch(error){completion.reject(error);}finally{this.#cleanupBusy=false;}})();return completion.promise;
@@ -316,7 +324,7 @@ export class CurrentFootprintForwardWriterOpeningProvider {
  }
  public async cleanupNoProcess():Promise<void> {
   this.#current(true);need(this.#launchInvoked&&!this.#abortDispatched&&!this.#busy&&!this.#cleanupBusy,"NO_PROCESS_ONLY");this.#cleanupBusy=true;
-  try { await this.#journal.settle();if(this.#releasePending===null) { need(this.#requiredOwner().status().noProcessCleanupAvailable,"NATIVE_NO_PROCESS_PROOF");await this.#journal.append("no-process-release-intent",{});this.#releasePending=this.#requiredOwner().releaseNoProcess(); }
+  try { await this.#journal.settle();if(this.#releasePending===null) { need(this.#requiredOwner().status().noProcessCleanupAvailable,"NATIVE_NO_PROCESS_PROOF");if(!this.#journal.retained().records.some(entry=>entry.kind==="no-process-release-intent")){await this.#journal.append("no-process-release-intent",{});}this.#releasePending=this.#requiredOwner().releaseNoProcess(); }
    await this.#releasePending;await this.#finishRelease("cleanup-no-process",{helperReleased:true,noProcessProved:true});
   } finally { this.#cleanupBusy=false; }
  }
@@ -332,7 +340,23 @@ export class CurrentFootprintForwardWriterOpeningProvider {
    if(completeProviders.has(this)){await this.endCompleteWorkflowObserversAfterTermination();}
    if(this.#normalClosePending!==null) { await Promise.allSettled([this.#normalClosePending]); }
    if(this.#openingPending!==null) { await this.#openingPending; }
-   if(this.#opening!==null) { this.#openingRelease??=this.#opening.releaseAfterTermination();await this.#openingRelease; }
+   if(this.#opening!==null) {
+    this.#openingCurrent?.();
+    if(this.#openingInvoked){this.#openingRelease??=this.#opening.releaseAfterTermination();await this.#openingRelease;}
+    else {
+          const opening = this.#opening.status(), transport = opening.transport;
+          need(this.#openingOutcome === null && !opening.consumed && !opening.settled && !opening.openingAttempted &&
+            !opening.openingDispatchSettled && !opening.openingResultRetained && !opening.constructionRetained && !opening.completed &&
+            opening.diagnostics.stage === "idle" && opening.diagnostics.step === "idle" && opening.diagnostics.failure === null &&
+            !transport.started && !transport.settled && !transport.failed && transport.requests === 0 &&
+            !transport.initialPauseSeen && !transport.initialResumeAttempted && !transport.initialResumeSeen &&
+            !transport.unresolvedInstrumentation && transport.attachedWorkers === 0 && !transport.existingWorkersBound &&
+            transport.existingWorkersObserved === 0 && transport.existingWorkersAttached === 0 &&
+            transport.parentConstruction === null && transport.parentPeer === null && transport.constructionAssignments === null &&
+            transport.bootstrapStages.every(stage => !stage.parsed && !stage.pauseSeen && !stage.resumeAttempted && !stage.resumeSeen),
+          "ORIGINAL_UNSTARTED_OPENING_REQUIRED");
+    }
+   }
    if(this.#clockPending!==null) { await Promise.allSettled([this.#clockPending]);this.#current(true); }
    this.#releasePending??=this.#requiredOwner().releaseClosed();
    try { await this.#releasePending; } catch(caughtError) { this.#releaseFirstFailure=caughtError;throw caughtError; }

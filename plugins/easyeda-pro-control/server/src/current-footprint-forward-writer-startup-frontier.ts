@@ -1,5 +1,6 @@
 /** Original same-stream callback/timer driver. Its component journal and
  * native counters stay separate from the opening's fixed37 producer steps. */
+import {captureCurrentFootprintForwardExecutionPrototypes,requireCurrentFootprintForwardExecutionPrototypes} from "./current-footprint-forward-execution-opening-identity.ts";
 import { z } from "zod";
 // oxlint-disable-next-line import/no-cycle -- Original Core registries are resolved only by later cursor construction; module evaluation dispatches nothing.
 import { CurrentFootprintForwardWriterStartupCallbacks } from "./current-footprint-forward-writer-startup-callbacks.ts";
@@ -129,3 +130,7 @@ export class CurrentFootprintForwardWriterStartupFrontier {
       completeProducerFrontierVerified: false, executionAuthorized: false });
   }
 }
+
+/** Eager defining-module snapshot avoids cyclic import TDZ and first-use trust. */
+const originalClassPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintForwardWriterStartupFrontier.prototype);
+export function assertOriginalCurrentFootprintForwardWriterStartupFrontierClass():void{requireCurrentFootprintForwardExecutionPrototypes(originalClassPrototype);}

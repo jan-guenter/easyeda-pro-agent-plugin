@@ -124,3 +124,51 @@ void test("generic diagnostic engine admission exempts only its actual pre-birth
  assert.equal(await observed,stopped);assert.equal(admissions,3);assert.equal(workflow.retained()["terminal"],true);
  assert.equal(provider.status()["factoryInvoked"],false);assert.equal(await engine.assertDiagnosticLaunchOtherOperationsSettled(),true);
 });
+
+
+void test("saved no-allocation result publication resumes from its original acknowledged step without replay",async()=>{
+ const suffix="settle-saved-no-allocation";const operationId="footprint-forward-flow-settle-saved-no-allocation";
+ const collision=join(dirname(operationPath(operationId)),operationId,"06-cleanup-result.json");
+ const original=new Error("ORIGINAL_SAVED_PUBLICATION_REFUSAL");let calls=0;
+ const provider=createCurrentFootprintForwardWriterCompleteOpeningProvider(opening(suffix),options(async()=>{
+  calls+=1;await writeFile(collision,"isolated-saved-result-collision",{flag:"wx"});throw original;
+ }));
+ const workflow=new CurrentFootprintForwardWriterWorkflow(provider,request(suffix));const pending=workflow.run();
+ await assert.rejects(pending);assert.equal(workflow.retained()["terminal"],false);
+ assert.equal(workflow.retained()["writerReleased"],true);assert.equal(workflow.retained()["savedReleased"],false);
+ const cleanup=workflow.cleanup();await assert.rejects(cleanup);assert.equal(workflow.cleanup(),cleanup);
+ await unlink(collision);await workflow.settleRecords();
+ assert.equal(workflow.retained()["terminal"],true);assert.equal(workflow.retained()["savedReleased"],true);
+ assert.equal(workflow.retainedFailure(),original);assert.equal(provider.status()["factoryInvoked"],false);assert.equal(calls,1);
+ const history=await readCurrentFootprintForwardWriterWorkflowV2History(operationId);
+ assert.equal(history.records.filter(row=>row.kind==="cleanup-result"&&row.evidence["generation"]==="saved"&&row.evidence["action"]==="no-allocation").length,1);
+ assert.equal(history.records.at(-1)?.kind,"terminal-failure");
+ await workflow.settleRecords();assert.equal(workflow.run(),pending);assert.equal(calls,1);
+ await assertNoUnresolvedCurrentFootprintForwardWriterWorkflowIsolation();
+});
+
+
+void test("original cleanup intents resume only their undispatched action after publication repair",async()=>{
+ for(const [generation,sequence]of [["writer","03"],["saved","05"]]as const){
+  const suffix=`settle-${generation}-intent`;const operationId=`footprint-forward-flow-${suffix}`;
+  const collision=join(dirname(operationPath(operationId)),operationId,`${sequence}-cleanup-intent.json`);
+  const original=new Error("ORIGINAL_UNDISPATCHED_CLEANUP");let admissions=0;
+  const provider=createCurrentFootprintForwardWriterCompleteOpeningProvider(opening(suffix),options(async()=>{
+   admissions+=1;await writeFile(collision,"isolated-original-intent-collision",{flag:"wx"});throw original;
+  }));
+  const workflow=new CurrentFootprintForwardWriterWorkflow(provider,request(suffix));const running=workflow.run();
+  await assert.rejects(running);const cleanup=workflow.cleanup();await assert.rejects(cleanup);
+  assert.equal(workflow.cleanup(),cleanup);assert.equal(workflow.retained()["terminal"],false);
+  assert.equal(provider.status()["factoryInvoked"],false);assert.equal(provider.status()["released"],generation==="saved");
+  await unlink(collision);await workflow.settleRecords();
+  assert.equal(workflow.retained()["terminal"],true);assert.equal(workflow.retained()["writerReleased"],true);assert.equal(workflow.retained()["savedReleased"],true);
+  assert.equal(workflow.retainedFailure(),original);assert.equal(admissions,1);assert.equal(workflow.run(),running);
+  const history=await readCurrentFootprintForwardWriterWorkflowV2History(operationId);
+  for(const kind of ["cleanup-intent","cleanup-result"]as const){
+   assert.equal(history.records.filter(row=>row.kind===kind&&row.evidence["generation"]===generation&&row.evidence["action"]==="no-allocation").length,1);
+  }
+  assert.equal(history.records.at(-1)?.kind,"terminal-failure");
+  await workflow.settleRecords();assert.equal(admissions,1);
+  await assertNoUnresolvedCurrentFootprintForwardWriterWorkflowIsolation();
+ }
+});

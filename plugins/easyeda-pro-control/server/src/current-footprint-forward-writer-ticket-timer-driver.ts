@@ -2,6 +2,7 @@
 /** Three original source-held callbacks. No event label, source match or
  * matching descriptor packet can construct this driver's native origin. */
 import {z} from "zod";
+import {captureCurrentFootprintForwardExecutionPrototypes,requireCurrentFootprintForwardExecutionPrototypes} from "./current-footprint-forward-execution-opening-identity.ts";
 // oxlint-disable-next-line import/no-cycle -- Original Core installs this private registry before later driver construction.
 import {requireOriginalCurrentFootprintForwardWriterTicketTimerOrigin} from "./current-footprint-forward-writer-ticket-timer-origin.ts";
 import type {CurrentFootprintForwardWriterTicketTimerBindings as Bindings,CurrentFootprintForwardWriterTicketTimerOrigin as Origin,CurrentFootprintForwardWriterTicketTimerRole as Role} from "./current-footprint-forward-writer-ticket-timer-origin.ts";
@@ -24,8 +25,10 @@ type Receipt=Readonly<{naturalSelfReturnsJoined:true;timers:1|2;executionAuthori
 function need(value:boolean,code:string):asserts value{if(!value){throw new Error(`FORWARD_TICKET_TIMER_${code}`);}}
 export class CurrentFootprintForwardWriterTicketTimerDriver{
  readonly #origin:Origin;readonly #owner:object;readonly #operation:object;readonly #binding:Bindings;
+ readonly #resumedHolds=new WeakSet<object>();
  readonly #points=new Map<string,Role>();#capture:string|null=null;#roots:string|null=null;#baseline:string|null=null;#entry:string|null=null;
  #setupPending:Promise<void>|null=null;#beforePending:Promise<void>|null=null;#finishPending:Promise<Receipt>|null=null;
+ #slotGate:Promise<undefined>|null=null;
  #tail:Promise<void>=Promise.resolve();#active:Readonly<{role:Role;params:unknown}>|null=null;#resumed:ReturnType<typeof Promise.withResolvers<undefined>>|null=null;
  #expected:Command|null=null;#resumeAttempted=false;#ready=false;#before=false;#failed=false;#closed=false;#complete=false;#holds=0;#timers=0;#requests=0;#progress=Promise.withResolvers<undefined>();
  public constructor(origin:Origin,owner:object,operation:object){
@@ -78,11 +81,11 @@ export class CurrentFootprintForwardWriterTicketTimerDriver{
  public paused(input:unknown):void{
   try{this.#current();need(this.#before&&this.#binding.originalCreateWritten()&&!this.#complete&&this.#active===null,"ORIGINAL_MUTATION");const id=pause.parse(input).hitBreakpoints[0],role=this.#points.get(id);need(role!==undefined&&role===roles[this.#holds%3]&&this.#holds<6,"NATURAL_ORDER");
    currentFootprintForwardWriterTicketTimerFrame(input,role,id,this.#binding.actual.scriptId);this.#active=Object.freeze({role,params:input});this.#resumeAttempted=false;
-   const prior=this.#tail,work=(async():Promise<void>=>{await prior;await this.#service();})();this.#tail=work;void(async():Promise<void>=>{try{await work;}catch(error){this.#fail(error);}})();
+   const prior=this.#tail,slot=this.#slotGate,work=(async():Promise<void>=>{await prior;if(slot!==null){await slot;}await this.#service();})();this.#tail=work;void(async():Promise<void>=>{try{await work;}catch(error){this.#fail(error);}})();
   }catch(error){this.#fail(error);}
  }
  public hasActivePause():boolean{return this.#active!==null;}
- public resumed():void{try{this.#current();need(this.#active!==null&&this.#resumeAttempted&&this.#resumed!==null,"ORIGINAL_RESUMED");this.#active=null;this.#holds+=1;this.#resumed.resolve(undefined);}catch(error){this.#fail(error);}}
+ public resumed():void{try{this.#current();need(this.#active!==null&&this.#resumeAttempted&&this.#resumed!==null,"ORIGINAL_RESUMED");this.#resumedHolds.add(this.#active);this.#active=null;this.#holds+=1;this.#resumed.resolve(undefined);}catch(error){this.#fail(error);}}
  async #service():Promise<void>{
   await this.#fresh();const held=this.#active;need(held!==null&&this.#capture!==null&&this.#roots!==null&&this.#baseline!==null,"HELD_REQUIRED");const role=held.role;const ordinal=this.#holds+1;const timerOrdinal=Math.floor(this.#holds/3)+1;
   const id=[...this.#points].find(([,candidate])=>candidate===role)?.[0];need(id!==undefined,"ORIGINAL_POINT");
@@ -95,28 +98,52 @@ export class CurrentFootprintForwardWriterTicketTimerDriver{
    // The original service and exit retain this same rejection.
   }})();
   empty.parse(await this.#send(validateCurrentFootprintForwardWriterTicketTimerCommand({phase:"ticket-timer-resume",role,method:"Debugger.resume",params:{}})));
-  await barrier.promise;await this.#fresh();need(this.#active===null,"RESUMED_REQUIRED");this.#resumed=null;if(role==="selfReturned"){this.#timers+=1;this.#entry=null;}
+  await barrier.promise;await this.#fresh();need(this.#resumedHolds.has(held),"RESUMED_REQUIRED");if(this.#resumed===barrier){this.#resumed=null;}if(role==="selfReturned"){this.#timers+=1;this.#entry=null;}
   await this.#binding.journal("timer-result",{ordinal,timerOrdinal,role,commands:role==="entry"?4:3,originalResumed:true});await this.#fresh();const progress=this.#progress;this.#progress=Promise.withResolvers<undefined>();progress.resolve(undefined);
  }
  public finish():Promise<Receipt>{
   this.#current();need(this.#before&&this.#finishPending===null,"FINISH_ONCE");this.#binding.requireOriginalCallbacksCompleted();const completion=Promise.withResolvers<Receipt>();this.#finishPending=completion.promise;
   void(async():Promise<void>=>{try{completion.resolve(await this.#finish());}catch(error){this.#fail(error);completion.reject(error);}})();return completion.promise;
  }
+ /** A newly delivered hold waits for this exact slot operation before its
+  * own service starts. The gate exists before any source or native await. */
+ async #slot():Promise<ReturnType<typeof currentFootprintForwardWriterTicketTimerSlotSchema.parse>>{
+  need(this.#slotGate===null&&this.#roots!==null&&this.#baseline!==null&&this.#capture!==null,"SLOT_ORIGINAL");
+  const gate=Promise.withResolvers<undefined>();this.#slotGate=gate.promise;
+  try{return currentFootprintForwardWriterTicketTimerSlotSchema.parse(await this.#send(this.#call("slot",[this.#roots,this.#baseline,this.#capture])));}
+  catch(error){this.#fail(error);throw error;}
+  finally{need(this.#slotGate===gate.promise,"SLOT_CHANGED");this.#slotGate=null;gate.resolve(undefined);}
+ }
+ async #waitForNaturalTimer(target:number):Promise<void>{
+  need(Number.isInteger(target)&&target>=1&&target<=2,"NATURAL_TIMER_BOUND");
+  // Keep the exact natural-progress waits. Original same-worker events and
+  // Original Job exit own their settlement; no app timer is invoked here.
+  const deadline=Promise.withResolvers<never>();
+  // The original pump can still be pending when this deadline rejects. Observe
+  // It immediately; the same rejection remains available to the later race.
+  void(async():Promise<void>=>{try{await deadline.promise;}catch{
+   // The original finish wait retains the same deadline failure.
+  }})();
+  const timer=setTimeout(()=>{deadline.reject(new Error("FORWARD_TICKET_TIMER_NATURAL_DEADLINE"));},20_000);
+  try{for(let wait=0;this.#timers<target&&wait<3;wait+=1){const progress=this.#progress.promise;await this.#binding.pump();await this.#fresh();if(this.#timers<target){await Promise.race([progress,deadline.promise]);await this.#fresh();}}}
+  finally{clearTimeout(timer);}need(this.#timers>=target,"NATURAL_PROGRESS");
+ }
  async #finish():Promise<Receipt>{
   await this.#binding.journal("quiesce-intent",{});let queries=0;
-  for(;queries<3;){await this.#tail;await this.#fresh();this.#binding.requireOriginalCallbacksCompleted();need(this.#active===null&&this.#roots!==null&&this.#baseline!==null&&this.#capture!==null,"QUIESCE_BOUNDARY");
-   const snapshot=currentFootprintForwardWriterTicketTimerSlotSchema.parse(await this.#send(this.#call("slot",[this.#roots,this.#baseline,this.#capture])));queries+=1;
-   if(snapshot.result.value.timer===null){need(this.#active===null&&this.#holds===3*this.#timers&&(this.#timers===1||this.#timers===2),"ORIGINAL_SELF_RETURN_REQUIRED");
-    await this.#binding.journal("quiesce-result",{commands:queries,timers:this.#timers,publishTimerNull:true,originalParserAndPostSyncReturned:true,originalCallbacksJoined:true});
-    await this.#binding.control("complete");await this.#fresh();const receipt=Object.freeze({naturalSelfReturnsJoined:true as const,timers:this.#timers,executionAuthorized:false as const});await this.#binding.journal("complete",{timers:this.#timers,naturalSelfReturnsJoined:true,executionAuthorized:false});this.#complete=true;return receipt;
+  for(;queries<3;){
+   const tail=this.#tail;await tail;await this.#fresh();this.#binding.requireOriginalCallbacksCompleted();
+   if(this.#tail===tail){
+    need(this.#active===null&&this.#roots!==null&&this.#baseline!==null&&this.#capture!==null,"QUIESCE_BOUNDARY");
+    // An entry/return is part of one original triple, never a new slot budget.
+    if(this.#holds%3===0){
+     const snapshot=await this.#slot();queries+=1;const stable=this.#tail===tail;
+     if(stable&&snapshot.result.value.timer===null){need(this.#active===null&&this.#holds===3*this.#timers&&(this.#timers===1||this.#timers===2),"ORIGINAL_SELF_RETURN_REQUIRED");
+      await this.#binding.journal("quiesce-result",{commands:queries,timers:this.#timers,publishTimerNull:true,originalParserAndPostSyncReturned:true,originalCallbacksJoined:true});
+      await this.#binding.control("complete");await this.#fresh();const receipt=Object.freeze({naturalSelfReturnsJoined:true as const,timers:this.#timers,executionAuthorized:false as const});await this.#binding.journal("complete",{timers:this.#timers,naturalSelfReturnsJoined:true,executionAuthorized:false});this.#complete=true;return receipt;
+     }
+     if(stable){await this.#waitForNaturalTimer(this.#timers+1);}
+    }else{await this.#waitForNaturalTimer(Math.floor(this.#holds/3)+1);}
    }
-   // Keep the exact natural-progress waits. Original same-worker events and
-   // Original Job exit own their settlement; no app timer is invoked here.
-   const target=this.#timers+1;const deadline=Promise.withResolvers<never>();
-   const timer=setTimeout(()=>{deadline.reject(new Error("FORWARD_TICKET_TIMER_NATURAL_DEADLINE"));},20_000);
-   try{for(let wait=0;this.#timers<target&&wait<3;wait+=1){const progress=this.#progress.promise;await this.#binding.pump();await this.#fresh();if(this.#timers<target){await Promise.race([progress,deadline.promise]);await this.#fresh();}}}
-   finally{clearTimeout(timer);}need(this.#timers>=target,"NATURAL_PROGRESS");
-
   }throw new Error("FORWARD_TICKET_TIMER_QUIESCE_BOUND");
  }
  public async endAfterOriginalExit():Promise<void>{
@@ -127,3 +154,18 @@ export class CurrentFootprintForwardWriterTicketTimerDriver{
  public status():Readonly<Record<string,unknown>>{return Object.freeze({ready:this.#ready,beforeCreate:this.#before,holds:this.#holds,timers:this.#timers,requests:this.#requests,complete:this.#complete,failed:this.#failed,closed:this.#closed,executionAuthorized:false});}
 }
 Object.freeze(CurrentFootprintForwardWriterTicketTimerDriver.prototype);Object.freeze(CurrentFootprintForwardWriterTicketTimerDriver);
+
+/** Capture in the defining module immediately after the class initializes.
+ * Core can be reached through this driver's origin while this binding is in its
+ * TDZ; it may call this reproof only later, never capture a first-call baseline. */
+const originalDriverPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintForwardWriterTicketTimerDriver.prototype);
+const originalDriverStatics=new Map<PropertyKey,PropertyDescriptor>(Reflect.ownKeys(CurrentFootprintForwardWriterTicketTimerDriver).map(key=>{const descriptor=Object.getOwnPropertyDescriptor(CurrentFootprintForwardWriterTicketTimerDriver,key);need(descriptor!==undefined,"ORIGINAL_CLASSES");return[key,Object.freeze(descriptor)];}));
+const originalDriverParent:unknown=Object.getPrototypeOf(CurrentFootprintForwardWriterTicketTimerDriver);
+export function assertOriginalCurrentFootprintForwardWriterTicketTimerDriverClass():void{
+ requireCurrentFootprintForwardExecutionPrototypes(originalDriverPrototype);
+ need(Object.getPrototypeOf(CurrentFootprintForwardWriterTicketTimerDriver)===originalDriverParent&&Reflect.ownKeys(CurrentFootprintForwardWriterTicketTimerDriver).length===originalDriverStatics.size,"ORIGINAL_CLASSES");
+ for(const[key,original]of originalDriverStatics){
+  const actual=Object.getOwnPropertyDescriptor(CurrentFootprintForwardWriterTicketTimerDriver,key);
+  need(actual!==undefined&&actual.configurable===original.configurable&&actual.enumerable===original.enumerable&&actual.writable===original.writable&&actual.value===original.value&&actual.get===original.get&&actual.set===original.set,"ORIGINAL_CLASSES");
+ }
+}

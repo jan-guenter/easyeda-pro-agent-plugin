@@ -242,75 +242,7 @@ are implemented. Exact final-head CI and a completed CodeRabbit review
 remain required before merge. No installation, app launch, connected
 writer acceptance or saved/reopened validation is claimed by this batch.
 
-## Genuine backend dependency batch, 16 November 2026
-
-The next local batch begins at helper/Wire commit
-`bd12df96ca57f145969fa45b557e909dcd4710ec`. It selects the actual
-Core, original backend/factories, retained child ledgers and saved-reader
-lifecycle from sealed forward leaf
-`4ac932e28fab714728f0d6fddfcf9cdf70b507c5`. All three complete
-Core-dependent regressions deferred above are included unchanged. Existing
-Via-named Core members and historical result literals are preserved.
-
-The batch also includes the exact shared original-publication durability
-helpers and repairs for all eight active publishers, with the whole 24-case
-filesystem-fault regression. A matching readback after failed fsync no longer
-settles a pending original publication; the original artifact and sealed
-manifest must both regain descriptor-bound durability first. Ordinary
-readers and historical JSON schemas are unchanged.
-
-Independent bounded review found no remaining P1/P2 in the saved-factory
-fixes or eight repairs. Static source/token dependency inspection found no
-missing imports or deferred-surface edges in the 146-path implementation.
-Those are source/review observations; actual partition compilation and final
-checks remain pending. The public operation, coordinator, manager adapter,
-API coverage and operating reference stay in the following surface batch.
-There is still no connected writer or saved/reopened acceptance proof.
-
-This originating record carries the dependency continuation, avoiding an
-extra redundant history file. The existing CodeRabbit exclusion remains
-limited to three generated bundles; review policy is unchanged. Installation
-is deferred until the actual executable surface has been reviewed and merged.
-
-### Backend final local result
-
-The actual public dependency partition passed both main/stub TypeScript
-projects, global type-aware strict lint with zero warnings, build, compatibility,
-bridge checks, API/repository/MCP/all-skill validation, all seven official
-skill quick checks and reproducible server/supervisor/manager bundles. The
-dependency manifest and lock bytes remain identical to the retained successful
-installation/tree/signatures/audit/sanitizer proof.
-
-All 82 focused cases across 18 complete files passed without a skip in
-80.02 seconds. These include all three deferred Core regressions, retained
-saved-family/factory custody and the complete 24-case filesystem-fault suite
-plus affected journal regressions. The new saved-factory test selects actual
-factory code with inert child processes; it is a bounded ownership regression,
-not full positive native or connected saved acceptance.
-
-The final 5668-file package manifest is SHA-256
-`62ec024b878d00fb399a5a1a1fa59c5dcc76d85eb34c3290de68cb99750b3211`;
-its TypeScript source digest is
-`0ddce490a0215da5afd4d08bff4162bec66b64bb7ff0d503146616444417d61b`.
-Original test processes exited before successful task-owned control fixtures
-and compile caches were removed. Logs, failure evidence and terminal receipts
-remain private. Final exact-head CI/CodeRabbit and publication are pending.
-
-### Backend rebase onto the corrected helper payload
-
-The backend is now based on helper commit
-`c97bb2a3d808974784773f166b0b81c55fc686dc`. Its prior 82-case
-result above binds the earlier helper package; it is not final proof after
-the native review corrections. The complete tail classification regression
-is now in that helper commit, leaving 145 backend implementation/test paths.
-All genuine Core/factory and eight journal repairs remain intact. New final
-checks bind the corrected six/seven helper inputs before publication.
-
-The rebase preserved every newer helper-history section and retained the
-corrected helper's full compatibility baseline. Only facade projections
-will regenerate from the actual backend build; external pins stay fixed.
-
-## Helper publication and corrected backend result, 17 November
+## Helper publication, 17 November
 
 Helper PR #220 merged at `1bdc65e63733b1044b30e4856c3ee8a5cf136407`
 from reviewed head `c97bb2a3d808974784773f166b0b81c55fc686dc`. All
@@ -328,19 +260,5 @@ Installation is deliberately deferred across the executable integration;
 both local hosts remain on verified `0.3.0+codex.20261116150017`. This is
 publication evidence, not a new installation or connected acceptance.
 
-On the corrected helper, all 82 backend Core/saved/journal cases across
-18 whole files pass without a skip in 81.06 seconds. Both TypeScript
-projects, global/bridge strict lint with zero warnings/errors, build, API
-coverage, compatibility, repository/MCP/all-skill checks, seven official
-skill checks and reproducible bundles all pass. The 5672-file final backend
-package manifest is SHA-256
-`73d172f0a83d11e043596aa4db5865ca64d6fd1962e57abfe745cddcc725c44d`; TypeScript source
-is `a096d115e779eb33b6d2c090ddc429f3d21af4aa8b5b6f58c3f94ab996bc1658`. The current six/seven
-helper compiler inputs remain byte-exact to #220, so their exact strict
-Windows/no-app proof remains applicable. No native app was launched.
-
-The earlier 82-case campaign above remains an earlier-payload observation.
-This result binds the corrected helper and full genuine backend. Successful
-owned fixtures/cache were removed after test-owner exit; complete raw
-failure/success logs and manifests remain private. Backend exact-head
-CI/CodeRabbit review is still required before its merge.
+The separate [backend continuation](2026-11-16-through-2026-11-17-genuine-forward-backend.md) retains its original
+implementation and validation observations, with the public review corrections.

@@ -1,5 +1,6 @@
 /** Same original four callback points, distinct ready-state component. It
  * never rearms a point, invokes a callback or reopens a startup receipt. */
+import {captureCurrentFootprintForwardExecutionPrototypes,requireCurrentFootprintForwardExecutionPrototypes} from "./current-footprint-forward-execution-opening-identity.ts";
 import {z} from "zod";
 // oxlint-disable-next-line import/no-cycle -- Original Core custody is resolved only by this later original driver construction.
 import {requireOriginalCurrentFootprintForwardWriterPublicationOrigin} from "./current-footprint-forward-writer-publication-origin.ts";
@@ -76,3 +77,7 @@ export class CurrentFootprintForwardWriterPublicationDriver{
  public status():Readonly<Record<string,unknown>>{return Object.freeze({bodyBound:this.#bodyBound,failed:this.#failed,closed:this.#closed,completed:this.#complete,heldRole:this.#active?.role??null,callbacks:this.#callbacks.status(),executionAuthorized:false});}
 }
 Object.freeze(CurrentFootprintForwardWriterPublicationDriver.prototype);Object.freeze(CurrentFootprintForwardWriterPublicationDriver);
+
+/** Eager defining-module snapshot avoids cyclic import TDZ and first-use trust. */
+const originalClassPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintForwardWriterPublicationDriver.prototype);
+export function assertOriginalCurrentFootprintForwardWriterPublicationDriverClass():void{requireCurrentFootprintForwardExecutionPrototypes(originalClassPrototype);}

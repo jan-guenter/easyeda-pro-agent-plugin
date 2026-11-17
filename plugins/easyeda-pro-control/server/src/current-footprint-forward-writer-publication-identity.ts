@@ -1,9 +1,11 @@
-/** Actual ready driver/callback method tables cannot be replaced after issue. */
-// oxlint-disable-next-line import/no-cycle -- Only later Core calls reprove these original local prototypes.
-import {CurrentFootprintForwardWriterPublicationDriver} from "./current-footprint-forward-writer-publication-driver.ts";
-// oxlint-disable-next-line import/no-cycle -- Only later Core calls reprove these original local prototypes.
-import {CurrentFootprintForwardWriterPublicationCallbacks} from "./current-footprint-forward-writer-publication-callbacks.ts";
-import {captureCurrentFootprintForwardExecutionPrototypes,requireCurrentFootprintForwardExecutionPrototypes} from "./current-footprint-forward-execution-opening-identity.ts";
+/** Reprove the eager snapshots owned by each original defining module.
+ * Imports may be cyclic; no class value is accessed during this aggregation. */
+// oxlint-disable-next-line import/no-cycle -- Only later calls reprove snapshots already captured in the defining module.
+import {assertOriginalCurrentFootprintForwardWriterPublicationDriverClass} from "./current-footprint-forward-writer-publication-driver.ts";
+// oxlint-disable-next-line import/no-cycle -- Only later calls reprove snapshots already captured in the defining module.
+import {assertOriginalCurrentFootprintForwardWriterPublicationCallbacksClass} from "./current-footprint-forward-writer-publication-callbacks.ts";
 
-const prototypes=[CurrentFootprintForwardWriterPublicationDriver,CurrentFootprintForwardWriterPublicationCallbacks].map(value=>captureCurrentFootprintForwardExecutionPrototypes(value.prototype));
-export function assertOriginalCurrentFootprintForwardWriterPublicationClasses():void{for(const value of prototypes){requireCurrentFootprintForwardExecutionPrototypes(value);}}
+export function assertOriginalCurrentFootprintForwardWriterPublicationClasses():void{
+ assertOriginalCurrentFootprintForwardWriterPublicationDriverClass();
+ assertOriginalCurrentFootprintForwardWriterPublicationCallbacksClass();
+}

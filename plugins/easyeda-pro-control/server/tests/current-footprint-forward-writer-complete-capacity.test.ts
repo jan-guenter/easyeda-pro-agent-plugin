@@ -4,12 +4,16 @@ import {requireOriginalCurrentFootprintForwardWriterMainRequestReservationCopy} 
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { deriveCurrentFootprintForwardWriterCompleteCapacity as derive, requireOriginalCurrentFootprintForwardWriterCompleteCapacity as requireOriginal, requirePrecreateCurrentFootprintForwardWriterCompleteCapacity as requirePrecreate } from "../src/current-footprint-forward-writer-complete-capacity.ts";
-import { completeCapacityFixture } from "./helpers/footprint-forward-complete-capacity-fixture.ts";
+import { completeCapacityPublicationFixture } from "./helpers/footprint-forward-complete-capacity-fixture.ts";
 import { captureCurrentFootprintSavedFlowCacheInput, deriveCurrentFootprintSavedFlowCacheData } from "../src/current-footprint-saved-flow-cache-data.ts";
 import { sha256Text } from "../src/core.ts";
+import { INSTALLED_EASYEDA_SOURCE_SKIP_REASON, readConfiguredEasyedaAssets } from "./helpers/installed-easyeda-source.ts";
 
-void test("complete capacity reserves escaped actors, parser rows and cold/cache bounds before Create",async()=>{
- const f=await completeCapacityFixture({username:'Quoted "name"',nickname:"Ω"});
+void test("complete capacity reserves escaped actors, parser rows and cold/cache bounds before Create",async context=>{
+ const assets=await readConfiguredEasyedaAssets(["pro-mgr/3.2.185.bf63a159/js/project-worker.js"]);
+ if(assets===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
+ const [worker]=assets;assert.ok(worker!==undefined);
+ const f=await completeCapacityPublicationFixture(worker,{username:'Quoted "name"',nickname:"Ω"});
  const result=derive(f.reservation,f.input,f.flow,f.publication);
  requirePrecreate(result,f.reservation,f.input,f.flow,f.publication);
  const copy=requireOriginalCurrentFootprintForwardWriterMainRequestReservationCopy(f.reservation);const cold=deriveCold(result,copy);
@@ -44,10 +48,13 @@ void test("complete capacity reserves escaped actors, parser rows and cold/cache
  assert.throws(()=>requireOriginal(result,{...f.reservation},f.input,f.flow,f.publication));
  assert.throws(()=>derive(f.reservation,f.input,f.flow,{...f.publication}));
 });
-void test("complete capacity refuses escaped-actor overflow and drift in retained inputs without running getters",async()=>{
- const overflow=await completeCapacityFixture({username:"\u0001".repeat(1024),nickname:"\u0001".repeat(1024)});
+void test("complete capacity refuses escaped-actor overflow and drift in retained inputs without running getters",async context=>{
+ const assets=await readConfiguredEasyedaAssets(["pro-mgr/3.2.185.bf63a159/js/project-worker.js"]);
+ if(assets===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
+ const [worker]=assets;assert.ok(worker!==undefined);
+ const overflow=await completeCapacityPublicationFixture(worker,{username:"\u0001".repeat(1024),nickname:"\u0001".repeat(1024)});
  assert.throws(()=>derive(overflow.reservation,overflow.input,overflow.flow,overflow.publication));
- const f=await completeCapacityFixture();
+ const f=await completeCapacityPublicationFixture(worker);
  const mutable:unknown=structuredClone(f.input);
  const flow:unknown=structuredClone(f.flow);
  const result=derive(f.reservation,mutable,flow,f.publication);

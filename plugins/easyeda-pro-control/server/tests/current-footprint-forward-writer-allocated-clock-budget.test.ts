@@ -8,6 +8,7 @@ import {currentPcbViaSaveTailObservationNativeCases} from "../src/current-pcb-vi
 import {currentFootprintForwardWriterPostHistorySyncWire} from "../src/current-footprint-forward-writer-post-history-sync-wire.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { setImmediate as nextTurn } from "node:timers/promises";
 import { CurrentFootprintCopyAllocatedCreateClockBudget, CURRENT_FOOTPRINT_COPY_ALLOCATION_NATIVE_ORDER as ORDER } from "../src/current-footprint-copy-allocated-create-clock-budget.ts";
 import { CurrentFootprintForwardWriterAllocatedCreateClockBudget } from "../src/current-footprint-forward-writer-allocated-clock-budget.ts";
 import { forwardWriterClockChannelFixture } from "./helpers/footprint-forward-writer-clock-channel-fixture.ts";
@@ -110,14 +111,17 @@ void test("the full sequencers and historical clock reader reject data-only orig
   assert.throws(() => Reflect.apply(requireCurrentFootprintCopyClockRpcOrigin, undefined, [full]), /FOOTPRINT_CLOCK_RPC_ORIGINAL_ORIGIN/u);
 });
 void test("full channel release joins one original-exit retirement of a partially armed unit before releasing its stream", async () => {
-  let retirements = 0;
+  let retirements = 0;const entered=Promise.withResolvers<null>(),retirement=Promise.withResolvers<null>();
   const command = clock(false);
   const f = await forwardWriterClockChannelFixture(false, {}, {
-    begin: (): void => { assert.equal(retirements, 0); }, retire: (): Promise<void> => { retirements += 1; return Promise.resolve(); }, create: (): void => { assert.fail("no Create in this exit-only case"); },
+    begin: (): void => { assert.equal(retirements, 0); }, retire: async (): Promise<void> => { retirements += 1;entered.resolve(null);await retirement.promise; }, create: (): void => { assert.fail("no Create in this exit-only case"); },
     nextCommand: (): CurrentFootprintCopyClockRpcV2Command => command, request: (): Promise<unknown> => Promise.resolve({}), pump: (): Promise<void> => Promise.resolve(), takeEvent: (): null => null,
   }, true, true, 9000);
   await f.channel.beginFootprintCreateClockRpc(f.dependency, f.reservation); f.state.exited = true;
-  await f.channel.releaseAfterTermination(); assert.equal(retirements, 1); assert.equal(f.state.consumed, 0); assert.equal(f.channel.status().pendingReplies, 0);
+  let released=false;const releasing=(async():Promise<void>=>{await f.channel.releaseAfterTermination();released=true;})();
+  try{await entered.promise;await nextTurn();assert.equal(released,false);assert.equal(retirements,1);}
+  finally{retirement.resolve(null);await releasing;}
+  assert.equal(retirements, 1); assert.equal(f.state.consumed, 0); assert.equal(f.channel.status().pendingReplies, 0);
   await assert.rejects(f.channel.releaseAfterTermination()); assert.equal(retirements, 1);
 });
 void test("separate local and upload channels refuse before Create and retain normal request classification afterward", async () => {

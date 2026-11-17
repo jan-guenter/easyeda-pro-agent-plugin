@@ -114,6 +114,7 @@ class CurrentFootprintForwardWriterHeldSavedGeneration {
   #guardAttempted = false;
   #guardCompleted = false;
   #closeAttempted = false;
+  #normalCloseAcknowledged = false;
   #termination: object | null = null;
   #snapshotAttempted = false;
   #releaseAttempted = false;
@@ -330,7 +331,7 @@ class CurrentFootprintForwardWriterHeldSavedGeneration {
       this.#current(); this.#noProcessReleased = this.#methods.releaseState.call(owner) === "released"; return result;
     }
     const window = await this.#methods.window.call(owner); this.#current(); need(window !== null, "CLOSE_WINDOW_MISSING");
-    await this.#methods.close.call(owner, window); this.#current(); return Object.freeze({ closeDispatched: true, saveOrDiscardSelected: false });
+    await this.#methods.close.call(owner, window); this.#normalCloseAcknowledged = true; this.#current(); return Object.freeze({ closeDispatched: true, saveOrDiscardSelected: false });
   }
 
   /** Observe original no-process cleanup or retained root/whole-Job exit; a
@@ -379,7 +380,7 @@ class CurrentFootprintForwardWriterHeldSavedGeneration {
    * SQL invariance and acknowledged release. No old runtime authority transfers. */
   public async sealForwardSavedCheckpoint(): Promise<CurrentFootprintForwardWriterSavedCheckpoint> {
     this.#current();
-    need(!this.#forwardCheckpointAttempted && this.#forwardReadQualified && this.#forwardReader !== null &&
+    need(!this.#forwardCheckpointAttempted && this.#normalCloseAcknowledged && this.#abortPending === null && this.#forwardReadQualified && this.#forwardReader !== null &&
       this.#forwardRead !== null && forwardReaderMethods.status.call(this.#forwardReader).phase === "completed" && this.#closedInventory !== null && this.#after !== null &&
       this.#termination !== null && this.#releaseAttempted && this.#observeRelease(this.#termination) === "released" && this.#replay !== null &&
       completed.get(this.#replay)?.pending.adapter === this, "FORWARD_CHECKPOINT_REQUIRED");
@@ -398,7 +399,7 @@ class CurrentFootprintForwardWriterHeldSavedGeneration {
     savedRead: CurrentFootprintCopyV2SavedReadPacket; paired: CurrentFootprintForwardWriterPairedObservation; snapshot: ReturnType<typeof requireCurrentFootprintForwardWriterSavedClosedSnapshot>;
   }> {
     this.#current(); need(token === this.#forwardCheckpoint && forwardCheckpoints.get(token) === this &&
-      this.#after !== null && this.#closedInventory !== null && this.#projection !== null && this.#forwardRead !== null && this.#forwardReadQualified &&
+      this.#normalCloseAcknowledged && this.#abortPending === null && this.#after !== null && this.#closedInventory !== null && this.#projection !== null && this.#forwardRead !== null && this.#forwardReadQualified &&
       this.#termination !== null && this.#releaseAttempted && this.#observeRelease(this.#termination) === "released", "ORIGINAL_FORWARD_CHECKPOINT");
     const owner = this.#native(); this.#requireTermination(this.#termination);
     const snapshot = requireCurrentFootprintForwardWriterSavedClosedSnapshot(owner, this.#closedInventory);

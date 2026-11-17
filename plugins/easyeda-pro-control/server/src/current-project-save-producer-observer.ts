@@ -65,6 +65,7 @@ export class CurrentProjectSaveProducerObserver {
   readonly #points = new Map<CurrentProjectSaveProducerRole, string>(); readonly #occurrences = new Map<CurrentProjectSaveProducerRole, number>();
   #busy = false; #armed = false; #failed = false; #closed = false; #requests = 0; #events = 0;
   readonly #forwardWriter: boolean;
+  #tailArming:Promise<void>|null=null;
   #held: CurrentProjectSaveProducerHeldCall | null = null;
   public constructor(origin: CurrentProjectSaveProducerOrigin, owner: object, operation: object) {
     this.#relevanceLocal=originalCurrentSchematicRelevanceDisplayLocalObservation(origin,owner,operation); this.#origin = origin; this.#owner = owner; this.#operation = operation; this.#binding = binding(requireOriginalCurrentProjectSaveProducerOrigin(origin, owner, operation));this.#forwardWriter=origin.profile==="private.current-footprint-forward-writer-save-producer-origin.v1";this.#tail=originalCurrentPcbViaSaveTailObservation(origin,owner,operation)??originalCurrentSchematicRelevanceDisplaySaveTailObservation(origin,owner,operation);if(this.#tail!==null){const tail=this.#tail;need(!types.isProxy(tail)&&Object.getPrototypeOf(tail)===Object.prototype&&Object.isFrozen(tail)&&Reflect.ownKeys(tail).length===6,"TAIL_BINDING");const keys=["additionalHeadJobs","additionalSharedRequests","arm","originalBreakpoint","captureHeldCall","assertCurrent"];for(const[index,key]of keys.entries()){const d=Object.getOwnPropertyDescriptor(tail,key);need(d!==undefined&&Object.hasOwn(d,"value")&&(index<2?d.value===(index===0?3:42):typeof d.value==="function"&&!types.isProxy(d.value)),"TAIL_BINDING_DATA");}} Object.freeze(this);
@@ -90,12 +91,15 @@ export class CurrentProjectSaveProducerObserver {
     need(this.#forwardWriter&&this.#armed&&!this.#failed&&!this.#closed&&this.#held===null&&this.#tail===null,"FORWARD_TAIL_ENROLL_ONCE");
     const tail=originalCurrentFootprintForwardWriterCopyTailObservation(this.#origin,this.#owner,this.#operation);
     need(tail!==null&&tail.additionalHeadJobs===4&&tail.additionalSharedRequests===56,"FORWARD_TAIL_ORIGINAL");
-    this.#tail=tail;try{await this.#current();await tail.arm();await this.#current();}catch(error){this.#refuse();throw error;}
+    this.#tail=tail;const pending=(async():Promise<void>=>{await this.#current();await tail.arm();await this.#current();})();this.#tailArming=pending;
+    try{await pending;}catch(error){this.#refuse();throw error;}
   }
   public async observeHeldCall(): Promise<CurrentProjectSaveProducerHeldCall> {
     need(this.#armed && !this.#busy && !this.#failed && !this.#closed && this.#held === null, "HELD_CALL_ONCE"); this.#busy = true;
     try { await this.#current(); this.#events += 1; need(this.#events <= REQUESTS.events+(this.#forwardWriter?15:0)+(this.#tail===null?0:this.#tail.additionalHeadJobs*3+2)+(this.#relevanceLocal?3:0), "EVENT_CAPACITY");
       const received = event.parse(captureCurrentPcbStringClockReply(await this.#binding.nextEvent()).value); await this.#current(); need(received.sessionId === this.#binding.sessionId, "EVENT_SESSION");
+      // Retain this exact read while original tail breakpoint enrollment finishes.
+      const arming=this.#tailArming;if(arming!==null){await arming;await this.#current();need(this.#tailArming===arming,"TAIL_ARM_CHANGED");}
       for (const role of SHARED) { const id = this.#binding.originalBreakpoint(role); handle.parse(id); const prior = this.#points.get(role); need(prior === id || prior === undefined && ![...this.#points.values()].includes(id), "SHARED_POINT_ALIAS"); this.#points.set(role, id); }
       if(this.#tail!==null){const tail=this.#tail;const extra=CURRENT_PCB_VIA_SAVE_TAIL_DELETE_ROLES.find(role=>tail.originalBreakpoint(role)===received.params.hitBreakpoints[0]);if(extra!==undefined){const original=await tail.captureHeldCall(extra);await this.#current();need(original.role===extra,"TAIL_CAPTURE_ROLE");heldCalls.set(original.packet,Object.freeze({observer:this,role:extra,fields:original.fields,cache:null,promise:null}));this.#held=original.packet;return original.packet;}}
       const role = ROLES.find(name => this.#points.get(name) === received.params.hitBreakpoints[0]), top = received.params.callFrames[0]; need(role !== undefined && top !== undefined, "ORIGINAL_POINT"); const site = SITES[role];

@@ -891,7 +891,7 @@ class CurrentPcbWorkerStartupChannelCore {
       }
       if (producer) {
         if (value.sessionId === undefined) { throw fail("FORWARD_WRITER_PRODUCER_SESSION"); }
-        const { sessionId, ...command } = value; return currentFootprintForwardWriterProducerWire(command, id, sessionId);
+        const { sessionId, ...command } = value; return currentFootprintForwardWriterProducerWire(command, id, sessionId,this.#footprintProfile.requestLimit);
       }
       if (coldTail) { this.#sameColdTail(cleanupCommand(value)); return currentFootprintForwardColdTailWire(value, id); }
       if (heldCache) {

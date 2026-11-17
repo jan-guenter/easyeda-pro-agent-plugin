@@ -61,7 +61,7 @@ const journalPrototype = captureCurrentFootprintForwardExecutionPrototypes(Curre
 const metadataPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintForwardWriterClockPreparationOwner.prototype);
 const headPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintForwardWriterPrecreateHeadOwner.prototype);
 const intentPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintForwardWriterCreateIntentOwner.prototype);
-const providerMethods = ["launch","observeMain","observeBrowser","inspectFrames","inspectUi","startOpening","nextHeldProducer","continueStartup","settleStartup","captureSource","status","closeCompleteWorkflow","completeWorkflowNoProcessCleanupAvailable","endCompleteWorkflowObserversAfterTermination","abort","observeTermination","release","consumeReleasePreflightFailure","retryReleaseAfterPreflight","cleanupBeforeLaunch","cleanupNoProcess","settleRecords"] as const;
+const providerMethods = ["launch","observeMain","observeBrowser","inspectFrames","inspectUi","startOpening","nextHeldProducer","startupCacheJobs","continueStartup","settleStartup","captureSource","status","closeCompleteWorkflow","completeWorkflowNoProcessCleanupAvailable","endCompleteWorkflowObserversAfterTermination","abort","observeTermination","release","consumeReleasePreflightFailure","retryReleaseAfterPreflight","cleanupBeforeLaunch","cleanupNoProcess","settleRecords"] as const;
 const nativeMethods = ["prepareFootprintForwardWriterOwnData","readFootprintForwardWriterBranchApi","prepareFootprintForwardWriterCopyTailObservation","prepareFootprintForwardWriterTicketTimer","beginFootprintForwardWriterProducerInterval","observeFootprintCopyWindowsClock","prepareFootprintForwardWriterPublication","reproveFootprintForwardWriterTicketTimerBeforeCreate","bindFootprintForwardWriterProducerInterval","issueFootprintForwardWriterClockObserver","consumeFootprintForwardWriterProducerInterval","prepareFootprintForwardWriterCopyLocal","observeFootprintForwardWriterHeldProducer","continueFootprintForwardWriterCopyLocal","prepareFootprintForwardWriterCopyUpload","continueFootprintForwardWriterCopyUpload","prepareFootprintForwardWriterCopyDrain","continueFootprintForwardWriterCopyDrain","settleFootprintForwardWriterCopyDrain","footprintForwardWriterCopyDrainProgress","footprintForwardWriterCopyLocalProgress","footprintForwardWriterCopyUploadProgress","closedFootprintCopyWindowsClockWindow","boundFootprintCopyDocumentClockValues"] as const;
 function need(value:boolean,code:string):asserts value { if(!value){throw new Error(`FORWARD_WRITER_WORKFLOW_${code}`);} }
 function record(value:unknown):value is Readonly<Record<string,unknown>> { return value!==null&&typeof value==="object"&&!Array.isArray(value); }
@@ -85,10 +85,13 @@ export class CurrentFootprintForwardWriterWorkflow {
  readonly #openingRequest:ReturnType<typeof requireOriginalCurrentFootprintForwardWriterCompleteOpeningRequest>;
  readonly #journal:CurrentFootprintForwardWriterWorkflowV2Journal; readonly #journalCurrent:()=>void;readonly #providerCurrent:()=>void;
  readonly #pending=new Set<Promise<unknown>>();readonly #cleanupAttempts=new Set<string>();
+ readonly #cleanupIntents=new Map<string,Readonly<Record<string,unknown>>>();readonly #cleanupDispatchStarted=new Set<string>();
  readonly #releaseRecoveries=new Map<Generation,Readonly<{proof:CurrentFootprintForwardWriterReleasePreflightProof;facts:CurrentFootprintForwardWriterReleasePreflightFacts;cause:unknown}>>();
+ readonly #cleanupResults=new Map<string,Readonly<{value:unknown;evidence:Readonly<Record<string,unknown>>}>>();
  readonly #cleanupFacts=new Map<string,Readonly<{generation:Generation;action:CleanupAction;attempt:number;outcome:Outcome}>>();
  #journalTail:Promise<unknown>=Promise.resolve();
  #runPending:Promise<CurrentFootprintForwardWriterWorkflowResult>|null=null;#cleanupPending:Promise<void>|null=null;#stagePending:Promise<unknown>|null=null;#lifecyclePending:Promise<unknown>|null=null;
+ #cleanupInProgress=false;
  #stage:Stage="opening";#stopped=false;#failed=false;#failure:unknown;#terminal=false;
  #writerReleased=false;#savedReleased=false;#writerTerminated=false;#savedTerminated=false;
  #metadataCurrent:(()=>void)|null=null;#headCurrent:(()=>void)|null=null;#intentCurrent:(()=>void)|null=null;
@@ -193,9 +196,10 @@ export class CurrentFootprintForwardWriterWorkflow {
  async #opening():Promise<Input> {
   await this.#provider.launch();await this.#provider.observeMain();const selected=selectCurrentPcb209StartPage(await this.#provider.observeBrowser());
   const frame=selectCurrentPcb209StartPageFrame(await this.#provider.inspectFrames(selected.targetId),selected);await this.#provider.inspectUi(frame.frameId);await this.#provider.startOpening();
-  // Eight fixed cache jobs: three holds each. One startup sync: nine holds,
-  // Including four original natural history responses.
-  for(let index=0;index<24;index+=1){const next=await this.#provider.nextHeldProducer();need(["headEntry","headPromise","headSuccess"].includes(next.role),"ORIGINAL_STARTUP_CACHE_ROLE");await this.#provider.continueStartup("cache");}
+  // Three original holds per admitted cache job. One startup sync has nine
+  // Holds, including four original natural history responses.
+  const cacheHolds=3*this.#provider.startupCacheJobs();
+  for(let index=0;index<cacheHolds;index+=1){const next=await this.#provider.nextHeldProducer();need(["headEntry","headPromise","headSuccess"].includes(next.role),"ORIGINAL_STARTUP_CACHE_ROLE");await this.#provider.continueStartup("cache");}
   await this.#provider.settleStartup("cache");
   for(let index=0;index<9;index+=1){const next=await this.#provider.nextHeldProducer();need(["syncEntry","syncFull","syncHistory","syncMerged","syncFinalizing","syncReturned"].includes(next.role),"ORIGINAL_STARTUP_SYNC_ROLE");await this.#provider.continueStartup("sync");}
   await this.#provider.settleStartup("sync");await this.#provider.captureSource();
@@ -289,31 +293,59 @@ export class CurrentFootprintForwardWriterWorkflow {
   try{await pending;this.#current();}finally{if(this.#lifecyclePending===pending){this.#lifecyclePending=null;}}
  }
  async #cleanupCall<T>(generation:Generation,action:CleanupAction,attempt:number,run:()=>Promise<T>,outcome:(value:T)=>Outcome,recovery:Readonly<{deferFailure?:boolean;facts?:CurrentFootprintForwardWriterReleasePreflightFacts}>={}):Promise<T> {
-  const key=`${generation}:${action}:${attempt}`;need(!this.#cleanupAttempts.has(key),"ORIGINAL_CLEANUP_CONSUMED");this.#cleanupAttempts.add(key);
-  await this.#journal.waitForCurrentPublication();await this.#settle();await this.#append("cleanup-intent",{generation,action,attempt,...(recovery.facts===undefined?{}:{preDispatchProof:recovery.facts})});this.#current(true);
+  const key=`${generation}:${action}:${attempt}`;
+  const intent=Object.freeze({generation,action,attempt,...(recovery.facts===undefined?{}:{preDispatchProof:recovery.facts})});
+  if(this.#cleanupAttempts.has(key)){
+   const retained=this.#cleanupResults.get(key);
+   if(retained!==undefined){
+    await this.#journal.waitForCurrentPublication();await this.#settle();this.#current(true);
+    const publishedResult=this.#journal.retained().records.find(row=>row.kind==="cleanup-result"&&row.evidence["generation"]===generation&&row.evidence["action"]===action&&row.evidence["attempt"]===attempt);
+    if(publishedResult===undefined){await this.#append("cleanup-result",retained.evidence);}
+    else{need(sha256Json(publishedResult.evidence)===sha256Json(retained.evidence),"ORIGINAL_CLEANUP_RESULT_CHANGED");}
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The original generation/action/attempt key binds this value to the same fixed typed cleanup site; opaque native tokens cannot be reconstructed or reparsed.
+    return retained.value as T;
+   }
+   const retainedIntent=this.#cleanupIntents.get(key);
+   need(!this.#cleanupDispatchStarted.has(key)&&retainedIntent!==undefined&&sha256Json(retainedIntent)===sha256Json(intent),"ORIGINAL_CLEANUP_CONSUMED");
+  }else{this.#cleanupAttempts.add(key);this.#cleanupIntents.set(key,intent);}
+  await this.#journal.waitForCurrentPublication();await this.#settle();this.#current(true);
+  const original=this.#cleanupIntents.get(key);need(original!==undefined,"ORIGINAL_CLEANUP_INTENT_REQUIRED");
+  const published=this.#journal.retained().records.find(row=>row.kind==="cleanup-intent"&&row.evidence["generation"]===generation&&row.evidence["action"]===action&&row.evidence["attempt"]===attempt);
+  if(published===undefined){await this.#append("cleanup-intent",original);}
+  else{need(sha256Json(published.evidence)===sha256Json(original),"ORIGINAL_CLEANUP_INTENT_CHANGED");}
+  this.#current(true);need(!this.#cleanupDispatchStarted.has(key),"ORIGINAL_CLEANUP_CONSUMED");
+  // This local marker is set immediately before the sole invocation. A failed
+  // Intent publication can resume only while this original marker is absent.
+  this.#cleanupDispatchStarted.add(key);
   let value:T;
   try{value=await this.#retain(run());}
   catch(error){if(recovery.deferFailure!==true){this.#remember(error);}try{await this.#append("cleanup-result",{generation,action,attempt,outcome:"failed",...(recovery.facts===undefined?{}:{preDispatchProof:recovery.facts}),evidenceSha256:sha256Json({generation,action,attempt,originalErrorRetained:true})});}
    // oxlint-disable-next-line eslint/preserve-caught-error -- The native failure remains the cause and the distinct publication failure is retained in the aggregate.
    catch(publicationError){throw new AggregateError([error,publicationError],"FORWARD_WRITER_WORKFLOW_CLEANUP_PUBLICATION",{cause:error});}throw error;}
-  this.#current(true);const result=outcome(value);this.#cleanupFacts.set(key,Object.freeze({generation,action,attempt,outcome:result}));await this.#append("cleanup-result",{generation,action,attempt,outcome:result,...(recovery.facts===undefined?{}:{preDispatchProof:recovery.facts}),evidenceSha256:sha256Json({generation,action,attempt,outcome:result})});return value;
+  this.#current(true);const result=outcome(value);this.#cleanupFacts.set(key,Object.freeze({generation,action,attempt,outcome:result}));
+  const evidence=Object.freeze({generation,action,attempt,outcome:result,...(recovery.facts===undefined?{}:{preDispatchProof:recovery.facts}),evidenceSha256:sha256Json({generation,action,attempt,outcome:result})});
+  this.#cleanupResults.set(key,Object.freeze({value,evidence}));await this.#append("cleanup-result",evidence);return value;
  }
  /** A first failure can proceed only through its original provider and Core's
   * unused opaque proof. Journal facts never enter a capability constructor. */
+ async #continueReleasePreflight(generation:Generation,original:Readonly<{proof:CurrentFootprintForwardWriterReleasePreflightProof;facts:CurrentFootprintForwardWriterReleasePreflightFacts;cause:unknown}>,retry:(proof:CurrentFootprintForwardWriterReleasePreflightProof)=>Promise<void>):Promise<void>{
+  await this.#cleanupCall(generation,"release",2,async()=>{
+   const current=requireCurrentFootprintForwardWriterReleasePreflightFacts(original.proof);
+   need(sha256Json(current)===sha256Json(original.facts),"ORIGINAL_RELEASE_PREFLIGHT_CHANGED");
+   // Core consumes this same opaque token before its sole second dispatch.
+   await retry(original.proof);
+  },()=>"released",{facts:original.facts});
+ }
  async #releaseWithPreflight(generation:Generation,first:()=>Promise<void>,consume:(cause:unknown)=>CurrentFootprintForwardWriterReleasePreflightProof|null,retry:(proof:CurrentFootprintForwardWriterReleasePreflightProof)=>Promise<void>):Promise<void> {
+  const retained=this.#releaseRecoveries.get(generation);
+  if(retained!==undefined){await this.#continueReleasePreflight(generation,retained,retry);return;}
   try { await this.#cleanupCall(generation,"release",1,first,()=>"released",{deferFailure:true}); }
   catch(error) {
    try {
     const proof=consume(error);if(proof===null){throw error;}
     const facts=Object.freeze(currentFootprintForwardWriterReleasePreflightFactsSchema.parse(requireCurrentFootprintForwardWriterReleasePreflightFacts(proof)));
-    need(!this.#releaseRecoveries.has(generation),"ORIGINAL_RELEASE_RECOVERY_CONSUMED");this.#releaseRecoveries.set(generation,Object.freeze({proof,facts,cause:error}));
-    await this.#cleanupCall(generation,"release",2,async()=>{
-     const current=requireCurrentFootprintForwardWriterReleasePreflightFacts(proof);
-     need(sha256Json(current)===sha256Json(facts),"ORIGINAL_RELEASE_PREFLIGHT_CHANGED");
-     // Core rechecks and consumes this exact token before its second release.
-     // This continuation cannot qualify a second failure or issue attempt3.
-     await retry(proof);
-    },()=>"released",{facts});
+    need(!this.#releaseRecoveries.has(generation),"ORIGINAL_RELEASE_RECOVERY_CONSUMED");const original=Object.freeze({proof,facts,cause:error});this.#releaseRecoveries.set(generation,original);
+    await this.#continueReleasePreflight(generation,original,retry);
    } catch(recoveryError) {this.#remember(error);throw recoveryError;}
   }
  }
@@ -333,7 +365,7 @@ export class CurrentFootprintForwardWriterWorkflow {
    await this.#cleanupCall("writer",normal?"close":"abort",1,()=>normal?this.#provider.closeCompleteWorkflow():this.#provider.abort(true),()=>"dispatched");
    for(let attempt=1;attempt<=BUDGET.terminationObservations;attempt+=1){
     if(normal){need(!this.#stopped,"ORIGINAL_NORMAL_CLOSE_ENDED");}
-    if(!this.#cleanupAttempts.has(`writer:termination:${attempt}`)){
+    if(this.#cleanupFacts.get(`writer:termination:${attempt}`)?.outcome!=="pending"){
      const exited=await this.#cleanupCall("writer","termination",attempt,()=>this.#provider.observeTermination(),value=>value?"terminated":"pending");if(exited){this.#writerTerminated=true;break;}
     }
    }need(this.#writerTerminated,"WRITER_TERMINATION_BOUND");
@@ -358,7 +390,7 @@ export class CurrentFootprintForwardWriterWorkflow {
   await this.#cleanupCall("saved",normal?"close":"abort",1,()=>normal?saved.close():abortCurrentFootprintForwardWriterHeldSavedJob(saved),()=>"dispatched");
   for(let attempt=1;attempt<=BUDGET.terminationObservations;attempt+=1){
    if(normal){need(!this.#stopped,"ORIGINAL_NORMAL_CLOSE_ENDED");}
-   if(!this.#cleanupAttempts.has(`saved:termination:${attempt}`)){
+   if(this.#cleanupFacts.get(`saved:termination:${attempt}`)?.outcome!=="pending"){
     const termination=await this.#cleanupCall("saved","termination",attempt,()=>saved.termination(),value=>value.status==="terminated"?"terminated":"pending");
     if(termination.status==="terminated"){this.#savedTermination=termination.original;this.#savedTerminated=true;break;}
    }
@@ -375,7 +407,7 @@ export class CurrentFootprintForwardWriterWorkflow {
  public cleanup():Promise<void> {
   if(this.#cleanupPending!==null){return this.#cleanupPending;}this.#current(true);
   if(this.#terminal){need(this.#result!==null,"ORIGINAL_TERMINAL");return Promise.resolve();}
-  this.#stopped=true;const completion=Promise.withResolvers<undefined>();this.#cleanupPending=completion.promise;
+  this.#stopped=true;this.#cleanupInProgress=true;const completion=Promise.withResolvers<undefined>();this.#cleanupPending=completion.promise;
   void admission.run(this,async():Promise<void>=>{try{
    await this.#journal.waitForCurrentPublication();await this.#settle();
    if(!this.#journal.retained().reserved){need(this.#input===null&&this.#saved===null,"UNRESERVED_RESOURCES");await this.#provider.cleanupBeforeLaunch();this.#writerReleased=true;this.#savedReleased=true;this.#terminal=true;completion.resolve(undefined);return;}
@@ -384,16 +416,28 @@ export class CurrentFootprintForwardWriterWorkflow {
    await Promise.allSettled(this.#pending);need(this.#writerReleased&&this.#savedReleased,"ORIGINAL_RESOURCES_UNRELEASED");
    if(!this.#journal.retained().records.some(row=>row.kind==="failure")){this.#remember(new Error("FORWARD_WRITER_WORKFLOW_ENDED"));await this.#append("failure",{stage:this.#stage,originalErrorRetained:true});}
    await this.#append("terminal-failure",{originalOwnersClosed:true,originalPendingJoined:true,released:true});this.#terminal=true;completion.resolve(undefined);
-  }catch(error){completion.reject(error);}});return completion.promise;
+  }catch(error){completion.reject(error);}finally{this.#cleanupInProgress=false;}});return completion.promise;
  }
- /** Settle retained local publication facts without dispatching a native
-  * cleanup again. Only original acknowledged outcomes can close a journal. */
+ /** Settle original publication, then continue an already-requested cleanup.
+  * Acknowledged steps reuse original results; no consumed step is dispatched again. */
  public async settleRecords():Promise<void> {
   this.#current(true);await this.#journal.waitForCurrentPublication();await this.#settle();
   if(!this.#journal.retained().reserved||this.#terminal||!this.#failed&&!this.#stopped){return;}
   const provider=this.#provider.status();
-  if(provider["busy"]===true||provider["cleanupBusy"]===true){return;}
-  if(provider["released"]!==true||provider["publicationPending"]===true){await this.#provider.settleRecords();}this.#current(true);
+  if(provider["busy"]===true||provider["cleanupBusy"]===true||this.#cleanupInProgress||this.#stagePending!==null||this.#lifecyclePending!==null){return;}
+  const writerCleanupStarted=[...this.#cleanupDispatchStarted].some(key=>key.startsWith("writer:"));
+  // A workflow intent can fail before the provider owns a journal at all.
+  // Its first cleanup must enter that original provider path before settlement.
+  if(provider["publicationPending"]===true||provider["released"]!==true&&writerCleanupStarted){await this.#provider.settleRecords();}this.#current(true);
+  if(this.#cleanupPending!==null){
+   // Continue only the already-requested cleanup after publishing its original
+   // Acknowledged outcomes; unknown attempts remain consumed in #cleanupCall.
+   this.#cleanupInProgress=true;
+   try{
+    await this.#closeWriter(false);await this.#closeSaved(false);
+    if(this.#savedTerminated&&!this.#savedReleased){await this.#releaseSaved();}
+   }finally{this.#cleanupInProgress=false;}
+  }
   const published=(generation:Generation):boolean=>this.#journal.retained().records.some(row=>{
    if(row.kind!=="cleanup-result"||row.evidence["generation"]!==generation){return false;}
    const action=row.evidence["action"],attempt=row.evidence["attempt"];

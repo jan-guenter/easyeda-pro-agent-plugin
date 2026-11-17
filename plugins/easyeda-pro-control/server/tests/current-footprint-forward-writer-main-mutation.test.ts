@@ -100,16 +100,27 @@ void test("actual Node Inspector reports both original line and function-call po
 });
 
 function sqlEventPause(ids:readonly string[],read=false):unknown{return ({reason:"other",hitBreakpoints:ids,callFrames:[{callFrameId:"frame123",functionName:"",location:{scriptId:"app",lineNumber:read?1025:1164,columnNumber:read?700:2453},functionLocation:{scriptId:"app",lineNumber:read?1025:1164,columnNumber:read?692:2434}}]});}
-void test("actual Backend hides only its own selected read pause and retains both original driver point IDs",async()=>{
+async function sqlBackendProbeFixture():Promise<()=>Readonly<{call:(method:string,input?:unknown)=>unknown}>>{
  const path=new URL("../src/current-footprint-copy-main-backend-runner.ts",import.meta.url);const originalRequire=createRequire(path);const capability=Object.freeze({});
- const injected=`public sqlEventProbeForTest(capability:CurrentFootprintForwardWriterMainCapability,method:string,input:unknown):unknown{
+ const injected=`#sqlEventTestMode=false;#sqlEventTestNext:unknown=null;#sqlEventTestResumes=0;
+ public sqlEventProbeForTest(capability:CurrentFootprintForwardWriterMainCapability,method:string,input:unknown):unknown{
   if(method==="setup"){this.#originActive=true;this.#originCapability=capability;this.#appScriptId="app";this.#scripts.set("app",1);this.#sqlBreakpoints.set("sql-driver","driver");this.#sqlBreakpoints.set("sql-read","queryOne");this.#originBreakpoints.add("original-driver");}
+  else if(method==="enable-resume"){this.#sqlEventTestMode=true;this.#sqlCapture="capture123";this.#originToken=capability as unknown as MainRequestOrigin;}
+  else if(method==="resume-batch"){this.#sqlEventTestNext=input;return this.#forwardWriterSqlHost().resume();}
+  else if(method==="inspect"){}
   else if(method==="intent"){if(this.#forwardWriterSqlPause===null)throw Error("missing original pause");this.#forwardWriterSqlPause.identity.resumeAttempted=true;}
   else this.#event(method,input);
-  return{events:this.#originEvents,rawDriver:this.#forwardWriterSqlDriverEvent,sqlPause:this.#forwardWriterSqlPause?.identity};
+  return{events:this.#originEvents,rawDriver:this.#forwardWriterSqlDriverEvent,sqlPause:this.#forwardWriterSqlPause?.identity,sqlHeld:this.#sqlHeld,resumes:this.#sqlEventTestResumes};
  }
  public retained():`;
- const originalText=await readFile(path,"utf8");const source=originalText.replace("public retained():",injected);const output=await transform(source,{loader:"ts",format:"cjs",target:"node24"});
+ const originalText=await readFile(path,"utf8");let source=originalText.replace("public retained():",injected);
+ // Only qualification/native-request collaborators are inert in this isolated
+ // Transformed class. The actual SQL host resume and #event bodies stay intact.
+ const current="  #forwardWriterSqlCurrent(): void {",origin="  async #originCurrent(token: MainRequestOrigin): Promise<void> {",request="    cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {";
+ for(const anchor of [current,origin,request]){assert.equal(source.split(anchor).length,2);}
+ source=source.replace(current,`${current}if(this.#sqlEventTestMode){return;}`).replace(origin,`${origin}if(this.#sqlEventTestMode){await this.#transport.assertCurrent();return;}`).replace(request,`${request}
+  if(this.#sqlEventTestMode){if(input.phase!=="forward-writer-sql-step"||input.method!=="Debugger.resume"||this.#sqlEventTestNext===null)throw Error("unexpected inert SQL request");this.#sqlEventTestResumes+=1;this.#event("Debugger.resumed",{});this.#event("Debugger.paused",this.#sqlEventTestNext);this.#sqlEventTestNext=null;return{};}`);
+ const output=await transform(source,{loader:"ts",format:"cjs",target:"node24"});
  const loaded={exports:{}};const evaluate:unknown=runInThisContext(`(function(require,module,exports){${output.code}\n})`);assert.ok(typeof evaluate==="function");
  Reflect.apply(evaluate,undefined,[(specifier:string):unknown=>{
   if(specifier==="./current-footprint-forward-writer-main-capability.ts"){const original:unknown=originalRequire(specifier);assert.ok(original!==null&&typeof original==="object");return{...original,isCurrentFootprintForwardWriterMainCapability:(value:unknown):boolean=>value===capability};}
@@ -122,6 +133,10 @@ void test("actual Backend hides only its own selected read pause and retains bot
   const call=(method:string,input:unknown={}):unknown=>Reflect.apply(probe,runner,[capability,method,input]);call("setup");return{call};
  };
 
+ return make;
+}
+void test("actual Backend hides only its own selected read pause and retains both original driver point IDs",async()=>{
+ const make=await sqlBackendProbeFixture();
  const driver=make(),raw=driver.call("Debugger.paused",sqlEventPause(["sql-driver","original-driver"]));assert.ok(raw!==null&&typeof raw==="object");
  assert.deepEqual(Reflect.get(raw,"rawDriver"),sqlEventPause(["sql-driver","original-driver"]));
  const events:unknown=Reflect.get(raw,"events");assert.ok(Array.isArray(events));assert.equal(events.length,1);assert.deepEqual(Reflect.get(events[0],"params"),sqlEventPause(["original-driver"]));
@@ -131,4 +146,12 @@ void test("actual Backend hides only its own selected read pause and retains bot
  assert.throws(()=>read.call("Debugger.resumed"));
  const valid=make();valid.call("Debugger.paused",sqlEventPause(["sql-read"],true));valid.call("intent");const resumed=valid.call("Debugger.resumed");assert.ok(resumed!==null&&typeof resumed==="object");
  const sqlPause:unknown=Reflect.get(resumed,"sqlPause");assert.ok(sqlPause!==null&&typeof sqlPause==="object");assert.equal(Reflect.get(sqlPause,"resumed"),true);assert.deepEqual(Reflect.get(resumed,"events"),[]);
+});
+
+void test("actual Backend retains the next SQL pause when resumed and paused arrive in one batch",async()=>{
+ const make=await sqlBackendProbeFixture(),runner=make();runner.call("Debugger.paused",sqlEventPause(["sql-read"],true));
+ const before=runner.call("inspect");assert.ok(before!==null&&typeof before==="object");const original:unknown=Reflect.get(before,"sqlPause");assert.ok(original!==null&&typeof original==="object");
+ runner.call("enable-resume");const pending=runner.call("resume-batch",sqlEventPause(["sql-read"],true));assert.ok(pending instanceof Promise);await pending;
+ const after=runner.call("inspect");assert.ok(after!==null&&typeof after==="object");const next:unknown=Reflect.get(after,"sqlPause");assert.ok(next!==null&&typeof next==="object");assert.notEqual(next,original);
+ assert.equal(Reflect.get(original,"resumed"),true);assert.equal(Reflect.get(next,"resumed"),false);assert.equal(Reflect.get(next,"resumeAttempted"),false);assert.equal(Reflect.get(after,"sqlHeld"),next);assert.equal(Reflect.get(after,"resumes"),1);assert.deepEqual(Reflect.get(after,"events"),[]);
 });

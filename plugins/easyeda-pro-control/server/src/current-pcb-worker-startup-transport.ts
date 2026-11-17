@@ -270,6 +270,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #initialResumeSeen = false;
   #initialPauseWatchdog: ReturnType<typeof setTimeout> | undefined;
   #runner: Runner | null = null;
+  #forwardWriterRunnerReleased = false;
   #constructionCapture: Promise<Packet> | null = null;
   #subscriber: Subscriber | null = null;
   #clockListener: ((event: unknown) => void) | null = null;
@@ -1187,7 +1188,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   public async releaseAfterTermination(): Promise<void> {
     if (!this.#settled || this.#released) { throw failure("RELEASE_STATE"); }
     this.#sameDependency(); await bounded(this.#assertTermination.call(this.#dependency)); this.#sameDependency();
-    if (isOriginalFootprintForwardWriterDependency(this.#dependency) && this.#runner !== null && await this.#runner.observeForwardWriterProducerGenerationExited()) { await this.#runner.release(); }
+    if (isOriginalFootprintForwardWriterDependency(this.#dependency) && !this.#forwardWriterRunnerReleased && this.#runner !== null && await this.#runner.observeForwardWriterProducerGenerationExited()) { await this.#runner.release(); this.#forwardWriterRunnerReleased = true; }
     clearTimeout(this.#initialPauseWatchdog);
     for (const stage of this.#bootstrapStages) { clearTimeout(stage.watchdog); }
     const failures: unknown[] = [];

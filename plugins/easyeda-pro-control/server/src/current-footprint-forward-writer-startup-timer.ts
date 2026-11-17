@@ -1,6 +1,7 @@
 /** Original full-worker timer custody. The generic observer retains native
  * metadata and source proofs; this separate owner retains its fixed sequence,
  * original references, journal intent, pending work and actual resumed events. */
+import {captureCurrentFootprintForwardExecutionPrototypes,requireCurrentFootprintForwardExecutionPrototypes} from "./current-footprint-forward-execution-opening-identity.ts";
 import { z } from "zod";
 // oxlint-disable-next-line import/no-cycle -- Original Core registries are resolved only by later cursor construction; module evaluation dispatches nothing.
 import { CurrentProjectSyncQuiesceObserver } from "./current-project-sync-quiesce-observer.ts";
@@ -108,3 +109,7 @@ export class CurrentFootprintForwardWriterStartupTimer {
     return Object.freeze({ setup: this.#step >= 17, completed: this.#completed, cancelled: this.#cancelAttempted, failed: this.#failed, step: this.#step });
   }
 }
+
+/** Eager defining-module snapshot avoids cyclic import TDZ and first-use trust. */
+const originalClassPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintForwardWriterStartupTimer.prototype);
+export function assertOriginalCurrentFootprintForwardWriterStartupTimerClass():void{requireCurrentFootprintForwardExecutionPrototypes(originalClassPrototype);}

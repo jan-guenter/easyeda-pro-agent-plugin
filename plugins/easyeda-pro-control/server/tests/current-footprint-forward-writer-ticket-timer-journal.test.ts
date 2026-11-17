@@ -27,6 +27,7 @@ void test("the original timer component retains failed publication bytes and blo
  await assert.rejects(journal.append("release-result",{...released,originalPendingCallbacksJoined:false}));await journal.append("release-result",released);
  await unresolved();await globalLaunches();const observed=await history(selected.operationId);assert.equal(observed.operation["state"],"completed");
 });
+function rechain(rows:readonly Entry[]):Entry[]{const result:Entry[]=[];for(const row of rows){const prior=result.at(-1);result.push({...row,sequence:result.length,previousSha256:prior===undefined?null:sha256Json(prior)});}return result;}
 function capacity(timers:1|2):Entry[]{
  const selected=input("timer-capacity01");const rows:Entry[]=[];const add=(kind:Phase,evidence:Readonly<Record<string,unknown>>):void=>{const prior=rows.at(-1);rows.push(record.parse({schema:"easyeda-pro-control.footprint-forward-writer-ticket-timer-record.v1",operationId:selected.operationId,sequence:rows.length,previousSha256:prior===undefined?null:sha256Json(prior),kind,evidence,executionAuthorized:false,saveAuthorized:false}));};
  add("operation-intent",{request:selected});add("ws-intent",ws);add("ws-result",wsResult);add("setup-intent",{sourceSha256:"2".repeat(64),inputSha256:"3".repeat(64),originalReflectionPacketRetained:true});add("setup-result",{commands:37,points:3,baselinePublishTimerNull:true,originalSubscribersRetained:true,canvasTimersExcluded:true});add("precreate-intent",{});add("precreate-result",{commands:1,originalBaselineUnchanged:true});
@@ -36,7 +37,7 @@ function capacity(timers:1|2):Entry[]{
 void test("the exact two-timer chain fits its reserve and rejects missing/self/out-of-order or fabricated completion facts",()=>{
  const rows=capacity(2);assert.equal(rows.length,BUDGET.records);assert.equal(rows.length,25);assert.ok(BUDGET.manifestBytes<1024*1024);assert.doesNotThrow(()=>{chain(rows);});assert.doesNotThrow(()=>{chain(capacity(1));});
  const missing=rows.filter(row=>row.kind!=="ws-result");assert.throws(()=>{chain(missing);});
- const wrong=structuredClone(rows);const at=wrong.findIndex(row=>row.kind==="timer-result");const entry=wrong[at];assert.ok(entry!==undefined);wrong[at]={...entry,evidence:{...entry.evidence,commands:3}};assert.throws(()=>{chain(wrong);});
- const unfinished=structuredClone(rows);const index=unfinished.findIndex(row=>row.kind==="quiesce-result");const final=unfinished[index];assert.ok(final!==undefined);unfinished[index]={...final,evidence:{...final.evidence,timers:1}};assert.throws(()=>{chain(unfinished);});
+ const wrong=structuredClone(rows);const at=wrong.findIndex(row=>row.kind==="timer-result");const entry=wrong[at];assert.ok(entry!==undefined);wrong[at]={...entry,evidence:{...entry.evidence,commands:3}};assert.throws(()=>{chain(rechain(wrong));},/TIMER_RESULT/u);
+ const unfinished=structuredClone(rows);const index=unfinished.findIndex(row=>row.kind==="quiesce-result");const final=unfinished[index];assert.ok(final!==undefined);unfinished[index]={...final,evidence:{...final.evidence,timers:1}};assert.throws(()=>{chain(rechain(unfinished));},/QUIESCE_ORIGINAL/u);
  assert.equal(request.safeParse({...input("timer-wrong01"),parentOperationId:"footprint-forward-writer-different"}).success,false);assert.equal(record.safeParse({...rows.at(-1),sequence:25}).success,false);
 });
