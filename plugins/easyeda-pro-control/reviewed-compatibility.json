@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "6c55fc7b5e32d8ac7a63c903a4b1b23145fdfeb2b1ab060b7f011a4fdd6f0860",
+      "sha256": "71f623534cbac7c05c64c80904fbbc25a84371e638d68fa4edfc12a9285bdd15",
       "fileCount": 3115,
       "files": [
         {
@@ -1003,8 +1003,8 @@
         },
         {
           "relativePath": "current-footprint-copy-main-backend-runner.ts",
-          "bytes": 399649,
-          "sha256": "d5f18cf5154187d6889bfea1e3f97baeaeaaa7dc443e8333a3436a8c05c04cfb"
+          "bytes": 399705,
+          "sha256": "61d3a645db186e37b2c6ddd09af61a4b4dc0ae11bca2ac78d5f73deeb0a909dc"
         },
         {
           "relativePath": "current-footprint-copy-main-backend-source.ts",
@@ -2128,8 +2128,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-frontier-identity.ts",
-          "bytes": 1889,
-          "sha256": "6efbf8dd3ba3b5084b50b50973ffa56021dd8a0f14bf3073dc6f8b552b600cef"
+          "bytes": 1514,
+          "sha256": "ed05fe3293b08e753231d3a45c7d74fc66a520e4bd88046909fca42916d25f9b"
         },
         {
           "relativePath": "current-footprint-forward-writer-frontier-native.ts",
@@ -2153,8 +2153,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-held-saved-generation.ts",
-          "bytes": 38597,
-          "sha256": "c99f50c84b1e0a2b4730dac4ed1192ce20c98c909e8c8ef4932fa38f3f3c86d3"
+          "bytes": 38799,
+          "sha256": "ace7ffb50931a26ecdabbe46813d00d903d936dbc6d4343e7dc80c7d74bb16c6"
         },
         {
           "relativePath": "current-footprint-forward-writer-history-native.ts",
@@ -2278,8 +2278,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-opening.ts",
-          "bytes": 46305,
-          "sha256": "760c52c3e05a3e1fa4dbd18ee008d952f07d2a975913d440f39636e395bd4c53"
+          "bytes": 48512,
+          "sha256": "3d79e74b20f2834e612a8735f7d59a70895ba3ded5a4684049ba1ad0908ffe9e"
         },
         {
           "relativePath": "current-footprint-forward-writer-own-data-collector.ts",
@@ -2348,8 +2348,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-producer-wire.ts",
-          "bytes": 6012,
-          "sha256": "5e4008374985a7ba8beff48fd67cdc8b046f702f97b53d3ca41b0e8af2720890"
+          "bytes": 6392,
+          "sha256": "46de0b31c7fdb84d89b602220c10a104a7fbebdfeb943641af82c1f3c4e3d83f"
         },
         {
           "relativePath": "current-footprint-forward-writer-profile.ts",
@@ -2358,8 +2358,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-publication-callbacks.ts",
-          "bytes": 15080,
-          "sha256": "f32f0dda72cc9f193e5d837e08d0f334ef8a07c8b3a1e90d256de8987dd05908"
+          "bytes": 15649,
+          "sha256": "a450982de9d732d80b7402f250a33019f4326da917f6fb4bd73d0576a18f66d7"
         },
         {
           "relativePath": "current-footprint-forward-writer-publication-contract.ts",
@@ -2368,13 +2368,13 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-publication-driver.ts",
-          "bytes": 8300,
-          "sha256": "c431f70ace1662a0d033f94ed659243ef5570130cf2b76392ddb480a86dd993e"
+          "bytes": 8863,
+          "sha256": "7641378edea8680e4879a5b0c40c404512fad57e52209918a5e3eb122f9a28b1"
         },
         {
           "relativePath": "current-footprint-forward-writer-publication-identity.ts",
-          "bytes": 1098,
-          "sha256": "a216827fb56ca485a14b4d62885efddbe12aa157a3c132d1a87b9ed72d6c6176"
+          "bytes": 917,
+          "sha256": "d25e0d59f81e55105a99ab3fe8e403c9a6d33e8353000871e05a74d8675f1cbe"
         },
         {
           "relativePath": "current-footprint-forward-writer-publication-journal.ts",
@@ -2413,8 +2413,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-startup-callbacks.ts",
-          "bytes": 15639,
-          "sha256": "f54dc1b701c665f748ed9551266519ec3b5e3285778f0f8832adace442dffe94"
+          "bytes": 16410,
+          "sha256": "d91e0de352e7854e98b32902ddfb1d8771d48c60ccb6d047284ff1c00274d798"
         },
         {
           "relativePath": "current-footprint-forward-writer-startup-data.ts",
@@ -2428,13 +2428,13 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-startup-frontier-journal.ts",
-          "bytes": 20230,
-          "sha256": "c51f79fc99bbb3840e11e8352183f7f9c3a3400d486a1e9a020de66db254c3e9"
+          "bytes": 21072,
+          "sha256": "cb639f9dfe03b3b8696b98af910125b33720807526f58c0ccce6c194d8c8dbe7"
         },
         {
           "relativePath": "current-footprint-forward-writer-startup-frontier.ts",
-          "bytes": 11774,
-          "sha256": "81f82640d9b6b0df4c693f39b5d639053da292c753a89e766cbf792a6252988b"
+          "bytes": 12333,
+          "sha256": "8b1c75995fcf0bf408ac371f30e476ad69d555b19d0eb6ecc2f0cdccffb45518"
         },
         {
           "relativePath": "current-footprint-forward-writer-startup-native.ts",
@@ -2453,8 +2453,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-startup-timer.ts",
-          "bytes": 11197,
-          "sha256": "1bc2c2308232b8781147e54c19c994481cdd2055f8a4048e3c9c2a92242b7d2a"
+          "bytes": 11750,
+          "sha256": "8ebc4138a455549b7e593098c2fa1cca74bffa2e36559f8f9ff759b9ad43a6cf"
         },
         {
           "relativePath": "current-footprint-forward-writer-startup-ws-protocol.ts",
@@ -2478,13 +2478,13 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-ticket-timer-driver.ts",
-          "bytes": 17178,
-          "sha256": "59e3aa78cf3f094c206c204950e54b102aed1a2a7956065aadcdcb6741014e60"
+          "bytes": 20572,
+          "sha256": "f888e6e287ae16bf5e1037e9cc3c0bf6b1e0cd3f8c25baff686495165ba2f861"
         },
         {
           "relativePath": "current-footprint-forward-writer-ticket-timer-journal.ts",
-          "bytes": 18395,
-          "sha256": "755e11e0fdd1ebcaae0ba2b19f62384046b24918fa6e1972567e7e64c4c751bb"
+          "bytes": 19237,
+          "sha256": "fdf9fa2ef5aaae8d6e78853e6fe294c2e8fd5903f56bee7f97d3acb17e7f6706"
         },
         {
           "relativePath": "current-footprint-forward-writer-ticket-timer-native.ts",
@@ -2553,8 +2553,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-workflow.ts",
-          "bytes": 56042,
-          "sha256": "5a43e32460a2f02298890960ba4b2f1c689454d31a5f2a6e5b10dd230deb2ce3"
+          "bytes": 59782,
+          "sha256": "0a13197e289007ab6b0b0ddf9aa19dccfbc571b5293d30f2c0e4c93fdf1d3383"
         },
         {
           "relativePath": "current-footprint-head-age-cdp-exception.ts",
@@ -7093,8 +7093,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-owner.ts",
-          "bytes": 2911867,
-          "sha256": "1138621d238a46ca5b896b54ef51840ec4fdb2f547f32977e98b39368d0aa0f0"
+          "bytes": 2911598,
+          "sha256": "beaa61354c315fb4ac5ec910338579f352ad71741756e26eb2aff51a8f1973a5"
         },
         {
           "relativePath": "current-pcb-diagnostic-pcb-opening.ts",
@@ -8713,8 +8713,8 @@
         },
         {
           "relativePath": "current-pcb-worker-startup-channel.ts",
-          "bytes": 170279,
-          "sha256": "751251cfd67496197a6384b846ed2d07998b36a7b24d49756c11a0c6a350f1b0"
+          "bytes": 170315,
+          "sha256": "3bf59c46d97bc9a978296bbfe8e294968d0d141c13d7a2e559719417c033d3d3"
         },
         {
           "relativePath": "current-pcb-worker-startup-contract.ts",
@@ -8748,8 +8748,8 @@
         },
         {
           "relativePath": "current-pcb-worker-startup-transport.ts",
-          "bytes": 93896,
-          "sha256": "8a9c820d778c36e4e62605049e254cd53907afcd41ad7b212339b48233a628f0"
+          "bytes": 94016,
+          "sha256": "e535173546af2d75e28026a2ff4c67cf573cddb16911eb0e421fa9f2085318da"
         },
         {
           "relativePath": "current-pcb-worker-startup-validation.ts",
@@ -8943,8 +8943,8 @@
         },
         {
           "relativePath": "current-project-save-producer-observer.ts",
-          "bytes": 38051,
-          "sha256": "f683e52df21949bb58b49a4960c928713b93214c3136c040f523dd2bb599c21c"
+          "bytes": 38404,
+          "sha256": "d5a7fda4e97a25b6b189ef2a3a912cf7defdad989ba39840cd51f0d14697164f"
         },
         {
           "relativePath": "current-project-save-producer-origin.ts",
@@ -9193,8 +9193,8 @@
         },
         {
           "relativePath": "current-project-sync-quiesce-observer.ts",
-          "bytes": 12794,
-          "sha256": "0b900918294488e1565d7a662f22be68c235cfce377b853dcb053a2950eb1145"
+          "bytes": 13331,
+          "sha256": "b75899c89c14ea4e6e455bec48311f94a87c9d93abe98a0fd03e710e77412c80"
         },
         {
           "relativePath": "current-project-sync-quiesce-origin.ts",
@@ -15586,7 +15586,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "3b5ec3f9231d4f7f7395410329cd00b415263992b60503c768e6f3dfc8bf06a2",
+      "sha256": "1ba611fe42ccf882f9c8925c9ffc4498e585097da68d2b2e2d037db15ff3ae13",
       "fileCount": 3,
       "files": [
         {
@@ -15596,19 +15596,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 17232716,
-          "sha256": "165812a480d13812172e0d33995dea4547009011f76a51eb8c66e6ed873e44e3"
+          "bytes": 17237823,
+          "sha256": "3d217abc7ed7003f861c7b5e35bac8a343336cc5027094e00ef9854f7aeec435"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 642490,
-          "sha256": "0a8475d57e8ca8a94f0b00209454e27631a307219bb6549b796a15e2a47d9ec4"
+          "sha256": "6d5caaefcab29014d0d2fee8cb6e01e779ce963441663be5fc22ccc01ba8bc33"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-17T00:03:20.685Z",
+  "reviewedAt": "2026-11-17T01:40:48.474Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

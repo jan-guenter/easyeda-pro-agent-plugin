@@ -169,3 +169,29 @@ its original pump is pending without consuming the later original wait failure.
 The three Core/import/SQL regression files passed eighteen cases with no skip;
 their final type-aware strict checks also pass. New exact-backend campaign
 results follow only after the separate Surface/Wire source has been retained.
+
+## Corrected backend-only local freeze
+
+The separate batch of 36 Surface/Wire paths was retained outside this worktree's
+active source before validation. On the actual backend-only payload, both
+TypeScript projects, global/bridge strict type-aware lint, build, API coverage,
+compatibility, repository/MCP/all-skill validation and all seven official skill
+quick checks pass. Global lint reports zero warnings/errors across 5,370 files.
+All three committed bundles reproduce byte-for-byte. Compatibility changes are
+limited to facade source/bundle projections and review time; external pins are
+unchanged. The locked dependency bytes match the existing successful dependency
+installation/tree/signature/audit/sanitizer proof.
+
+All 44 focused cases across eight whole changed backend files pass with no skip
+in 49.04 seconds. This covers fresh import/prototype protection, original Core
+failure wakeups, SQL batched pauses, tail enrollment, complete request bounds,
+all timer races, original publication recovery and undispatched cleanup intents.
+The final package contains5676 files; its manifest SHA-256 is
+`7508ba1508bd1e2a7b08d9c4d8ea61400c696a720008bccd04b0c1f5b0cb26a0`. The frozen TypeScript source digest is
+`20776d64128a84923379255dd361c188946a4dc1a64523ff371383ab165ec83f`.
+
+Full facade/bridge suites are delegated to new exact-final-head GitHub CI.
+That CI, Windows native checks and a completed current-head CodeRabbit review
+are still required before merge. This result is neither an installation nor
+connected/live/saved-reopened acceptance. Both installed snapshots remain
+`0.3.0+codex.20261116150017` until the executable integration is ready.
