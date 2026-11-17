@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- This closed generated tail composes eleven fixed Main and renderer codecs under one exact native role. */
+import {currentFootprintForwardWriterMainMutationDispatch} from "./current-footprint-forward-writer-main-mutation-native.ts";
 import {currentFootprintInverseMainHistoryNativeSource} from "./current-footprint-inverse-main-history-native.ts";
 import {currentFootprintForwardWriterTicketTimerControlDispatch} from "./current-footprint-forward-writer-ticket-timer-native.ts";
 /** Complete-v2 fixed tail syntax and fresh original-instance ledgers. This
@@ -180,7 +182,7 @@ function dispatch():string{
  ["footprint-forward-copy-delete","SendForwardWriterCopyDelete"],
  ["footprint-forward-copy-tail-observe","SendForwardWriterCopyTailObservation"],
  ] as const;
- return currentFootprintForwardWriterTicketTimerControlDispatch()+String.raw`        'footprint-forward-startup-ws' {
+ return currentFootprintForwardWriterMainMutationDispatch()+currentFootprintForwardWriterTicketTimerControlDispatch()+String.raw`        'footprint-forward-startup-ws' {
           if(-not $WorkerStartupFootprintForwardWriterComplete209 -or -not $launched -or $request.callFrameId -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt 2147483647 -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,callFrameId,helperInstance,id,jobId,requestId,rootCreated,rootPid'){throw 'forward-startup-ws-fields'}
           $owner.SendForwardWriterStartupWs([int]$request.requestId,$request.callFrameId);$result=@{written=$true}
         }

@@ -56,9 +56,10 @@ void test("ready native rows and complete-only dispatch preserve closed programs
  const ready=table("EasyedaForwardWriterReadyPublicationRows");assert.equal(ready.length,3);
  for(const row of ready){assert.ok(row[3]!==undefined);assert.match(row[3],/own\(project,\\"isReady\\"\)!==true/u);assert.doesNotMatch(row[3],/own\(project,\\"isReady\\"\)!==false/u);}
  assert.equal(table("EasyedaForwardWriterCompleteBranchProtocol").length,10);
- const dispatch=currentFootprintForwardWriterCompleteTailDispatch();assert.equal(new Set(CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS).size,17);
+ // The full owner also reserves its pre-Create escaped-body capacity control.
+ const dispatch=currentFootprintForwardWriterCompleteTailDispatch();assert.equal(new Set(CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS).size,18);
  for(const action of CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS){assert.equal(dispatch.split(`'${action}' {`).length,2);}
- assert.equal(dispatch.match(/if\(-not \$WorkerStartupFootprintForwardWriterComplete209 -or -not \$launched/gu)?.length,17);
+ assert.equal(dispatch.match(/if\(-not \$WorkerStartupFootprintForwardWriterComplete209 -or -not \$launched/gu)?.length,18);
  assert.doesNotMatch(dispatch,/functionDeclaration|sessionId|WorkerStartupFootprintForwardWriter209 -or/u);
  assert.match(dispatch,/\$role=\[System\.Management\.Automation\.Language\.NullString\]::Value;\$records=0/u);assert.doesNotMatch(dispatch,/\$role=\$null/u);
  const native=currentFootprintForwardWriterCompleteTailNativeSource();assert.match(native,/\[A-Za-z0-9_.:-\]\{1,256\}/u);

@@ -1,3 +1,4 @@
+import { currentMainStartupLibraryReadonlyNativeFragment } from "./current-main-startup-library-readonly-native.ts";
 /** Fixed native rows extend only the private stock origin. Historical Node
  * SQL grammar still rejects these phases, and all original rows remain exact. */
 import { CURRENT_MAIN_STARTUP_LIBRARY_V2 as LIVE } from "./current-main-startup-library-v2-profile.ts";
@@ -58,6 +59,22 @@ export function currentMainStartupLibraryV2NativeRows(): readonly string[] {
 }
 /** Separate native phase ledger and transport counter. Legacy normal and
  * cleanup reservations remain exact and cannot spend this origin's quota. */
+export function currentFootprintForwardWriterMainStartupLibraryNativeFragment(): string {
+  return `internal sealed partial class EasyedaOriginalMainTransport {
+int stockRequests;
+internal void SendStock(string text){Budget(false);AssertConnection();Need(stockRequests<${String(LIVE.requests)}&&text!=null&&text.Length>0&&text.IndexOf('\\0')<0&&utf8.GetByteCount(text)<=65536,"stock-command");stockRequests++;WriteFrame(1,utf8.GetBytes(text));AssertConnection();}
+}
+public sealed partial class EasyedaDiagnosticOwner {
+bool stockMainEligible;int stockMainRequests,stockMainStage,stockMainCalls;
+int stockRegistrationStage;
+void ReserveStockRegistrationMain(int id,string phase,string method,System.Collections.IDictionary fields){MainPurpose();AssertLive();if(!stockMainEligible||stockMainRequests==0||id!=mainRequest+1)throw Error("stock-registration-original-owner");int next;if(phase=="sql-fence-startup-registration-remove"){if(stockRegistrationStage!=0||(stockMainStage!=10&&stockMainStage!=13))throw Error("stock-registration-remove-once");next=1;}else if(phase=="sql-fence-startup-registration-resume"){if(stockRegistrationStage!=1||(stockMainStage!=10&&stockMainStage!=13))throw Error("stock-registration-resume-once");next=2;}else if(phase=="sql-fence-startup-registration-complete"){if(stockRegistrationStage!=2||!((stockMainStage==19&&stockMainCalls==332&&stockMainRequests==${String(LIVE.requests)})||StockReadonlyRejected()))throw Error("stock-registration-return-barrier");next=3;}else throw Error("stock-registration-phase");EasyedaSelectedFileMainSqlFenceProtocol.Encode(id,phase,method,fields);stockRegistrationStage=next;}
+bool StockRegistrationMainComplete(string phase){if(phase!="sql-fence-startup-registration-complete")return false;if(stockRegistrationStage!=3||!((stockMainStage==19&&stockMainCalls==332&&stockMainRequests==${String(LIVE.requests)})||StockReadonlyRejected()))throw Error("stock-registration-complete-barrier");return true;}
+void SendStockMain(int id,string phase,string method,System.Collections.IDictionary fields){MainPurpose();AssertLive();if(stockReadonlyStage>=3&&stockReadonlyStage<=8)throw Error("stock-readonly-no-retry");if(!stockMainEligible||id!=mainRequest+1||stockMainRequests>=${String(LIVE.requests)})throw Error("stock-original-owner");string[] phases={"raw","captured","caller","frame","bind","points","arm","select","require","resume","raw","captured","caller","return-frame","return-properties","return","remove","require","resume"};string expected=stockMainStage<19?"sql-stock-v2-"+phases[stockMainStage]:null;if(phase!=expected)throw Error("stock-phase-order");string text=EasyedaSelectedFileMainSqlFenceProtocol.Encode(id,phase,method,fields);stockMainRequests++;mainRequest=id;if(stockMainStage==9){stockMainCalls++;stockMainStage=stockMainCalls==332?13:10;}else if(stockMainStage==12)stockMainStage=7;else stockMainStage++;originalMain.SendStock(text);AssertLive();}
+}
+${currentMainStartupLibraryReadonlyNativeFragment()}`;
+}
+
+/** Historical helper composition retains its exact released ledger. The separately named forward fragment owns the readonly extension. */
 export function currentMainStartupLibraryV2NativeFragment(): string {
   return `internal sealed partial class EasyedaOriginalMainTransport {
 int stockRequests;

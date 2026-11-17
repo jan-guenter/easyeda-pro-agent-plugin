@@ -9,7 +9,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "efe1b4961ed76757ed9231dd6cf11233bbb536e81cbdac050757ec87f56e99c9";
+const __easyedaBundlePairId = "a89b9890d2900c34f5e68725c869da98191e9ba3dbf4ad958ae6bc0056e51393";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
