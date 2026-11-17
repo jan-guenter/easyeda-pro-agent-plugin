@@ -1,5 +1,7 @@
 # Project history
 
+- [Controlled footprint and original Wire runner release](2026-11-17-controlled-footprint-controls-release.md). PR222 exact-head review/CI, official both-host install, actual fresh-agent connection without Codex restart and bounded fixture cleanup.
+
 - [Wire callback support release](2026-11-16-wire-callback-support-release.md). PR217 exact-head and merged-main CI, all reported review issues resolved, immutable Git payload proof and one combined installation planned.
 
 - [Original Wire first child Point effects and held attributes return](2026-11-16-wire-first-child-point-effects.md). Genuine points/map/scale/constructor/normal execution, qualified ordinary scratch effects and both persistent Point births; first child return instruction held and all later/native/Save gates remain closed.
@@ -1353,3 +1355,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Original Wire callback exit and real runner to held first tick](2026-11-16-through-2026-11-17-wire-real-runner-first-tick.md)
 
 - [2026-11-16 through 2026-11-17: genuine forward backend, retained validation and public review](2026-11-16-through-2026-11-17-genuine-forward-backend.md).
+
+- [Isolated inverse native build inputs](2026-11-17-isolated-inverse-native-inputs.md). Additive V4/cold-UI canonical sources, build outputs and isolated metadata; curated source foundations with runtime validation deferred.

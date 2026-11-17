@@ -274,6 +274,26 @@ jobs:
             } finally {$child.Dispose()}
           }
 
+      - name: Compile the new canonical inverse owners with strict CSharp 5
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          foreach ($layout in @('inverse-native-v4-v1', 'inverse-native-cold-ui-v1')) {
+            $source = Join-Path $env:GITHUB_WORKSPACE ('plugins\easyeda-pro-control\scripts\native-baseline\' + $layout + '\owner.cs')
+            $originalHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+            $output = Join-Path $env:RUNNER_TEMP ('easyeda-canonical-' + [Guid]::NewGuid().ToString('N') + '.dll')
+            try {
+              & $compiler /nologo /langversion:5 /target:library /platform:x64 /warnaserror+ /reference:System.dll /reference:System.Core.dll ('/out:' + $output) $source
+              if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $output -PathType Leaf)) {throw 'Canonical inverse owner compilation failed.'}
+              if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -cne $originalHash) {throw 'Canonical inverse input changed during compilation.'}
+              Write-Output ('Compiled ' + $layout + ' SHA256=' + $originalHash + '; no assembly loading or application execution.')
+            } finally {
+              if (Test-Path -LiteralPath $output -PathType Leaf) {Remove-Item -LiteralPath $output}
+            }
+          }
+
       - name: Compile the separate fixed forward-execution graph without an application
         shell: powershell
         run: |

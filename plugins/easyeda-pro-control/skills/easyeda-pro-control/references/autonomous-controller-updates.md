@@ -45,6 +45,23 @@ does not establish eligibility. Successful preflight, other non-reference calls
 and pending or unknown work retain the stricter cleanup requirements. This
 retirement path changes no journal or bridge admission decision.
 
+## Official marketplace commands
+
+After the original controller has retired and closed, scope the official update
+to `easyeda-pro-agent`. If saved configuration disables plugin discovery, use
+`--enable plugins` on each CLI metadata/install command; an empty list in that
+mode is not evidence that the copied snapshot is absent. This invocation-only
+override preserves the saved setting. See the
+[installation guide](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/installation.md)
+for the exact upgrade, inspection and full-payload comparison commands.
+
+A resumed agent can retain its old closed transport after an update. Do not
+retry that transport. A fresh-context agent must prove its actual new
+`loaded-facade` process and source files before relying on the refreshed tool
+catalog. If the host connection did not refresh, the verified foreground manager
+remains the supported alternative. Skill or catalog changes alone grant no live
+CAD admission.
+
 ## Establish one controller
 
 First query the current Codex connection's offline `loaded-facade`. Finish its
