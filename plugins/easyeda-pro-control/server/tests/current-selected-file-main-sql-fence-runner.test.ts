@@ -13,6 +13,10 @@ import { currentPcbViaMainBeginNativeCases, validateCurrentPcbViaMainBeginComman
 import type { CurrentPcbViaMainBeginCommand } from "../src/current-pcb-via-main-begin-protocol.ts";
 import { viaMainActorProperties, viaMainActorValue } from "./helpers/via-main-actor-replies.ts";
 import { CurrentMainStartupLibraryV2Schedule, CURRENT_MAIN_STARTUP_LIBRARY_V2 as STOCK } from "../src/current-main-startup-library-v2-profile.ts";
+import { CURRENT_MAIN_STARTUP_LIBRARY_READONLY_SOURCE as STOCK_READONLY } from "../src/current-main-startup-library-readonly-source.ts";
+import { CurrentMainStartupLibraryReadonlySchedule } from "../src/current-main-startup-library-readonly-profile.ts";
+import { currentMainStartupLibraryReadonlyWire } from "../src/current-main-startup-library-readonly-native.ts";
+import type { CurrentMainStartupLibraryReadonlyCommand } from "../src/current-main-startup-library-readonly-protocol.ts";
 import { CurrentMainStartupLibraryProgress, captureCurrentMainStartupLibrarySelection, currentMainStartupLibrarySelectionSchema } from "../src/current-main-startup-library-progress.ts";
 import type { CurrentMainStartupLibraryV2Command } from "../src/current-main-startup-library-v2-protocol.ts";
 import assert from "node:assert/strict";
@@ -77,7 +81,7 @@ const configPacket = (role: "jb" | "dc", site: "run" | "prepare" | "prepared", s
 async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed" | null = null, unsupportedNative = false,
   firstStartup: SqlPauseFixture | null = null, startupCallerFrames: readonly Data[] = [],
   failureProbe?: Readonly<{ consumeError?: Error; projectionError?: Error; locationProjectionCount?: { count: number } }>, stockMode: "complete" | "lineage" | "early-registration" | "late-registration" | "interleave" | "interleave-refused" | null = null, registrationFault?: RegistrationFault): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; phases: string[]; transport: CurrentFootprintCopyMainBackendTransport;
-  injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole) => void; injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole) => void; injectBeginPoint: (role: "save" | "transaction" | "run" | "callback" | "returned") => void; injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean | "structure") => void; injectMutation: () => void; injectSql: (pause: SqlPauseFixture) => void; injectDriver: () => void; resumes: () => number; resumeBatches: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
+  readonlyRequests: () => readonly Readonly<{id:number;phase:string}>[]; readonlySourceAdmissions: () => number; injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole) => void; injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole) => void; injectBeginPoint: (role: "save" | "transaction" | "run" | "callback" | "returned") => void; injectViaPoint: (role: "context" | "controller" | "editHead") => void; loseNextDriverStep: () => void; injectRequest: (method: string, foreign?: boolean, sourceDelta?: number, history?: boolean | "structure") => void; injectMutation: () => void; injectSql: (pause: SqlPauseFixture) => void; injectDriver: () => void; resumes: () => number; resumeBatches: () => number; deferPoll: () => Readonly<{ started: Promise<unknown>; release: () => void }> }>> {
   const base = mainBackendTransportFixture();
   if (registrationFault === "metadata") { base.state.metadataShapeRole = "protocolCallback"; }
   if (registrationFault === "location") { base.state.registrationColumnDelta = 1; }
@@ -101,6 +105,8 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
   if (wrongStartup === "malformed") { startup[2] = { site: "run", value: { recognized: false, sql: "private malformed SQL" } }; }
   if (firstStartup !== null) { startup.unshift({ site: firstStartup.site }); }
   let stockIndex = 0; const stockSchedule = new CurrentMainStartupLibraryV2Schedule();
+  const readonlyLedger: Readonly<{id:number;phase:string}>[] = [], readonlySchedule = new CurrentMainStartupLibraryReadonlySchedule();
+  let readonlySourceAdmissions=0;
   const stockOrigin = Object.freeze({ profile: "private.current-main-startup-library-origin.v2" as const, executionAuthorized: false as const });
   let startupIndex = -1; let historySlot = "data";
   let queuedBytes = Buffer.alloc(0); let contextPointActive = false, loseDriverStep = false, plannedResumes = 0, resumeBatches = 0;
@@ -133,7 +139,7 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
       if (command.phase === "sql-fence-startup-registration-remove") { assert.equal(stockSchedule.requests, stockMode === "late-registration" ? 1996 : 10); if (registrationFault === "remove-ack") { return Promise.reject(new Error("registration-remove-ack-lost")); } }
       else if (command.phase === "sql-fence-startup-registration-resume") {
         assert.equal(stockSchedule.requests, stockMode === "late-registration" ? 1996 : 10); if (registrationFault === "resume-ack") { return Promise.reject(new Error("registration-resume-ack-lost")); }
-        event("Debugger.resumed", {}); stockIndex += 1; if (stockMode === "late-registration") { event("Debugger.paused", { reason: "other", hitBreakpoints: ["stock-return"], callFrames: [{ callFrameId: "stock-return-frame", location: { scriptId: "app", ...STOCK.returnPoint }, returnValue: { type: "object", subtype: "promise", className: "Promise", description: "Promise", objectId: "stock-native-return" } }] }); } else if (registrationFault === "unowned-site") { pause("keeperBirth", { site: "keeperBirth", classification: "guard-passed" }); } else { pause("run"); }
+        event("Debugger.resumed", {}); stockIndex += 1; if (stockMode === "late-registration") { event("Debugger.paused", { reason: "other", hitBreakpoints: ["stock-return"], callFrames: [{ callFrameId: "stock-return-frame", location: { scriptId: "app", ...STOCK.returnPoint }, returnValue: { type: "object", subtype: "promise", className: "Promise", description: "Promise", objectId: "stock-native-return" } }] }); } else if (registrationFault === "unowned-site") { pause("prepare", { site: "prepare", classification: "guard-passed" }); } else { pause("run"); }
       } else if (command.phase === "sql-fence-startup-registration-complete") {
         assert.equal(stockSchedule.complete, true); assert.equal(stockSchedule.requests, 2002);
         assert.equal(command.params.objectId, "frame"); assert.deepEqual(command.params.arguments, [{ objectId: "capture" }]);
@@ -259,6 +265,27 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     }
     queue.push({ id, result }); return Promise.resolve();
   };
+  /** Real fixed readonly codec and original-command gate, with only replies
+   * supplied by this inert peer. Its requests never enter the V2 stock ledger. */
+  const stockReadonlySend=(command:CurrentMainStartupLibraryReadonlyCommand,id:number):Promise<void>=>{
+    assert.ok(runner!==null);runner.requireOriginalStartupLibraryReadonlyCommand(capability,stockOrigin,command);
+    const wire=currentMainStartupLibraryReadonlyWire(command,id);
+    assert.equal(wire.command.id,id);assert.equal(wire.request["requestId"],id);
+    assert.ok(readonlyLedger.every(row=>row.id<id));
+    readonlySchedule.consume(wire.command.phase);readonlyLedger.push(Object.freeze({id,phase:wire.command.phase}));phases.push(wire.command.phase);
+    let result:unknown;
+    if(command.phase==="sql-stock-readonly-points"){
+      assert.equal(stockSchedule.requests,7);assert.deepEqual(command.params.start,{scriptId:"app",...STOCK_READONLY.start});assert.deepEqual(command.params.end,{scriptId:"app",...STOCK_READONLY.end});
+      result={locations:[{scriptId:"app",...STOCK_READONLY.point}]};
+    }else if(command.phase==="sql-stock-readonly-arm"){
+      assert.equal(stockSchedule.requests,7);assert.deepEqual(command.params.location,{scriptId:"app",...STOCK_READONLY.point});
+      result={breakpointId:"stock-readonly",actualLocation:{scriptId:"app",...STOCK_READONLY.point}};
+    }else{
+      assert.ok(command.phase==="sql-stock-readonly-disarm-normal");assert.equal(stockSchedule.requests,2000);assert.equal(command.params.breakpointId,"stock-readonly");
+      assert.equal(readonlySchedule.complete,true);assert.equal(readonlySchedule.rejected,false);assert.equal(readonlySchedule.requests,3);result={};
+    }
+    runner.requireOriginalStartupLibraryReadonlyCommand(capability,stockOrigin,command);queue.push({id,result});return Promise.resolve();
+  };
   const transport: CurrentFootprintCopyMainBackendTransport = Object.freeze({
     assertCurrent: (): Promise<void> => base.transport.assertCurrent(),
     send: (command: Command, id: number): Promise<void> => {
@@ -321,6 +348,8 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     "./current-selected-file-main-request-reader.ts": { CurrentSelectedFileMainRequestReader: RequestReader },
     "./current-pcb-via-main-live-history-source.ts": { qualifyCurrentPcbViaMainLiveHistorySource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
     "./current-main-startup-library-source.ts": { qualifyCurrentMainStartupLibrarySource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
+    "./current-main-startup-library-readonly-source.ts": { CURRENT_MAIN_STARTUP_LIBRARY_READONLY_SOURCE:STOCK_READONLY,
+      qualifyCurrentMainStartupLibraryReadonlySource:(source:unknown):void=>{assert.equal(source,"synthetic-complete-app-source");assert.ok(stockMode!==null);readonlySourceAdmissions+=1;} },
     "./current-main-startup-config-sql.ts": { qualifyCurrentMainStartupConfigSource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
     "./current-footprint-copy-main-request-source.ts": {
       qualifyCurrentFootprintCopyMainRequestSource: (source: unknown): unknown => { assert.equal(source, "synthetic-complete-app-source"); return capability; },
@@ -331,6 +360,9 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     "./current-selected-file-main-sql-fence-bootstrap.ts": {
       enrollOriginalCurrentMainStartupLibrary: (token: unknown, original: CurrentFootprintCopyMainBackendRunner): typeof stockOrigin => { assert.equal(token, capability); assert.equal(original, runner); assert.ok(stockMode !== null); original.requireOriginalStartupLibraryEnrollment(capability); return stockOrigin; },
       sendOriginalCurrentMainStartupLibrary: (token: unknown, original: unknown, origin: unknown, command: CurrentMainStartupLibraryV2Command, id: number): Promise<void> => { assert.equal(token, capability); assert.equal(original, runner); assert.equal(origin, stockOrigin); return stockSend(command, id); },
+      sendOriginalCurrentMainStartupLibraryReadonly:(token:unknown,original:unknown,origin:unknown,command:CurrentMainStartupLibraryReadonlyCommand,id:number):Promise<void>=>{
+        assert.equal(token,capability);assert.equal(original,runner);assert.equal(origin,stockOrigin);return stockReadonlySend(command,id);
+      },
       prepareOriginalCurrentSelectedFileStartupActors: (token: unknown, original: CurrentFootprintCopyMainBackendRunner): Promise<void> => {
         assert.equal(token, capability); assert.equal(original, runner); original.requireOriginalStartupActorPause(capability); phases.push("startup-actors"); return Promise.resolve();
       },
@@ -383,7 +415,7 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     },
   });
   runner = new module.Constructor(transport, undefined, capability);
-  return { runner, phases, transport, injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole): void => {
+  return { runner, phases, transport, readonlyRequests:()=>[...readonlyLedger], readonlySourceAdmissions:()=>readonlySourceAdmissions, injectStructurePoint: (role: CurrentPcbViaMainStructureFrameRole, caller?: CurrentPcbViaMainStructureFrameRole): void => {
     let pointId = `structure-${role}`; if (role === "run") { pointId = "sql-run"; } else if (role === "callback") { pointId = "begin-callback"; }
     event("Debugger.paused", { reason:"other",hitBreakpoints:[pointId],callFrames:[structurePeerFrame(role),...(caller===undefined?[]:[structurePeerFrame(caller)])] });
   }, injectHistoryPoint: (role: CurrentPcbViaMainHistoryFrameRole, caller?: CurrentPcbViaMainHistoryFrameRole): void => {
@@ -902,6 +934,9 @@ void test("stock V2 runner joins initial4/later3 pauses through332 calls and the
   const state = f.runner.startupLibraryState(); assert.equal(state["originalNormalReturnProven"], true); assert.equal(state["requests"], 2002);
   assert.equal(f.phases.filter(phase => phase === "sql-stock-v2-caller").length, 332); assert.equal(f.phases.filter(phase => phase === "sql-stock-v2-resume").length, 333);
   assert.equal(f.phases.includes("sql-stock-resume"), false); assert.equal(f.runner.retainedStartupLibraryRefusalContext(), null);
+  assert.equal(f.readonlySourceAdmissions(),1);
+  assert.deepEqual(f.readonlyRequests().map(row=>row.phase),["sql-stock-readonly-points","sql-stock-readonly-arm","sql-stock-readonly-disarm-normal"]);
+  assert.equal(f.runner.startupLibraryReadonlyState().ordinaryRequests,3);assert.equal(f.runner.startupLibraryReadonlyState().originalError,null);
   const requestsBefore = f.phases.length; const cursor = f.runner.issueForwardMainCursor();
   assert.equal(cursor.profile, "private.current-footprint-forward-main-cursor.v1"); assert.equal(cursor.executionAuthorized, false);
   assert.equal(f.runner.issueForwardMainCursor(), cursor); assert.equal(f.phases.length, requestsBefore);
@@ -939,11 +974,11 @@ void test("unknown registration metadata or location and a replaced pending comm
   }
 });
 
-void test("an unowned non-read pause after registration retains original source context without resuming or spending stock", async () => {
+void test("an unowned non-read SQL pause after registration retains original source context without resuming or spending stock", async () => {
   const f = await fixture(0, null, false, null, [], undefined, "early-registration", "unowned-site");
   await assert.rejects(f.runner.observe(), /STOCK_INTERLEAVE_READ_SITE/u);
   const context = f.runner.retainedSelectedSqlStartupRefusalContext(); assert.ok(context !== null);
-  assert.equal(context.site, "keeperBirth"); assert.equal(context.reason, "site-outside-startup-profile");
+  assert.equal(context.site, "prepare"); assert.equal(context.reason, "site-outside-startup-profile");
   // This peer substitutes a source sentinel.
   // Out-of-source coordinates are counted and omitted.
   assert.deepEqual(context.callFrames, { totalFrames: 1, omittedForeignScript: 0, omittedOutsideSource: 1, locations: [] });

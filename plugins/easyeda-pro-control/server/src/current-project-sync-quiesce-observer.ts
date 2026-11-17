@@ -1,9 +1,11 @@
 /* oxlint-disable import/max-dependencies -- One original timer observer joins independently qualified source, native intrinsics and actual owner/event boundaries. */
 /** Deliberate session mutation under an original pre-navigation intent. No
  * effect is inferred from a timeout and no failed cancellation is retried. */
+import {captureCurrentFootprintForwardExecutionPrototypes,requireCurrentFootprintForwardExecutionPrototypes} from "./current-footprint-forward-execution-opening-identity.ts";
 import { decodeCurrentProjectSyncQuiesceArray } from "./current-project-sync-quiesce-replies.ts";
 import { types } from "node:util";
 import { z } from "zod";
+// oxlint-disable-next-line import/no-cycle -- The original Core registry is resolved only during later quiescence; module evaluation creates no owner or authority.
 import { requireOriginalCurrentProjectSyncQuiesceOrigin } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentProjectSyncQuiesceBindings,CurrentProjectSyncQuiesceOrigin } from "./current-project-sync-quiesce-origin.ts";
 import { CURRENT_PROJECT_SYNC_QUIESCE_PROGRAMS as PROGRAMS } from "./current-project-sync-quiesce-programs.ts";
@@ -64,3 +66,7 @@ export class CurrentProjectSyncQuiesceObserver {
   public async requireOriginal(completion:CurrentProjectSyncQuiesceCompletion):Promise<void>{const original=completions.get(completion);need(original?.observer===this&&original.owner===this.#owner&&original.operation===this.#operation&&this.#completion===completion,"COMPLETION_ORIGINAL");await this.#current();}
   public async retireAfterOriginalExit():Promise<void>{need(!this.#busy&&!this.#closed,"RETIRE_STATE");await this.#bindings.assertOriginalGenerationExited();this.#closed=true;}
 }
+
+/** Eager defining-module snapshot avoids cyclic import TDZ and first-use trust. */
+const originalClassPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentProjectSyncQuiesceObserver.prototype);
+export function assertOriginalCurrentProjectSyncQuiesceObserverClass():void{requireCurrentFootprintForwardExecutionPrototypes(originalClassPrototype);}

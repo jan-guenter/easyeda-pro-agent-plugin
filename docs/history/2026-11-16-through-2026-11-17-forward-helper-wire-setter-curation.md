@@ -241,3 +241,24 @@ All seven initial CodeRabbit findings and its source-independent-test nit
 are implemented. Exact final-head CI and a completed CodeRabbit review
 remain required before merge. No installation, app launch, connected
 writer acceptance or saved/reopened validation is claimed by this batch.
+
+## Helper publication, 17 November
+
+Helper PR #220 merged at `1bdc65e63733b1044b30e4856c3ee8a5cf136407`
+from reviewed head `c97bb2a3d808974784773f166b0b81c55fc686dc`. All
+13 exact-head checks passed, including every facade shard, aggregate/build,
+Windows native job and history. Both initial CodeRabbit reviews were read,
+including all four outside-diff findings and the nit. Its final walkthrough
+explicitly reported no actionable comments, with source/covered commit
+metadata equal to that head and marked reviewed. Two remaining outdated
+threads were resolved against those verified fixes; no bot comment or
+review reply was posted.
+
+The canonical marketplace remains
+<https://github.com/jan-guenter/easyeda-pro-agent-plugin.git> at main.
+Installation is deliberately deferred across the executable integration;
+both local hosts remain on verified `0.3.0+codex.20261116150017`. This is
+publication evidence, not a new installation or connected acceptance.
+
+The separate [backend continuation](2026-11-16-through-2026-11-17-genuine-forward-backend.md) retains its original
+implementation and validation observations, with the public review corrections.

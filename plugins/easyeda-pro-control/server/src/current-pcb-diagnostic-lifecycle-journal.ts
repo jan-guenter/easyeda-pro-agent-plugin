@@ -1,3 +1,8 @@
+/* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
+import { assertNoUnresolvedForwardComponentLaunches } from "./current-forward-component-launch-exclusion.ts";
+import {assertNoUnresolvedCurrentFootprintForwardWriterTicketTimers} from "./current-footprint-forward-writer-ticket-timer-journal.ts";
+import { assertNoUnresolvedCurrentFootprintForwardWriterPublications } from "./current-footprint-forward-writer-publication-journal.ts";
+import { assertNoUnresolvedCurrentFootprintForwardWriterCreateIntents } from "./current-footprint-forward-writer-create-intent-journal.ts";
 import {currentPcbComponentClonedSpatialObservationSchema,currentPcbComponentClonedSpatialObservationV1Schema,requireHistoricalCurrentPcbComponentClonedSpatialObservation} from "./current-pcb-component-cloned-spatial-validation.ts";
 import {currentPcb209ComponentClonedPointQueriesSchema} from "./current-pcb-209-component-cloned-point-read.ts";
 import { generatedComponentReaderOriginalQualificationSchema, generatedPadReaderOriginalQualificationSchema } from "./generated-reader-closed-capture-contract.ts";
@@ -9,11 +14,12 @@ import { assertGeneratedReaderHistoricalSnapshot, readGeneratedReaderHistoricalS
 import type { GeneratedReaderHistoricalSnapshot } from "./current-generated-reader-relinquishment-journal.ts";
 /** Private, append-only diagnostic lifecycle records. Historical JSON never
  * recreates a native owner. Partial reservations remain launch blockers. */
-/* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
 import { currentWindowRestoreResultSchema, requireCurrentWindowRestoreResult } from "./current-pcb-diagnostic-window-restore.ts";
 import { assertNoUnresolvedFootprintHeadAgeValidation } from "./current-footprint-head-age-validation-journal.ts";
 import { assertNoUnresolvedFootprintHeldCacheValidation } from "./current-footprint-held-cache-validation-journal.ts";
 import { assertNoUnresolvedCurrentFootprintForwardExecutionOpenings } from "./current-footprint-forward-execution-opening-journal.ts";
+import { assertNoUnresolvedCurrentFootprintForwardWriterOpenings } from "./current-footprint-forward-writer-opening-journal.ts";
+import { assertNoUnresolvedCurrentFootprintForwardWriterStartupFrontiers } from "./current-footprint-forward-writer-startup-frontier-journal.ts";
 import type { CurrentFootprintForwardSourceHistoricalSnapshot } from "./current-footprint-forward-source-relinquishment-journal.ts";
 import { currentWindowResizeResultSchema, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { CURRENT_RENDERER_CAPTURE_LIMITS, currentRendererCaptureResultSchema, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
@@ -1782,6 +1788,11 @@ export async function readCurrentPcbDiagnosticLifecycles(): Promise<readonly Dia
  * separate receipt preserves missing native release acknowledgment. */
 export async function assertGeneratedReaderRelinquishmentIsolated(snapshot: GeneratedReaderHistoricalSnapshot): Promise<void> {
   await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
+  await assertNoUnresolvedCurrentFootprintForwardWriterOpenings();
+  await assertCompleteFootprintWorkflowIsolation();
+  await assertNoUnresolvedCurrentFootprintForwardWriterCreateIntents();
+  await assertNoUnresolvedCurrentFootprintForwardWriterPublications(); await assertNoUnresolvedCurrentFootprintForwardWriterTicketTimers();
+  await assertNoUnresolvedCurrentFootprintForwardWriterStartupFrontiers();
   await assertNoUnresolvedFootprintHeldCacheValidation(); await assertNoUnresolvedFootprintHeadAgeValidation();
   await assertNoUnresolvedCurrentPcbStringLedgers();
   const original = requireGeneratedReaderHistoricalSnapshot(snapshot); await assertGeneratedReaderHistoricalSnapshot(snapshot);
@@ -1798,6 +1809,11 @@ export async function assertGeneratedReaderRelinquishmentIsolated(snapshot: Gene
  * historical snapshot, never an operation ID/boolean accepted by normal guards. */
 export async function assertCurrentFootprintCombinedAbandonmentIsolated(snapshot: CurrentFootprintCombinedHistoricalSnapshot): Promise<void> {
   await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
+  await assertNoUnresolvedCurrentFootprintForwardWriterOpenings();
+  await assertCompleteFootprintWorkflowIsolation();
+  await assertNoUnresolvedCurrentFootprintForwardWriterCreateIntents();
+  await assertNoUnresolvedCurrentFootprintForwardWriterPublications(); await assertNoUnresolvedCurrentFootprintForwardWriterTicketTimers();
+  await assertNoUnresolvedCurrentFootprintForwardWriterStartupFrontiers();
   await assertNoUnresolvedFootprintHeldCacheValidation();
   await assertNoUnresolvedFootprintHeadAgeValidation();
   const original = requireCurrentFootprintCombinedHistoricalSnapshot(snapshot);
@@ -1816,6 +1832,11 @@ export async function assertCurrentFootprintCombinedAbandonmentIsolated(snapshot
  * separate resolver. No ID, copied JSON or normal caller can select an exception. */
 export async function assertCurrentFootprintForwardOpeningRelinquishmentIsolated(snapshot: CurrentFootprintForwardOpeningHistoricalSnapshot): Promise<void> {
   await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
+  await assertNoUnresolvedCurrentFootprintForwardWriterOpenings();
+  await assertCompleteFootprintWorkflowIsolation();
+  await assertNoUnresolvedCurrentFootprintForwardWriterCreateIntents();
+  await assertNoUnresolvedCurrentFootprintForwardWriterPublications(); await assertNoUnresolvedCurrentFootprintForwardWriterTicketTimers();
+  await assertNoUnresolvedCurrentFootprintForwardWriterStartupFrontiers();
   await assertNoUnresolvedFootprintHeldCacheValidation(); await assertNoUnresolvedFootprintHeadAgeValidation();
   await assertNoUnresolvedCurrentPcbStringLedgers();
   const original = requireCurrentFootprintForwardOpeningHistoricalSnapshot(snapshot);
@@ -1830,7 +1851,8 @@ export async function assertCurrentFootprintForwardOpeningRelinquishmentIsolated
 }
 
 export async function assertNoUnresolvedCurrentPcbDiagnosticLaunches(): Promise<void> {
-  await assertNoUnresolvedCurrentFootprintForwardExecutionOpenings();
+  await assertNoUnresolvedForwardComponentLaunches();
+  await assertCompleteFootprintWorkflowIsolation();
   await assertNoUnresolvedFootprintHeldCacheValidation();
   await assertNoUnresolvedFootprintHeadAgeValidation();
   await assertNoUnresolvedCurrentPcbStringLedgers();
@@ -1898,4 +1920,13 @@ export async function publishCurrentPcbDiagnosticLifecycleRecord<Key extends Rec
 }
 export function assertCurrentPcbDiagnosticLifecycleSnapshot(actual: readonly DiagnosticLifecycleOperation[], expected: readonly DiagnosticLifecycleOperation[]): void {
   requireValue(canonicalJson(actual) === canonicalJson(expected), "JOURNAL_CHANGED");
+}
+
+
+/** Defer the original private workflow module until after lifecycle/provider
+ * initialization. Only its own private async scope may exempt its exact journal;
+ * all other historical/native launch blockers remain independent. */
+async function assertCompleteFootprintWorkflowIsolation():Promise<void>{
+ const original=await import("./current-footprint-forward-writer-workflow.ts");
+ await original.assertNoUnresolvedCurrentFootprintForwardWriterWorkflowIsolation();
 }

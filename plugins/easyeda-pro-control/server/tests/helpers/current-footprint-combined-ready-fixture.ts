@@ -12,14 +12,16 @@ import { fileURLToPath } from "node:url";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { CURRENT_FOOTPRINT_COMBINED_READY, decodeCurrentFootprintCombinedReady } from "../../src/current-footprint-combined-ready.ts";
+// oxlint-disable-next-line import/no-namespace -- Forward the complete initialized ESM namespace intact through the inert CJS require adapter.
+import * as originalCore from "../../src/current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCopyWindowsClockIssuer } from "../../src/current-footprint-copy-windows-clock.ts";
 import type { CurrentPcbDiagnosticInstallationOptions } from "../../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyForwardNativeOwner, CurrentFootprintCopyForwardSavedNativeOwner, CurrentFootprintCopyHeldSavedNativeOwner, CurrentFootprintCopyNativeTarget, CurrentFootprintForwardExecutionNativeOwner, CurrentFootprintInverseNativeOwner, assertOriginalCurrentFootprintCopyForwardNativeOwner, assertOriginalCurrentFootprintCopyForwardSavedNativeOwner, assertOriginalCurrentFootprintForwardExecutionNativeOwner, assertOriginalCurrentFootprintInverseNativeOwner, currentFootprintCombinedFactoryFailureDiagnostics, currentFootprintCopyForwardFactoryFailureDiagnostics,
   currentFootprintCopyForwardSavedObservationAllocationOutcome, currentFootprintForwardExecutionBirthAllocationOutcome, currentFootprintForwardExecutionBirthFailureDiagnostics,
   currentFootprintForwardHeldSavedAllocationOutcome, currentFootprintInverseAllocationOutcome,
-  currentProjectStructureFactoryFailureDiagnostics, originalCurrentFootprintInverseTarget, originalCurrentFootprintInverseTermination,
-  requireCurrentFootprintCombinedUnlaunchedFactoryFailure, requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, requireCurrentFootprintForwardExecutionInputs,
-  requireOriginalCurrentFootprintForwardHeldSavedOwner, startCurrentFootprintCopyHeldSavedNativeOwner, startCurrentFootprintCopySavedNativeOwner, startCurrentFootprintForwardHeldSavedNativeOwner, startCurrentFootprintInverseNativeOwner, startCurrentProjectStructureNativeOwner } from "../../src/current-pcb-diagnostic-owner.ts";
+  currentProjectStructureFactoryFailureDiagnostics, originalCurrentFootprintInverseTarget, originalCurrentFootprintInverseTermination, requireCurrentFootprintCombinedUnlaunchedFactoryFailure,
+  requireCurrentFootprintCopyForwardUnlaunchedFactoryFailure, requireCurrentFootprintForwardExecutionInputs, requireCurrentFootprintForwardWriterReleasePreflightFacts, requireOriginalCurrentFootprintForwardHeldSavedOwner,
+startCurrentFootprintCopyHeldSavedNativeOwner, startCurrentFootprintCopySavedNativeOwner, startCurrentFootprintForwardHeldSavedNativeOwner, startCurrentFootprintForwardWriterCompleteNativeOwner, startCurrentFootprintInverseNativeOwner, startCurrentProjectStructureNativeOwner } from "../../src/current-pcb-diagnostic-owner.ts";
 
 type Mode = "ready" | "stderr-close" | "malformed" | "wrong-challenge" | "oversize-no-newline" | "stderr-delayed-close" | "resource-traffic" | "saved-admission-failure" | "saved-spawn-refusal" | "execution-inputs";
 export interface SyntheticForwardFactoryOwner extends CurrentFootprintCopyForwardNativeOwner {
@@ -41,6 +43,8 @@ export interface SyntheticForwardExecutionFactoryOwner extends CurrentFootprintF
   syntheticForwardMainUiForTest: (opening: object, result: object) => void;
 }
 interface Module {
+  readonly startCurrentFootprintForwardWriterCompleteNativeOwner: typeof startCurrentFootprintForwardWriterCompleteNativeOwner;
+  readonly requireCurrentFootprintForwardWriterReleasePreflightFacts: typeof requireCurrentFootprintForwardWriterReleasePreflightFacts;
   readonly CurrentFootprintInverseNativeOwner: typeof CurrentFootprintInverseNativeOwner;
   readonly startCurrentFootprintInverseNativeOwner: typeof startCurrentFootprintInverseNativeOwner;
   readonly assertOriginalCurrentFootprintInverseNativeOwner: typeof assertOriginalCurrentFootprintInverseNativeOwner;
@@ -78,7 +82,7 @@ interface Module {
  * Callers must retain the returned child through cleanup; the fixture issues
  * no native application ownership, real closed-SQL proof or writer authority.
  */
-export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" | "forward-execution" | "structure" = "combined", savedObservation = false,
+export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" | "forward-execution" | "forward-writer" | "structure" = "combined", savedObservation = false,
   supplied: Readonly<{ modules?: Readonly<Record<string, unknown>>; childProgram?: string; inverseSourceRefusal?: true;
     launchTarget?: Readonly<{ windowsPath: string; sha256: string }> }> = {}): Promise<Readonly<{
   api: Module; options: CurrentPcbDiagnosticInstallationOptions; child: () => ChildProcessWithoutNullStreams;
@@ -87,11 +91,14 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
   seedSyntheticClosedSnapshot: (writer: SyntheticForwardFactoryOwner | SyntheticForwardExecutionFactoryOwner, after: object) => void;
 }>> {
   const path = new URL("../../src/current-pcb-diagnostic-owner.ts", import.meta.url);
-  const actualRequire = createRequire(path);
+  const sourceRequire = createRequire(path);
+  // Static ESM initialization completes Core's cyclic source leaves before
+  // Any transformed CJS dependency can enter that graph through require().
+  const actualRequire = (name:string):unknown => name === "./current-pcb-diagnostic-owner.ts" ? originalCore : sourceRequire(name) as unknown;
   const pluginRoot = fileURLToPath(new URL("../..", path)).replace(/\/$/u, "");
   const helper = await readFile(new URL("../../../scripts/pcb-diagnostic-owner.ps1", import.meta.url));
   let ownerSource = await readFile(path, "utf8");
-  if (purpose === "forward" || purpose === "forward-execution") {
+  if (purpose === "forward" || purpose === "forward-execution" || purpose === "forward-writer") {
     // An explicit synthetic command seam reaches actual original counters and
     // Pipe callbacks. It proves no Windows handle, app launch or writer route.
     ownerSource = ownerSource.replace("  public status():", "  public syntheticForwardRequestForTest(request: RecordValue): Promise<RecordValue> { return this.#request(request); }\n" +
@@ -155,12 +162,20 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
       releaseAttempted: false, released: false, sourceQualified: true }) } });
   const capacityPath = new URL("../../src/current-footprint-copy-forward-capacity.ts", import.meta.url);
   const capacitySource = await readFile(capacityPath, "utf8");
-  const capacityRaw = capacitySource.replace("  public consumeControl(",
+  let capacityRaw = capacitySource.replace("  public consumeControl(",
     "  public syntheticControlsForTest(role: CurrentFootprintCopyForwardRole, original: object, normal: number, cleanup: number): void { const held=this.#original(role,original); held.normalControls+=normal;held.cleanupControls+=cleanup;held.controls+=normal+cleanup; }\n  public consumeControl(");
+  if (purpose === "forward-writer") {
+    // Explicit inert-factory seam calls the transformed Core's actual registry.
+    capacityRaw=capacityRaw.replace('await import("./current-footprint-forward-writer-complete-birth-origin.ts")','await Promise.resolve(require("./current-footprint-forward-writer-complete-birth-origin.ts"))');
+  }
   const capacityOutput = await transform(capacityRaw, { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
   const capacityLoaded: { exports: Record<string, unknown> } = { exports: {} };
   const capacityEvaluate: unknown = runInThisContext(`(function(require,module,exports){${capacityOutput.code}\n})`); assert.ok(typeof capacityEvaluate === "function");
-  Reflect.apply(capacityEvaluate, undefined, [createRequire(capacityPath), capacityLoaded, capacityLoaded.exports]);
+  const capacityRequire=createRequire(capacityPath);
+  Reflect.apply(capacityEvaluate, undefined, [(name:string):unknown=>{
+    if(purpose==="forward-writer"&&name==="./current-footprint-forward-writer-complete-birth-origin.ts"){return loaded.exports;}
+    return capacityRequire(name) as unknown;
+  }, capacityLoaded, capacityLoaded.exports]);
   const mainAccountingPath = new URL("../../src/current-footprint-copy-forward-main-accounting.ts", import.meta.url);
   const mainAccountingOutput = await transform(await readFile(mainAccountingPath, "utf8"), { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
   const mainAccountingLoaded: { exports: Record<string, unknown> } = { exports: {} }, mainAccountingRequire = createRequire(mainAccountingPath);
@@ -224,7 +239,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
     if (name === "./current-pcb-209-actor-clock-source.ts") { return { requireCurrentPcb209ActorClockSourceQualification: (value: unknown): void => { assert.equal(value, sourceOnly); } }; }
     if (name === "./current-footprint-combined-ready.ts") { return { decodeCurrentFootprintCombinedReady,
       CURRENT_FOOTPRINT_COMBINED_READY: { ...CURRENT_FOOTPRINT_COMBINED_READY, milliseconds: 5000, eofCleanupMilliseconds: 500 } }; }
-    if (name !== "node:child_process") { return actualRequire(name) as unknown; }
+    if (name !== "node:child_process") { return actualRequire(name); }
     return { spawn: (executable: unknown, args: unknown): ChildProcessWithoutNullStreams => {
       assert.equal(executable, "synthetic-inert-node-only");
       assert.ok(Array.isArray(args)); const encoded: unknown = args.at(-1); assert.equal(typeof encoded, "string"); assert.ok(typeof encoded === "string");

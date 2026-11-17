@@ -3066,7 +3066,12 @@ export class EasyedaControlEngine {
    * It is not bridge/edit admission and accepts no journal exclusion selector.
    */
   public async assertDiagnosticLaunchOtherOperationsSettled(): Promise<true> {
-    const operations = await scanQualifiedAdmissionOperations();
+    const observed = await scanQualifiedAdmissionOperations();
+    const original=await import("./current-footprint-forward-writer-workflow.ts");
+    const operations:typeof observed=[];
+    for(const entry of observed){
+      if(entry.bridgeBlocking||!await original.isOriginalCurrentFootprintForwardWriterDiagnosticOperation(entry.summary.operationId)){operations.push(entry);}
+    }
     assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
     return assertNoNativeUiEditingOperations(operations.map((entry) => entry.summary));
   }

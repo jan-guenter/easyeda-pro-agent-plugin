@@ -8,10 +8,8 @@ import type { CheckpointReceipt } from "./checkpoint.ts";
 import { canonicalJson, isRecord } from "./core.ts";
 import type { Inventory } from "./closed-sql-equality.ts";
 /* oxlint-disable import/no-cycle -- Original native guards and the owner's snapshot reader resolve their private references only after construction; module initialization issues no authority. */
-import { assertOriginalCurrentFootprintCopyNativeOwner, assertOriginalCurrentFootprintCopyNativeTermination, assertOriginalCurrentFootprintForwardExecutionNativeOwner, assertOriginalCurrentFootprintForwardExecutionNativeTermination, assertOriginalCurrentFootprintInverseNativeOwner,
-  assertOriginalCurrentFootprintInverseTermination, originalCurrentFootprintCopyNativeTarget,
-  originalCurrentFootprintForwardExecutionNativeTarget, originalCurrentFootprintInverseNativeSource } from "./current-pcb-diagnostic-owner.ts";
-import type { CurrentFootprintCopyGenerationOwner, CurrentFootprintForwardExecutionNativeOwner, CurrentFootprintInverseNativeOwner } from "./current-pcb-diagnostic-owner.ts";
+import {assertOriginalCurrentFootprintCopyNativeOwner,assertOriginalCurrentFootprintCopyNativeTermination,assertOriginalCurrentFootprintForwardExecutionNativeOwner, assertOriginalCurrentFootprintForwardExecutionNativeTermination, assertOriginalCurrentFootprintForwardWriterCompleteNativeOwner, assertOriginalCurrentFootprintForwardWriterHeldSavedNativeOwner, assertOriginalCurrentFootprintForwardWriterHeldSavedNativeTermination, assertOriginalCurrentFootprintForwardWriterNativeTermination, assertOriginalCurrentFootprintInverseNativeOwner, assertOriginalCurrentFootprintInverseTermination, originalCurrentFootprintCopyNativeTarget, originalCurrentFootprintForwardExecutionNativeTarget, originalCurrentFootprintForwardWriterHeldSavedNativeTarget, originalCurrentFootprintForwardWriterNativeTarget, originalCurrentFootprintInverseNativeSource } from "./current-pcb-diagnostic-owner.ts";
+import type {CurrentFootprintCopyGenerationOwner, CurrentFootprintForwardExecutionNativeOwner, CurrentFootprintForwardWriterHeldSavedNativeOwner, CurrentFootprintForwardWriterNativeOwner, CurrentFootprintInverseNativeOwner } from "./current-pcb-diagnostic-owner.ts";
 /* oxlint-enable import/no-cycle */
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
@@ -26,7 +24,7 @@ export interface CurrentFootprintCopyClosedSnapshot {
   readonly sourceIdentity: CurrentFootprintCopyClosedSourceIdentity;
   readonly inventory: Inventory;
 }
-type OriginalOwner = Readonly<{ kind: "inverse"; owner: CurrentFootprintInverseNativeOwner }> | Readonly<{ kind: "copy"; owner: CurrentFootprintCopyGenerationOwner }> |
+type OriginalOwner = Readonly<{kind:"forward-writer-saved";owner:CurrentFootprintForwardWriterHeldSavedNativeOwner}> | Readonly<{kind:"forward-writer";owner:CurrentFootprintForwardWriterNativeOwner}> | Readonly<{ kind: "inverse"; owner: CurrentFootprintInverseNativeOwner }> | Readonly<{ kind: "copy"; owner: CurrentFootprintCopyGenerationOwner }> |
   Readonly<{ kind: "forward-execution"; owner: CurrentFootprintForwardExecutionNativeOwner }>;
 interface Retained {
   readonly binding: OriginalOwner;
@@ -42,11 +40,15 @@ function need(condition: boolean, detail: string): asserts condition {
   if (!condition) { throw new Error(`FOOTPRINT_COPY_CLOSED_SNAPSHOT_${detail}`); }
 }
 function assertOwner(binding: OriginalOwner): void {
+  if(binding.kind==="forward-writer-saved"){assertOriginalCurrentFootprintForwardWriterHeldSavedNativeOwner(binding.owner);return;}
+  if(binding.kind==="forward-writer"){assertOriginalCurrentFootprintForwardWriterCompleteNativeOwner(binding.owner);return;}
   if (binding.kind === "copy") { assertOriginalCurrentFootprintCopyNativeOwner(binding.owner); }
   else if (binding.kind === "inverse") { assertOriginalCurrentFootprintInverseNativeOwner(binding.owner); }
   else { assertOriginalCurrentFootprintForwardExecutionNativeOwner(binding.owner); }
 }
 function originalTarget(binding: OriginalOwner): ReturnType<typeof originalCurrentFootprintCopyNativeTarget> {
+  if(binding.kind==="forward-writer-saved"){return originalCurrentFootprintForwardWriterHeldSavedNativeTarget(binding.owner);}
+  if(binding.kind==="forward-writer"){return originalCurrentFootprintForwardWriterNativeTarget(binding.owner);}
   if (binding.kind === "inverse") { return originalCurrentFootprintInverseNativeSource(binding.owner); }
   if (binding.kind === "copy") {
     assertOriginalCurrentFootprintCopyNativeOwner(binding.owner); return originalCurrentFootprintCopyNativeTarget(binding.owner);
@@ -54,6 +56,8 @@ function originalTarget(binding: OriginalOwner): ReturnType<typeof originalCurre
   assertOriginalCurrentFootprintForwardExecutionNativeOwner(binding.owner); return originalCurrentFootprintForwardExecutionNativeTarget(binding.owner);
 }
 function requireTermination(binding: OriginalOwner, original: object): void {
+  if(binding.kind==="forward-writer-saved"){assertOriginalCurrentFootprintForwardWriterHeldSavedNativeTermination(binding.owner,original);return;}
+  if(binding.kind==="forward-writer"){assertOriginalCurrentFootprintForwardWriterNativeTermination(binding.owner,original);return;}
   if (binding.kind === "copy") { assertOriginalCurrentFootprintCopyNativeTermination(binding.owner, original); }
   else if (binding.kind === "inverse") { assertOriginalCurrentFootprintInverseTermination(binding.owner, original); }
   else { assertOriginalCurrentFootprintForwardExecutionNativeTermination(binding.owner, original); }
@@ -73,6 +77,24 @@ export function requireCurrentFootprintForwardExecutionClosedSnapshot(owner: Cur
 export function requireCurrentFootprintInverseClosedSnapshot(owner: CurrentFootprintInverseNativeOwner, inventory: Inventory): CurrentFootprintCopyClosedSnapshot {
   return requireSnapshot({ kind: "inverse", owner }, inventory);
 }
+/** Separate complete-writer registry lookup; old entry points remain strict. */
+export function requireCurrentFootprintForwardWriterClosedSnapshot(owner:CurrentFootprintForwardWriterNativeOwner,inventory:Inventory):CurrentFootprintCopyClosedSnapshot{
+ return requireSnapshot({kind:"forward-writer",owner},inventory);
+}
+export function captureCurrentFootprintForwardWriterClosedSnapshot(owner:CurrentFootprintForwardWriterNativeOwner,termination:object):Promise<Inventory>{
+ return captureSnapshot({kind:"forward-writer",owner},termination);
+}
+/** Fresh full successor uses its own owner and completed reader identity. */
+export function requireCurrentFootprintForwardWriterSavedClosedSnapshot(owner:CurrentFootprintForwardWriterHeldSavedNativeOwner,inventory:Inventory):CurrentFootprintCopyClosedSnapshot{
+ return requireSnapshot({kind:"forward-writer-saved",owner},inventory);
+}
+export function captureCurrentFootprintForwardWriterSavedClosedSnapshot(owner:CurrentFootprintForwardWriterHeldSavedNativeOwner,termination:object):Promise<Inventory>{
+ return captureSnapshot({kind:"forward-writer-saved",owner},termination);
+}
+/** Only this new readonly birth can retain its cold closed snapshot. Old
+ * kind-tagged entries continue to reject it at their original guards. */
+
+
 function requireSnapshot(binding: OriginalOwner, inventory: Inventory): CurrentFootprintCopyClosedSnapshot {
   const held = snapshots.get(inventory);
   need(held !== undefined && held.binding.kind === binding.kind && held.binding.owner === binding.owner &&

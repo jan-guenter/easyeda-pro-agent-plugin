@@ -2482,8 +2482,24 @@ export function listOperationStates(): Promise<UnknownRecord[]> {
 /** Rehash one bounded managed binary artifact through its retained descriptor.
  * No project-source path or execution authority is accepted by this helper.
  */
-export async function verifyExactManagedArtifact(
+export function verifyExactManagedArtifact(
   descriptor: Readonly<Pick<ArtifactDescriptor, "path" | "bytes" | "sha256">>,
+): Promise<void> {
+  return verifyBoundManagedArtifact(descriptor, false);
+}
+
+/** Settle only exact managed publication bytes. Unlike an ordinary reader,
+ * this explicitly repairs file and parent-directory durability on the same
+ * retained identities, then rechecks their current paths. No bytes are changed. */
+export function repairExactManagedArtifactDurability(
+  descriptor: Readonly<Pick<ArtifactDescriptor, "path" | "bytes" | "sha256">>,
+): Promise<void> {
+  return verifyBoundManagedArtifact(descriptor, true);
+}
+
+async function verifyBoundManagedArtifact(
+  descriptor: Readonly<Pick<ArtifactDescriptor, "path" | "bytes" | "sha256">>,
+  repairDurability: boolean,
 ): Promise<void> {
   const label = "Exact managed artifact";
   if (!isRecord(descriptor)) { throw new Error(`${label} descriptor is missing.`); }
@@ -2506,9 +2522,26 @@ export async function verifyExactManagedArtifact(
     const after = await opened.handle.stat();
     assertFileStayedUnchanged(opened.info, after, label);
     await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
+    if (repairDurability) {
+      await opened.handle.sync();
+      await opened.directory.handle.sync();
+      await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
+    }
     const final = await opened.handle.stat();
     assertFileStayedUnchanged(after, final, label); assertManagedFileAuthority(final, label);
   } finally { await closeManagedFile(opened); }
+}
+
+/** Repair a publisher's original deterministic journal encoding after unknown
+ * rename/directory-sync outcome. Semantic equality or a supplied readback is
+ * insufficient: only the exact original sealed byte string may be synced. */
+export function repairOperationPublicationDurability(operation: UnknownRecord): Promise<void> {
+  const operationId = operation["operationId"];
+  if (typeof operationId !== "string") { throw new TypeError("Operation requires an operationId."); }
+  const text = `${JSON.stringify(sealOperation(operation), null, 2)}\n`;
+  return repairExactManagedArtifactDurability({
+    path: operationPath(operationId), bytes: Buffer.byteLength(text), sha256: sha256Text(text),
+  });
 }
 
 /** Whole binary read for bounded managed File adapters. Retain the open file

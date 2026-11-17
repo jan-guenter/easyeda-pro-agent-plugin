@@ -20,6 +20,11 @@ import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-pla
 import type { CurrentFootprintCopyV2SqlPlan } from "./current-footprint-copy-v2-sql.ts";
 import { types } from "node:util";
 import { CURRENT_FOOTPRINT_FORWARD_COLD_REQUESTS as COLD, CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-cold-native-limits.ts";
+// oxlint-disable-next-line import/no-cycle -- The new profile is derived lazily in the later constructor; old exported envelopes finish initialization first.
+import { CURRENT_FOOTPRINT_FORWARD_WRITER_PURPOSE, currentFootprintForwardWriterProfile } from "./current-footprint-forward-writer-profile.ts";
+
+import type {currentFootprintForwardWriterCompleteProfile,currentFootprintForwardWriterCompleteV2Profile} from "./current-footprint-forward-writer-complete-profile.ts";
+import type {CurrentFootprintForwardWriterCompleteBirthOrigin} from "./current-footprint-forward-writer-complete-birth-origin.ts";
 
 const MiB = 1024 * 1024;
 const legacyClockCleanup = 5;
@@ -123,6 +128,31 @@ export const CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY = freezeDeep({
     helperStdoutBytes: CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.output.helperStdoutBytes + v2ReplyBytes },
 } as const);
 
+/** Separate fixed writer envelope for the new native birth. Derivation is
+ * lazy to preserve the old module's initialization and immutable projections. */
+export function currentFootprintForwardWriterResourceCapacity(): Omit<typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY, "profile" | "purpose" | "writer"> & Readonly<{
+  writer: Omit<typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY.writer, "renderer"> & Readonly<{ renderer: Omit<typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY.writer.renderer, "eventCount"> & Readonly<{ eventCount: number }> }>;
+  profile: "private.current-footprint-forward-writer-resource-capacity.v1"; purpose: typeof CURRENT_FOOTPRINT_FORWARD_WRITER_PURPOSE;
+}> {
+  const previous = CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY, writer = currentFootprintForwardWriterProfile();
+  return freezeDeep({ ...previous, profile: "private.current-footprint-forward-writer-resource-capacity.v1", purpose: CURRENT_FOOTPRINT_FORWARD_WRITER_PURPOSE, writer: { ...previous.writer,
+    renderer: { ...previous.writer.renderer, ...writer.renderer },
+    main: { ...previous.writer.main, normalClassLimit: writer.main.normalRequestLimit, cleanupClassLimit: writer.main.cleanupRequestLimit, requestLimit: writer.main.requestLimit },
+    helperStdoutBytes: writer.writerHelperStdoutBytes }, controls: { ...previous.controls, writer: { ...previous.controls.writer, ...writer.controls } }, output: writer.output });
+}
+
+/** Immutable complete envelope; data alone cannot choose this ledger. */
+export function currentFootprintForwardWriterCompleteV2ResourceCapacity(writer:ReturnType<typeof currentFootprintForwardWriterCompleteV2Profile>):Omit<ReturnType<typeof currentFootprintForwardWriterResourceCapacity>,"profile">&Readonly<{profile:"private.current-footprint-forward-writer-complete-resource-capacity.v2"}>{
+ const previous=currentFootprintForwardWriterResourceCapacity();
+ return freezeDeep({...previous,profile:"private.current-footprint-forward-writer-complete-resource-capacity.v2",writer:{...previous.writer,renderer:{...previous.writer.renderer,...writer.renderer},main:{...previous.writer.main,normalClassLimit:writer.main.normalRequestLimit,cleanupClassLimit:writer.main.cleanupRequestLimit,requestLimit:writer.main.requestLimit},helperStdoutBytes:writer.writerHelperStdoutBytes},controls:{...previous.controls,writer:{...previous.controls.writer,...writer.controls}},output:writer.output});
+}
+export function currentFootprintForwardWriterCompleteResourceCapacity(writer:ReturnType<typeof currentFootprintForwardWriterCompleteProfile>):Omit<ReturnType<typeof currentFootprintForwardWriterResourceCapacity>,"profile">&Readonly<{profile:"private.current-footprint-forward-writer-complete-resource-capacity.v3"}>{
+ const previous=currentFootprintForwardWriterResourceCapacity();
+ return freezeDeep({...previous,profile:"private.current-footprint-forward-writer-complete-resource-capacity.v3",writer:{...previous.writer,renderer:{...previous.writer.renderer,...writer.renderer},main:{...previous.writer.main,normalClassLimit:writer.main.normalRequestLimit,cleanupClassLimit:writer.main.cleanupRequestLimit,requestLimit:writer.main.requestLimit},helperStdoutBytes:writer.writerHelperStdoutBytes},controls:{...previous.controls,writer:{...previous.controls.writer,...writer.controls}},output:writer.output});
+}
+const COMPLETE_INTERNAL=Symbol("original-complete-forward-ledger");
+type CompleteLedgerInput=Readonly<{key:typeof COMPLETE_INTERNAL;profile:ReturnType<typeof currentFootprintForwardWriterCompleteProfile>}>;
+
 export type CurrentFootprintCopyForwardRole = "forward-writer" | "forward-saved-readback";
 const originalOutputs = new WeakSet<CurrentFootprintCopyOutputReservation>();
 /** Once actual original SQL/copy plans exist, narrow their data reservation
@@ -171,17 +201,23 @@ const originalLedgers = new WeakSet<CurrentFootprintCopyForwardResourceLedger>()
  * slots. This class does not authenticate its supplied owner reference and
  * cannot replace the original native factory/termination/eligibility checks. */
 export class CurrentFootprintCopyForwardResourceLedger {
-  readonly #profile: typeof CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY;
+  readonly #profile: typeof CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY | ReturnType<typeof currentFootprintForwardWriterResourceCapacity> | ReturnType<typeof currentFootprintForwardWriterCompleteResourceCapacity>;
   readonly #generations = new Map<CurrentFootprintCopyForwardRole, Generation>();
   readonly #aggregateBytes = new Map<"artifact" | "journal", number>();
   #failed = false;
-  public constructor(profile: "observation" | "forward-execution-v2" = "observation") {
-    if (profile !== "observation" && profile !== "forward-execution-v2") { fail("PROFILE"); }
-    this.#profile = profile === "forward-execution-v2" ? CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY;
+  public constructor(profile: "observation" | "forward-execution-v2" | "forward-writer-v1" = "observation",complete?:CompleteLedgerInput) {
+    if (profile !== "observation" && profile !== "forward-execution-v2" && profile !== "forward-writer-v1") { fail("PROFILE"); }
+    if(complete!==undefined){
+      if(types.isProxy(complete)||Object.getOwnPropertyDescriptor(complete,"key")?.value!==COMPLETE_INTERNAL||profile!=="observation"){fail("COMPLETE_ORIGINAL_FACTORY");}
+      this.#profile=currentFootprintForwardWriterCompleteResourceCapacity(complete.profile);
+    }else if (profile === "forward-writer-v1") {
+      this.#profile = currentFootprintForwardWriterResourceCapacity();
+    } else { this.#profile = profile === "forward-execution-v2" ? CURRENT_FOOTPRINT_FORWARD_EXECUTION_CAPACITY : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY; }
     originalLedgers.add(this);
   }
   public bind(role: CurrentFootprintCopyForwardRole, original: object): void {
-    if (this.#failed || !CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.generations.includes(role) || this.#generations.has(role) ||
+    if (this.#failed || this.#profile.purpose === CURRENT_FOOTPRINT_FORWARD_WRITER_PURPOSE && role !== "forward-writer" ||
+        !CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.generations.includes(role) || this.#generations.has(role) ||
         original === null || typeof original !== "object" || [...this.#generations.values()].some(value => value.original === original)) { fail("GENERATION"); }
     this.#generations.set(role, { original, rendererId: 0, rendererNormal: 0, rendererCleanup: 0,
       mainId: 0, mainNormal: 0, mainCleanup: 0, controls: 0, normalControls: 0, cleanupControls: 0, rendererPolls: { data: 0, idle: 0, wait: 0 },
@@ -232,7 +268,7 @@ export class CurrentFootprintCopyForwardResourceLedger {
   public consumeRendererEvent(role: CurrentFootprintCopyForwardRole, original: object, bytes: number): void {
     const value = this.#original(role, original); count(bytes);
     const used = value.bytes.get("renderer-event") ?? 0;
-    if (bytes === 0 || bytes > STREAM.frameBytes || value.rendererEvents >= STREAM.eventCount || used + bytes > STREAM.eventBytes) { this.#refuse("RENDERER_EVENT"); }
+    if (bytes === 0 || bytes > STREAM.frameBytes || value.rendererEvents >= (role === "forward-writer" ? this.#profile.writer.renderer.eventCount : STREAM.eventCount) || used + bytes > STREAM.eventBytes) { this.#refuse("RENDERER_EVENT"); }
     value.rendererEvents += 1; value.bytes.set("renderer-event", used + bytes);
   }
   /** Main's native limit covers all WebSocket frames: replies, events,
@@ -349,4 +385,12 @@ export function requireOriginalForwardLedgerBinding(ledger: CurrentFootprintCopy
     status: (): ReturnType<CurrentFootprintCopyForwardResourceLedger["status"]> => { requireOriginal(); return ledgerMethods.status.call(ledger); },
   });
   ledgerBindings.set(ledger, binding); return binding;
+}
+
+/** A caller cannot mint the pre-I/O origin required by this fixed factory.
+ * Dynamic resolution avoids adding Core to this widely shared data module's
+ * synchronous initialization graph. It installs no registry or callback. */
+export async function createCurrentFootprintForwardWriterCompleteResourceLedger(origin:CurrentFootprintForwardWriterCompleteBirthOrigin):Promise<CurrentFootprintCopyForwardResourceLedger>{
+ const original=await import("./current-footprint-forward-writer-complete-birth-origin.ts");const profile=original.requireOriginalCurrentFootprintForwardWriterCompleteBirth(origin);
+ return new CurrentFootprintCopyForwardResourceLedger("observation",Object.freeze({key:COMPLETE_INTERNAL,profile}));
 }

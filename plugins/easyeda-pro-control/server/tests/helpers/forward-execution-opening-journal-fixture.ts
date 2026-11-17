@@ -5,10 +5,10 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
-import { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath, updateOperation, verifyExactManagedArtifact, writePhaseArtifact } from "../../src/artifacts.ts";
+import { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath, repairExactManagedArtifactDurability, repairOperationPublicationDurability, updateOperation, verifyExactManagedArtifact, writePhaseArtifact } from "../../src/artifacts.ts";
 import type { CurrentFootprintForwardExecutionOpeningJournal } from "../../src/current-footprint-forward-execution-opening-journal.ts";
 
-const artifacts = { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath, updateOperation, verifyExactManagedArtifact, writePhaseArtifact };
+const artifacts = { assertOperationIdUnused, createOperation, createOperationScanner, ensureOperationStorage, loadOperation, operationPath, repairExactManagedArtifactDurability, repairOperationPublicationDurability, updateOperation, verifyExactManagedArtifact, writePhaseArtifact };
 
 export async function forwardExecutionOpeningJournalFixture(mode: "create-ack" | "manifest-ack" | "cleanup-ack" | "launch-intent-ack" | "launch-intent-cleanup-ack" | "held-artifact" | "held-main-result" | "ensure-storage" | "held-storage" | "create-conflict"): Promise<Readonly<{
   Journal: typeof CurrentFootprintForwardExecutionOpeningJournal;

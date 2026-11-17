@@ -5,8 +5,9 @@ import type { CurrentProjectSyncQuiesceCommand } from "./current-project-sync-qu
 export interface CurrentPcbViaProjectSyncQuiesceOrigin { readonly profile:"private.current-pcb-via-project-sync-quiesce-origin.v1" }
 export interface CurrentSchematicDisplayProjectSyncQuiesceOrigin { readonly profile:"private.current-schematic-display-project-sync-quiesce-origin.v1" }
 export interface CurrentFootprintInverseProjectSyncQuiesceOrigin { readonly profile:"private.current-footprint-inverse-project-sync-quiesce-origin.v1" }
+export interface CurrentFootprintForwardWriterProjectSyncQuiesceOrigin { readonly profile:"private.current-footprint-forward-writer-project-sync-quiesce-origin.v1" }
 export interface CurrentSchematicRelevanceDisplayProjectSyncQuiesceOrigin { readonly profile:"private.current-schematic-relevance-display-project-sync-quiesce-origin.v1" }
-export type CurrentProjectSyncQuiesceOrigin=CurrentSchematicRelevanceDisplayProjectSyncQuiesceOrigin|CurrentPcbViaProjectSyncQuiesceOrigin|CurrentSchematicDisplayProjectSyncQuiesceOrigin|CurrentFootprintInverseProjectSyncQuiesceOrigin;
+export type CurrentProjectSyncQuiesceOrigin=CurrentFootprintForwardWriterProjectSyncQuiesceOrigin|CurrentSchematicRelevanceDisplayProjectSyncQuiesceOrigin|CurrentPcbViaProjectSyncQuiesceOrigin|CurrentSchematicDisplayProjectSyncQuiesceOrigin|CurrentFootprintInverseProjectSyncQuiesceOrigin;
 export interface CurrentProjectSyncQuiesceEvent { readonly method:"Debugger.paused"|"Debugger.resumed";readonly sessionId:string;readonly params:unknown }
 export interface CurrentProjectSyncQuiesceBindings {
   readonly sessionId:string;readonly scriptId:string;readonly uniqueContextId:string;readonly source:string;

@@ -1,7 +1,7 @@
 /** Private identity propagation from the native-purpose dependency. Neither a
  * copied adapter nor a caller-provided field can enlarge the state-read bound. */
 /* oxlint-disable import/no-cycle -- Retain genuine channel identity checks through the construction/create cycle; these imports run only inside later owner operations. */
-import { isOriginalFootprintExecutionDependency, isOriginalFootprintForwardExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency,
+import { isOriginalFootprintExecutionDependency, isOriginalFootprintForwardExecutionDependency, isOriginalFootprintForwardWriterDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency,
   originalCurrentFootprintExecutionProjectUuid, requestCurrentFootprintCopyCacheConstruction } from "./current-pcb-worker-startup-channel.ts";
 /* oxlint-enable import/no-cycle */
 import type { CurrentFootprintCacheConstructionCommand } from "./current-footprint-copy-cache-construction-contract.ts";
@@ -44,7 +44,18 @@ export function isOriginalProjectStructureConstructionTransport(transport: Curre
 /** Cold instrumentation belongs to these two exact original births only. */
 export function isOriginalFootprintColdConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean {
   const held = executionOriginals.get(transport);
-  return isOriginalProjectStructureConstructionTransport(transport) || held !== undefined && isOriginalFootprintForwardExecutionDependency(held.dependency);
+  return isOriginalProjectStructureConstructionTransport(transport) || held !== undefined &&
+    (isOriginalFootprintForwardExecutionDependency(held.dependency) || isOriginalFootprintForwardWriterDependency(held.dependency));
+}
+/** Only the new writer's exact original dependency selects its producer hold. */
+export function isOriginalFootprintForwardWriterConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean {
+  const held = executionOriginals.get(transport); return held !== undefined && isOriginalFootprintForwardWriterDependency(held.dependency);
+}
+/** Join the new bootstrap to the same original startup/native parent binding. */
+export function originalFootprintForwardWriterConstructionDependency(transport: CurrentPcbWorkerConstructionTransport): CurrentPcbWorkerStartupDependency {
+  const held = executionOriginals.get(transport);
+  if (held === undefined || !isOriginalFootprintForwardWriterDependency(held.dependency)) { throw new Error("FOOTPRINT_FORWARD_WRITER_ORIGINAL_CONSTRUCTION"); }
+  return held.dependency;
 }
 export function originalFootprintForwardExecutionConstructionDependency(transport: CurrentPcbWorkerConstructionTransport): CurrentPcbWorkerStartupDependency {
   const held = executionOriginals.get(transport);
@@ -73,3 +84,5 @@ export function requestFootprintExecutionConstructionCache(transport: CurrentPcb
 export function isOriginalFootprintPreparationConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean {
   return originals.has(transport);
 }
+
+/** A cold dependency never enters an old saved/writer construction map. */

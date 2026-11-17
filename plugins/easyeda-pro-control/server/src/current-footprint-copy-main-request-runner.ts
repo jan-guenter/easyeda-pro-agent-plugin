@@ -37,9 +37,25 @@ import type { CurrentFootprintForwardMainRequestOrigin, CurrentFootprintForwardM
 
 import { captureCurrentFootprintForwardExecutionPrototypes, requireCurrentFootprintForwardExecutionPrototypes } from "./current-footprint-forward-execution-opening-identity.ts";
 
+// oxlint-disable-next-line import/no-cycle -- The full backend owns the original registry and consumes the held lease after construction; module initialization issues no origin.
+import {isCurrentFootprintForwardWriterMainRequestOrigin,requireCurrentFootprintForwardWriterMainRequestClockOrigin,requireCurrentFootprintForwardWriterMainRequestOrigin} from "./current-footprint-forward-writer-main-origin.ts";
+import type {CurrentFootprintForwardWriterMainRequestOrigin,CurrentFootprintForwardWriterMainRequestOriginBindings} from "./current-footprint-forward-writer-main-origin.ts";
+// oxlint-disable-next-line import/no-cycle -- Full late binding checks the original issued clock packet only after construction; no getter or binder runs during module initialization.
+import {bindCurrentFootprintForwardWriterMainRequestPlan,isCurrentFootprintForwardWriterMainRequestReservation,requireCurrentFootprintForwardWriterMainRequestReservation} from "./current-footprint-forward-writer-main-request-plan.ts";
+import type {CurrentFootprintForwardWriterMainRequestReservation} from "./current-footprint-forward-writer-main-request-plan.ts";
+import type {CurrentFootprintForwardWriterClockRpcOrigin} from "./current-footprint-forward-writer-clock-origin.ts";
+// oxlint-disable-next-line import/no-cycle -- Bound-body lookup joins the original clock registry after both runners exist; module initialization invokes no reader.
+import type {CurrentFootprintForwardWriterClockRpcObservation} from "./current-footprint-forward-writer-clock-rpc-runner.ts";
+import {requireCurrentFootprintForwardWriterClockRpcObservation} from "./current-footprint-forward-writer-clock-rpc-runner.ts";
+
 const FORWARD_INTERNAL = Symbol("original-forward-main-request-engine");
+const FULL_INTERNAL=Symbol("original-full-writer-main-request-engine");
+const fullEngines=new WeakSet<object>();
+const fullInstances=new WeakMap<CurrentFootprintCopyMainRequestRunner,CurrentFootprintForwardWriterMainRequestOrigin>();
+const fullHeldContexts = new WeakMap<object, Readonly<{ runner: CurrentFootprintCopyMainRequestRunner; origin: CurrentFootprintForwardWriterMainRequestOrigin; plan: Plan; actor: Actor }>>();
+const fullConsumed=new WeakSet<object>();
 const forwardEngines = new WeakSet<object>();
-type RequestOrigin = CurrentFootprintCopyMainRequestOrigin | CurrentFootprintForwardMainRequestOrigin;
+type RequestOrigin = CurrentFootprintCopyMainRequestOrigin | CurrentFootprintForwardMainRequestOrigin | CurrentFootprintForwardWriterMainRequestOrigin;
 type Origin = ReturnType<typeof requireCurrentFootprintCopyMainRequestOrigin>;
 type Plan = Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>>;
 type Actor = ReturnType<typeof decodeCurrentFootprintCopyMainRequestValue>;
@@ -92,6 +108,12 @@ const issued = new WeakMap<CurrentFootprintCopyMainRequestObservation, CurrentFo
 const held = new WeakMap<CurrentFootprintCopyMainRequestHeldFinalPb, Readonly<{
   owner: CurrentFootprintCopyMainRequestRunner; read: () => CurrentFootprintCopyMainRequestHeldFinalPbBindings;
 }>>();
+/** Factual shapes stay byte-exact; their full receipts have separate maps. */
+export type CurrentFootprintForwardWriterMainRequestObservation=CurrentFootprintCopyMainRequestObservation;
+export type CurrentFootprintForwardWriterMainRequestHeldFinalPb=CurrentFootprintCopyMainRequestHeldFinalPb;
+export type CurrentFootprintForwardWriterMainRequestHeldFinalPbBindings=CurrentFootprintCopyMainRequestHeldFinalPbBindings;
+const fullIssued=new WeakMap<CurrentFootprintForwardWriterMainRequestObservation,CurrentFootprintCopyMainRequestRunner>();
+const fullHeld=new WeakMap<CurrentFootprintForwardWriterMainRequestHeldFinalPb,Readonly<{owner:CurrentFootprintCopyMainRequestRunner;read:()=>CurrentFootprintForwardWriterMainRequestHeldFinalPbBindings}>>();
 const consumed = new WeakSet<object>(), failures = new WeakMap<Error, string>();
 const LIMIT_MS = 300_000;
 function fail(code: string): Error { const error = new Error(`FOOTPRINT_MAIN_REQUEST_COLLECTOR_${code}`); failures.set(error, code); return error; }
@@ -103,11 +125,15 @@ const eventSchema = z.discriminatedUnion("method", [
 ]);
 export class CurrentFootprintCopyMainRequestRunner {
   readonly #token: RequestOrigin;
+  readonly #fullOrigin:CurrentFootprintForwardWriterMainRequestOriginBindings|null;
+  readonly #fullLatePlan:CurrentFootprintForwardWriterMainRequestReservation|null;
   readonly #forwardOrigin: CurrentFootprintForwardMainRequestOriginBindings | null;
   readonly #origin: Origin;
   #plan: Plan | null;
   readonly #latePlan: CurrentFootprintCopyMainRequestReservation | null;
   #latePlanAttempted = false;
+  #fullBoundClock:CurrentFootprintForwardWriterClockRpcOrigin|null=null;
+  #fullBoundPacket:CurrentFootprintForwardWriterClockRpcObservation|null=null;
   readonly #points: Breakpoint[] = [];
   readonly #pauses: Pause[] = [];
   readonly #raw: unknown[] = [];
@@ -139,7 +165,12 @@ export class CurrentFootprintCopyMainRequestRunner {
   #resolveIdle: (() => void) | null = null;
   public constructor(origin: CurrentFootprintCopyMainRequestOrigin, suppliedPlan: unknown);
   public constructor(internal: typeof FORWARD_INTERNAL, origin: CurrentFootprintForwardMainRequestOrigin, suppliedPlan: unknown);
-  public constructor(first: CurrentFootprintCopyMainRequestOrigin | typeof FORWARD_INTERNAL, second: unknown, third?: unknown) {
+  public constructor(internal:typeof FULL_INTERNAL,origin:CurrentFootprintForwardWriterMainRequestOrigin,suppliedPlan:unknown);
+  public constructor(first: CurrentFootprintCopyMainRequestOrigin | typeof FORWARD_INTERNAL | typeof FULL_INTERNAL, second: unknown, third?: unknown) {
+    this.#fullOrigin=null;this.#fullLatePlan=null;
+    if(first===FULL_INTERNAL){need(isCurrentFootprintForwardWriterMainRequestOrigin(second),"FULL_ORIGINAL_ORIGIN");this.#fullOrigin=requireCurrentFootprintForwardWriterMainRequestOrigin(second);this.#forwardOrigin=null;this.#origin=this.#fullOrigin;this.#token=second;
+      need(isCurrentFootprintForwardWriterMainRequestReservation(third),"FULL_ORIGINAL_RESERVATION");this.#fullLatePlan=third;this.#latePlan=null;this.#plan=null;assertCurrentFootprintCopyMainRequestPlanWire(requireCurrentFootprintForwardWriterMainRequestReservation(third));return;
+    }
     if (first === FORWARD_INTERNAL) {
       need(isCurrentFootprintForwardMainRequestOrigin(second), "FORWARD_ORIGINAL_ORIGIN");
       this.#forwardOrigin = requireCurrentFootprintForwardMainRequestOrigin(second); this.#origin = this.#forwardOrigin; this.#token = second;
@@ -166,9 +197,37 @@ export class CurrentFootprintCopyMainRequestRunner {
       await this.#current(); requireCurrentFootprintCopyMainRequestClockOrigin(this.#token, origin); this.#plan = plan;
     } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }
   }
+  /** Only the original full owner may pair this request with its own actual
+   * two-clock observation. The attempt burns before the first original await. */
+  public async bindForwardWriterObservedClocks(origin:CurrentFootprintForwardWriterClockRpcOrigin,packet:CurrentFootprintForwardWriterClockRpcObservation):Promise<void>{
+    need(this.#fullOrigin!==null&&this.#token.profile==="private.current-footprint-forward-writer-main-request-origin.v1","FULL_ORIGINAL_CLOCK_ORIGIN");
+    need(this.#fullLatePlan!==null&&!this.#latePlanAttempted&&this.#plan===null&&this.#phase==="invocation-consumed","FULL_LATE_PLAN_CONSUMED");this.#begin();this.#latePlanAttempted=true;
+    try{requireCurrentFootprintForwardWriterMainRequestClockOrigin(this.#token,origin);await this.#current();
+      const plan=await bindCurrentFootprintForwardWriterMainRequestPlan(this.#fullLatePlan,origin,packet);await this.#current();requireCurrentFootprintForwardWriterMainRequestClockOrigin(this.#token,origin);this.#plan=plan;this.#fullBoundClock=origin;this.#fullBoundPacket=packet;
+    }catch(error){this.#refuse(error);throw error;}finally{this.#end();}
+  }
+  public requireForwardWriterMainReservation(origin:CurrentFootprintForwardWriterMainRequestOrigin,reservation:CurrentFootprintForwardWriterMainRequestReservation):void{
+    need(this.#fullOrigin!==null&&fullInstances.get(this)===origin&&this.#token===origin&&this.#fullLatePlan===reservation,"FULL_ORIGINAL_RESERVATION");this.#same();
+  }
+  /** Resolve only this factory's actual frozen bound body. Late-plan maximum
+   * placeholders, cloned clock packets and other original runners cannot enter. */
+  public async originalForwardWriterBoundPlan(origin:CurrentFootprintForwardWriterMainRequestOrigin,clock:CurrentFootprintForwardWriterClockRpcOrigin,packet:CurrentFootprintForwardWriterClockRpcObservation):Promise<Plan>{
+    need(this.#fullOrigin!==null&&origin===this.#token&&fullInstances.get(this)===origin&&this.#plan!==null&&clock===this.#fullBoundClock&&packet===this.#fullBoundPacket,"FULL_ORIGINAL_BOUND_PLAN");
+    this.#same();requireCurrentFootprintForwardWriterMainRequestClockOrigin(origin,clock);const plan=this.#plan;
+    await requireCurrentFootprintForwardWriterClockRpcObservation(packet,clock);this.#same();requireCurrentFootprintForwardWriterMainRequestClockOrigin(origin,clock);
+    need(this.#plan===plan&&this.#fullBoundClock===clock&&this.#fullBoundPacket===packet,"FULL_ORIGINAL_BOUND_PLAN");return plan;
+  }
+  #originalOrigin():Origin{
+    if(this.#token.profile==="private.current-footprint-forward-writer-main-request-origin.v1"){need(this.#fullOrigin!==null,"FULL_ORIGINAL_OWNER");return requireCurrentFootprintForwardWriterMainRequestOrigin(this.#token);}
+    if(this.#token.profile==="private.current-footprint-forward-main-request-origin.v2"){return requireCurrentFootprintForwardMainRequestOrigin(this.#token);}
+    return requireCurrentFootprintCopyMainRequestOrigin(this.#token);
+  }
+  #issuedMap():typeof issued{return this.#fullOrigin===null?issued:fullIssued;}
+  #heldMap():typeof held{return this.#fullOrigin===null?held:fullHeld;}
+  #heldBindings(packet:CurrentFootprintCopyMainRequestHeldFinalPb):CurrentFootprintCopyMainRequestHeldFinalPbBindings{return this.#fullOrigin===null?requireCurrentFootprintCopyMainRequestHeldFinalPb(packet):requireCurrentFootprintForwardWriterMainRequestHeldFinalPb(packet);}
   #same(cleanup = false): void {
-    if (this.#forwardOrigin !== null) { requireForwardEngine(this); }
-    need(!this.#retired && !this.#generationEnded && (this.#token.profile === "private.current-footprint-forward-main-request-origin.v2" ? requireCurrentFootprintForwardMainRequestOrigin(this.#token) : requireCurrentFootprintCopyMainRequestOrigin(this.#token)) === this.#origin, "ORIGINAL_OWNER");
+    if(this.#fullOrigin!==null){requireFullEngine(this);}else if (this.#forwardOrigin !== null) { requireForwardEngine(this); }
+    need(!this.#retired && !this.#generationEnded && this.#originalOrigin() === this.#origin, "ORIGINAL_OWNER");
     requireCurrentFootprintCopyMainRequestSource(this.#origin.qualifiedSource);
     need(cleanup || this.#phase !== "failed" && !this.#cleanupAttempted && !this.#ending, "FAILED");
     need(cleanup || this.#started === 0 || performance.now() - this.#started < LIMIT_MS, "DEADLINE");
@@ -184,8 +243,9 @@ export class CurrentFootprintCopyMainRequestRunner {
     this.#firstFailure ??= Object.freeze({ code: error instanceof Error ? failures.get(error) ?? "ORIGINAL_CHANNEL_OR_REPLY" : "ORIGINAL_CHANNEL_OR_REPLY",
       phase: this.#phase, normalRequests: this.#normal, cleanupRequests: this.#cleanup, replies: this.#raw.length });
     this.#phase = "failed";
-    if (this.#forwardOrigin !== null) {
-      try { this.#forwardOrigin.fail(error); }
+    const allocation=this.#fullOrigin??this.#forwardOrigin;
+    if (allocation !== null) {
+      try { allocation.fail(error); }
       catch {
         // Revocation cannot mask the original refusal.
       }
@@ -226,10 +286,11 @@ export class CurrentFootprintCopyMainRequestRunner {
         else { this.#allocationUncertain = true; }
       }
     };
-    const result = this.#forwardOrigin !== null && allocation !== undefined ?
-      await this.#forwardOrigin.request(command, cleanup, retain) : await this.#origin.request(command, cleanup);
+    const original=this.#fullOrigin??this.#forwardOrigin;
+    const result = original !== null && allocation !== undefined ?
+      await original.request(command, cleanup, retain) : await this.#origin.request(command, cleanup);
     const raw = captureCurrentPcbStringClockReply(result).value;
-    if (this.#forwardOrigin === null || allocation === undefined) { retain(raw); }
+    if (original === null || allocation === undefined) { retain(raw); }
     await this.#current(cleanup); this.#drain(); return raw;
   }
   async #wait(predicate: () => boolean): Promise<void> {
@@ -254,7 +315,8 @@ export class CurrentFootprintCopyMainRequestRunner {
    * It adds no command, callback factory, writer or completion authority. */
   public armForCompletion(): Promise<void> { return this.#arm(true); }
   async #arm(holdFinalPb: boolean): Promise<void> {
-    need(this.#phase === "ready" && !consumed.has(this.#token), "ARM_CONSUMED"); consumed.add(this.#token); this.#begin(); this.#phase = "arming"; this.#started = performance.now();
+    const attempts=this.#fullOrigin===null?consumed:fullConsumed;
+    need(this.#phase === "ready" && !attempts.has(this.#token), "ARM_CONSUMED"); attempts.add(this.#token); this.#begin(); this.#phase = "arming"; this.#started = performance.now();
     this.#holdFinalPb = holdFinalPb;
     try {
       for (const stage of ORDER) {
@@ -340,11 +402,15 @@ export class CurrentFootprintCopyMainRequestRunner {
             originalRequestAndSqlOwnerJoined: true, originalFinalPbStillHeld: true, allAllocatedRequestBreakpointsRemoved: true,
             nativeSqlCompletionVerified: false, executionAuthorized: false });
           const packet = this.#heldPacket;
+          if (this.#fullOrigin !== null) {
+            need(this.#token.profile === "private.current-footprint-forward-writer-main-request-origin.v1", "FULL_ORIGINAL_CONTEXT");
+            fullHeldContexts.set(packet, Object.freeze({ runner: this, origin: this.#token, plan: this.#plan, actor }));
+          }
           const bindings = Object.freeze({ scriptId: this.#origin.scriptId, finalPbFrameId: pause.frameId,
             retainedArrayObjectId: this.#origin.retainedArrayObjectId, controllerObjectId: this.#controller,
             actorObjectId: this.#actorPacket, sqlObjectId: this.#sqlPacket, plan: this.#plan, qualifiedSource: this.#origin.qualifiedSource,
             assertOriginal: async (): Promise<void> => { this.#assertHeld(packet); await this.#current(); this.#assertHeld(packet); } });
-          held.set(packet, Object.freeze({ owner: this, read: (): CurrentFootprintCopyMainRequestHeldFinalPbBindings => {
+          this.#heldMap().set(packet, Object.freeze({ owner: this, read: (): CurrentFootprintCopyMainRequestHeldFinalPbBindings => {
             this.#assertHeld(packet); return bindings;
           } }));
           this.#phase = "held-final-pb"; return packet;
@@ -357,13 +423,13 @@ export class CurrentFootprintCopyMainRequestRunner {
         actualOriginalControllerAndL3CallerJoined: true, actualPbArgumentAndProjectUserRowJoined: true, originalFulfilledPromiseResultAndSqlOwnerJoined: true,
         actualBackendActor: actor, allFourPausesResumed: true, allAllocatedBreakpointsRemoved: true, temporaryObjectGroupReleased: false,
         actualDocumentClockRpcJoinsObserved: false, nativePublicationCompletionVerified: false, nativeSqlCompletionVerified: false, originalGenerationClosed: false,
-        savedResultVerified: false, executionAuthorized: false }); issued.set(this.#packet, this); this.#phase = "collected"; return this.#packet;
+        savedResultVerified: false, executionAuthorized: false }); this.#issuedMap().set(this.#packet, this); this.#phase = "collected"; return this.#packet;
     } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }
   }
   /** Getter for the exact once-issued held token. No JSON, copied handle or
    * callback may create a replacement. Completion transport remains separate. */
   public heldFinalPbBindings(packet: CurrentFootprintCopyMainRequestHeldFinalPb): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
-    this.#assertHeld(packet); return requireCurrentFootprintCopyMainRequestHeldFinalPb(packet);
+    this.#assertHeld(packet); return this.#heldBindings(packet);
   }
   /** The genuine original scheduler consumes this exact held lease atomically.
    * No await or native resume occurs here. Old getters and cleanup owners lose
@@ -377,27 +443,30 @@ export class CurrentFootprintCopyMainRequestRunner {
     originalOrigin: CurrentFootprintForwardMainRequestOrigin): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
     requireCurrentFootprintForwardMainRequestOrigin(originalOrigin); return this.#transferHeld(packet, originalOrigin);
   }
+  public transferForwardWriterHeldFinalPb(packet:CurrentFootprintForwardWriterMainRequestHeldFinalPb,origin:CurrentFootprintForwardWriterMainRequestOrigin):CurrentFootprintForwardWriterMainRequestHeldFinalPbBindings{
+    need(this.#fullOrigin!==null,"FULL_ORIGINAL_TRANSFER");requireCurrentFootprintForwardWriterMainRequestOrigin(origin);return this.#transferHeld(packet,origin);
+  }
   #transferHeld(packet: CurrentFootprintCopyMainRequestHeldFinalPb, originalOrigin: RequestOrigin): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
     need(originalOrigin === this.#token, "ORIGINAL_TRANSFER_ORIGIN"); this.#assertHeld(packet);
-    const bindings = requireCurrentFootprintCopyMainRequestHeldFinalPb(packet);
-    this.#phase = "completion-transferred"; held.delete(packet); return bindings;
+    const bindings = this.#heldBindings(packet);
+    this.#phase = "completion-transferred"; this.#heldMap().delete(packet); return bindings;
   }
   #assertHeld(packet: CurrentFootprintCopyMainRequestHeldFinalPb): void {
     this.#same(); const pause = this.#pauses.at(-1);
-    need(!this.#busy && this.#phase === "held-final-pb" && packet === this.#heldPacket && held.get(packet)?.owner === this &&
+    need(!this.#busy && this.#phase === "held-final-pb" && packet === this.#heldPacket && this.#heldMap().get(packet)?.owner === this &&
       pause?.stage === "editHead" && !pause.resumeAttempted && !pause.resumeObserved && this.#controller !== null &&
       this.#actorPacket !== null && this.#sqlPacket !== null && this.#points.every(value => value.removed), "ORIGINAL_HELD_PACKET");
   }
   public async requireOriginal(packet: CurrentFootprintCopyMainRequestObservation): Promise<void> {
-    need(!this.#busy && this.#phase === "collected" && packet === this.#packet && issued.get(packet) === this, "ORIGINAL_PACKET");
-    await this.#current(); need(packet === this.#packet && issued.get(packet) === this && !this.#cleanupAttempted, "ORIGINAL_PACKET");
+    need(!this.#busy && this.#phase === "collected" && packet === this.#packet && this.#issuedMap().get(packet) === this, "ORIGINAL_PACKET");
+    await this.#current(); need(packet === this.#packet && this.#issuedMap().get(packet) === this && !this.#cleanupAttempted, "ORIGINAL_PACKET");
   }
   public async cleanup(): Promise<void> {
     need(this.#phase !== "completion-transferred", "COMPLETION_OWNS_GENERATION");
     need(!this.#cleanupAttempted, "CLEANUP_CONSUMED"); this.#begin(); this.#cleanupAttempted = true;
     try {
       const errors: unknown[] = [];
-      if (this.#forwardOrigin !== null) { try { await this.#forwardOrigin.settleAllocation(); } catch (error) { errors.push(error); } }
+      const allocation=this.#fullOrigin??this.#forwardOrigin;if (allocation !== null) { try { await allocation.settleAllocation(); } catch (error) { errors.push(error); } }
       for (const point of this.#points) { try { await this.#remove(point); } catch (error) { errors.push(error); } }
       // A refused capture may be paused immediately before native SQL. Cleanup
       // Never resumes it to make a failed observation complete.
@@ -455,9 +524,44 @@ export function transferCurrentFootprintForwardMainRequestHeldFinalPb(packet: Cu
   return originalForwardHeldTransfer.call(original.owner, packet, origin);
 }
 
+/** A full reservation and original full capability choose this private path.
+ * Public constructor arguments and v2/Combined tokens cannot select it. */
+export function createCurrentFootprintForwardWriterMainRequestRunner(origin:CurrentFootprintForwardWriterMainRequestOrigin,plan:unknown):CurrentFootprintCopyMainRequestRunner{
+  requireCurrentFootprintForwardWriterMainRequestOrigin(origin);requireForwardEnginePrototype();need(!fullEngines.has(origin),"FULL_ENGINE_CONSUMED");fullEngines.add(origin);
+  const runner=new CurrentFootprintCopyMainRequestRunner(FULL_INTERNAL,origin,plan);fullInstances.set(runner,origin);Object.freeze(runner);return runner;
+}
+export function requireCurrentFootprintForwardWriterMainRequestHeldFinalPb(packet:CurrentFootprintForwardWriterMainRequestHeldFinalPb):CurrentFootprintForwardWriterMainRequestHeldFinalPbBindings{
+ const original=fullHeld.get(packet);need(original!==undefined,"FULL_ORIGINAL_HELD_PACKET");return original.read();
+}
+// oxlint-disable-next-line typescript/unbound-method -- Captured full private fields bind the exact original reservation, including after its late body slot is consumed.
+const originalFullReservation=CurrentFootprintCopyMainRequestRunner.prototype.requireForwardWriterMainReservation;
+export function requireOriginalCurrentFootprintForwardWriterMainRequestReservation(runner:CurrentFootprintCopyMainRequestRunner,origin:CurrentFootprintForwardWriterMainRequestOrigin,reservation:CurrentFootprintForwardWriterMainRequestReservation):void{
+ need(fullInstances.get(runner)===origin,"FULL_ORIGINAL_ENGINE");requireFullEngine(runner);originalFullReservation.call(runner,origin,reservation);
+}
+// oxlint-disable-next-line typescript/unbound-method -- This captured private-field method reads only the actual full factory instance and its original bound clock packet.
+const originalFullBoundPlan=CurrentFootprintCopyMainRequestRunner.prototype.originalForwardWriterBoundPlan;
+export function requireOriginalCurrentFootprintForwardWriterBoundMainRequestPlan(runner:CurrentFootprintCopyMainRequestRunner,origin:CurrentFootprintForwardWriterMainRequestOrigin,clock:CurrentFootprintForwardWriterClockRpcOrigin,packet:CurrentFootprintForwardWriterClockRpcObservation):Promise<Plan>{
+ need(fullInstances.get(runner)===origin,"FULL_ORIGINAL_ENGINE");requireFullEngine(runner);return originalFullBoundPlan.call(runner,origin,clock,packet);
+}
+// oxlint-disable-next-line typescript/unbound-method -- Capture only the actual private-field full collector's synchronous ownership transfer.
+const originalFullHeldTransfer=CurrentFootprintCopyMainRequestRunner.prototype.transferForwardWriterHeldFinalPb;
+export function transferCurrentFootprintForwardWriterMainRequestHeldFinalPb(packet:CurrentFootprintForwardWriterMainRequestHeldFinalPb,origin:CurrentFootprintForwardWriterMainRequestOrigin):CurrentFootprintForwardWriterMainRequestHeldFinalPbBindings{
+ requireCurrentFootprintForwardWriterMainRequestOrigin(origin);const original=fullHeld.get(packet);need(original!==undefined,"FULL_ORIGINAL_HELD_PACKET");need(CurrentFootprintCopyMainRequestRunner.prototype.transferForwardWriterHeldFinalPb===originalFullHeldTransfer,"FULL_ORIGINAL_TRANSFER_METHOD");return originalFullHeldTransfer.call(original.owner,packet,origin);
+}
+function requireFullEngine(runner:CurrentFootprintCopyMainRequestRunner):void{requireForwardEnginePrototype();need(Object.getPrototypeOf(runner)===CurrentFootprintCopyMainRequestRunner.prototype&&Reflect.ownKeys(runner).length===0,"FULL_ORIGINAL_ENGINE");}
+
 const forwardEnginePrototypes = captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintCopyMainRequestRunner.prototype);
 function requireForwardEnginePrototype(): void { requireCurrentFootprintForwardExecutionPrototypes(forwardEnginePrototypes); }
 function requireForwardEngine(runner: CurrentFootprintCopyMainRequestRunner): void {
   requireForwardEnginePrototype();
   need(Object.getPrototypeOf(runner) === CurrentFootprintCopyMainRequestRunner.prototype && Reflect.ownKeys(runner).length === 0, "FORWARD_ORIGINAL_ENGINE");
+}
+
+/** Factual original actor/body only. The retained full packet survives its
+ * one-way completion transfer; no old held lease or continuation is revived. */
+export function requireOriginalCurrentFootprintForwardWriterHeldContext(packet: CurrentFootprintForwardWriterMainRequestHeldFinalPb): Readonly<{ origin: CurrentFootprintForwardWriterMainRequestOrigin; plan: Plan; actor: Actor }> {
+  const context = fullHeldContexts.get(packet);
+  need(context !== undefined && fullInstances.get(context.runner) === context.origin, "FULL_ORIGINAL_HELD_CONTEXT");
+  requireForwardEngine(context.runner);
+  return context;
 }

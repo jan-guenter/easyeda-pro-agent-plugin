@@ -13,6 +13,8 @@ import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { prepareCurrentFootprintCopyOwned } from "./current-footprint-copy-preparation-runtime.ts";
 import { prepareCurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
+import { prepareCurrentFootprintCopyHeadReference } from "./current-footprint-copy-head-reference.ts";
+import type { CurrentFootprintForwardHeadSource } from "./current-footprint-forward-head-origin.ts";
 import { CurrentFootprintCopyStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
 import type { CurrentFootprintCopyStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "./current-pcb-209-opening-profile.ts";
@@ -106,6 +108,8 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
   #busy = false;
   #clockPreparationAttempted = false;
   #clockPreparationReservation: CurrentFootprintForwardClockPreparationReservation | null = null;
+  #headPreparationAttempted = false;
+  #headSource: CurrentFootprintForwardHeadSource | null = null;
   #cleanupBusy = false;
   #failed: unknown = null;
   #factoryInvoked = false;
@@ -298,6 +302,26 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
       const result = await this.#stageCall("main", {}, () => owner.observeFootprintMainConstruction()); this.#stage = "main"; return result;
     });
   }
+  /** Optional head-only input selection while this original launched Main is
+   * still waiting for its first observation. It retains the actual prelaunch
+   * reader and grants no writer or larger Main reservation. */
+  public prepareHeadRead(): Promise<Readonly<{ headReadPrepared: true; executionAuthorized: false }>> {
+    return this.#normal(async () => {
+      need(this.#stage === "launched" && !this.#headPreparationAttempted && this.#request !== null, "HEAD_PREPARATION_CONSUMED"); this.#headPreparationAttempted = true;
+      const prepared = await this.#preparedCurrent(true); const owner = this.#ownerRequired();
+      const sourcePlan = await prepareCurrentFootprintSourcePlan(prepared.before, { projectUuid: prepared.sealedTarget.projectUuid,
+        branchUuid: prepared.sealedTarget.branchUuid, footprintUuid: this.#request.footprintUuid }); this.#current();
+      const reference = await prepareCurrentFootprintCopyHeadReference(prepared.before, sourcePlan); this.#current(); await this.#preparedCurrent(true);
+      this.#headSource = Object.freeze({ before: prepared.before, sourcePlan, reference, rawWindowsPath: prepared.sealedTarget.rawWindowsPath });
+      await owner.bindForwardHeadSource(this); this.#current(); return Object.freeze({ headReadPrepared: true, executionAuthorized: false });
+    });
+  }
+  /** Resolve this provider's actual prelaunch source only for its own retained
+   * native owner. Equal readers, paths and copied providers cannot enter. */
+  public requireForwardHeadSource(owner: CurrentFootprintForwardExecutionNativeOwner): CurrentFootprintForwardHeadSource {
+    this.#current(); need(owner === this.#owner && this.#headSource !== null && this.#prepared !== null &&
+      this.#headSource.before === this.#prepared.before && readerCompletion(this.#prepared.before) === this.#prepared.completion, "HEAD_ORIGINAL_PROVIDER"); return this.#headSource;
+  }
   /** Publish one original browser inventory after main construction. Empty or
    * failed observations never permit another browser selection attempt. */
   public observeBrowser(): Promise<Readonly<Record<string, unknown>>> {
@@ -337,16 +361,27 @@ export class CurrentFootprintForwardExecutionOpeningProvider {
       this.#openingCurrent = captureCurrentFootprintForwardExecutionReceiver(opening, openingPrototypes, openingMethods);
       const result = await this.#stageCall("opening", { target: prepared.sealedTarget }, () => {
         this.#openingInvoked = true;
-        return opening.open(prepared.sealedTarget, async () => {
+        const pending = opening.open(prepared.sealedTarget, async () => {
           await this.#preparedCurrent(true); await this.#journalRequired().assertCurrent(); this.#current();
         });
+        if (this.#headSource === null) { return pending; }
+        // Retain the original opening rejection immediately, including when a
+        // Held Main read fails and cleanup must terminate the original Job.
+        const joined = pending.then(value => ({ value }), (error: unknown) => ({ error }));
+        return (async (): Promise<Awaited<ReturnType<typeof opening.open>>> => {
+          await owner.observeForwardHeadOpening(); this.#current(); const outcome = await joined; this.#current();
+          if ("error" in outcome) {
+            // Preserve the exact original opening rejection after its own head capture settles.
+            throw outcome.error;
+          } return outcome.value;
+        })();
       }, value => { this.#openingResult = value; });
       const assignments = await this.#stageCall("assignments", {}, () => opening.proveCurrentAssignments(result));
       await this.#stageCall("ui", {}, async () => { const packet = await owner.observeFootprintCopyUi(opening, result); this.#current(); await owner.requireFootprintCopyUi(packet); return packet; });
       const state = await this.#stageCall("state", {}, () => opening.observeFootprintState(result, assignments));
       await this.#preparedCurrent(false);
       owner.assertFootprintForwardExecutionSourceCapacity(); this.#current();
-      const plan = await prepareCurrentFootprintSourcePlan(prepared.before, { projectUuid: prepared.sealedTarget.projectUuid, branchUuid: prepared.sealedTarget.branchUuid, footprintUuid: request.footprintUuid });
+      const plan = this.#headSource?.sourcePlan ?? await prepareCurrentFootprintSourcePlan(prepared.before, { projectUuid: prepared.sealedTarget.projectUuid, branchUuid: prepared.sealedTarget.branchUuid, footprintUuid: request.footprintUuid });
       this.#current(); need(plan.maximumTicket === state.maximumTicket, "SOURCE_BASELINE_CHANGED");
       const source = await this.#stageCall("source", { sourcePlanSha256: sha256Json(plan) }, () => opening.observeFootprintSource(result, assignments, state, plan));
       const preparation = await this.#stageCall("preparation", {}, () => prepareCurrentFootprintCopyOwned(Object.freeze({ opening, result, assignments, state, sourcePlan: plan, source, before: prepared.before })));
@@ -750,6 +785,7 @@ const originalPublishedSourceInput = CurrentFootprintForwardExecutionOpeningProv
 // oxlint-disable typescript/unbound-method -- Captured methods are invoked only on the exact original private-field provider.
 const originalReserveClockPreparation = CurrentFootprintForwardExecutionOpeningProvider.prototype.reserveClockPreparation;
 const originalFinishClockPreparation = CurrentFootprintForwardExecutionOpeningProvider.prototype.finishClockPreparation;
+const originalForwardHeadSource = CurrentFootprintForwardExecutionOpeningProvider.prototype.requireForwardHeadSource;
 // oxlint-enable typescript/unbound-method
 export function reserveOriginalCurrentFootprintForwardClockPreparation(provider: CurrentFootprintForwardExecutionOpeningProvider): CurrentFootprintForwardClockPreparationReservation {
   return originalReserveClockPreparation.call(provider);
@@ -757,6 +793,10 @@ export function reserveOriginalCurrentFootprintForwardClockPreparation(provider:
 export function finishOriginalCurrentFootprintForwardClockPreparation(provider: CurrentFootprintForwardExecutionOpeningProvider,
   reservation: CurrentFootprintForwardClockPreparationReservation, failure: unknown): void {
   originalFinishClockPreparation.call(provider, reservation, failure);
+}
+export function requireOriginalCurrentFootprintForwardHeadSource(provider: CurrentFootprintForwardExecutionOpeningProvider,
+  owner: CurrentFootprintForwardExecutionNativeOwner): CurrentFootprintForwardHeadSource {
+  return originalForwardHeadSource.call(provider, owner);
 }
 /** The later main issuer resolves the original settled provider through this
  * captured method. Replacing receiver/prototype lookup cannot mint admission. */
