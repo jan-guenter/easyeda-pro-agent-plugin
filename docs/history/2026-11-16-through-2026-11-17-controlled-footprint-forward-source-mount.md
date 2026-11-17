@@ -64,3 +64,26 @@ an edit. Disposable source qualification remains separate from connected
 validation. Ordinary-project writing, inverse, application execution and
 saved/reopened acceptance remain unproved. Publication and one combined
 marketplace installation follow current-head CI and CodeRabbit review.
+
+## Historical fixture review correction, 17 November
+
+CodeRabbit review `5932408429` of PR #222 head
+`ce6c5abe9bff8fd364dea37251c4c1a6184b0fc4` processed all 39 non-generated
+paths and raised one test-quality nit, with no runtime or outside-diff finding.
+The old historical V1 test derived its prepared input from current V2 output,
+which could conceal a shared incompatible change. Independent fixed V1 prepared
+and completed inputs now retain every historical field, including the nested V1
+completion profile. Both must parse unchanged through the V1 reader and refuse
+the V2 reader. Current V2 checks remain separate. No runtime, schema, native,
+bundle, compatibility or dependency bytes change. The earlier 84-case result
+remains bound to its original manifest; this correction receives its own focused
+and final exact-head CI results.
+
+The corrected whole coordinator file passes all six cases without a skip in
+6.16 seconds. Both full TypeScript projects and the changed test's strict
+type-aware lint pass with zero warnings/errors; runtime compatibility,
+repository/MCP/all-skill checks also pass. The final 5,689-file plugin manifest
+is SHA-256 `456bcb2e5b0ad42c2512c6af19ce5998b2c9dd0bf89e43caa497240a15ba83c6`.
+Exactly one test file differs from the earlier 84-case freeze. All runtime,
+bundles and compatibility bytes remain exact. New exact-head CI and review
+remain required before merge.

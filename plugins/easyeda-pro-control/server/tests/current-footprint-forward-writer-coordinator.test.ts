@@ -57,12 +57,41 @@ void test("cleanup before execute closes only original local preparation and bur
  await assert.rejects(coordinator.run(execute(operationId)),/EXECUTE_CONSUMED/u);
 });
 
+/** Fixed historical wire values, independent of both current emitters and
+ * schema fields. Do not generate one fixture from the other or a V2 result. */
+void test("fixed historical prepared and completed V1 results retain their released grammar",()=>{
+ const prepared={
+  schema:"easyeda-pro-control.footprint-forward-write-operation.v1",action:"prepare",operationId:"footprint-forward-flow-historical-prepared",
+  state:"prepared",stage:"opening",
+  execution:{attempted:false,settled:false,failed:false},
+  cleanup:{requested:false,settled:false,failed:false,writerTerminated:false,writerReleased:false,savedTerminated:false,savedReleased:false,publicationPending:false},
+  diagnostic:{originalFailureRetained:false,code:null},completed:null,
+  validationOnly:true,connectedValidation:false,ordinaryProjectsSupported:false,generalSdkWriter:false,inverseAvailable:false,explicitSaveAttempts:0,
+ };
+ const completed={
+  schema:"easyeda-pro-control.footprint-forward-write-operation.v1",action:"inspect",operationId:"footprint-forward-flow-historical-completed",
+  state:"completed",stage:"saved-checkpoint",
+  execution:{attempted:true,settled:true,failed:false},
+  cleanup:{requested:false,settled:false,failed:false,writerTerminated:true,writerReleased:true,savedTerminated:true,savedReleased:true,publicationPending:false},
+  diagnostic:{originalFailureRetained:false,code:null},
+  completed:{
+   profile:"private.current-footprint-forward-writer-workflow-result.v1",operationId:"footprint-forward-flow-historical-completed",createdUuid:"0123456789abcdef",
+   writerSqlSha256:"1111111111111111111111111111111111111111111111111111111111111111",
+   savedSqlSha256:"2222222222222222222222222222222222222222222222222222222222222222",
+   sourceReadSha256:"3333333333333333333333333333333333333333333333333333333333333333",
+   originalClosedReadersDistinct:true,originalOwnersReleased:true,explicitSaveAttempts:0,savedResultVerified:true,inverseAvailable:false,executionAuthorized:false,
+  },
+  validationOnly:true,connectedValidation:false,ordinaryProjectsSupported:false,generalSdkWriter:false,inverseAvailable:false,explicitSaveAttempts:0,
+ };
+ for(const historical of [prepared,completed]){
+  assert.deepEqual(currentFootprintForwardWriterControlV1ResultSchema.parse(historical),historical);
+  assert.equal(currentFootprintForwardWriterControlResultSchema.safeParse(historical).success,false);
+ }
+});
+
 void test("current controlled results remain distinct from the immutable historical V1 result grammar",()=>{
  const coordinator=new CurrentFootprintForwardWriterCoordinator(options(()=>Promise.reject(new Error("must remain inert"))),prepare("versioned-result"));
  const current=coordinator.inspect();assert.equal(current.schema,"easyeda-pro-control.footprint-forward-write-operation.v2");
- const historical={...current,schema:"easyeda-pro-control.footprint-forward-write-operation.v1"};
- assert.equal(currentFootprintForwardWriterControlV1ResultSchema.safeParse(historical).success,true);
- assert.equal(currentFootprintForwardWriterControlResultSchema.safeParse(historical).success,false);
  assert.equal(currentFootprintForwardWriterControlV1ResultSchema.safeParse(current).success,false);
  assert.equal(currentFootprintForwardWriterControlResultSchema.safeParse({...current,state:"completed"}).success,false);
 });
