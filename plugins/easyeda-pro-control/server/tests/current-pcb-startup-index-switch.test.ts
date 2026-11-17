@@ -101,7 +101,7 @@ async function fixture(viaHistoricalReserved = false): Promise<Readonly<{ run: R
     // Stable synthetic validator.
   },
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
-  const data = { viaHistoricalReserved, stagedComponentOpeningSource: undefined, stagedFixtureOpeningSource: undefined, stagedSchematicOpeningSource: undefined, hasGeneratedSchematicCustody: ():boolean=>false, hasClosedGeneratedDataCustody: ():boolean=>false, hasViaWriteCustody: ():boolean=>false, hasSchematicDisplayWriteCustody: (): boolean => false, diagnostic209: true, CurrentPcbWorkerStartupLifecycle: Owner, CurrentPcb209WorkerStartupLifecycle: Owner209,
+  const data = { currentFootprintForwardWriterCoordinator: undefined, viaHistoricalReserved, stagedComponentOpeningSource: undefined, stagedFixtureOpeningSource: undefined, stagedSchematicOpeningSource: undefined, hasGeneratedSchematicCustody: ():boolean=>false, hasClosedGeneratedDataCustody: ():boolean=>false, hasViaWriteCustody: ():boolean=>false, hasSchematicDisplayWriteCustody: (): boolean => false, diagnostic209: true, CurrentPcbWorkerStartupLifecycle: Owner, CurrentPcb209WorkerStartupLifecycle: Owner209,
     CurrentPcb209EmptyStartupLifecycle: Empty209, CurrentPcb209RatlineStartupLifecycle: Ratline209,
     CurrentPcb209RatlineContinuationLifecycle: Continuation209, CurrentFootprintCopyPreparationLifecycle: Footprint209,
     CurrentFootprintCopyRoutePreparationLifecycle: FootprintRoute209, CurrentFootprintForwardPrewriteLifecycle: ForwardPrewrite209, engine, bridgeGate, upstream,

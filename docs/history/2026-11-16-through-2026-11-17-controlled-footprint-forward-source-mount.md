@@ -87,3 +87,49 @@ is SHA-256 `456bcb2e5b0ad42c2512c6af19ce5998b2c9dd0bf89e43caa497240a15ba83c6`.
 Exactly one test file differs from the earlier 84-case freeze. All runtime,
 bundles and compatibility bytes remain exact. New exact-head CI and review
 remain required before merge.
+
+## Extracted callback and offline catalog CI correction
+
+The original `ce6c5ab` facade shard eight failed seven cases: extracted old-route
+callback preludes lacked the new complete-forward custody helper, and the
+installed offline-catalog test retained the preceding tool/query counts. The
+shared fixture now extracts the actual maintained custody helper and supplies
+its explicitly absent original coordinator, rather than replacing the guard
+with a permissive function. The offline test expects 65 configured tools, 83
+queries and 85 total requests, including the two new strict discovery checks.
+The full original CI failure log remains private. The historical-fixture-only
+head `ca7b82f8f3d606a447ef2763bc64a9ffead38856` preceded this failure report
+and is not final acceptance. Runtime, bundles and compatibility stay unchanged;
+new focused and exact-head CI results follow these test-only corrections.
+
+A bounded extraction scan found the same missing collaborator in two standalone
+startup/display fixtures; both now extract the actual helper with an absent
+original coordinator. Cancelled shard three also reported three rename fixture
+failures covered by the shared installer correction. A first local focused run
+passed all nine copy/held-cache cases, then correctly refused offline-catalog
+fixtures beneath a dependency-bearing ancestor. That environmental failure is
+retained; the final campaign uses a private ext4 temporary parent with no
+node_modules ancestor. No isolation guard or production admission is relaxed.
+
+The consolidated original CI report also identified a packaged-startup roster
+that omitted the new tool. Its fixed public-utilities list now contains all
+twenty-three tools; the pre-upstream/no-native and unsupported-route refusals
+remain unchanged. The six-file fixture correction campaign passed with runtime
+compatibility unchanged. Final verification also covers the seven remaining
+whole files named by the original failed/cancelled logs, including that roster.
+The seven cancelled original facade shards remain incomplete, not successful.
+
+The six whole-file correction run passes all 27 cases without skips in 34.27
+seconds. After the final startup-roster-only correction, the seven remaining
+whole files pass all 24 cases without skips in 25.60 seconds. Those are separate
+frozen campaigns: the latter changes only the roster test outside the former
+run's selected files. Together they cover every known failed original leaf.
+Both full TypeScript projects and strict type-aware lint for each changed test
+pass with zero warnings/errors. Final runtime compatibility is unchanged.
+The final 5,689-file package manifest is SHA-256
+`6e1da731e07cb2c634a16ab230da11580b26151cc82f4a74b3e0c117db1d9813`.
+No build, native or runtime source changes are included in these corrections.
+The failed local campaign's 113 reconstructible cache/runtime copies
+(108,339,304 bytes) were removed after original test-owner exit; all unique
+files, symlinks, logs, journals and exit receipts remain. New exact-final-head
+CI and CodeRabbit review are required before merge and installation.
