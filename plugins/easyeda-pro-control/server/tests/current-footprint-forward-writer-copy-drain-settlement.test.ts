@@ -2,6 +2,8 @@
  * owner/component issuers. No native process, SDK action or producer runs. */
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
+import {stripTypeScriptTypes} from "node:module";
+import {parse} from "acorn";
 import {test} from "node:test";
 import {setImmediate as nextTurn} from "node:timers/promises";
 import {runInNewContext} from "node:vm";
@@ -13,6 +15,8 @@ async function fixture():Promise<Readonly<{
  state:{calls:number;retired:boolean;failed:boolean;failure:unknown;publicationCompleted:boolean;signals:number};
 }>>{
  const source=await readFile(new URL("../src/current-pcb-diagnostic-owner.ts",import.meta.url),"utf8");
+ const plain=stripTypeScriptTypes(source,{mode:"transform"});const tree=parse(plain,{ecmaVersion:"latest",sourceType:"module"});
+ const matches=tree.body.filter(node=>node.type==="FunctionDeclaration"&&node.id?.name==="failForwardWriterProducerScope");assert.equal(matches.length,1);const helper=matches[0];assert.ok(helper?.type==="FunctionDeclaration");const failureHelper=plain.slice(helper.start,helper.end);
  const begin=source.indexOf("  public settleFootprintForwardWriterCopyDrain():");
  const end=source.indexOf("  public footprintForwardWriterCopyDrainProgress()",begin);
  const retireBegin=source.indexOf("  async #retireForwardWriterProducer():");
@@ -28,7 +32,7 @@ async function fixture():Promise<Readonly<{
   settle:():Promise<void>=>{state.calls+=1;return work.promise;}};
  const loaded:{exports:Record<string,unknown>}={exports:{}};let owner:Core|null=null;
  const producerOwners=new WeakMap<object,unknown>();const drains=new WeakMap<object,unknown>();
- const body=[
+ const body=[failureHelper,
   "export class SyntheticOriginalCore{",
   "#terminationObserved=true;#terminationObservation={terminated:true};#mainRunner=main;",
   "#forwardWriterBranchQueryPending=null;#forwardWriterProducerIntervalPending=null;#forwardWriterCopyLocalPending=null;#forwardWriterCopyUploadPending=null;",

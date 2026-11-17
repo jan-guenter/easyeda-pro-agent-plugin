@@ -26,6 +26,7 @@ function need(value:boolean,code:string):asserts value{if(!value){throw new Erro
 export class CurrentFootprintForwardWriterTicketTimerDriver{
  readonly #origin:Origin;readonly #owner:object;readonly #operation:object;readonly #binding:Bindings;
  readonly #resumedHolds=new WeakSet<object>();
+ readonly #pumps:Readonly<{promise:Promise<void>;settlement:Promise<PromiseSettledResult<void>>}>[]=[];
  readonly #points=new Map<string,Role>();#capture:string|null=null;#roots:string|null=null;#baseline:string|null=null;#entry:string|null=null;
  #setupPending:Promise<void>|null=null;#beforePending:Promise<void>|null=null;#finishPending:Promise<Receipt>|null=null;
  #slotGate:Promise<undefined>|null=null;
@@ -125,7 +126,9 @@ export class CurrentFootprintForwardWriterTicketTimerDriver{
    // The original finish wait retains the same deadline failure.
   }})();
   const timer=setTimeout(()=>{deadline.reject(new Error("FORWARD_TICKET_TIMER_NATURAL_DEADLINE"));},20_000);
-  try{for(let wait=0;this.#timers<target&&wait<3;wait+=1){const progress=this.#progress.promise;await this.#binding.pump();await this.#fresh();if(this.#timers<target){await Promise.race([progress,deadline.promise]);await this.#fresh();}}}
+  try{for(let wait=0;this.#timers<target&&wait<3;wait+=1){const progress=this.#progress.promise;need(this.#pumps.length<6,"NATURAL_PUMP_BOUND");const pump=this.#binding.pump();
+   const settlement=(async():Promise<PromiseSettledResult<void>>=>{try{await pump;return{status:"fulfilled",value:undefined};}catch(error){return{status:"rejected",reason:error};}})();
+   this.#pumps.push(Object.freeze({promise:pump,settlement}));await Promise.race([pump,deadline.promise]);await this.#fresh();if(this.#timers<target){await Promise.race([progress,deadline.promise]);await this.#fresh();}}}
   finally{clearTimeout(timer);}need(this.#timers>=target,"NATURAL_PROGRESS");
  }
  async #finish():Promise<Receipt>{
@@ -148,7 +151,7 @@ export class CurrentFootprintForwardWriterTicketTimerDriver{
  }
  public async endAfterOriginalExit():Promise<void>{
   need(!this.#closed,"EXIT_ONCE");await this.#binding.assertOriginalGenerationExited();this.#closed=true;this.#progress.resolve(undefined);this.#resumed?.reject(new Error("FORWARD_TICKET_TIMER_ORIGINAL_EXIT"));
-  await Promise.allSettled([this.#tail,...[this.#setupPending,this.#beforePending,this.#finishPending].filter((value):value is Promise<void>|Promise<Receipt>=>value!==null)]);
+  await Promise.allSettled([this.#tail,...this.#pumps.flatMap(pump=>[pump.promise,pump.settlement]),...[this.#setupPending,this.#beforePending,this.#finishPending].filter((value):value is Promise<void>|Promise<Receipt>=>value!==null)]);
   this.#active=null;this.#resumed=null;
  }
  public status():Readonly<Record<string,unknown>>{return Object.freeze({ready:this.#ready,beforeCreate:this.#before,holds:this.#holds,timers:this.#timers,requests:this.#requests,complete:this.#complete,failed:this.#failed,closed:this.#closed,executionAuthorized:false});}

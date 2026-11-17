@@ -3,6 +3,8 @@
  * No original production owner, pipe, helper, Job or app is created. */
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
+import {stripTypeScriptTypes} from "node:module";
+import {parse} from "acorn";
 import {test} from "node:test";
 import {setImmediate as yieldToLoop} from "node:timers/promises";
 import {runInThisContext} from "node:vm";
@@ -17,6 +19,8 @@ interface Fixture{
 }
 async function fixture():Promise<Fixture>{
  const source=await readFile(new URL("../src/current-pcb-diagnostic-owner.ts",import.meta.url),"utf8");
+ const plain=stripTypeScriptTypes(source,{mode:"transform"});const tree=parse(plain,{ecmaVersion:"latest",sourceType:"module"});
+ const matches=tree.body.filter(node=>node.type==="FunctionDeclaration"&&node.id?.name==="failForwardWriterProducerScope");assert.equal(matches.length,1);const helper=matches[0];assert.ok(helper?.type==="FunctionDeclaration");const failureHelper=plain.slice(helper.start,helper.end);
  const begin=source.indexOf("  public prepareFootprintForwardWriterOwnData("),end=source.indexOf("  /** The sole readonly worker GET",begin);assert.ok(begin!==-1&&end>begin);
  const retireBegin=source.indexOf("  async #retireForwardWriterProducer()"),retireEnd=source.indexOf("  static async #captureProducerIntrinsics",retireBegin);assert.ok(retireBegin!==-1&&retireEnd>retireBegin);
  const methods=(source.slice(begin,end)+source.slice(retireBegin,retireEnd)).replaceAll("#","_").replace("_retireForwardWriterProducer","retireForTest");
@@ -33,7 +37,7 @@ class ActualMethodsFixture{
  _request(){state.calls++;return held.promise;}
 `;
  const suffix="}\nconst owner=new ActualMethodsFixture();forwardWriterProducerOwners.set(owner,scope);footprintForwardWriterCompleteFactories.add(owner);return {owner,runner,held,state,scope,originals:forwardWriterOwnDataOriginals};";
- const compiled=await transform(`(function(){${prelude}${methods}${suffix}})`,{loader:"ts",format:"cjs",target:"node24"});
+ const compiled=await transform(`(function(){${failureHelper}${prelude}${methods}${suffix}})`,{loader:"ts",format:"cjs",target:"node24"});
  const make:unknown=runInThisContext(compiled.code);assert.ok(typeof make==="function");
  const value:unknown=Reflect.apply(make,undefined,[]);assert.ok(value!==null&&typeof value==="object");
  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the explicit inert fixture above constructs this ordinary test record; its methods are copied unchanged from maintained Core.

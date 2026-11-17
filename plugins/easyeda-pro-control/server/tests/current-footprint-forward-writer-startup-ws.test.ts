@@ -1,7 +1,10 @@
+/* oxlint-disable import/max-dependencies -- The actual isolated Core methods, source AST helper, native recipes and independent DTO decoders retain eleven separate test contracts. */
 /** Actual early Core read and cleanup joins, with explicit inert owner/
  * native peers. No production helper, worker or deployment is created. */
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
+import {stripTypeScriptTypes} from "node:module";
+import {parse} from "acorn";
 import {setImmediate as nextTurn} from "node:timers/promises";
 import {runInThisContext} from "node:vm";
 import {test} from "node:test";
@@ -17,6 +20,8 @@ interface Fixture{
 }
 async function fixture():Promise<Fixture>{
  const text=await readFile(new URL("../src/current-pcb-diagnostic-owner.ts",import.meta.url),"utf8");
+ const plain=stripTypeScriptTypes(text,{mode:"transform"});const tree=parse(plain,{ecmaVersion:"latest",sourceType:"module"});
+ const matches=tree.body.filter(node=>node.type==="FunctionDeclaration"&&node.id?.name==="failForwardWriterProducerScope");assert.equal(matches.length,1);const helper=matches[0];assert.ok(helper?.type==="FunctionDeclaration");const failureHelper=plain.slice(helper.start,helper.end);
  const a=text.indexOf("  #observeForwardWriterStartupWs("),b=text.indexOf("  /** Original natural-timer preparation",a),c=text.indexOf("  async #retireForwardWriterTicketTimer()"),d=text.indexOf("  /** Keep the original complete setup Promise",c);assert.ok(a>0&&b>a&&c>b&&d>c);
  const methods=(text.slice(a,b)+text.slice(c,d)).replaceAll("#","_").replace("_observeForwardWriterStartupWs","observe").replace("_retireForwardWriterTicketTimer","retire");
  const prelude=String.raw`
@@ -35,7 +40,7 @@ class ActualCoreMethodsFixture{
  async _ticketTimerJournal(_component,kind,evidence){await journal.append(kind,evidence);}
 `;
  const suffix="}\nconst owner=new ActualCoreMethodsFixture();forwardWriterTicketTimers.set(owner,component);forwardWriterFrontiers.set(owner,frontier);return{owner,scope,component,state,held,records,replaceEvent(){event={...event};}};";
- const transformed=await transform(`(function(z,SITES,FLAGS,decode,wireFor){${prelude}${methods}${suffix}})`,{loader:"ts",format:"cjs",target:"node24"});
+ const transformed=await transform(`(function(z,SITES,FLAGS,decode,wireFor){${failureHelper}${prelude}${methods}${suffix}})`,{loader:"ts",format:"cjs",target:"node24"});
  const make:unknown=runInThisContext(transformed.code);assert.ok(typeof make==="function");const value:unknown=Reflect.apply(make,undefined,[z,SITES,FLAGS,decode,currentFootprintForwardWriterStartupWsWire]);
  assert.ok(value!==null&&typeof value==="object");
  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the explicit inert factory above returns this checked fixture record; Core methods are copied unchanged.

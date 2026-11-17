@@ -195,3 +195,26 @@ That CI, Windows native checks and a completed current-head CodeRabbit review
 are still required before merge. This result is neither an installation nor
 connected/live/saved-reopened acceptance. Both installed snapshots remain
 `0.3.0+codex.20261116150017` until the executable integration is ready.
+
+## Second exact-head review correction
+
+Head `08f06462710e41baa6ee9f3ee929d1ab5f7ff183` passed build,
+Windows, history and five facade shards. Three shards failed because their
+isolated Core-method fixtures omitted the actual newly factored failure helper;
+their complete logs remain retained. Those three preludes now extract the real
+helper, preserving its first-failure and waiter semantics.
+
+CodeRabbit review `5931521330` admitted the full 42-path incremental source
+delta and reported one remaining Major issue: a native poll was awaited before
+the original natural-timer deadline race. Each original pump now races that same
+deadline. The driver retains its actual Promise and raw late settlement, and
+original-exit cleanup joins them before acknowledging completion. A late outcome
+cannot replace the first failure or grant another attempt. The original bounds,
+native bytes and historical status/result shapes are unchanged.
+
+All 17 cases in the four affected whole test files pass without a skip. Two
+fake-clock cases verify deadline rejection while one original pump is held,
+then prove cleanup waits for that same pump's late resolve or rejection. The
+regression fails against exact old head `08f06462`. Targeted types and strict
+lint pass with zero warnings/errors. New final-payload validation and exact-head
+CI/CodeRabbit remain pending; the old failed head is not merge evidence.
