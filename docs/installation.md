@@ -12,8 +12,23 @@ checks. Follow the [handoff workflow](../plugins/easyeda-pro-control/skills/easy
 
 ```bash
 umask 022
-codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin.git --ref main
-codex plugin add easyeda-pro-control@easyeda-pro-agent
+codex --enable plugins plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin.git --ref main
+codex --enable plugins plugin add easyeda-pro-control@easyeda-pro-agent
+```
+
+`--enable plugins` enables plugin discovery for that CLI invocation. With a
+saved `features.plugins = false`, marketplace and plugin lists can be empty even
+after an explicit marketplace upgrade copied the intended snapshot. Inspect the
+effective feature flag before treating an empty list or `plugin not found` as
+payload corruption. The command override does not change the saved setting.
+
+For an existing registration, refresh only this marketplace and inspect the
+resulting version before considering another install:
+
+```bash
+umask 022
+codex --enable plugins plugin marketplace upgrade easyeda-pro-agent --json
+codex --enable plugins plugin list --marketplace easyeda-pro-agent --json
 ```
 
 After installation, establish a fresh MCP connection and verify that its actual
@@ -65,8 +80,8 @@ Windows-mounted filesystem. Retain the failure and inspect the configured
 source, installed version and enablement before changing the registration:
 
 ```bash
-codex plugin marketplace list --json
-codex plugin list --marketplace easyeda-pro-agent --json
+codex --enable plugins plugin marketplace list --json
+codex --enable plugins plugin list --marketplace easyeda-pro-agent --json
 ```
 
 If checkout timed out and the old registration remains, use the official CLI to
@@ -76,8 +91,8 @@ Both the catalog and complete plugin directory are required:
 
 ```bash
 umask 022
-codex plugin marketplace remove easyeda-pro-agent --json
-codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin.git \
+codex --enable plugins plugin marketplace remove easyeda-pro-agent --json
+codex --enable plugins plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin.git \
   --ref main --sparse .agents/plugins --sparse plugins/easyeda-pro-control --json
 ```
 
@@ -89,7 +104,7 @@ still absent:
 
 ```bash
 umask 022
-codex plugin add easyeda-pro-control@easyeda-pro-agent --json
+codex --enable plugins plugin add easyeda-pro-control@easyeda-pro-agent --json
 ```
 
 From a trusted checkout at that release commit, use pinned Node `24.18.0` with

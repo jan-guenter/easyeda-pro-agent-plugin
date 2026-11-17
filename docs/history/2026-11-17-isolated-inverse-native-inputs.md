@@ -58,3 +58,51 @@ Both maintained generator checks reproduced all six committed native helper/revi
 All 85 previously tracked native PS/CS files and the released Via rebase implementation remain unchanged. The shared bounded native pipe is still SHA256 `566b51daf62434df272f81a661a8b134dc7efe8dab4846079ff6ce981043a45a`. Existing no-app C#5 evidence applies only to the exact reproduced helper/compiler bytes; this batch performed no Windows compilation, native launch or connected application validation. No Core/factory/route changes or lifecycle proof are included.
 
 The resulting tracked plugin source payload is 5,757 files in 50 directories and 118,962,601 bytes, below the unchanged 128 MiB aggregate ceiling. Its retained prior server bundle is 17,254,909 bytes under the unchanged 20 MiB bound; it has not been rebuilt to serve these unmounted foundations. Version assignment, final bundle/compatibility regeneration, complete release checks and any later installation belong to the combined integration. No separate installation is made for this source foundation batch.
+
+## Publication preparation on the merged controls release
+
+The unchanged local foundation commit `090ee6f560e1e8fdae422c14d1426dd7120d36d1`
+is now curated onto controls release
+`80063e554035c0b90b91f02dba3bccbcafa2a45b`. All later controls test corrections
+and their installation history are preserved. Candidate snapshot `0.3.0+codex.20261117053215`
+also records the verified per-command discovery override and fresh-context
+operating procedure. It adds no inverse tool or connected claim. Complete local
+release checks, bundle/compatibility regeneration and exact-head CI/review follow;
+installation remains deferred across the remaining genuine Core composition.
+
+The first public integration campaign passed full types, global strict lint
+(5,441 files; zero warnings/errors), the complete build, both new generator
+checks, compatibility, bridge checks and API coverage. Repository validation
+then correctly refused its old exact build-command contract, which had not yet
+included the two new checks. That contract now names the full extended chain
+and independently pins both generator commands. This changes no native input
+or runtime behavior and relaxes no check. The initial failure remains retained;
+the corrected validator receives types/scoped strict and final source/bundle
+regeneration, with remaining validation and focused checks completed afterward.
+
+The MCP validator carried the same exact old build-chain literal. It is updated
+in the same correction, including explicit pins for both new generator scripts.
+The interrupted campaign did not reach that MCP check; no successful result for
+its old chain is claimed.
+
+### Final local publication validation
+
+The corrected frozen payload passed full main/stub types and scoped strict
+lint for both changed validators. The earlier full strict result remains valid
+for the unchanged remaining TypeScript files. The complete build had already
+passed; rebuilding all three runtime bundles then reproduced their exact
+bytes. Repository, MCP-contract, API coverage, bridge types/lint, all-skill
+validation and all seven official skill quick validators passed. The entire
+five-case canonical/profile regression file passed without skips. The dependency
+installation, full dependency tree, registry signatures, moderate-level audit
+and sanitizer check also passed on the required Node/npm versions with core
+dumps disabled. Complete facade/bridge suites remain delegated to exact-head CI.
+
+The final package contains 5,757 files and 118,976,836 bytes. Its frozen
+file/mode manifest is SHA-256
+`ce587ca827ff02c7099e472ac969fb658d5c70e7db1180185a167f2dca16865e`.
+Compatibility changes are limited to the facade source-tree projection and
+review time; no external or native pin changed. A separate bounded adversarial
+review found no issues. This is source/build evidence only: no native process,
+application, connected inverse or cold-UI lifecycle was executed. No separate
+installation is planned for this foundation-only cut.
