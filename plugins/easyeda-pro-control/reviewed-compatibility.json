@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "71f623534cbac7c05c64c80904fbbc25a84371e638d68fa4edfc12a9285bdd15",
+      "sha256": "456210c4755c054f970efc5508caf9e06c05ede9cf66e6196cfcb972ea41e5a4",
       "fileCount": 3115,
       "files": [
         {
@@ -2478,8 +2478,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-ticket-timer-driver.ts",
-          "bytes": 20572,
-          "sha256": "f888e6e287ae16bf5e1037e9cc3c0bf6b1e0cd3f8c25baff686495165ba2f861"
+          "bytes": 21082,
+          "sha256": "a22373163617f5818284739998398c970c039c2e64fdb2abc8693c58766489d5"
         },
         {
           "relativePath": "current-footprint-forward-writer-ticket-timer-journal.ts",
@@ -15586,7 +15586,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "1ba611fe42ccf882f9c8925c9ffc4498e585097da68d2b2e2d037db15ff3ae13",
+      "sha256": "7a9f4833b34ed11f9d62037ea7b6eeb5a2a6bf277920d4e97a32cd369635f886",
       "fileCount": 3,
       "files": [
         {
@@ -15596,19 +15596,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 17237823,
-          "sha256": "3d217abc7ed7003f861c7b5e35bac8a343336cc5027094e00ef9854f7aeec435"
+          "bytes": 17238129,
+          "sha256": "08811f8e68de9785bc8c0be81af27d7a956af3e052424f7549cc449c49bbc446"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 642490,
-          "sha256": "6d5caaefcab29014d0d2fee8cb6e01e779ce963441663be5fc22ccc01ba8bc33"
+          "sha256": "cc923dba329d014e6ccc1cca84bdaa21ce9bb385a4c7a6e944bdfabee175a7ad"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-17T01:40:48.474Z",
+  "reviewedAt": "2026-11-17T02:39:40.951Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

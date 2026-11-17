@@ -218,3 +218,20 @@ then prove cleanup waits for that same pump's late resolve or rejection. The
 regression fails against exact old head `08f06462`. Targeted types and strict
 lint pass with zero warnings/errors. New final-payload validation and exact-head
 CI/CodeRabbit remain pending; the old failed head is not merge evidence.
+
+### Final original-pump correction result
+
+The backend-only correction passed both types, full strict lint across 5,370
+files with zero warnings/errors, bridge checks, generation/build, API coverage,
+compatibility, repository/MCP/all-skill validation, all seven official skill
+checks and reproducible bundles. Only allowed facade projections/review time
+changed. Shared native bytes, external pins and historical grammars are intact.
+The final 17 cases across four whole affected files pass without a skip in
+8.32 seconds on the frozen package of 5676 files. Its manifest is
+`28d0c96ebeb1d2f62163208c612f624b985e9593d760ffb5da7fa5ea1c68e46c`; TypeScript source is
+`79f5d50ab16556d74f6041e18b03c4c33f17985ebb98147f7f4e8f4317fb99e6`.
+
+This is the new original-pump payload. Prior 44-case results remain bound to the
+earlier named payload, and prior failed CI/reviews remain historical evidence.
+New exact-head CI and CodeRabbit are required before merge. No installation,
+application launch or connected/saved acceptance has occurred.
