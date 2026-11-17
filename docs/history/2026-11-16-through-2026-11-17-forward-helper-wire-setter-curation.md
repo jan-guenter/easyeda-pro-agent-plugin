@@ -309,3 +309,38 @@ checks bind the corrected six/seven helper inputs before publication.
 The rebase preserved every newer helper-history section and retained the
 corrected helper's full compatibility baseline. Only facade projections
 will regenerate from the actual backend build; external pins stay fixed.
+
+## Helper publication and corrected backend result, 17 November
+
+Helper PR #220 merged at `1bdc65e63733b1044b30e4856c3ee8a5cf136407`
+from reviewed head `c97bb2a3d808974784773f166b0b81c55fc686dc`. All
+13 exact-head checks passed, including every facade shard, aggregate/build,
+Windows native job and history. Both initial CodeRabbit reviews were read,
+including all four outside-diff findings and the nit. Its final walkthrough
+explicitly reported no actionable comments, with source/covered commit
+metadata equal to that head and marked reviewed. Two remaining outdated
+threads were resolved against those verified fixes; no bot comment or
+review reply was posted.
+
+The canonical marketplace remains
+<https://github.com/jan-guenter/easyeda-pro-agent-plugin.git> at main.
+Installation is deliberately deferred across the executable integration;
+both local hosts remain on verified `0.3.0+codex.20261116150017`. This is
+publication evidence, not a new installation or connected acceptance.
+
+On the corrected helper, all 82 backend Core/saved/journal cases across
+18 whole files pass without a skip in 81.06 seconds. Both TypeScript
+projects, global/bridge strict lint with zero warnings/errors, build, API
+coverage, compatibility, repository/MCP/all-skill checks, seven official
+skill checks and reproducible bundles all pass. The 5672-file final backend
+package manifest is SHA-256
+`73d172f0a83d11e043596aa4db5865ca64d6fd1962e57abfe745cddcc725c44d`; TypeScript source
+is `a096d115e779eb33b6d2c090ddc429f3d21af4aa8b5b6f58c3f94ab996bc1658`. The current six/seven
+helper compiler inputs remain byte-exact to #220, so their exact strict
+Windows/no-app proof remains applicable. No native app was launched.
+
+The earlier 82-case campaign above remains an earlier-payload observation.
+This result binds the corrected helper and full genuine backend. Successful
+owned fixtures/cache were removed after test-owner exit; complete raw
+failure/success logs and manifests remain private. Backend exact-head
+CI/CodeRabbit review is still required before its merge.
