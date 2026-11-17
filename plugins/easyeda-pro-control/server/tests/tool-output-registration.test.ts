@@ -9,6 +9,7 @@ import { runInNewContext } from "node:vm";
 import { parse } from "acorn";
 import type { ObjectExpression } from "acorn";
 import { z } from "zod";
+import { CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL } from "../src/current-footprint-forward-writer-control-contract.ts";
 import {CURRENT_PCB_VIA_WRITE_TOOL,currentPcbViaWriteResultSchema} from "../src/current-pcb-via-write-contract.ts";
 import {currentPcbViaWriteDiagnosticSchema} from "../src/current-pcb-via-write-diagnostic.ts";
 import {currentPcbViaWriteMainFailure,currentPcbViaWriteMainFailureSchema} from "../src/current-pcb-via-write-main-failure.ts";
@@ -16,6 +17,7 @@ import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL, currentSchematicRelevan
 import { currentSchematicRelevanceDisplayWriteDiagnostic, currentSchematicRelevanceDisplayWriteDiagnosticSchema } from "../src/current-schematic-relevance-display-write-diagnostic.ts";
 
 const constants = new Map([
+  ["CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL", CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL],
   ["CURRENT_PCB_VIA_WRITE_TOOL", CURRENT_PCB_VIA_WRITE_TOOL],
   ["CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL", CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL],
 ]);

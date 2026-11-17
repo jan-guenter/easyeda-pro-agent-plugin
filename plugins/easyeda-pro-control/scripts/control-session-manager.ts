@@ -23,6 +23,8 @@ import { captureOriginalSpatialManagerRequest, consumeOriginalSpatialManagerCont
 import type { OriginalSpatialManagerRecovery, OriginalSpatialManagerRequest } from "./control-session-spatial-adapter.ts";
 import { captureOriginalViaManagerRequest, isOriginalViaManagerControl, originalViaManagerControl } from "./control-session-via-adapter.ts";
 import type { OriginalViaManagerRequest } from "./control-session-via-adapter.ts";
+import { captureOriginalFootprintForwardWriterManagerRequest, isOriginalFootprintForwardWriterManagerControl, originalFootprintForwardWriterManagerControl } from "./control-session-footprint-forward-writer-adapter.ts";
+import type { OriginalFootprintForwardWriterManagerRequest } from "./control-session-footprint-forward-writer-adapter.ts";
 import { captureOriginalSchematicDisplayManagerRequest, isOriginalSchematicDisplayManagerControl, originalSchematicDisplayManagerControl } from "./control-session-schematic-display-adapter.ts";
 import type { OriginalSchematicDisplayManagerRequest } from "./control-session-schematic-display-adapter.ts";
 import { ForegroundSessionTransport } from "./control-session-transport.ts";
@@ -43,6 +45,7 @@ const originalCleanupSchema = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("normal-close"), confirmNormalClose: z.literal(true) }),
   z.strictObject({ action: z.literal("abort-component"), confirmAbortOriginalComponentJob: z.literal(true) }),
   z.strictObject({ action: z.literal("inspect") }),
+  z.strictObject({ action: z.literal("cleanup") }),
   z.strictObject({ action: z.literal("abort-generation"), confirmAbortOriginalForwardJob: z.literal(true) }),
   z.strictObject({ action: z.literal("observe-termination") }),
   z.strictObject({ action: z.literal("release-closed") }),
@@ -208,6 +211,8 @@ interface InterruptedCall {
   readonly metadataStatus: boolean;
   metadataStatusSettled?: true;
   readonly via: OriginalViaManagerRequest | null;
+  readonly fullWriter: OriginalFootprintForwardWriterManagerRequest | null;
+  readonly fullWriterCleanup: { attempted: boolean };
   readonly schematicDisplay: OriginalSchematicDisplayManagerRequest | null;
   readonly spatial: OriginalSpatialManagerRequest | null;
   readonly spatialRecovery: OriginalSpatialManagerRecovery;
@@ -226,11 +231,13 @@ interface InterruptedCall {
 }
 /** Fixed tool selection comes only from the retained original strict request. */
 function originalManagerTool(original: InterruptedCall): string {
+  if (original.fullWriter !== null) { return originalFootprintForwardWriterManagerControl(original.fullWriter, "inspect").tool; }
   if (original.spatial !== null) { return "easyeda_control_pcb209_opening"; }
   if (original.schematicDisplay !== null) { return "easyeda_control_current_schematic_relevance_display_write"; }
   return original.via === null ? "easyeda_control_pcb209_worker_startup" : "easyeda_control_current_pcb_via_write";
 }
 function originalManagerInFlightAllowed(original: InterruptedCall, action: string): boolean {
+  if (original.fullWriter !== null) { return false; }
   if (original.spatial !== null) { return isOriginalSpatialManagerControl(action, true, original.spatial.family); }
   if (original.via !== null) { return original.via.action === "execute" && isOriginalViaManagerControl(action, true); }
   if (original.schematicDisplay !== null) { return original.schematicDisplay.action === "execute" && isOriginalSchematicDisplayManagerControl(action, true); }
@@ -372,10 +379,11 @@ export class ForegroundSessionManager {
       controlledCapture: this.controlledCapture === undefined ? null : { id: this.controlledCapture.original.requestId,
         generation: this.controlledCapture.original.generation, forward: this.controlledCapture.original.forward, parentOutcome: this.controlledCapture.parentOutcome },
       interruptedRequest: this.interrupted === undefined ? null : { id: this.interrupted.requestId,
-        generation: this.interrupted.generation, tool: this.interrupted.tool, action: this.interrupted.spatial?.action ?? this.interrupted.via?.action ?? this.interrupted.schematicDisplay?.action ?? this.interrupted.forwardAction, via: this.interrupted.via, schematicDisplay: this.interrupted.schematicDisplay, spatial: this.interrupted.spatial,
+        generation: this.interrupted.generation, tool: this.interrupted.tool, action: this.interrupted.fullWriter?.action ?? this.interrupted.spatial?.action ?? this.interrupted.via?.action ?? this.interrupted.schematicDisplay?.action ?? this.interrupted.forwardAction, via: this.interrupted.via, schematicDisplay: this.interrupted.schematicDisplay, spatial: this.interrupted.spatial,
+        fullWriter: this.interrupted.fullWriter === null ? null : { action: this.interrupted.fullWriter.action, operationId: this.interrupted.fullWriter.operationId, cleanupAttempted: this.interrupted.fullWriterCleanup.attempted },
         ...(this.interrupted.originalCaptureRequestId === undefined ? {} : { originalCaptureRequestId: this.interrupted.originalCaptureRequestId }),
         forward: this.interrupted.forward ?? this.interrupted.inspectedLaunchBinding ?? null, outcome: "unknown", cleanupAvailable: this.stage === "blocked" &&
-          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null || this.interrupted.forwardSourceOperationId !== null || this.interrupted.sourceHistoricalRequest !== null || this.interrupted.via !== null || this.interrupted.schematicDisplay !== null || this.interrupted.spatial !== null || this.interrupted.metadataStatus) &&
+          !this.retirementUncertain && (this.interrupted.forward !== null || this.interrupted.forwardLaunchOperationId !== null || this.interrupted.forwardSourceOperationId !== null || this.interrupted.sourceHistoricalRequest !== null || this.interrupted.fullWriter !== null || this.interrupted.via !== null || this.interrupted.schematicDisplay !== null || this.interrupted.spatial !== null || this.interrupted.metadataStatus) &&
           this.interrupted.connection === this.connection && this.connection.client.transport === this.connection.transport &&
           this.connection.transport.hasUnclosedChild() && !this.evidenceFault && !this.publicationFault &&
           !this.records.some(row => Object.hasOwn(row, "unpublishedValue")) },
@@ -477,7 +485,7 @@ export class ForegroundSessionManager {
     if (this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue"))) { throw new Error("manager-evidence-unsettled"); }
     if (this.stage === "active") { return this.requireActive(); }
     const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true && interrupted.forwardSourceOperationId === null && interrupted.sourceHistoricalRequest === null && interrupted.via === null && interrupted.schematicDisplay === null && interrupted.spatial === null && !(interrupted.metadataStatus && interrupted.metadataStatusSettled === true) || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.inspectedLaunchBinding === undefined && interrupted.prelaunchCleanupAcknowledged !== true && interrupted.forwardSourceOperationId === null && interrupted.sourceHistoricalRequest === null && interrupted.fullWriter === null && interrupted.via === null && interrupted.schematicDisplay === null && interrupted.spatial === null && !(interrupted.metadataStatus && interrupted.metadataStatusSettled === true) || connection === undefined ||
         interrupted.connection !== connection || interrupted.generation !== this.generation ||
         connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild()) {
       throw new Error("manager-original-connection-required");
@@ -506,8 +514,9 @@ export class ForegroundSessionManager {
     const historical = z.strictObject({ request: z.strictObject({ action: z.literal("footprint-forward-source-relinquishment"),
       request: currentFootprintForwardSourceRelinquishmentRequestSchema }) }).safeParse(request.arguments);
     const sourceHistoricalRequest = request.tool === "easyeda_control_pcb209_worker_startup" && historical.success ? Object.freeze(historical.data.request.request) : null;
+    const fullWriter = captureOriginalFootprintForwardWriterManagerRequest(request.tool, request.arguments);
     const spatial = captureOriginalSpatialManagerRequest(request.tool, request.arguments);
-    return { connection, generation: this.generation, requestId: request.id, tool: request.tool,
+    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, fullWriter, fullWriterCleanup: { attempted: fullWriter?.action === "cleanup" },
       metadataStatus: !this.callerToolDispatches.has(connection.transport) && request.tool === "easyeda_control_status" && z.strictObject({}).safeParse(request.arguments).success, via: captureOriginalViaManagerRequest(request.tool, request.arguments), schematicDisplay: captureOriginalSchematicDisplayManagerRequest(request.tool, request.arguments), spatial, spatialRecovery: createOriginalSpatialManagerRecovery(spatial),
       forwardFamily: outer.success && request.tool === "easyeda_control_pcb209_worker_startup" ? outer.data.request.action : null,
       forward, forwardLaunchOperationId, forwardSourceOperationId, forwardCapture: selected?.action === "capture-project" || selected?.action === "capture-source", sourceHistoricalRequest,
@@ -618,12 +627,17 @@ export class ForegroundSessionManager {
   }> {
     if (request.request.action === "settle-historical-metadata") { throw new Error("manager-original-family-required"); }
     const connection = this.connection, interrupted = this.interrupted ?? this.controlledCapture?.original;
-    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.forwardLaunchOperationId === null && interrupted.forwardSourceOperationId === null && interrupted.via === null && interrupted.schematicDisplay === null && interrupted.spatial === null || connection === undefined ||
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null && interrupted.forwardLaunchOperationId === null && interrupted.forwardSourceOperationId === null && interrupted.fullWriter === null && interrupted.via === null && interrupted.schematicDisplay === null && interrupted.spatial === null || connection === undefined ||
         this.retirementUncertain || this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
         interrupted.connection !== connection || interrupted.generation !== this.generation || request.generation !== this.generation ||
         request.interruptedRequestId !== interrupted.requestId || connection.client.transport !== connection.transport ||
         !connection.transport.hasUnclosedChild() || !connection.tools.has(originalManagerTool(interrupted))) {
       throw new Error("manager-original-cleanup-not-authorized");
+    }
+
+    if (interrupted.fullWriter !== null) {
+      if (!isOriginalFootprintForwardWriterManagerControl(request.request.action) || request.request.action === "cleanup" && interrupted.fullWriterCleanup.attempted) { throw new Error("manager-original-forward-writer-control-refused"); }
+      return { connection, interrupted, operationId: interrupted.fullWriter.operationId, binding: undefined };
     }
     if (interrupted.spatial !== null) {
       originalSpatialManagerControl(interrupted.spatial, interrupted.spatialRecovery, request.request);
@@ -742,6 +756,19 @@ export class ForegroundSessionManager {
   private async cleanupOriginal(request: OriginalCleanupRequest): Promise<void> {
     const { binding, connection, interrupted, operationId } = this.requireOriginalCleanup(request);
     const selected = request.request;
+
+    if (interrupted.fullWriter !== null) {
+      const command = originalFootprintForwardWriterManagerControl(interrupted.fullWriter, selected.action);
+      const call: CallRequest = { id: request.id, tool: command.tool, arguments: command.arguments, timeoutMs: SESSION_CALL_TIMEOUT_MS,
+        ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
+      await this.retain("original-cleanup-intent", { id: request.id, interruptedRequestId: interrupted.requestId,
+        generation: this.generation, tool: call.tool, request: command.arguments.request }, "cleanup");
+      this.requireOriginalCleanup(request);
+      if (selected.action === "cleanup") { interrupted.fullWriterCleanup.attempted = true; }
+      const result = await connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs });
+      const evidence = await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup");
+      toolResultSchema.parse(result); await this.publishCallResult(call, result, evidence); return;
+    }
     if (interrupted.spatial !== null) {
       const command = originalSpatialManagerControl(interrupted.spatial, interrupted.spatialRecovery, selected);
       const call: CallRequest = { id: request.id, tool: command.tool, arguments: command.arguments, timeoutMs: SESSION_CALL_TIMEOUT_MS,

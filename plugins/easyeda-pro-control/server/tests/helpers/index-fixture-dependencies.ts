@@ -1,6 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This extracted-module fixture retains the independent production schemas and exact source/gate collaborators. */
 /** Exact index helper bodies for extracted registration tests. These fixtures
- * have no generated/Via/data owner; they must still execute the real gate. */
+ * have no generated/Via/data/complete-forward owner; they must still execute the real gate. */
 import assert from "node:assert/strict";
 import { stripTypeScriptTypes } from "node:module";
 import { runInContext } from "node:vm";
@@ -16,7 +16,10 @@ import { currentGeneratedReaderRelinquishmentRequestSchema } from "../../src/cur
 import { currentPcbViaPreopeningRelinquishmentRequestSchema } from "../../src/current-pcb-via-preopening-relinquishment-contract.ts";
 
 export function indexFixtureGateSource(source:string):string {
- const text=stripTypeScriptTypes(source);const rows=parse(text,{ecmaVersion:"latest",sourceType:"module"}).body.filter(row=>row.type==="FunctionDeclaration"&&row.id?.name==="runFacadeGate");assert.equal(rows.length,1);const row=rows[0];assert.ok(row!==undefined&&row.end-row.start<5000);return text.slice(row.start,row.end);
+ const text=stripTypeScriptTypes(source);const body=parse(text,{ecmaVersion:"latest",sourceType:"module"}).body;
+ return ["hasFootprintForwardWriteCustody","runFacadeGate"].map(name=>{
+  const rows=body.filter(row=>row.type==="FunctionDeclaration"&&row.id?.name===name);assert.equal(rows.length,1);const row=rows[0];assert.ok(row!==undefined&&row.end-row.start<5000);return text.slice(row.start,row.end);
+ }).join("\n");
 }
 export function indexFixtureToolRegistrationSource(source:string,tools:readonly string[]):string {
  const text=stripTypeScriptTypes(source);const body=parse(text,{ecmaVersion:"latest",sourceType:"module"}).body;
@@ -24,7 +27,7 @@ export function indexFixtureToolRegistrationSource(source:string,tools:readonly 
 }
 
 export function installIndexFixtureDependencies(scope:Context,source:string):void {
- for(const name of ["closedGeneratedDataAllocation","closedGeneratedDataCoordinator","generatedSchematicAllocation","generatedSchematicOpening","currentPcbViaWriteCoordinator","currentSchematicRelevanceDisplayWriteCoordinator","generatedReaderHistoricalOriginal","stagedFixtureOpeningSource","stagedSchematicOpeningSource","stagedComponentOpeningSource","fixtureImportCoordinator"]){if(!Object.hasOwn(scope,name)){Reflect.set(scope,name,undefined);}}
+ for(const name of ["closedGeneratedDataAllocation","closedGeneratedDataCoordinator","generatedSchematicAllocation","generatedSchematicOpening","currentPcbViaWriteCoordinator","currentSchematicRelevanceDisplayWriteCoordinator","currentFootprintForwardWriterCoordinator","generatedReaderHistoricalOriginal","stagedFixtureOpeningSource","stagedSchematicOpeningSource","stagedComponentOpeningSource","fixtureImportCoordinator"]){if(!Object.hasOwn(scope,name)){Reflect.set(scope,name,undefined);}}
  // These old-route fixtures never select a new fingerprint-bearing route.
  // Reject that input rather than supplying a permissive missing schema.
  if(!Object.hasOwn(scope,"privateFingerprintSchema")){Reflect.set(scope,"privateFingerprintSchema",z.never());}
@@ -36,7 +39,7 @@ export function installIndexFixtureDependencies(scope:Context,source:string):voi
  if(!Object.hasOwn(scope,"currentGeneratedReaderRelinquishmentRequestSchema")){Reflect.set(scope,"currentGeneratedReaderRelinquishmentRequestSchema",currentGeneratedReaderRelinquishmentRequestSchema);}
  if(!Object.hasOwn(scope,"currentPcbViaPreopeningRelinquishmentRequestSchema")){Reflect.set(scope,"currentPcbViaPreopeningRelinquishmentRequestSchema",currentPcbViaPreopeningRelinquishmentRequestSchema);}
  const text=stripTypeScriptTypes(source);const body=parse(text,{ecmaVersion:"latest",sourceType:"module"}).body;
- for(const name of ["hasClosedGeneratedDataCustody","hasGeneratedSchematicCustody","hasViaWriteCustody","hasSchematicDisplayWriteCustody","hasFixtureImportCustody","runFacadeGate"]){
+ for(const name of ["hasClosedGeneratedDataCustody","hasGeneratedSchematicCustody","hasViaWriteCustody","hasSchematicDisplayWriteCustody","hasFootprintForwardWriteCustody","hasFixtureImportCustody","runFacadeGate"]){
   if(!Object.hasOwn(scope,name)){const rows=body.filter(row=>row.type==="FunctionDeclaration"&&row.id?.name===name);assert.equal(rows.length,1);const row=rows[0];assert.ok(row!==undefined&&row.end-row.start<5000);runInContext(text.slice(row.start,row.end),scope);}
  }
 }

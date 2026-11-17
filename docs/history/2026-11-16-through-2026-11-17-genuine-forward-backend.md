@@ -235,3 +235,20 @@ This is the new original-pump payload. Prior 44-case results remain bound to the
 earlier named payload, and prior failed CI/reviews remain historical evidence.
 New exact-head CI and CodeRabbit are required before merge. No installation,
 application launch or connected/saved acceptance has occurred.
+
+## Backend publication, 17 November
+
+PR #221 merged at `f93bcce38277931e348145021bab7ced5459d57e`
+from final reviewed head `e1daa6482c6e033e57fce8c7cb485dd4d339b79a`.
+All thirteen exact-head checks succeeded, including all eight facade shards,
+build, aggregate, Windows native and history checks. The final CodeRabbit
+walkthrough explicitly reported no actionable comments and marked that exact
+source/covered commit reviewed. All twenty review threads are resolved after
+verification of the original findings, outside-diff requests and nits. The
+walkthrough retained a generic paragraph describing earlier risks; each concrete
+request in that paragraph was reconciled against the final implementation and
+tests. No further bot-request comment or review reply was posted.
+
+The executable controls/Wire batch follows this backend. Both hosts still have
+verified `0.3.0+codex.20261116150017`; the backend was not installed separately.
+No application launch, connected writer or saved/reopened acceptance is claimed.

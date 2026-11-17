@@ -851,7 +851,15 @@ groups.push({ namespace: "sch_PrimitiveComponent", methods: ["getAll", "getAllPi
   tests: ["current-schematic-page-electrical-read.test.ts", "current-schematic-page-coverage.test.ts", "current-pcb-209-opening-registration.test.ts"],
   validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "schematic-page-read", query: { includeSchemas: true } } } },
-} });
+} }, {namespace:"lib_Footprint",methods:["copy"],route:{
+ tool:"easyeda_control_current_footprint_forward_write",selector:"execute;original-controlled-disposable-footprint-copy",implementation:"native-task-equivalent",
+ executionState:"available-with-runtime-guards",
+ scope:"One exact explicitly identified closed disposable project and existing footprint through the separately born complete controller. The original private workflow, five bound references and durable Create-intent prefix are mandatory. One native copy triggers persistence; no explicit Save or public matcher runs. Original startup, clocks, Main completion, publication and natural timer tail must join before writer closure, full closed SQL effect, disjoint held cold source/state readback and final independent SQL equality/helper release. Execute and cleanup return promptly and retain their original work. No ordinary-project writer, unrestricted public copy, future UUID, caller code, retry or supported inverse. Source composition and finite reservation are not connected saved-result validation.",
+ source:["current-footprint-forward-writer-control-contract.ts","current-footprint-forward-writer-control-validation.ts","current-footprint-forward-writer-coordinator.ts","current-footprint-forward-writer-workflow.ts","current-footprint-forward-writer-workflow-journal.ts","current-footprint-forward-writer-workflow-v2-journal.ts","current-footprint-forward-writer-paired-scheduler.ts","current-footprint-forward-writer-held-saved-generation.ts","current-pcb-diagnostic-owner.ts","index.ts"],
+ tests:["current-footprint-forward-writer-coordinator.test.ts","current-footprint-forward-writer-workflow.test.ts","current-footprint-forward-writer-workflow-journal.test.ts","current-footprint-forward-writer-workflow-v2-journal.test.ts","current-footprint-workflow-journal-durability.test.ts","control-session-footprint-forward-writer-adapter.test.ts"],
+ validation:"offline-regression;current-live-unclaimed",
+ inputDiscovery:{tool:"easyeda_control_api",arguments:{request:{action:"current-footprint-forward-write",query:{includeSchemas:true}}}},
+}});
 
 export function maintainedApiCoverageRoutes(): ReadonlyMap<string, readonly ApiCoverageRoute[]> {
   const result = new Map<string, ApiCoverageRoute[]>();

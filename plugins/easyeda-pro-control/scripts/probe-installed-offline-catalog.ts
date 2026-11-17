@@ -22,7 +22,7 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-const CATALOG_QUERY_COUNT = 81;
+const CATALOG_QUERY_COUNT = 83;
 // Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
@@ -299,6 +299,10 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   requireCheck(JSON.stringify(names) === JSON.stringify(EXPECTED_TOOLS), "Offline tool names changed.");
   await sample();
   child.assertLoadedFacade(await offlineApi(child, { action: "loaded-facade" }), root);
+  const footprintWrite=await offlineApi(child,{action:"current-footprint-forward-write",query:{includeSchemas:true}});
+  requireCheck(footprintWrite["tool"]==="easyeda_control_current_footprint_forward_write"&&footprintWrite["executionAuthorized"]===false&&footprintWrite["connectedValidation"]===false&&footprintWrite["ordinaryProjectsSupported"]===false&&footprintWrite["maximumCreateAttempts"]===1&&footprintWrite["maximumExplicitSaveAttempts"]===0&&Array.isArray(record(footprintWrite["inputSchema"])["oneOf"]),"Controlled footprint discovery lost its exact disposable contract.");
+  const footprintWriteValidation=await offlineApi(child,{action:"current-footprint-forward-write-validate",query:{request:{action:"execute",operationId:"footprint-forward-flow-offline-catalog",confirmDisposableCopy:true,confirmCopyTriggeredPersistence:true,confirmNoExplicitSave:true,acceptUnsupportedInverse:true}}});
+  requireCheck(footprintWriteValidation["valid"]===true&&footprintWriteValidation["executionAuthorized"]===false,"Controlled footprint validation implied execution or rejected its exact contract.");
   const nativeRelease = await offlineApi(child, { action: "native-release", query: { includeSchemas: true } });
   requireCheck(nativeRelease["tool"] === "easyeda_control_native_release" && nativeRelease["originalOwnerRequired"] === true &&
     nativeRelease["executionAuthorized"] === false && nativeRelease["historicalAdoption"] === false &&
