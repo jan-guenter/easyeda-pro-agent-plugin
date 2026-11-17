@@ -133,3 +133,25 @@ The failed local campaign's 113 reconstructible cache/runtime copies
 (108,339,304 bytes) were removed after original test-owner exit; all unique
 files, symlinks, logs, journals and exit receipts remain. New exact-final-head
 CI and CodeRabbit review are required before merge and installation.
+
+## Final tool-policy assertion correction
+
+Head `a97e3d667c1ba219eeb685f794bc1a70223b1d51` passed the earlier
+failed fixture families and its exact CodeRabbit review, but facade shard five
+found one further stale assertion: the parsed MCP policy list still expected
+64 tools. It now expects 65 and explicitly checks that the new complete-forward
+tool has prompt approval while remaining absent from the legacy tool family.
+A bounded all-test policy/count/roster search found no other stale expectation;
+the separate legacy 56 and calculation-mode 29 counts remain unchanged. The
+full failure log is retained. This is a test-only correction, with no source,
+bundle, native, compatibility or dependency change; new final validation follows.
+
+The complete `a97e3d66` CI run reached all thirteen terminal checks: seven facade
+shards, build, Windows, history and CodeRabbit succeeded; shard five failed only
+that policy count, and the aggregate reflected it. No shard was cancelled.
+The final corrected whole policy-contract file passes all three cases without
+a skip, with full main/stub types, strict type-aware lint and runtime compatibility
+also passing. Its final 5,689-file plugin manifest is SHA-256
+`2d5b956cde64a680dfb39aaddfd9b991ded71f8b0c04f5af57037bbfaa8e52aa`.
+All production source and bundle bytes remain those of the reviewed initial
+controls/Wire payload. New exact-head CI/review remain required before merge.
