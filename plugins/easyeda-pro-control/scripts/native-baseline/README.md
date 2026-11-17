@@ -1,0 +1,11 @@
+# Immutable native build inputs
+
+`shared-owner.ps1.txt` retains the historical published shared baseline and its existing pin in `native-baseline-source.ts`. Do not replace it or a published helper to satisfy a new adapter.
+
+`inverse-native-v4-v1/` and `inverse-native-cold-ui-v1/` contain independent readable first-party owner C# and PowerShell driver templates forked from exact source commit `9db9d91e2116b5c6cbc9475d7dd79b680ea8af88`. Their source paths, lengths and SHA-256 values are fixed in `inverse-native-canonical-baselines.ts`. The C# is the complete canonical review body; the driver preserves all original code outside Add-Type with one explicit insertion marker. These are maintained build sources, without runtime ownership or design data.
+
+The V4 builder applies its exact reversible type aliases and fixed compiler/review storage. The cold-UI builder applies its exact fixed compiler/review storage. Both independently restore and verify code, enforce their unchanged profile bounds, and reproduce the original helper/review bytes. Generated `.ps1`, `.cs` and identity targets are output/comparison only; they are never source inputs for these maintained generators. The ancestral b16 seed field in the unchanged V4 identity remains historical provenance, not a source read or permission.
+
+An intentional source change requires a new reviewed canonical input version and complete provenance. Never update a source pin from a refusal. Preserve prior published and historical inputs/results. Existing exact Windows C#5/no-app proof applies only while helper/compiler bytes remain exact; any native code change needs new strict compiler and actual no-app component evidence.
+
+V4's separate fixed compiler maximum is 2,490,368 bytes; its emitted helper remains under the released shared 2 MiB source-file ceiling. The canonical owner uses the separate 2,621,440-byte review envelope, while the driver has its own exact hash/length and remains under 2 MiB. These are distinct bounded files, not a generic expansion of released compiler limits. The cold-UI owner/helper/compiler/review envelopes remain 2 MiB.
