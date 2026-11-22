@@ -1,5 +1,22 @@
 /* oxlint-disable eslint/max-classes-per-file -- The private core stays with the fixed-generation wrappers; exporting an injectable wire selector would weaken the native boundary. */
+import {currentFootprintInverseNativeDeleteColdUiStartupWire} from "./current-footprint-inverse-native-delete-cold-ui-startup-wire.ts";
+import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_UI_PROFILE} from "./current-footprint-inverse-native-delete-cold-ui-profile.ts";
+import {currentFootprintInverseNativeDeleteColdUiFixedWire,currentFootprintInverseNativeDeleteColdUiProgram,qualifyCurrentFootprintInverseNativeDeleteColdUiHelper,validateCurrentFootprintInverseNativeDeleteColdUiCommand} from "./current-footprint-inverse-native-delete-cold-ui-protocol.ts";
+import type {CurrentFootprintInverseNativeDeleteColdUiCommand} from "./current-footprint-inverse-native-delete-cold-ui-protocol.ts";
 /* oxlint-disable import/max-dependencies -- The shared original channel joins fixed legacy,209 and copy-purpose grammars with one reply/event owner. */
+import type {CurrentFootprintInverseNativeDeleteColdConstructionLease}from"./current-pcb-209-worker-startup-opening.ts";
+import {currentFootprintInverseNativeDeleteColdOwnDataFixedWire, qualifyCurrentFootprintInverseNativeDeleteColdOwnDataHelper, validateCurrentFootprintInverseNativeDeleteColdOwnDataCommand} from "./current-footprint-inverse-native-delete-cold-own-data-protocol.ts";
+
+
+import type {CurrentFootprintInverseNativeDeleteColdOwnDataCommand}from"./current-footprint-inverse-native-delete-cold-own-data-protocol.ts";
+import {currentFootprintInverseNativeDeleteColdGetFixedWire, qualifyCurrentFootprintInverseNativeDeleteColdGetHelper, validateCurrentFootprintInverseNativeDeleteColdGetCommand} from "./current-footprint-inverse-native-delete-cold-get-protocol.ts";
+
+
+import type {CurrentFootprintInverseNativeDeleteColdGetCommand}from"./current-footprint-inverse-native-delete-cold-get-protocol.ts";
+import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_PROFILE}from"./current-footprint-inverse-native-delete-cold-profile.ts";
+import {currentFootprintInverseNativeDeleteColdStartupWire}from"./current-footprint-inverse-native-delete-cold-startup-wire.ts";
+
+
 
 
 
@@ -152,6 +169,7 @@ export function requireOriginalProjectStructurePrefixCapacity(dependency: Curren
   const requirePrefix = structureDependencies.get(dependency); if (requirePrefix === undefined) { throw fail("STRUCTURE_ORIGINAL_DEPENDENCY"); } requirePrefix();
 }
 const savedDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
+const nativeDeleteColdUiDependencies=new WeakMap<CurrentPcbWorkerStartupDependency,CurrentPcbWorkerStartupChannelCore>();
 const heldSavedDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
 
 const executionDependencies = new WeakMap<CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupChannelCore>();
@@ -244,7 +262,7 @@ const MAX_DATA_POLLS = STREAM.dataPolls, MAX_IDLE_POLLS = STREAM.idlePolls, MAX_
 const monotonicNow = process.hrtime.bigint.bind(process.hrtime);
 const failureCodes = new WeakMap<Error, string>();
 type ClockCommand = CurrentFootprintCopyTransactionClockCommand & Readonly<{ sessionId: string }>;
-type ChannelCommand = (CurrentFootprintForwardWriterTicketTimerCommand & Readonly<{sessionId:string}>) | (CurrentFootprintForwardWriterStartupWsCommand & Readonly<{sessionId:string}>) | (CurrentFootprintForwardWriterOwnDataCommand & Readonly<{sessionId:string}>) | (CurrentPcbViaSaveDrainCommand & Readonly<{sessionId:string}>) | (ReturnType<typeof currentFootprintForwardWriterPostHistorySyncWire>["command"] & Readonly<{sessionId:string}>) | (CurrentPcbViaSaveTailDeleteControlCommand & Readonly<{sessionId:string}>) | (CurrentPcbViaSaveTailObservationCommand & Readonly<{sessionId:string}>) | (CurrentFootprintForwardWriterPublicationCommand["command"] & Readonly<{ sessionId: string; forwardCopyPublication:"callback"|"queue" }>) | (CurrentFootprintForwardWriterBranchQueryCommand & Readonly<{ sessionId: string }>) | (CurrentPcbViaUploadRequestCommand & Readonly<{ sessionId: string }>) | (CurrentFootprintForwardWriterCopyLocalCommand & Readonly<{ sessionId: string }>) | CurrentFootprintCopyClockRegistrationV2Command | CurrentFootprintForwardWriterProducerChannelCommand | CurrentPcbWorkerStartupCommand | CurrentFootprintCopyUiCommand | CurrentFootprintCopyManagerRouteCommand | CurrentFootprintCopyClockRegistrationCommand | ClockCommand | CurrentFootprintParentCommand | CurrentFootprintCopySavedQueueChannelCommand | CurrentFootprintCacheConstructionChannelCommand | CurrentFootprintSavedCacheHeldCommand;
+type ChannelCommand = (CurrentFootprintInverseNativeDeleteColdUiCommand & Readonly<{sessionId:string}>) | (NativeDeleteColdCommand&Readonly<{sessionId:string}>) |  (CurrentFootprintForwardWriterTicketTimerCommand & Readonly<{sessionId:string}>) | (CurrentFootprintForwardWriterStartupWsCommand & Readonly<{sessionId:string}>) | (CurrentFootprintForwardWriterOwnDataCommand & Readonly<{sessionId:string}>) | (CurrentPcbViaSaveDrainCommand & Readonly<{sessionId:string}>) | (ReturnType<typeof currentFootprintForwardWriterPostHistorySyncWire>["command"] & Readonly<{sessionId:string}>) | (CurrentPcbViaSaveTailDeleteControlCommand & Readonly<{sessionId:string}>) | (CurrentPcbViaSaveTailObservationCommand & Readonly<{sessionId:string}>) | (CurrentFootprintForwardWriterPublicationCommand["command"] & Readonly<{ sessionId: string; forwardCopyPublication:"callback"|"queue" }>) | (CurrentFootprintForwardWriterBranchQueryCommand & Readonly<{ sessionId: string }>) | (CurrentPcbViaUploadRequestCommand & Readonly<{ sessionId: string }>) | (CurrentFootprintForwardWriterCopyLocalCommand & Readonly<{ sessionId: string }>) | CurrentFootprintCopyClockRegistrationV2Command | CurrentFootprintForwardWriterProducerChannelCommand | CurrentPcbWorkerStartupCommand | CurrentFootprintCopyUiCommand | CurrentFootprintCopyManagerRouteCommand | CurrentFootprintCopyClockRegistrationCommand | ClockCommand | CurrentFootprintParentCommand | CurrentFootprintCopySavedQueueChannelCommand | CurrentFootprintCacheConstructionChannelCommand | CurrentFootprintSavedCacheHeldCommand;
 function clockWire(raw: unknown, id: number): ReturnType<typeof currentFootprintCopyTransactionClockWire> {
   const captured = captureCurrentPcbStringClockReply(raw).value;
   if (!record(captured) || !exact(captured, ["method", "params", "sessionId"]) || typeof captured["sessionId"] !== "string") { throw fail("FOOTPRINT_CLOCK_COMMAND"); }
@@ -254,7 +272,7 @@ function clockWire(raw: unknown, id: number): ReturnType<typeof currentFootprint
 type PendingCommand = ChannelCommand | CurrentFootprintCopyClockRpcV2Command | CurrentFootprintCopyClockRpcCommand | CurrentFootprintCopyNativeCreateCommand;
 // oxlint-disable-next-line typescript/explicit-function-return-type -- Preserve the exact separate literal purpose and inherited fixed channel profile fields without widening either old profile.
 function forwardWriterRendererProfile(complete:CompleteChannelInput|null) { const profile = complete===null?currentFootprintForwardWriterProfile():complete.profile; return { ...CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE, ...profile.renderer, purpose: profile.purpose }; }
-type FootprintProfile = ReturnType<typeof forwardWriterRendererProfile> | typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE;
+type FootprintProfile = typeof CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_UI_PROFILE | typeof CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_PROFILE |  ReturnType<typeof forwardWriterRendererProfile> | typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE;
 function replyFrameLimit(command: PendingCommand, nativeCreate = false, heldSavedCleanup = false): number {
   if (heldSavedCleanup) { return CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY.renderer.cleanupReplyFrameBytes; }
   if (nativeCreate) { return CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS.responseFrameBytes; }
@@ -267,6 +285,7 @@ function replyFrameLimit(command: PendingCommand, nativeCreate = false, heldSave
     CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES : MAX_FRAME;
 }
 interface Pending {
+  readonly nativeDeleteColdToken?:object;
   readonly id: number;
   readonly command: PendingCommand;
   readonly nativeCreate?: true;
@@ -398,6 +417,8 @@ interface ColdContinuationState {
   readonly workerSessionId: string;
 }
 const COMPLETE_CHANNEL_INTERNAL=Symbol("original-complete-forward-channel");
+const nativeDeleteColdDependencies = new WeakMap<CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupChannelCore>();
+
 class CurrentPcbWorkerStartupChannelCore {
   #coldContinuation: ColdContinuationState | null = null;
   #coldPause = false;
@@ -521,15 +542,15 @@ class CurrentPcbWorkerStartupChannelCore {
         forwardWriterProducerPrepare !== null && (typeof forwardWriterProducerPrepare !== "function" || types.isProxy(forwardWriterProducerPrepare))) { throw fail("FORWARD_WRITER_PRODUCER_BINDING"); }
     this.#forwardWriterProducerPrepare = forwardWriterProducerPrepare;
     if (typeof accountedSavedPurpose !== "boolean" || accountedSavedPurpose && wire !== currentFootprintCopySavedStartupWire ||
-        (wire === currentFootprintCopyForwardStartupWire || wire === currentFootprintForwardExecutionStartupWire || wire === currentFootprintForwardWriterStartupWire || accountedSavedPurpose || (wire === currentFootprintCopyHeldSavedStartupWire)) !== (forwardEventBytes !== null) ||
+        (wire === currentFootprintCopyForwardStartupWire || wire === currentFootprintForwardExecutionStartupWire || wire === currentFootprintForwardWriterStartupWire || accountedSavedPurpose || (wire === currentFootprintCopyHeldSavedStartupWire || wire === currentFootprintInverseNativeDeleteColdStartupWire || wire === currentFootprintInverseNativeDeleteColdUiStartupWire)) !== (forwardEventBytes !== null) ||
         forwardEventBytes !== null && typeof forwardEventBytes !== "function") { throw fail("FORWARD_ACCOUNTING"); }
     this.#forwardEventBytes = forwardEventBytes; this.#forwardSavedObservation = accountedSavedPurpose;
-    if ((wire === currentFootprintCopyHeldSavedStartupWire) !== (heldSavedBinding !== null)) { throw fail("HELD_SAVED_BINDING"); }
+    if ((wire === currentFootprintCopyHeldSavedStartupWire || wire === currentFootprintInverseNativeDeleteColdStartupWire || wire === currentFootprintInverseNativeDeleteColdUiStartupWire) !== (heldSavedBinding !== null)) { throw fail("HELD_SAVED_BINDING"); }
     this.#heldSavedBinding = heldSavedBinding === null ? null : freezeDeep(heldSavedBindingSchema.parse(captureCurrentPcbStringClockReply(heldSavedBinding).value));
     if (allocationPurpose && !createClockPurpose) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
     if (wire === currentFootprintForwardExecutionStartupWire && (!allocationPurpose || !createClockPurpose)) { throw fail("FORWARD_EXECUTION_BIRTH"); }
     this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire || wire === currentFootprintCombinedStartupWire || wire === currentFootprintCopyForwardStartupWire || wire === currentFootprintForwardExecutionStartupWire || wire === currentFootprintForwardWriterStartupWire;
-    this.#savedPurpose = wire === currentFootprintCopySavedStartupWire || wire === currentFootprintCopyHeldSavedStartupWire;
+    this.#savedPurpose = wire === currentFootprintCopySavedStartupWire || wire === currentFootprintCopyHeldSavedStartupWire || wire === currentFootprintInverseNativeDeleteColdStartupWire || wire === currentFootprintInverseNativeDeleteColdUiStartupWire;
     this.#footprintPurpose = this.#executionPurpose || this.#savedPurpose || wire === currentFootprintCopyPreparationWire;
     const writerProfile = this.#executionPurpose ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
     let footprintProfile: FootprintProfile = writerProfile;
@@ -539,6 +560,8 @@ class CurrentPcbWorkerStartupChannelCore {
     if (wire === currentFootprintForwardExecutionStartupWire) { footprintProfile = CURRENT_FOOTPRINT_FORWARD_EXECUTION_RENDERER_PROFILE; }
     if (wire === currentFootprintForwardWriterStartupWire) { footprintProfile = forwardWriterRendererProfile(completeBirth); }
     if (wire === currentFootprintCopyHeldSavedStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE; }
+    if(wire===currentFootprintInverseNativeDeleteColdStartupWire){footprintProfile=CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_PROFILE;}
+    if(wire===currentFootprintInverseNativeDeleteColdUiStartupWire){footprintProfile=CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_UI_PROFILE;}
 
     this.#footprintProfile = footprintProfile;
     let requestLimit = this.#footprintPurpose ? this.#footprintProfile.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
@@ -645,7 +668,7 @@ class CurrentPcbWorkerStartupChannelCore {
     }); }
     if (this.#savedPurpose && !this.#forwardSavedObservation && this.#heldSavedBinding === null) { savedDependencies.add(dependency); }
     if (this.#heldSavedBinding !== null) {
-      heldSavedDependencies.add(dependency);
+      if(this.#wire===currentFootprintInverseNativeDeleteColdStartupWire){nativeDeleteColdDependencies.set(dependency,this);}else if(this.#wire===currentFootprintInverseNativeDeleteColdUiStartupWire){nativeDeleteColdUiDependencies.set(dependency,this);}else{heldSavedDependencies.add(dependency);}
     }
     if (this.#executionPurpose) { markCurrentFootprintExecutionDependency(dependency); executionDependencies.set(dependency, this); }
     if (this.#wire === currentFootprintForwardWriterStartupWire) {
@@ -683,6 +706,8 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   #poison(code: string, fatal = false): void {
     const first = this.#failure === null;
+    this.#nativeDeleteColdHelper?.arrival.reject(fail(code));
+    this.#nativeDeleteColdUiHelper?.arrival.reject(fail(code));
     this.#failure ??= fail(code); this.#failureCode ??= code; this.#fatal ||= fatal;
 
     if (this.#clockRpc !== null && (!this.#clockRpc.retired || this.#clockRpc.create !== null)) { this.#clockRpc.budget.fail(); }
@@ -713,9 +738,16 @@ class CurrentPcbWorkerStartupChannelCore {
     if ((phase === "queue-first" || phase === "queue-fresh") &&
         (command.params.arguments[0].value !== binding.projectUuid || command.params.arguments[1].value !== binding.branchUuid)) { throw fail("HELD_CACHE_TARGET"); }
   }
-  #attributed(command: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false, producer = false, copyTail: "local" | "upload" | "branch" | "publication" | "tail-observe" | "drain" | "post" | "delete" | "own-data" | "startup-ws" | "ticket-timer" | null = null): void {
+  #attributed(command: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false, producer = false, copyTail: "local" | "upload" | "branch" | "publication" | "tail-observe" | "drain" | "post" | "delete" | "own-data" | "startup-ws" | "ticket-timer" | null = null,nativeDeleteCold=false,nativeDeleteColdUi=false): void {
+    if(nativeDeleteColdUi){const original=this.#sameNativeDeleteColdUi();const realm=command.sessionId===original.worker.sessionId?original.worker:original.ui;if(command.sessionId!==realm.sessionId||!("phase"in command)||command.phase!=="inverse-native-delete-cold-ui"||command.method==="Runtime.callFunctionOn"&&"uniqueContextId"in command.params&&command.params.uniqueContextId!==realm.uniqueContextId){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_ATTRIBUTION");}return;}
     if (this.#parent === null || this.#released || this.#releaseRequested || this.#terminationVerified) { throw fail("NOT_STARTED"); }
 
+    if(nativeDeleteCold){
+      const original=this.#sameNativeDeleteCold();
+      if(!("phase" in command)||!command.phase.startsWith("inverse-native-delete-cold-")||command.sessionId!==original.sessionId||!this.#workers.has(original.sessionId)||
+       command.method==="Runtime.callFunctionOn"&&"uniqueContextId" in command.params&&command.params.uniqueContextId!==original.uniqueContextId){throw fail("INVERSE_NATIVE_DELETE_COLD_ATTRIBUTION");}
+      return;
+    }
     if(copyTail==="ticket-timer"&&this.#clockRpc===null){
       if(this.#wire!==currentFootprintForwardWriterStartupWire||!this.#forwardWriterProducerBound||!this.#openingConsumed||this.#clockRpcHandoffPending||command.sessionId!==this.#executionWorkerSession||command.sessionId===undefined||!this.#workers.has(command.sessionId)){throw fail("FORWARD_TICKET_ORIGINAL_PRECREATE");}return;
     }
@@ -855,18 +887,27 @@ class CurrentPcbWorkerStartupChannelCore {
         (!this.#openingConsumed || this.#executionWorkerSession !== null)) { throw fail("EXECUTION_WORKER_RUNTIME"); }
   }
   // oxlint-disable-next-line eslint/require-await -- Return the original retained completion, with synchronous guards converted to rejection.
-  async #request(raw: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false, heldCache = false, coldTail = false, producer = false, copyTail: "local" | "upload" | "branch" | "publication" | "tail-observe" | "drain" | "post" | "delete" | "own-data" | "startup-ws" | "ticket-timer" | null = null): Promise<unknown> {
+  async #request(raw: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false, heldCache = false, coldTail = false, producer = false, copyTail: "local" | "upload" | "branch" | "publication" | "tail-observe" | "drain" | "post" | "delete" | "own-data" | "startup-ws" | "ticket-timer" | null = null,nativeDeleteCold=false,nativeDeleteColdToken:object|null=null,nativeDeleteColdUi=false): Promise<unknown> {
+    if((nativeDeleteCold||nativeDeleteColdUi)!==(nativeDeleteColdToken!==null)||nativeDeleteCold&&nativeDeleteColdUi){throw fail("INVERSE_NATIVE_DELETE_COLD_ORIGINAL_REQUEST_TOKEN");}
 
     if (coldTail) { this.#sameColdTail(true); }
     else if (!((producer || copyTail) && this.#wire === currentFootprintForwardWriterStartupWire && this.#fullClock !== null) && (this.#clockRpcHandoffPending || this.#clockRpc !== null && (!this.#clockRpc.retired || this.#clockRpc.create !== null))) { throw fail("FOOTPRINT_RPC_EXCLUSIVE"); }
     // Select the fixed grammar only after rejecting prototype/proxy traps.
     if (!record(raw) || types.isProxy(raw) ||
       Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) { throw fail("COMMAND"); }
-    if ("phase" in raw && (!this.#footprintPurpose || this.#savedPurpose &&
+    if (!nativeDeleteCold && !nativeDeleteColdUi && "phase" in raw && (!this.#footprintPurpose || this.#savedPurpose &&
       Object.getOwnPropertyDescriptor(raw, "phase")?.value !== "saved-upload-queue")) { throw fail("FOOTPRINT_UI_PURPOSE"); }
     const copyWire = manager ? currentFootprintCopyManagerRouteWire : currentFootprintCopyUiWire;
     const encode = (value: ChannelCommand, id: number): Readonly<{ command: ChannelCommand & Readonly<{ id: number }>; request: Readonly<Record<string, string | number>> }> => {
 
+      if(nativeDeleteColdUi){const original=this.#sameNativeDeleteColdUi();if(value.sessionId!==original.worker.sessionId&&value.sessionId!==original.ui.sessionId){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_SESSION");}const{sessionId,...input}=value;if(sessionId===undefined){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_SESSION");}const wire=currentFootprintInverseNativeDeleteColdUiFixedWire(input,id,sessionId);return{command:{...wire.command,id,sessionId},request:wire.request};}
+      if(nativeDeleteCold){
+        const original=this.#sameNativeDeleteCold();if(value.sessionId!==original.sessionId){throw fail("INVERSE_NATIVE_DELETE_COLD_SESSION");}
+        const {sessionId,...input}=value;
+        const wire="phase"in input&&input.phase.startsWith("inverse-native-delete-cold-own-data-")?
+          currentFootprintInverseNativeDeleteColdOwnDataFixedWire(input,id,sessionId):currentFootprintInverseNativeDeleteColdGetFixedWire(input,id,sessionId);
+        return{command:{...wire.command,id,sessionId},request:wire.request};
+      }
       if (copyTail) {
         if (value.sessionId === undefined) { throw fail("FORWARD_COPY_LOCAL_ORIGINAL_SESSION"); }
         const { sessionId, ...input } = value;
@@ -910,23 +951,24 @@ class CurrentPcbWorkerStartupChannelCore {
     };
     const normalized = encode(raw, 1).command;
     const { id: _id, ...command } = normalized;
-    this.#attributed(command, manager, clock, parentKind, registration, producer, copyTail);
-    this.#withinLifetime(!copyTail && cleanupCommand(command));
-    if (this.#fatal || this.#failure !== null && (copyTail || !cleanupCommand(command))) { throw this.#failure ?? fail("FATAL"); }
+    const ownCleanup=nativeDeleteColdUi?command.method==="Debugger.removeBreakpoint":cleanupCommand(command);
+    this.#attributed(command, manager, clock, parentKind, registration, producer, copyTail,nativeDeleteCold,nativeDeleteColdUi);
+    this.#withinLifetime(!copyTail && ownCleanup);
+    if (this.#fatal || this.#failure !== null && (copyTail || !ownCleanup)) { throw this.#failure ?? fail("FATAL"); }
     if (this.#queuedRequests >= 32) { throw fail("QUEUE_BUDGET"); } this.#queuedRequests += 1;
     const completion = Promise.withResolvers<unknown>();
     const queued = this.#queue(async (): Promise<void> => {
       let pending: Pending | null = null;
       let exchangeAttempted = false;
       try {
-        if (copyTail || !cleanupCommand(command)) { await this.#currentWithinQueue(); }
-        this.#attributed(command, manager, clock, parentKind, registration, producer, copyTail);
-        this.#withinLifetime(!copyTail && cleanupCommand(command));
-        const cleanup = !copyTail && cleanupCommand(command);
+        if (copyTail || !ownCleanup) { await this.#currentWithinQueue(); }
+        this.#attributed(command, manager, clock, parentKind, registration, producer, copyTail,nativeDeleteCold,nativeDeleteColdUi);
+        this.#withinLifetime(!copyTail && ownCleanup);
+        const cleanup = !copyTail && ownCleanup;
         let limit = this.#heldSavedBinding === null && this.#footprintPurpose && !cleanup ? this.#footprintProfile.normalRequestLimit : this.#requestLimit;
         if (this.#structurePurpose && !cleanup) { limit = CURRENT_PROJECT_STRUCTURE_NATIVE_PROFILE.worker.normal; }
         if (this.#fatal || this.#released || this.#nextId > limit) { throw fail("REQUEST_BUDGET"); }
-        if (this.#heldSavedBinding !== null && (cleanup ? this.#heldSavedCleanup >= CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.cleanupRequestLimit :
+        if (this.#heldSavedBinding !== null && (cleanup ? this.#heldSavedCleanup >= (this.#wire===currentFootprintInverseNativeDeleteColdUiStartupWire?CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_UI_PROFILE.cleanupRequestLimit:CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.cleanupRequestLimit) :
           this.#heldSavedNormal >= this.#footprintProfile.normalRequestLimit)) { throw fail("HELD_SAVED_REQUEST_CLASS"); }
         const wire = encode(command, this.#nextId);
         if ((producer || copyTail) && this.#fullClock !== null && this.#clockRpc?.begun === true && !this.#clockRpc.retired) {
@@ -943,7 +985,7 @@ class CurrentPcbWorkerStartupChannelCore {
         if (this.#executionPurpose && command.method === "Runtime.enable") { this.#executionWorkerSession = command.sessionId ?? null; }
         if (clock) { this.#footprintClockSession ??= command.sessionId ?? null; this.#footprintClockRequests += 1; }
         pending = { id: wire.command.id, command, completion,
-          ...(copyTail ? { plannedForwardTail: true as const } : {}),
+          ...(nativeDeleteColdToken===null?{}:{nativeDeleteColdToken}), ...(copyTail ? { plannedForwardTail: true as const } : {}),
           ...(this.#heldSavedBinding !== null && cleanup ? { heldSavedCleanup: true as const } : {}),
           allocation: command.method === "Debugger.setBreakpoint" || command.method === "Debugger.setInstrumentationBreakpoint",
           written: false, writeFailed: false, replied: false, result: null, remoteError: false, settled: false };
@@ -987,8 +1029,11 @@ class CurrentPcbWorkerStartupChannelCore {
         }
         exchangeAttempted = true;
         ackSchema.parse(captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native, wire.request)).value);
-        pending.written = true; this.#complete(pending);
+        pending.written = true;if(nativeDeleteColdUi&&nativeDeleteColdToken!==null){const issued=this.#nativeDeleteColdUiTokens.get(nativeDeleteColdToken);if(issued===undefined||issued.writeObserved){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_WRITE_RECEIPT");}issued.writeObserved=true;
+          // oxlint-disable-next-line unicorn/no-useless-undefined -- Preserve this exact original undefined write receipt.
+          issued.written.resolve(undefined);} this.#complete(pending);
       } catch (error) {
+        if(nativeDeleteColdUi&&nativeDeleteColdToken!==null){this.#nativeDeleteColdUiTokens.get(nativeDeleteColdToken)?.written.reject(error);}
         if (exchangeAttempted && pending !== null && this.#exchangeFailure === null) {
           const native = currentPcbDiagnosticNativeRefusal(error);
           this.#exchangeFailure = Object.freeze({ requestId: pending.id, method: pending.command.method,
@@ -1702,6 +1747,23 @@ class CurrentPcbWorkerStartupChannelCore {
       .parse(captureCurrentPcbStringClockReply(value).value);
 
 
+    const coldUi=this.#nativeDeleteColdUiOriginal;
+    if(coldUi!==null&&(event.sessionId===coldUi.ui.sessionId||event.sessionId===coldUi.worker.sessionId)){
+     if(!["Debugger.scriptParsed","Debugger.paused","Debugger.resumed","Debugger.breakpointResolved","Runtime.consoleAPICalled"].includes(event.method)){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_CONTEXT_EVENT");}
+     const helper=this.#nativeDeleteColdUiHelper;
+     if(helper!==null&&event.sessionId===helper.sessionId&&event.method==="Debugger.scriptParsed"&&event.params["url"]===""){
+      const program=currentFootprintInverseNativeDeleteColdUiProgram(helper.command);if(program===null||event.params["executionContextId"]!==helper.contextId||event.params["length"]!==(helper.command.method==="Runtime.callFunctionOn"?program.length+2:program.length)||event.params["startLine"]!==0||event.params["startColumn"]!==0||event.params["isModule"]!==false){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_HELPER_EVENT");}if(helper.receipt.scriptId!==null){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_DUPLICATE_SOURCE");}const parsedId=token.parse(event.params["scriptId"]);helper.receipt.scriptId=parsedId;helper.arrival.resolve(parsedId);return;
+     }
+     if(this.#nativeDeleteColdUiEvents.length>=256){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_EVENTS");}this.#nativeDeleteColdUiObserved.add(event);this.#nativeDeleteColdUiEvents.push(event);return;
+    }
+
+    const nativeCold=this.#nativeDeleteColdOriginal;
+    if(nativeCold!==null&&event.sessionId===nativeCold.original.sessionId&&event.method==="Debugger.scriptParsed"){
+      const helper=this.#nativeDeleteColdHelper;
+      if(helper===null||helper.receipt.scriptId!==null||event.params["executionContextId"]!==nativeCold.original.executionContextId||event.params["url"]!==""||
+       event.params["length"]!==helper.program.length+2||event.params["startLine"]!==0||event.params["startColumn"]!==0||event.params["isModule"]!==false){throw fail("INVERSE_NATIVE_DELETE_COLD_HELPER_EVENT");}
+      const scriptId=token.parse(event.params["scriptId"]);helper.receipt.scriptId=scriptId;helper.arrival.resolve(scriptId);return;
+    }
       const ticketHelper=this.#forwardWriterTicketHelper;
       if(ticketHelper!==null&&event.sessionId===this.#executionWorkerSession&&event.method==="Debugger.scriptParsed"&&record(event.params)&&
         event.params["executionContextId"]===this.#executionChildContextNumber&&event.params["url"]===""&&event.params["length"]===ticketHelper.program.length+2&&
@@ -1811,6 +1873,7 @@ class CurrentPcbWorkerStartupChannelCore {
     try { await this.#originalTermination(); }
     catch (error) { this.#releaseRequested = false; this.#schedulePoll(0); throw error; }
 
+    this.#nativeDeleteColdHelper?.arrival.reject(fail("TERMINATED"));this.#nativeDeleteColdUiHelper?.arrival.reject(fail("TERMINATED"));
     this.#released = true;
     if (this.#pollTimer !== null) { clearTimeout(this.#pollTimer); this.#pollTimer = null; }
     await this.#tail;
@@ -1819,6 +1882,121 @@ class CurrentPcbWorkerStartupChannelCore {
     }
     this.#pending.clear(); this.#listener = null;
 
+  const coldHelper=this.#nativeDeleteColdHelper?.receipt.pending;if(coldHelper!==null&&coldHelper!==undefined){await observe(coldHelper);}
+  }
+
+  #nativeDeleteColdUiOriginal:Readonly<{dependency:CurrentPcbWorkerStartupDependency;lease:object;worker:NativeDeleteColdOriginal;ui:NativeDeleteColdOriginal}>|null=null;
+  readonly #nativeDeleteColdUiTokens=new WeakMap<object,{readonly command:CurrentFootprintInverseNativeDeleteColdUiCommand;readonly sessionId:string;readonly written:PromiseWithResolvers<undefined>;parent:CurrentFootprintInverseNativeDeleteColdUiCommand|null;writeObserved:boolean;request:Promise<unknown>|null}>();
+  readonly #nativeDeleteColdUiEvents:CurrentPcbWorkerStartupEvent[]=[];readonly #nativeDeleteColdUiObserved=new WeakSet<object>();
+  #nativeDeleteColdUiHelper:Readonly<{command:CurrentFootprintInverseNativeDeleteColdUiCommand;sessionId:string;contextId:number;arrival:PromiseWithResolvers<string>;receipt:{scriptId:string|null}}>|null=null;
+
+  #nativeDeleteColdOriginal:Readonly<{lease:CurrentFootprintInverseNativeDeleteColdConstructionLease;dependency:CurrentPcbWorkerStartupDependency;original:NativeDeleteColdOriginal}>|null=null;
+
+  readonly #nativeDeleteColdTokens=new WeakMap<object,Readonly<{command:NativeDeleteColdCommand;parent:NativeDeleteColdCommand|null}>>();
+
+  #nativeDeleteColdHelper:Readonly<{command:NativeDeleteColdCommand;fixed:NativeDeleteColdCommand;program:string;arrival:ReturnType<typeof Promise.withResolvers<string>>;receipt:{scriptId:string|null;pending:Promise<void>|null;token:object|null}}>|null=null;
+
+  #nativeDeleteColdHelpers=0;
+
+  public bindNativeDeleteColdWorker(dependency:CurrentPcbWorkerStartupDependency,lease:CurrentFootprintInverseNativeDeleteColdConstructionLease,data:NativeDeleteColdOriginal):void{
+    if(this.#wire!==currentFootprintInverseNativeDeleteColdStartupWire||nativeDeleteColdDependencies.get(dependency)!==this||this.#nativeDeleteColdOriginal!==null||!this.#openingConsumed||!this.#heldCacheReleased){throw fail("INVERSE_NATIVE_DELETE_COLD_BIND");}
+    // This is a data-only channel join, not source authority. Core rechecks
+    // Its genuine lease and original request token at the actual stdin cutoff.
+    if(lease===null||typeof lease!=="object"||types.isProxy(lease)){throw fail("INVERSE_NATIVE_DELETE_COLD_LEASE_DATA");}
+    const original=Object.freeze(z.strictObject({sessionId:token,uniqueContextId:token,executionContextId:z.number().int().positive()}).parse(captureCurrentPcbStringClockReply(data).value));
+    if(!this.#workers.has(original.sessionId)||original.sessionId===this.#parent?.sessionId){throw fail("INVERSE_NATIVE_DELETE_COLD_ORIGINAL_WORKER");}
+    this.#nativeDeleteColdOriginal=Object.freeze({lease,dependency,original});this.#sameNativeDeleteCold();
+  }
+
+  #sameNativeDeleteCold():NativeDeleteColdOriginal{
+    const binding=this.#nativeDeleteColdOriginal;
+    if(binding===null||this.#wire!==currentFootprintInverseNativeDeleteColdStartupWire||this.#released||this.#releaseRequested||this.#terminationVerified||this.#fatal||this.#failure!==null){throw fail("INVERSE_NATIVE_DELETE_COLD_LIFETIME");}
+    if(nativeDeleteColdDependencies.get(binding.dependency)!==this||!this.#workers.has(binding.original.sessionId)){throw fail("INVERSE_NATIVE_DELETE_COLD_WORKER_CHANGED");}
+    return binding.original;
+  }
+
+  public requestNativeDeleteCold(input:NativeDeleteColdCommand,originalToken:object):Promise<unknown>{
+    if(originalToken===null||typeof originalToken!=="object"||types.isProxy(originalToken)||this.#nativeDeleteColdTokens.has(originalToken)){throw fail("INVERSE_NATIVE_DELETE_COLD_REQUEST_TOKEN");}
+    this.#nativeDeleteColdTokens.set(originalToken,Object.freeze({command:input,parent:null}));
+    const original=this.#sameNativeDeleteCold();
+    const fixed=input.phase.startsWith("inverse-native-delete-cold-own-data-")?validateCurrentFootprintInverseNativeDeleteColdOwnDataCommand(input):validateCurrentFootprintInverseNativeDeleteColdGetCommand(input);
+    const program=fixed.method==="Runtime.callFunctionOn"?fixed.params.functionDeclaration:null;
+    if(program!==null){
+      if(this.#nativeDeleteColdHelper!==null||this.#nativeDeleteColdHelpers>=14){throw fail("INVERSE_NATIVE_DELETE_COLD_HELPER_PENDING");}
+      const arrival=Promise.withResolvers<string>();void observe(arrival.promise);
+      this.#nativeDeleteColdHelper=Object.freeze({command:input,fixed,program,arrival,receipt:{scriptId:null,pending:null,token:null}});
+    }
+    return this.#request({...fixed,sessionId:original.sessionId},false,false,undefined,false,false,false,false,null,true,originalToken);
+  }
+
+  public qualifyNativeDeleteColdHelper(command:NativeDeleteColdCommand,originalToken:object):Promise<void>{
+    this.#sameNativeDeleteCold();const helper=this.#nativeDeleteColdHelper;
+    if(helper===null||helper.command!==command){throw fail("INVERSE_NATIVE_DELETE_COLD_ORIGINAL_HELPER");}
+    if(helper.receipt.pending!==null){if(helper.receipt.token!==originalToken){throw fail("INVERSE_NATIVE_DELETE_COLD_ORIGINAL_HELPER_TOKEN");}return helper.receipt.pending;}
+    if(originalToken===null||typeof originalToken!=="object"||types.isProxy(originalToken)||this.#nativeDeleteColdTokens.has(originalToken)){throw fail("INVERSE_NATIVE_DELETE_COLD_HELPER_TOKEN");}
+    const gate=Promise.withResolvers<null>();
+    const pending=(async():Promise<void>=>{
+      await gate.promise;const scriptId=await helper.arrival.promise;this.#sameNativeDeleteCold();
+      if(this.#nativeDeleteColdHelper!==helper||helper.receipt.scriptId!==scriptId){throw fail("INVERSE_NATIVE_DELETE_COLD_HELPER_CHANGED");}
+      const own=helper.fixed.phase.startsWith("inverse-native-delete-cold-own-data-");
+      const fixed=own?validateCurrentFootprintInverseNativeDeleteColdOwnDataCommand({phase:"inverse-native-delete-cold-own-data-helper",method:"Debugger.getScriptSource",params:{scriptId}}):
+        validateCurrentFootprintInverseNativeDeleteColdGetCommand({phase:"inverse-native-delete-cold-get-helper",method:"Debugger.getScriptSource",params:{scriptId}});
+      this.#nativeDeleteColdTokens.set(originalToken,Object.freeze({command:fixed,parent:command}));
+      const original=this.#sameNativeDeleteCold();
+      const raw=await this.#request({...fixed,sessionId:original.sessionId},false,false,undefined,false,false,false,false,null,true,originalToken);this.#sameNativeDeleteCold();
+      if(own){const parsed=z.strictObject({scriptSource:z.string().max(32_768)}).parse(captureCurrentPcbStringClockReply(raw).value);qualifyCurrentFootprintInverseNativeDeleteColdOwnDataHelper(parsed.scriptSource,helper.program);}
+      else{qualifyCurrentFootprintInverseNativeDeleteColdGetHelper(raw,validateCurrentFootprintInverseNativeDeleteColdGetCommand(helper.fixed));}
+      if(this.#nativeDeleteColdHelper!==helper){throw fail("INVERSE_NATIVE_DELETE_COLD_HELPER_CHANGED");}
+      this.#nativeDeleteColdHelpers+=1;this.#nativeDeleteColdHelper=null;
+    })();
+    helper.receipt.token=originalToken;helper.receipt.pending=pending;gate.resolve(null);return pending;
+  }
+
+  public requireNativeDeleteColdRequest(id:number,originalToken:object):Readonly<{command:NativeDeleteColdCommand;parent:NativeDeleteColdCommand|null}>{
+    this.#sameNativeDeleteCold();const pending=this.#pending.get(id);const issued=this.#nativeDeleteColdTokens.get(originalToken);
+    if(pending===undefined||pending.nativeDeleteColdToken!==originalToken||pending.written||pending.writeFailed||pending.settled||issued===undefined){throw fail("INVERSE_NATIVE_DELETE_COLD_ORIGINAL_PENDING");}
+    if(issued.parent!==null){
+      const helper=this.#nativeDeleteColdHelper;
+      if(helper===null||helper.command!==issued.parent||helper.receipt.token!==originalToken||pending.command.method!=="Debugger.getScriptSource"||pending.command.params.scriptId!==helper.receipt.scriptId){throw fail("INVERSE_NATIVE_DELETE_COLD_ORIGINAL_HELPER_PENDING");}
+    }
+    return issued;
+  }
+
+  public bindNativeDeleteColdUi(dependency:CurrentPcbWorkerStartupDependency,lease:object,worker:NativeDeleteColdOriginal,ui:NativeDeleteColdOriginal):void{
+   if(this.#wire!==currentFootprintInverseNativeDeleteColdUiStartupWire||nativeDeleteColdUiDependencies.get(dependency)!==this||this.#nativeDeleteColdUiOriginal!==null||!this.#openingConsumed||!this.#heldCacheReleased||lease===null||types.isProxy(lease)){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_BIND");}
+   const shape=z.strictObject({sessionId:token,uniqueContextId:token,executionContextId:z.number().int().positive()});const w=Object.freeze(shape.parse(captureCurrentPcbStringClockReply(worker).value));const u=Object.freeze(shape.parse(captureCurrentPcbStringClockReply(ui).value));
+   if(!this.#workers.has(w.sessionId)||u.sessionId!==this.#parent?.sessionId||w.sessionId===u.sessionId||this.#heldSavedBinding?.uniqueContextId!==u.uniqueContextId){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_REALMS");}
+   this.#nativeDeleteColdUiOriginal=Object.freeze({dependency,lease,worker:w,ui:u});this.#sameNativeDeleteColdUi();
+  }
+  #sameNativeDeleteColdUi():Readonly<{dependency:CurrentPcbWorkerStartupDependency;lease:object;worker:NativeDeleteColdOriginal;ui:NativeDeleteColdOriginal}>{
+   const original=this.#nativeDeleteColdUiOriginal;if(original===null||this.#wire!==currentFootprintInverseNativeDeleteColdUiStartupWire||nativeDeleteColdUiDependencies.get(original.dependency)!==this||this.#released||this.#releaseRequested||this.#terminationVerified||this.#fatal||this.#failure!==null||!this.#workers.has(original.worker.sessionId)||this.#parent?.sessionId!==original.ui.sessionId){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_LIFETIME");}return original;
+  }
+  public requestNativeDeleteColdUi(input:CurrentFootprintInverseNativeDeleteColdUiCommand,sessionId:string,originalToken:object,ownsHelper:boolean):Promise<unknown>{
+   const original=this.#sameNativeDeleteColdUi();if(originalToken===null||typeof originalToken!=="object"||types.isProxy(originalToken)||this.#nativeDeleteColdUiTokens.has(originalToken)){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_REQUEST_TOKEN");}
+   const fixed=validateCurrentFootprintInverseNativeDeleteColdUiCommand(input);const realm=sessionId===original.worker.sessionId?original.worker:original.ui;if(sessionId!==realm.sessionId){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_SESSION");}
+   const issuedRecord={command:input,sessionId,parent:null as CurrentFootprintInverseNativeDeleteColdUiCommand|null,written:Promise.withResolvers<undefined>(),writeObserved:false,request:null as Promise<unknown>|null};void observe(issuedRecord.written.promise);this.#nativeDeleteColdUiTokens.set(originalToken,issuedRecord);
+   const program=currentFootprintInverseNativeDeleteColdUiProgram(fixed);
+   if(ownsHelper&&program!==null){if(this.#nativeDeleteColdUiHelper!==null){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_HELPER_PENDING");}const arrival=Promise.withResolvers<string>();void observe(arrival.promise);this.#nativeDeleteColdUiHelper=Object.freeze({command:input,sessionId,contextId:realm.executionContextId,arrival,receipt:{scriptId:null}});}
+   const pending=this.#request({...fixed,sessionId},false,false,undefined,false,false,false,false,null,false,originalToken,true);issuedRecord.request=pending;void(async():Promise<void>=>{try{await pending;}catch(caughtError){if(!issuedRecord.writeObserved){issuedRecord.written.reject(caughtError);}}})();return pending;
+  }
+  public async qualifyNativeDeleteColdUiHelper(command:CurrentFootprintInverseNativeDeleteColdUiCommand,sessionId:string,tokenValue:object):Promise<string>{
+   this.#sameNativeDeleteColdUi();const helper=this.#nativeDeleteColdUiHelper;if(helper===null||helper.command!==command||helper.sessionId!==sessionId){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_HELPER");}
+   const id=await helper.arrival.promise;this.#sameNativeDeleteColdUi();if(helper.receipt.scriptId!==id){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_SOURCE_EVENT_ID");}const source=validateCurrentFootprintInverseNativeDeleteColdUiCommand({phase:"inverse-native-delete-cold-ui",role:"source",method:"Debugger.getScriptSource",params:{scriptId:id}});
+   const pending=this.requestNativeDeleteColdUi(source,sessionId,tokenValue,false);const issuedRecord=this.#nativeDeleteColdUiTokens.get(tokenValue);if(issuedRecord===undefined){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_SOURCE_TOKEN");}issuedRecord.parent=command;const raw=await pending;this.#sameNativeDeleteColdUi();qualifyCurrentFootprintInverseNativeDeleteColdUiHelper(raw,command);if(this.#nativeDeleteColdUiHelper!==helper){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_HELPER_CHANGED");}this.#nativeDeleteColdUiHelper=null;return id;
+  }
+  public requireNativeDeleteColdUiRequest(id:number,originalToken:object):Readonly<{command:CurrentFootprintInverseNativeDeleteColdUiCommand;sessionId:string;parent:CurrentFootprintInverseNativeDeleteColdUiCommand|null}>{
+   this.#sameNativeDeleteColdUi();const pending=this.#pending.get(id);const issued=this.#nativeDeleteColdUiTokens.get(originalToken);if(pending===undefined||pending.nativeDeleteColdToken!==originalToken||pending.written||pending.writeFailed||pending.settled||issued===undefined){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_PENDING");}return issued;
+  }
+  public nativeDeleteColdUiRequestToken(id:number):object{this.#sameNativeDeleteColdUi();const pending=this.#pending.get(id);if(pending?.nativeDeleteColdToken===undefined){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_UNISSUED");}return pending.nativeDeleteColdToken;}
+  public async pumpNativeDeleteColdUi():Promise<void>{this.#sameNativeDeleteColdUi();this.#schedulePoll(0);await this.#queue(():Promise<void>=>{this.#sameNativeDeleteColdUi();return Promise.resolve();});this.#sameNativeDeleteColdUi();}
+  public originalNativeDeleteColdUiInvocation(originalToken:object):Readonly<{request:Promise<unknown>;written:Promise<void>;assertOriginalWritten:()=>void}>{
+   this.#sameNativeDeleteColdUi();const issuedRecord=this.#nativeDeleteColdUiTokens.get(originalToken);if(issuedRecord===undefined||issuedRecord.command.role!=="invoke"||issuedRecord.request===null){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_INVOCATION");}return Object.freeze({request:issuedRecord.request,written:issuedRecord.written.promise,assertOriginalWritten:():void=>{this.#sameNativeDeleteColdUi();if(!issuedRecord.writeObserved){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_UNWRITTEN");}}});
+  }
+  public takeNativeDeleteColdUiEvent():CurrentPcbWorkerStartupEvent|null{this.#sameNativeDeleteColdUi();return this.#nativeDeleteColdUiEvents.shift()??null;}
+  public requireNativeDeleteColdUiEvent(event:object):void{this.#sameNativeDeleteColdUi();if(!this.#nativeDeleteColdUiObserved.has(event)){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_EVENT_ORIGIN");}}
+
+  public requireNativeDeleteColdReadComplete():void{
+    this.#sameNativeDeleteCold();if(this.#nativeDeleteColdHelper!==null||this.#nativeDeleteColdHelpers!==14||this.#pending.size > 0||this.#queuedRequests!==0){throw fail("INVERSE_NATIVE_DELETE_COLD_READ_INCOMPLETE");}
   }
 }
 
@@ -2063,4 +2241,26 @@ export function qualifyCurrentFootprintForwardWriterOwnDataChannelHelper(depende
 
 export function requestCurrentFootprintForwardWriterStartupWs(dependency:CurrentPcbWorkerStartupDependency,command:CurrentFootprintForwardWriterStartupWsCommand):Promise<unknown>{
  const channel=executionDependencies.get(dependency);if(!(channel instanceof CurrentFootprintForwardWriterStartupChannel)||!isOriginalFootprintForwardWriterDependency(dependency)){return Promise.reject(fail("FORWARD_STARTUP_WS_ORIGINAL_CHANNEL"));}return requestOriginalFullStartupWs.call(channel,dependency,command);
+}
+
+type NativeDeleteColdCommand=CurrentFootprintInverseNativeDeleteColdOwnDataCommand|CurrentFootprintInverseNativeDeleteColdGetCommand;
+
+type NativeDeleteColdOriginal=Readonly<{sessionId:string;uniqueContextId:string;executionContextId:number}>;
+
+
+export function isOriginalFootprintInverseNativeDeleteColdDependency(dependency:CurrentPcbWorkerStartupDependency):boolean{return nativeDeleteColdDependencies.has(dependency);}
+export function isOriginalFootprintInverseNativeDeleteColdUiDependency(dependency:CurrentPcbWorkerStartupDependency):boolean{return nativeDeleteColdUiDependencies.has(dependency);}
+
+export class CurrentFootprintInverseNativeDeleteColdStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+ public constructor(native:CurrentPcbWorkerStartupNativeDependency,binding:CurrentFootprintCopyHeldSavedChannelBinding,
+  observeEventBytes:(bytes:number)=>void,priorUsage?:CurrentPcbWorkerStartupPriorUsage){
+  super(INTERNAL_PROFILE,native,currentFootprintInverseNativeDeleteColdStartupWire,priorUsage,false,false,observeEventBytes,false,binding);
+ }
+}
+
+/** Distinct cold UI marker; no old source getter or marker is accepted. */
+export class CurrentFootprintInverseNativeDeleteColdUiStartupChannel extends CurrentPcbWorkerStartupChannelCore{
+ public constructor(native:CurrentPcbWorkerStartupNativeDependency,binding:CurrentFootprintCopyHeldSavedChannelBinding,observeEventBytes:(bytes:number)=>void,priorUsage?:CurrentPcbWorkerStartupPriorUsage){
+  super(INTERNAL_PROFILE,native,currentFootprintInverseNativeDeleteColdUiStartupWire,priorUsage,false,false,observeEventBytes,false,binding);
+ }
 }

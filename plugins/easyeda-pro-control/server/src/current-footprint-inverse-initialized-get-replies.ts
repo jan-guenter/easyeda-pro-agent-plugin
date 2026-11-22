@@ -12,8 +12,15 @@ const internal = z.strictObject({ name: z.string(), value: remote });
 const fieldsSchema = z.strictObject({ result: z.array(property).min(2).max(5), internalProperties: z.array(internal).length(3) });
 const pointSchema = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
 function need(value: boolean): asserts value { if (!value) { throw new Error("FOOTPRINT_INVERSE_INITIALIZED_GET_METADATA"); } }
-export function decodeCurrentFootprintInverseInitializedGetFunction(input: unknown, role: CurrentFootprintInverseInitializedGetRole, expectedScriptId?: string): Readonly<{ scriptId: string; scopes: string }> {
-  const expected = SOURCE[role], packet = fieldsSchema.parse(capture(input));
+export interface CurrentFootprintInverseFunctionMetadataProfile {
+ readonly name:string;readonly arity:number;readonly kind:"regular"|"class"|"method"|"arrow";readonly async:boolean;readonly strict:boolean;
+ readonly ownNames:readonly string[];readonly lineNumber:number;readonly columnNumber:number;
+}
+/** Origin-free descriptor grammar. Only an independently qualified immutable
+ * source profile may be used by an original owner to select expected fields.
+ * A matching packet or caller profile alone grants no execution or receipt. */
+export function decodeCurrentFootprintInverseFunctionMetadata(input:unknown,expected:CurrentFootprintInverseFunctionMetadataProfile,expectedScriptId?:string):Readonly<{scriptId:string;scopes:string}> {
+  const packet=fieldsSchema.parse(capture(input));
   const fields = new Map(packet.result.map(row => [row.name, row])); const regular = (expected.kind === "regular" || expected.kind === "class") && !expected.async;
   const names = ["name", "length", ...(regular ? ["prototype"] : []), ...(!expected.strict && regular ? ["arguments", "caller"] : [])];
   need(fields.size === packet.result.length && fields.size === names.length && packet.result.every((row, index) => row.name === expected.ownNames[index]) && names.every(name => fields.has(name)));
@@ -28,4 +35,9 @@ export function decodeCurrentFootprintInverseInitializedGetFunction(input: unkno
   need(parent?.type === (expected.async ? "object" : "function") && parent.className === (expected.async ? "AsyncFunction" : "Function") && parent.objectId !== undefined && (expected.kind === "class" || parent.description === (expected.async ? "AsyncFunction" : "function () { [native code] }")));
   need(scopes?.type === "object" && scopes.subtype === "internal#scopeList" && scopes.className === "Array" && scopes.objectId !== undefined && /^Scopes\[[1-8]\]$/u.test(scopes.description ?? ""));
   return Object.freeze({ scriptId: point.scriptId, scopes: scopes.objectId });
+}
+
+/** Historical profile selection stays fixed to its original source domain. */
+export function decodeCurrentFootprintInverseInitializedGetFunction(input:unknown,role:CurrentFootprintInverseInitializedGetRole,expectedScriptId?:string):Readonly<{scriptId:string;scopes:string}>{
+ return decodeCurrentFootprintInverseFunctionMetadata(input,SOURCE[role],expectedScriptId);
 }

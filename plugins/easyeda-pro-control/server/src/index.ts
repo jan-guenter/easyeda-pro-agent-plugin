@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { CURRENT_FOOTPRINT_INVERSE_CONTROL_TOOL, currentFootprintInverseControlActionSchema, currentFootprintInverseControlResultSchema } from "./current-footprint-inverse-control-contract.ts";
+import { CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_TOOL, currentFootprintInverseColdUiControlActionSchema, currentFootprintInverseColdUiControlResultSchema } from "./current-footprint-inverse-cold-ui-control-contract.ts";
 import { CurrentFootprintForwardWriterCoordinator } from "./current-footprint-forward-writer-coordinator.ts";
 import { CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL, currentFootprintForwardWriterControlActionSchema, currentFootprintForwardWriterControlResultSchema } from "./current-footprint-forward-writer-control-contract.ts";
 import { CurrentPcbViaWriteCoordinator } from "./current-pcb-via-write-coordinator.ts";
@@ -367,10 +369,12 @@ function assertViaWriteMethods(owner: CurrentPcbViaWriteCoordinator): void {
   }
 }
 /* oxlint-disable typescript/unbound-method -- Captured methods are called only on the same retained private-field coordinator. */
-const footprintForwardMethods=Object.freeze({run:CurrentFootprintForwardWriterCoordinator.prototype.run,inspect:CurrentFootprintForwardWriterCoordinator.prototype.inspect,active:CurrentFootprintForwardWriterCoordinator.prototype.hasActiveReservation,shutdown:CurrentFootprintForwardWriterCoordinator.prototype.shutdownOriginal});
+const footprintForwardMethods=Object.freeze({runInverseColdUi:CurrentFootprintForwardWriterCoordinator.prototype.runInverseColdUi,inspectInverseColdUi:CurrentFootprintForwardWriterCoordinator.prototype.inspectInverseColdUi,runInverse:CurrentFootprintForwardWriterCoordinator.prototype.runInverse,inspectInverse:CurrentFootprintForwardWriterCoordinator.prototype.inspectInverse,run:CurrentFootprintForwardWriterCoordinator.prototype.run,inspect:CurrentFootprintForwardWriterCoordinator.prototype.inspect,active:CurrentFootprintForwardWriterCoordinator.prototype.hasActiveReservation,shutdown:CurrentFootprintForwardWriterCoordinator.prototype.shutdownOriginal});
 /* oxlint-enable typescript/unbound-method */
 function assertFootprintForwardMethods(owner:CurrentFootprintForwardWriterCoordinator):void{
  if(Object.getPrototypeOf(owner)!==CurrentFootprintForwardWriterCoordinator.prototype||Reflect.ownKeys(owner).length > 0||!Object.isFrozen(owner)||
+  CurrentFootprintForwardWriterCoordinator.prototype.runInverseColdUi!==footprintForwardMethods.runInverseColdUi||CurrentFootprintForwardWriterCoordinator.prototype.inspectInverseColdUi!==footprintForwardMethods.inspectInverseColdUi||
+   CurrentFootprintForwardWriterCoordinator.prototype.runInverse!==footprintForwardMethods.runInverse||CurrentFootprintForwardWriterCoordinator.prototype.inspectInverse!==footprintForwardMethods.inspectInverse||
   CurrentFootprintForwardWriterCoordinator.prototype.run!==footprintForwardMethods.run||CurrentFootprintForwardWriterCoordinator.prototype.inspect!==footprintForwardMethods.inspect||
   CurrentFootprintForwardWriterCoordinator.prototype.hasActiveReservation!==footprintForwardMethods.active||CurrentFootprintForwardWriterCoordinator.prototype.shutdownOriginal!==footprintForwardMethods.shutdown){throw new Error("Original complete footprint coordinator changed.");}
 }
@@ -2231,6 +2235,8 @@ const artifactReadSuccessOutputSchema = z
   .strict();
 const currentSymbolOperationToolOutputSchema = z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).strict();
 const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
+  [CURRENT_FOOTPRINT_INVERSE_CONTROL_TOOL]:z.object({result:currentFootprintInverseControlResultSchema.optional(),...optionalFailureOutputShape}).strict(),
+  [CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_TOOL]:z.object({result:currentFootprintInverseColdUiControlResultSchema.optional(),...optionalFailureOutputShape}).strict(),
   [CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL]:z.object({result:currentFootprintForwardWriterControlResultSchema.optional(),...optionalFailureOutputShape}).strict(),
   [CURRENT_PCB_VIA_WRITE_TOOL]: z.object({ result: currentPcbViaWriteResultSchema.optional(), diagnostic: currentPcbViaWriteDiagnosticSchema.optional(),mainFailure:currentPcbViaWriteMainFailureSchema.nullable().optional(), ...optionalFailureOutputShape }).strict(),
   [CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL]: z.object({ result: currentSchematicRelevanceDisplayWriteResultSchema.optional(), diagnostic: currentSchematicRelevanceDisplayWriteDiagnosticSchema.optional(), ...optionalFailureOutputShape }).strict(),
@@ -2467,7 +2473,7 @@ registerFacadeTool(
       return queryOfflineApi(request);
     }
     return runOfflineApi(request);
-  }, undefined, true, true, true),
+  }, undefined, true, true, true, true),
 );
 
 registerFacadeTool(
@@ -5654,6 +5660,60 @@ if(facadeMode==="public-utilities-only"&&facadeToolRegistered(facadeMode,CURRENT
  },undefined,false,false,false,true));
 }
 
+/** Reprove the retained coordinator and exclusive environment across each asynchronous gate. */
+async function assertFootprintContinuationEnvironment(owner: CurrentFootprintForwardWriterCoordinator): Promise<void> {
+  const assertOriginal = (): void => {
+    if (currentFootprintForwardWriterCoordinator !== owner) { throw new Error("Original footprint coordinator changed during continuation admission."); }
+    assertFootprintForwardMethods(owner);
+    assertFreshClosedGeneratedDataEnvironment(undefined, undefined, owner);
+  };
+  assertOriginal();
+  await engine.assertDiagnosticLaunchOtherOperationsSettled();
+  assertOriginal();
+  await assertNoUnresolvedOrdinaryLaunches();
+  assertOriginal();
+}
+
+if(facadeMode==="public-utilities-only"&&facadeToolRegistered(facadeMode,CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_TOOL)){
+ registerFacadeTool(CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_TOOL,{
+  title:"Validate native cold UI absence after the original footprint inverse",
+  description:"Readonly disposable validation continuation. Selects only this same retained coordinator's genuine completed and released inverse and original cold-manager generation. Independent confirmations reserve one new cold UI generation, checkpoint and original UI task before dispatch. Original normal close, root/whole-Job exit, helper release and complete closed SQL comparison retain inspect, cleanup, publication and shutdown custody. Historical inverse V1 stays unchanged. Public SDK parity, whole inverse verification and connected acceptance remain false.",
+  inputSchema:{request:currentFootprintInverseColdUiControlActionSchema},
+  annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:false},
+ },guarded(({request})=>{
+  const run=async():Promise<{result:z.infer<typeof currentFootprintInverseColdUiControlResultSchema>}>=>{
+   const owner=currentFootprintForwardWriterCoordinator;
+   if(owner===undefined){throw new Error("Footprint cold UI continuation requires this facade's retained original completed forward coordinator.");}
+   assertFootprintForwardMethods(owner);
+   if (request.action === "execute") { await assertFootprintContinuationEnvironment(owner); }
+   const result=await footprintForwardMethods.runInverseColdUi.call(owner,request);assertFootprintForwardMethods(owner);
+   if(currentFootprintForwardWriterCoordinator!==owner){throw new Error("Original footprint cold UI coordinator changed during its action.");}
+   return {result};
+  };
+  return request.action==="execute"?runFacadeGate(run,false,false,false,true):run();
+ },undefined,false,false,false,true));
+}
+
+if(facadeMode==="public-utilities-only"&&facadeToolRegistered(facadeMode,CURRENT_FOOTPRINT_INVERSE_CONTROL_TOOL)){
+ registerFacadeTool(CURRENT_FOOTPRINT_INVERSE_CONTROL_TOOL,{
+  title:"Validate the original disposable copied-footprint inverse",
+  description:"Validation only. Execute selects this same facade's genuine completed and fully released forward/saved footprint result and requires independent disposable delete, persistence, open, debugger, cache and manager-only cold-absence confirmations. One inverse attempt is consumed before dispatch. Inspect, cleanup and settle-publication retain that same original coordinator; shutdown joins original cleanup. No source result, checkpoint, owner, callback, program, clock, replay or ordinary-project action is accepted. Native UI task absence, public SDK parity, whole inverse verification and connected validation remain false.",
+  inputSchema:{request:currentFootprintInverseControlActionSchema},
+  annotations:{readOnlyHint:false,destructiveHint:true,idempotentHint:false,openWorldHint:false},
+ },guarded(({request})=>{
+  const run=async():Promise<{result:z.infer<typeof currentFootprintInverseControlResultSchema>}>=>{
+   const owner=currentFootprintForwardWriterCoordinator;
+   if(owner===undefined){throw new Error("Footprint inverse requires this facade's retained original completed forward coordinator.");}
+   assertFootprintForwardMethods(owner);
+   if (request.action === "execute") { await assertFootprintContinuationEnvironment(owner); }
+   const result=await footprintForwardMethods.runInverse.call(owner,request);assertFootprintForwardMethods(owner);
+   if(currentFootprintForwardWriterCoordinator!==owner){throw new Error("Original footprint inverse coordinator changed during its action.");}
+   return {result};
+  };
+  return request.action==="execute"?runFacadeGate(run,false,false,false,true):run();
+ },undefined,false,false,false,true));
+}
+
 if (facadeMode === "public-utilities-only" && facadeToolRegistered(facadeMode, CURRENT_PCB_VIA_WRITE_TOOL)) {
   registerFacadeTool(CURRENT_PCB_VIA_WRITE_TOOL, {
     title: "Write one Via in an original disposable PCB fixture",
@@ -5923,7 +5983,9 @@ const shutdown = createSerializedShutdown(
 );
 const shutdownAndExit = async (): Promise<void> => {
   try {
-    await shutdown();
+    // Retired EOF closes only the original transport. Retirement has already
+    // Verified settled custody, closed the authority and released the lease.
+    await (facadeSession.inspect().state === "retired" ? server.close() : shutdown());
     process.exit(0);
   } catch {
     process.stderr.write("EasyEDA control shutdown was incomplete.\n");

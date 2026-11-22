@@ -14,6 +14,7 @@ import { CurrentPcbDiagnosticContext } from "../src/current-pcb-diagnostic-conte
 import type { CurrentPcbWorkerStartupOpeningBinding } from "../src/current-pcb-diagnostic-owner.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupDependency } from "../src/current-pcb-worker-startup-contract.ts";
+import { CurrentFootprintInverseNativeDeleteColdUiWorkerStartupTransport, CurrentFootprintInverseNativeDeleteColdWorkerStartupTransport } from "../src/current-pcb-worker-startup-transport.ts";
 import { CurrentPcb209RatlineStartupChannel } from "../src/current-pcb-209-ratline-startup-channel.ts";
 import type { CurrentPcb209RatlineStartupNativeDependency } from "../src/current-pcb-209-ratline-startup-channel.ts";
 import { CurrentPcb209RatlineBudget } from "../src/current-pcb-209-ratline-budget.ts";
@@ -136,7 +137,14 @@ async function fixture(t: TestContext, fixtureOptions: Readonly<{ syntheticCheck
     observeParent: (targets, frames): void => { context.observeTarget(targets); context.observeFrames(frames); },
     ancillaryFrame: (): null => null, observeAncillary: (): never => assert.fail("No ancillary frame"), ancillaryObservation: (): null => null });
   const openingModule = await loadModule("current-pcb-209-worker-startup-opening.ts", name => {
-    if (name === "./current-pcb-worker-startup-transport.ts") { return { CurrentPcb209WorkerStartupTransport: SyntheticConstructionTransport }; }
+    if (name === "./current-pcb-worker-startup-transport.ts") {
+      // Preserve the native siblings used by the opening's original prototype checks.
+      return {
+        CurrentPcb209WorkerStartupTransport: SyntheticConstructionTransport,
+        CurrentFootprintInverseNativeDeleteColdUiWorkerStartupTransport,
+        CurrentFootprintInverseNativeDeleteColdWorkerStartupTransport,
+      };
+    }
     if (name === "./current-pcb-209-actor-clock-source.ts") {
       return { requireCurrentPcb209ActorClockSourceQualification: (value: unknown): void => { assert.equal(value, sourceQualification); } };
     }

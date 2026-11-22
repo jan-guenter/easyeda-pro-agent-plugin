@@ -1,5 +1,10 @@
 /* oxlint-disable import/max-dependencies -- Original startup transport binds fixed source, construction, timing and result envelopes at the sole native request boundary. */
 /* oxlint-disable eslint/max-classes-per-file -- Private owner composition and fixed-generation wrappers stay together so native callers cannot inject a runner or source profile. */
+import {isOriginalFootprintExecutionDependency, isOriginalFootprintForwardExecutionDependency, isOriginalFootprintForwardWriterDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintInverseNativeDeleteColdDependency, isOriginalFootprintInverseNativeDeleteColdUiDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency, requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents} from "./current-pcb-worker-startup-channel.ts";
+import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_UI_PROFILE} from "./current-footprint-inverse-native-delete-cold-ui-profile.ts";
+import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_PROFILE}from"./current-footprint-inverse-native-delete-cold-profile.ts";
+
+
 /** Private startup owner composition, allocated only by the separate startup
  * lifecycle. It owns initial waiting/instrumentation cleanup and delegates
  * only the separately reviewed construction vocabulary after complete source
@@ -9,7 +14,7 @@ import { types } from "node:util";
 import { CURRENT_FOOTPRINT_FORWARD_COLD_NATIVE_LIMITS as FORWARD_V2 } from "./current-footprint-forward-cold-native-limits.ts";
 import { currentFootprintForwardWriterProfile } from "./current-footprint-forward-writer-profile.ts";
 import { bindFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
-import { isOriginalFootprintExecutionDependency, isOriginalFootprintForwardExecutionDependency, isOriginalFootprintForwardWriterDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency, isOriginalProjectStructureDependency, requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents } from "./current-pcb-worker-startup-channel.ts";
+
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
@@ -315,7 +320,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
    * callbacks. Caller booleans cannot upgrade an older transport to held-saved. */
   public constructor(internal: typeof INTERNAL_PROFILE, dependency: CurrentPcbWorkerStartupDependency,
     profile: DiagnosticWorkerScriptProfile, createRunner: (transport: CurrentPcbWorkerConstructionTransport) => Runner,
-    bootstrap209 = false, execution209 = false, saved209 = false, heldSaved209 = false) {
+    bootstrap209 = false, execution209 = false, saved209 = false, heldSaved209 = false,nativeDeleteCold209=false, nativeDeleteColdUi209=false) {
     if (internal !== INTERNAL_PROFILE) { throw failure("INTERNAL_PROFILE"); } this.#createRunner = createRunner;
     this.#originalMembers = members(dependency); this.#dependency = dependency;
     if (execution209 !== isOriginalFootprintExecutionDependency(dependency)) { throw failure("EXECUTION_PURPOSE"); }
@@ -323,13 +328,17 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     if (heldSaved209 !== isOriginalFootprintHeldSavedDependency(dependency) || heldSaved209 && (execution209 || saved209)) { throw failure("HELD_SAVED_PURPOSE"); }
 
 
+    if(nativeDeleteCold209!==isOriginalFootprintInverseNativeDeleteColdDependency(dependency)||nativeDeleteCold209&&(execution209||saved209||heldSaved209)){throw failure("INVERSE_NATIVE_DELETE_COLD_PURPOSE");}
+    this.#nativeDeleteCold209=nativeDeleteCold209;
+    if(nativeDeleteColdUi209!==isOriginalFootprintInverseNativeDeleteColdUiDependency(dependency)||nativeDeleteColdUi209&&(execution209||saved209||heldSaved209||nativeDeleteCold209)){throw failure("INVERSE_NATIVE_DELETE_COLD_UI_PURPOSE");}this.#nativeDeleteColdUi209=nativeDeleteColdUi209;
     this.#execution209 = execution209;
-    this.#heldSaved209 = heldSaved209;
-    const footprint = bootstrap209 && (isOriginalFootprintPreparationDependency(dependency) || saved209 || heldSaved209);
+    this.#heldSaved209=heldSaved209||nativeDeleteCold209||nativeDeleteColdUi209;
+    const footprint = bootstrap209 && (isOriginalFootprintPreparationDependency(dependency) || saved209 || heldSaved209 || nativeDeleteCold209 || nativeDeleteColdUi209);
     const writerBudget = execution209 ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
-    const savedBudget:typeof CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE|typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE=heldSaved209 ? CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE : CURRENT_FOOTPRINT_COPY_SAVED_PROFILE;
+    let savedBudget:typeof CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_UI_PROFILE|typeof CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_PROFILE|typeof CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE|typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE=heldSaved209 ? CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE : CURRENT_FOOTPRINT_COPY_SAVED_PROFILE;
+    if(nativeDeleteCold209){savedBudget=CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_PROFILE;}if(nativeDeleteColdUi209){savedBudget=CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_UI_PROFILE;}
 
-    const budget = saved209 || heldSaved209 ? savedBudget : writerBudget;
+    const budget = saved209 || heldSaved209 || nativeDeleteCold209 || nativeDeleteColdUi209 ? savedBudget : writerBudget;
     if (isOriginalFootprintForwardWriterDependency(dependency)) {
       const full = currentFootprintForwardWriterProfile(); this.#normalRequestLimit = full.renderer.requestLimit; this.#requestLimit = full.renderer.requestLimit;
     } else if (isOriginalFootprintForwardExecutionDependency(dependency)) {
@@ -971,6 +980,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       if (stage.role === "project") {
         if (this.#execution209) { this.#clockRpcProjectSource = qualifiedSource; }
 
+        if(this.#nativeDeleteCold209||this.#nativeDeleteColdUi209){this.#nativeDeleteColdSource=qualifiedSource;}
         this.#sourceQualified = true; return script;
       }
       this.#step = "source-resume"; await this.#resumeBootstrapStage(stage);
@@ -1211,6 +1221,37 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     if (failures.length > 0) { throw new AggregateError(failures, "PCB_WORKER_STARTUP_PARENT_RELEASE"); }
     this.#unsubscribe?.(); this.#unsubscribe = null; this.#released = true;
   }
+
+  readonly #nativeDeleteCold209:boolean;
+  readonly #nativeDeleteColdUi209:boolean;
+
+  #nativeDeleteColdSource:string|null=null;
+
+  public async originalNativeDeleteColdUiWorker(packet:Packet):Promise<Readonly<{
+    source:string;scriptId:string;sessionId:string;uniqueContextId:string;executionContextId:number;current:()=>void;
+  }>>{
+    if(!this.#nativeDeleteColdUi209||!isOriginalFootprintInverseNativeDeleteColdUiDependency(this.#dependency)){throw failure("INVERSE_NATIVE_DELETE_COLD_UI_ORIGINAL_TRANSPORT");}
+    const runner=await this.requireOriginal(packet);const worker=this.#worker;const context=this.#context;const script=this.#script;const source=this.#nativeDeleteColdSource;const construction=this.#constructionTransport;
+    if(worker===null||context===null||script===null||source===null||construction===null||!this.#settled||!this.#sourceQualified){throw failure("INVERSE_NATIVE_DELETE_COLD_UI_SOURCE");}
+    const current=():void=>{
+      this.#sameDependency();
+      if(this.#failure!==null||this.#released||!this.#nativeDeleteColdUi209||!this.#sourceQualified||this.#worker!==worker||this.#context!==context||this.#script!==script||this.#nativeDeleteColdSource!==source||this.#constructionTransport!==construction||this.#runner!==runner||this.#constructionCapture===null||runner.status().unresolvedBreakpoints){throw failure("INVERSE_NATIVE_DELETE_COLD_UI_SOURCE_CHANGED");}
+    };
+    current();return Object.freeze({source,scriptId:script.scriptId,sessionId:worker.sessionId,uniqueContextId:context.uniqueId,executionContextId:context.id,current});
+  }
+
+  public async originalNativeDeleteColdWorker(packet:Packet):Promise<Readonly<{
+    source:string;scriptId:string;sessionId:string;uniqueContextId:string;executionContextId:number;current:()=>void;
+  }>>{
+    if(!this.#nativeDeleteCold209||!isOriginalFootprintInverseNativeDeleteColdDependency(this.#dependency)){throw failure("INVERSE_NATIVE_DELETE_COLD_ORIGINAL_TRANSPORT");}
+    const runner=await this.requireOriginal(packet);const worker=this.#worker;const context=this.#context;const script=this.#script;const source=this.#nativeDeleteColdSource;const construction=this.#constructionTransport;
+    if(worker===null||context===null||script===null||source===null||construction===null||!this.#settled||!this.#sourceQualified){throw failure("INVERSE_NATIVE_DELETE_COLD_SOURCE");}
+    const current=():void=>{
+      this.#sameDependency();
+      if(this.#failure!==null||this.#released||!this.#nativeDeleteCold209||!this.#sourceQualified||this.#worker!==worker||this.#context!==context||this.#script!==script||this.#nativeDeleteColdSource!==source||this.#constructionTransport!==construction||this.#runner!==runner||this.#constructionCapture===null||runner.status().unresolvedBreakpoints){throw failure("INVERSE_NATIVE_DELETE_COLD_SOURCE_CHANGED");}
+    };
+    current();return Object.freeze({source,scriptId:script.scriptId,sessionId:worker.sessionId,uniqueContextId:context.uniqueId,executionContextId:context.id,current});
+  }
 }
 
 /** Type-only original owner relationship; no runtime factory/profile selector. */
@@ -1263,4 +1304,18 @@ export class CurrentFootprintCopyHeldSavedWorkerStartupTransport extends Current
     super(INTERNAL_PROFILE, dependency, { relativePath: source.relativePath, scriptBytes: source.bytes, scriptSha256: source.sha256 },
       transport => new CurrentFootprintCopyConstructionRunner(transport), true, false, false, true);
   }
+}
+
+
+export class CurrentFootprintInverseNativeDeleteColdWorkerStartupTransport extends CurrentPcbWorkerStartupTransportCore<CurrentFootprintCopyConstructionPacket,CurrentFootprintCopyConstructionRunner>{
+ public constructor(dependency:CurrentPcbWorkerStartupDependency){
+  const source=CURRENT_PCB_209_WORKER_STARTUP_SOURCE;
+  super(INTERNAL_PROFILE,dependency,{relativePath:source.relativePath,scriptBytes:source.bytes,scriptSha256:source.sha256},
+   transport=>new CurrentFootprintCopyConstructionRunner(transport),true,false,false,false,true);
+ }
+}
+
+/** Distinct original cold UI construction marker. */
+export class CurrentFootprintInverseNativeDeleteColdUiWorkerStartupTransport extends CurrentPcbWorkerStartupTransportCore<CurrentFootprintCopyConstructionPacket,CurrentFootprintCopyConstructionRunner>{
+ public constructor(dependency:CurrentPcbWorkerStartupDependency){const source=CURRENT_PCB_209_WORKER_STARTUP_SOURCE;super(INTERNAL_PROFILE,dependency,{relativePath:source.relativePath,scriptBytes:source.bytes,scriptSha256:source.sha256},transport=>new CurrentFootprintCopyConstructionRunner(transport),true,false,false,false,false,true);}
 }

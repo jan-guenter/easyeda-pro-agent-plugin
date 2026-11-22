@@ -9,14 +9,14 @@
     "packaged4197DistinctMethods": 829,
     "statuses": {
       "implemented-public-subset": 219,
-      "implemented-native-equivalent": 48,
+      "implemented-native-equivalent": 49,
       "implemented-vendor-http-equivalent": 13,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 77,
-      "omitted": 498
+      "omitted": 497
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 473,
+      "available-with-runtime-guards": 475,
       "available-with-network-guards": 16,
       "available-with-managed-file-guards": 3,
       "blocked": 96,
@@ -30,7 +30,6 @@
       "cross-tab-netlist-export-scope": 1,
       "extension-or-global-settings-state": 15,
       "external-commercial-action": 6,
-      "footprint-delete-unawaited-dispatch-and-project-selector": 1,
       "implicit-annotation-and-save-all": 2,
       "implicit-save-before-export": 5,
       "installed-209-auto-job-backend-absent": 5,
@@ -8962,67 +8961,48 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "footprint-delete-unawaited-dispatch-and-project-selector",
-        "reason": "The pinned public wrapper performs dependency checks only for literal Project; an actual project ID can skip them. Its unawaited forEach reports success before native deletion completes. The private inverse path now retains original inverse-target custody, a durable once-consumed delete intent and worker admission, mounted SDK/service dispatch and source-qualified DEL manager/collateral preparation. Its DEL callback collector advances once and holds the uninvoked service handler. These retained prefixes do not complete the original handler, dropped native delete Promise, causal worker/Main/SQL publication or collateral work. Pure SQL and saved-source models retain the original copied UUID/history and require an exact appended tombstone, complete peer invariants and independent logical absence. They support locked or independently aged heads, not a fresh unlocked copy. The copied UUID must come from the original verified forward lifecycle. Native deleteData ignores a false uploadLocal result. No returned boolean, scalar preflight, private completion codec or synthetic inverse model proves a saved deletion.",
-        "nextRequirement": "Complete the same original handler and retained native delete Promise, its causal worker request/reply and Main SQL/upload/publication drain, dependency/editor/cache eligibility and supported head state. Bind the actual delete clock to the consumed original intent/dispatch, then prove full SQL/tombstone/peer effects, original-generation closure, replay exclusion and fourth-generation fresh saved absence through an independently reopened manager. Prove the complete disposable inverse and supported failure recovery before enabling any writer; held-entry or collector completion is not whole-operation completion.",
-        "evidence": [
-          "current-footprint-delete-plan.ts",
-          "current-footprint-delete-source.ts",
-          "current-footprint-delete-sql.ts",
-          "current-footprint-delete-saved-source.ts",
-          "current-footprint-delete-sql.test.ts",
-          "current-footprint-copy-main-request-runner.ts",
-          "current-footprint-copy-main-completion-origin.ts",
-          "current-footprint-copy-main-completion-runner.ts",
-          "current-footprint-copy-main-completion.test.ts",
-          "current-footprint-copy-main-completion-runner.test.ts",
-          "current-footprint-copy-clock-rpc-native.ts",
-          "docs/history/2026-10-25-current-footprint-copy-preparation.md",
-          "docs/history/2026-10-29-footprint-recovery-and-completion.md",
-          "current-footprint-copy-main-completion-native.ts",
-          "current-footprint-copy-main-completion-wire.ts",
-          "current-footprint-copy-main-completion-wire.test.ts",
-          "current-footprint-copy-clock-rpc-budget.ts",
-          "current-footprint-copy-clock-rpc-budget.test.ts",
-          "current-footprint-clock-rpc-channel.test.ts",
-          "current-footprint-combined-actor-journal.test.ts",
-          "docs/history/2026-10-29-combined-recovery-and-native-clock.md",
-          "current-footprint-copy-main-capacity.ts",
-          "current-footprint-copy-main-capacity.test.ts",
-          "current-footprint-copy-main-completion-origin.test.ts",
-          "docs/history/2026-10-29-footprint-completion-owner-and-route.md",
-          "current-footprint-delete-trigger-programs.ts",
-          "current-footprint-delete-trigger-protocol.ts",
-          "current-footprint-delete-trigger-wire.ts",
-          "current-footprint-delete-trigger-native.ts",
-          "current-footprint-delete-trigger-source.ts",
-          "current-footprint-delete-trigger.test.ts",
-          "helpers/footprint-delete-entry-producer.ts",
-          "current-footprint-copy-create-clock-budget.ts",
-          "current-footprint-copy-create-invocation-lease.ts",
-          "current-footprint-copy-paired-scheduler.ts",
-          "current-footprint-copy-output-reservation.ts",
-          "current-footprint-copy-program-exception.ts",
-          "current-footprint-copy-native-create-wire.ts",
-          "current-footprint-copy-native-create-native.ts",
-          "docs/history/2026-10-29-footprint-create-scheduling.md",
-          "current-footprint-inverse-public-delete-intent.ts",
-          "current-footprint-inverse-public-delete-call.ts",
-          "current-footprint-inverse-delete-worker-admission.ts",
-          "current-footprint-inverse-delete-manager-collector.ts",
-          "current-footprint-inverse-delete-collateral-collector.ts",
-          "current-footprint-inverse-delete-callback-collector.ts",
-          "current-footprint-inverse-delete-callback-native.ts",
-          "current-footprint-inverse-native-fragment.ts",
-          "current-footprint-delete-observed-saved-source.ts",
-          "current-pcb-diagnostic-owner.ts",
-          "current-footprint-inverse-public-delete-intent.test.ts",
-          "current-footprint-inverse-delete-callback.test.ts"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_current_footprint_inverse",
+          "selector": "execute;original-controlled-disposable-copied-footprint-inverse",
+          "implementation": "native-task-equivalent",
+          "executionState": "available-with-runtime-guards",
+          "scope": "Controlled disposable validation. Selects the completed released copy from the same facade and requires independent delete, persistence, open, debugger, cache and cold-absence confirmations. One attempt uses the original writer and compares full closed SQL before independently checking saved manager absence. Inspect, cleanup and publication settlement retain the same operation. No public SDK parity, ordinary-project admission or connected acceptance is established.",
+          "source": [
+            "current-footprint-inverse-control-contract.ts",
+            "current-footprint-inverse-control-validation.ts",
+            "current-footprint-forward-writer-coordinator.ts",
+            "current-footprint-inverse-full-workflow.ts",
+            "current-footprint-inverse-full-workflow-journal.ts",
+            "current-footprint-inverse-full-native-generation.ts",
+            "current-footprint-inverse-native-delete-saved-generation.ts",
+            "index.ts",
+            "../../scripts/control-session-footprint-inverse-adapter.ts",
+            "../../scripts/control-session-manager.ts"
+          ],
+          "tests": [
+            "current-footprint-inverse-control.test.ts",
+            "current-footprint-inverse-full-factory.test.ts",
+            "current-footprint-inverse-full-native-generation.test.ts",
+            "current-footprint-inverse-full-workflow-journal.test.ts",
+            "control-session-manager.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "current-footprint-inverse",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -9087,6 +9067,41 @@
                 "query": {
                   "family": "library",
                   "operationAction": "library.footprint.get",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "easyeda_control_current_footprint_inverse_cold_ui",
+          "selector": "execute;original-completed-inverse-readonly-native-ui-absence",
+          "implementation": "internal-lifecycle-only",
+          "executionState": "available-with-runtime-guards",
+          "scope": "One read-only disposable continuation of the same facade's completed, released inverse. A separate birth owns the original UI, manager and worker negative task. Completion requires normal close, original root and whole-Job exit, helper release and complete closed SQL comparison. This takes no caller-supplied target or source and provides no general lookup, SDK parity, ordinary-project capability or connected acceptance. Historical inverse results retain their existing schema and values.",
+          "source": [
+            "current-footprint-inverse-cold-ui-control-contract.ts",
+            "current-footprint-inverse-cold-ui-control-validation.ts",
+            "current-footprint-inverse-cold-ui-continuation.ts",
+            "current-footprint-forward-writer-coordinator.ts",
+            "current-footprint-inverse-native-delete-saved-generation.ts",
+            "current-footprint-inverse-native-delete-cold-ui-generation.ts",
+            "index.ts",
+            "../../scripts/control-session-footprint-inverse-cold-ui-adapter.ts",
+            "../../scripts/control-session-manager.ts"
+          ],
+          "tests": [
+            "current-footprint-inverse-cold-ui-control.test.ts",
+            "current-footprint-inverse-native-delete-cold-ui-admission.test.ts",
+            "control-session-manager.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "current-footprint-inverse-cold-ui",
+                "query": {
                   "includeSchemas": true
                 }
               }

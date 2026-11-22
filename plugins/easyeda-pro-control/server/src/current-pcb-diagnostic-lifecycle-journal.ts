@@ -1923,10 +1923,13 @@ export function assertCurrentPcbDiagnosticLifecycleSnapshot(actual: readonly Dia
 }
 
 
-/** Defer the original private workflow module until after lifecycle/provider
- * initialization. Only its own private async scope may exempt its exact journal;
- * all other historical/native launch blockers remain independent. */
-async function assertCompleteFootprintWorkflowIsolation():Promise<void>{
- const original=await import("./current-footprint-forward-writer-workflow.ts");
- await original.assertNoUnresolvedCurrentFootprintForwardWriterWorkflowIsolation();
+/** Load the separate workflow guards after module initialization. Each may
+ * exempt its own exact journal only within its retained private async scope. */
+async function assertCompleteFootprintWorkflowIsolation(): Promise<void> {
+  const forward = await import("./current-footprint-forward-writer-workflow.ts");
+  await forward.assertNoUnresolvedCurrentFootprintForwardWriterWorkflowIsolation();
+  const inverse = await import("./current-footprint-inverse-full-workflow.ts");
+  await inverse.assertNoUnresolvedCurrentFootprintInverseFullWorkflows();
+  const coldUi = await import("./current-footprint-inverse-native-delete-cold-ui-generation.ts");
+  await coldUi.assertNoUnresolvedCurrentFootprintInverseNativeDeleteColdUis();
 }

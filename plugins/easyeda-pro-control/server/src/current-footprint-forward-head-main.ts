@@ -43,6 +43,7 @@ export class CurrentFootprintForwardHeadMain {
   #arming: Site | null = null;
   #armed = false; #captured = false; #readAttempted = false;
   #sql: string | null = null;
+  #sharesSelectedSql = false;
   #after: string | null = null;
   #open: string | null = null;
   #reader: CurrentFootprintForwardHeadController | null = null;
@@ -78,10 +79,8 @@ export class CurrentFootprintForwardHeadMain {
     this.#arming = "afterImports";
     const after = point.parse(await this.#host.request({ phase: "forward-head-sql", command: { phase: "sql-fence-after-imports-arm", method: "Debugger.setBreakpoint",
       params: { location: { scriptId: this.#scriptId, lineNumber: SQL_SOURCE.sites.afterImports.lineNumber, columnNumber: SQL_SOURCE.sites.afterImports.breakpointColumnNumber } } } }, false));
-    this.#after = after.breakpointId; this.#remember(after.breakpointId, "afterImports", after.actualLocation); this.#arming = "open";
-    const open = point.parse(await this.#host.request({ phase: "forward-head-open", command: { phase: "arm", method: "Debugger.setBreakpoint", params: {
-      location: { scriptId: this.#scriptId, lineNumber: OPEN.lineNumber, columnNumber: OPEN.columnNumber } } } }, false));
-    this.#open = open.breakpointId; this.#remember(open.breakpointId, "open", open.actualLocation); this.#arming = null;
+    this.#after = after.breakpointId; this.#remember(after.breakpointId, "afterImports", after.actualLocation);
+    await this.#armOpen();
     await this.#remove(EARLY); await this.#host.resume(initial); this.#same();
     const held = await this.#host.waitPause("afterImports"); this.#same();
     const frame = object.parse(await this.#host.request({ phase: "forward-head-sql", command: { phase: "sql-fence-frame", site: "afterImports", method: "Debugger.evaluateOnCallFrame",
@@ -101,6 +100,28 @@ export class CurrentFootprintForwardHeadMain {
     yes.parse(await this.#host.request({ phase: "forward-head-sql", command: { phase: "sql-fence-require", method: "Runtime.callFunctionOn",
       params: { ...CALL, objectId: this.#sql, functionDeclaration: SQL_REQUIRE, arguments: [], returnByValue: true } } }, false));
     this.#same(); need(this.#after !== null, "ORIGINAL_AFTER_POINT"); await this.#remove(this.#after); await this.#host.resume(held); this.#same();
+  }
+  /** Reuse the same runner's original SQL capture during its after-imports hold. */
+  public async captureSelectedSql(scriptId: string, originalSql: string): Promise<void> {
+    this.#same();
+    need(!this.#armed && !this.#captured && this.#sql === null, "CAPTURE_CONSUMED");
+    this.#armed = true;
+    this.#captured = true;
+    this.#sharesSelectedSql = true;
+    this.#scriptId = handle.parse(scriptId);
+    this.#sql = handle.parse(originalSql);
+    const source = await this.#host.qualifySource(this.#scriptId);
+    this.#same(); qualifyCurrentFootprintForwardHeadSource(source);
+    await this.#armOpen();
+  }
+  async #armOpen(): Promise<void> {
+    this.#same();
+    need(this.#scriptId !== null && this.#open === null, "ORIGINAL_OPEN_POINT");
+    this.#arming = "open";
+    const open = point.parse(await this.#host.request({ phase: "forward-head-open", command: { phase: "arm", method: "Debugger.setBreakpoint", params: {
+      location: { scriptId: this.#scriptId, lineNumber: OPEN.lineNumber, columnNumber: OPEN.columnNumber } } } }, false));
+    this.#open = open.breakpointId; this.#remember(open.breakpointId, "open", open.actualLocation); this.#arming = null;
+    this.#same();
   }
   async #remove(breakpointId: string): Promise<void> {
     need(this.#points.has(breakpointId), "ORIGINAL_REMOVE"); z.strictObject({}).parse(await this.#host.request({ phase: "forward-head-open", command: {
@@ -127,7 +148,9 @@ export class CurrentFootprintForwardHeadMain {
       } }), { before: this.#host.source.before, sourcePlan: this.#host.source.sourcePlan, reference: this.#host.source.reference,
       frameObjectId: frame.result.objectId, sqlScopeObjectId: this.#sql, constructionObjectId: this.#host.constructionObjectId() });
     this.#reader = reader; this.#packet = await reader.observe(); this.#same(); await reader.release(); this.#same();
-    z.strictObject({}).parse(await this.#host.request({ phase: "forward-head-open", command: { phase: "release", method: "Runtime.releaseObjectGroup", params: { objectGroup: FRAME.objectGroup } } }, true));
+    if (!this.#sharesSelectedSql) {
+      z.strictObject({}).parse(await this.#host.request({ phase: "forward-head-open", command: { phase: "release", method: "Runtime.releaseObjectGroup", params: { objectGroup: FRAME.objectGroup } } }, true));
+    }
     this.#same(); return this.#packet;
   }
 }

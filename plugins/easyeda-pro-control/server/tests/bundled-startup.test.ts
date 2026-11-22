@@ -134,7 +134,7 @@ void describe("self-contained packaged machine startup", () => {
     const pid = transport.pid; assert.ok(pid !== null);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), ["easyeda_control_api", "easyeda_control_calculate",
-      "easyeda_control_catalog_components", "easyeda_control_catalog_footprint", "easyeda_control_current_footprint_forward_write", "easyeda_control_current_pcb_via_write", "easyeda_control_current_schematic_relevance_display_write", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell",
+      "easyeda_control_catalog_components", "easyeda_control_catalog_footprint", "easyeda_control_current_footprint_forward_write", "easyeda_control_current_footprint_inverse", "easyeda_control_current_footprint_inverse_cold_ui", "easyeda_control_current_pcb_via_write", "easyeda_control_current_schematic_relevance_display_write", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell",
       "easyeda_control_fixture_data", "easyeda_control_fixture_import", "easyeda_control_launch", "easyeda_control_library_files", "easyeda_control_native_release", "easyeda_control_netlist_files", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup", "easyeda_control_public_readers", "easyeda_control_session", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system"]);
     const startup = await api(client, { action: "pcb209-worker-startup", query: { includeSchemas: true } });
     assert.equal(startup["executionAuthorized"], false); assert.equal(startup["saveAuthorized"], false);

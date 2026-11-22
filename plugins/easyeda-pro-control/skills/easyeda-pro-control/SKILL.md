@@ -31,6 +31,9 @@ For disposable validation of the separately born v2 footprint owner, read
 [the source-validation workflow](references/current-footprint-forward-source-validation.md).
 It retains original capture, checkpoint and source sealing through its own
 cleanup; all execution and Save authority remains false.
+For a controlled disposable footprint copy, use [the forward workflow](references/current-footprint-forward-write.md).
+The [separate inverse and cold UI continuation](references/current-footprint-inverse.md)
+require the original completed and released predecessor from the same facade.
 For new fixed Via or Line/Via validation projects, read
 [generated fixture import](references/managed-fixture-import.md). Import uses
 the original ordinary launch, exclusive native destination and tracked Promise;
