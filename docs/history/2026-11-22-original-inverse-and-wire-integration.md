@@ -297,3 +297,9 @@ Crossing a legacy and V4 program refused, and the original legacy native
 serialization source retained its exact digest. These checks qualify the
 source and frame encoding. Connected copy and inverse proof still depend
 on the original post-attachment transport.
+
+The V5 copied stage now applies the inherited 6,910-request V4 ceiling
+at both the host decoder and the packaged helper. The focused fixture
+accepted request 6,910 and refused 6,911 in that stage. The original V5
+title and discovery lanes still accepted their separately budgeted
+request 6,911.
