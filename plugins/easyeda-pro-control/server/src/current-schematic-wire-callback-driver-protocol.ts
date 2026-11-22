@@ -1,3 +1,9 @@
+import {validateCurrentSchematicWirePostconditionCommand} from "./current-schematic-wire-postcondition-protocol.ts";
+ import type {CurrentSchematicWirePostconditionCommand} from "./current-schematic-wire-postcondition-protocol.ts";
+ import {validateCurrentSchematicWireActionCompleteCommand} from "./current-schematic-wire-action-complete-protocol.ts";
+import type {CurrentSchematicWireActionCompleteCommand} from "./current-schematic-wire-action-complete-protocol.ts";
+import {validateCurrentSchematicWireTickBodyCommand} from "./current-schematic-wire-tick-body-protocol.ts";
+import type {CurrentSchematicWireTickBodyCommand} from "./current-schematic-wire-tick-body-protocol.ts";
 import {validateCurrentSchematicWireRunnerReturnCommand} from "./current-schematic-wire-runner-return-protocol.ts";
 import type {CurrentSchematicWireRunnerReturnCommand} from "./current-schematic-wire-runner-return-protocol.ts";
 import {validateCurrentSchematicWireSetterReturnCommand} from "./current-schematic-wire-setter-return-protocol.ts";
@@ -84,10 +90,13 @@ const ownSchema=z.union([
  z.strictObject({phase:z.literal("wire-callback-driver-remove"),method:z.literal("Debugger.removeBreakpoint"),params:removeParams}),
 ]);
 export type CurrentSchematicWireCallbackDriverOwnCommand=Readonly<z.infer<typeof ownSchema>>;
-export type CurrentSchematicWireCallbackDriverCommand=CurrentSchematicWireRunnerReturnCommand|CurrentSchematicWireSetterReturnCommand|CurrentSchematicWireChildDataCommand|CurrentSchematicWirePointEffectCommand|CurrentSchematicWireFirstChildAttrCommand|CurrentSchematicWireFirstChildDependencyCommand|CurrentSchematicWireGroupChildCommand|CurrentSchematicWireGroupDataReturnCommand|CurrentSchematicWireGroupDataDependencyCommand|CurrentSchematicWireGroupDataHookCommand|CurrentSchematicWireGroupExecutionCommand|CurrentSchematicWireGroupPreparationCommand|CurrentSchematicWireGroupMethodCommand|CurrentSchematicWireHistoryGroupCommand|CurrentSchematicWireAttrHistoryCommand|CurrentSchematicWireParentAttrCommand|CurrentSchematicWireInheritedParentCommand|CurrentSchematicWireCommonParentCommand|CurrentSchematicWireAddCommonCommand|CurrentSchematicWireBboxAddCommand|CurrentSchematicWireViewBboxCommand|CurrentSchematicWireCallbackAstViewCommand|CurrentSchematicWireCallbackDriverOwnCommand|CurrentSchematicWireCallbackCommand|CurrentSchematicWireConstructCommand|CurrentSchematicWireTransitionCommand;
+export type CurrentSchematicWireCallbackDriverCommand=CurrentSchematicWirePostconditionCommand|CurrentSchematicWireActionCompleteCommand|CurrentSchematicWireTickBodyCommand|CurrentSchematicWireRunnerReturnCommand|CurrentSchematicWireSetterReturnCommand|CurrentSchematicWireChildDataCommand|CurrentSchematicWirePointEffectCommand|CurrentSchematicWireFirstChildAttrCommand|CurrentSchematicWireFirstChildDependencyCommand|CurrentSchematicWireGroupChildCommand|CurrentSchematicWireGroupDataReturnCommand|CurrentSchematicWireGroupDataDependencyCommand|CurrentSchematicWireGroupDataHookCommand|CurrentSchematicWireGroupExecutionCommand|CurrentSchematicWireGroupPreparationCommand|CurrentSchematicWireGroupMethodCommand|CurrentSchematicWireHistoryGroupCommand|CurrentSchematicWireAttrHistoryCommand|CurrentSchematicWireParentAttrCommand|CurrentSchematicWireInheritedParentCommand|CurrentSchematicWireCommonParentCommand|CurrentSchematicWireAddCommonCommand|CurrentSchematicWireBboxAddCommand|CurrentSchematicWireViewBboxCommand|CurrentSchematicWireCallbackAstViewCommand|CurrentSchematicWireCallbackDriverOwnCommand|CurrentSchematicWireCallbackCommand|CurrentSchematicWireConstructCommand|CurrentSchematicWireTransitionCommand;
 export function validateCurrentSchematicWireCallbackDriverCommand(input:unknown):CurrentSchematicWireCallbackDriverCommand{
  const raw=capture(input).value;
  if(raw===null||typeof raw!=="object"||!("phase"in raw)||typeof raw.phase!=="string"){throw new Error("WIRE_CALLBACK_DRIVER_PHASE");}
+ if(raw.phase.startsWith("wire-postcondition-")){return validateCurrentSchematicWirePostconditionCommand(raw);}
+ if(raw.phase.startsWith("wire-action-complete-")){return validateCurrentSchematicWireActionCompleteCommand(raw);}
+ if(raw.phase.startsWith("wire-tick-body-")){return validateCurrentSchematicWireTickBodyCommand(raw);}
  if(raw.phase.startsWith("wire-runner-return-")){return validateCurrentSchematicWireRunnerReturnCommand(raw);}
  if(raw.phase.startsWith("wire-setter-return-")){return validateCurrentSchematicWireSetterReturnCommand(raw);}
   if(raw.phase.startsWith("wire-child-data-")){return validateCurrentSchematicWireChildDataCommand(raw);}

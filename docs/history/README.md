@@ -1359,3 +1359,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [Isolated inverse native build inputs](2026-11-17-isolated-inverse-native-inputs.md). Additive V4/cold-UI canonical sources, build outputs and isolated metadata; curated source foundations with runtime validation deferred.
 
 - [Packaged inverse compiler smoke](2026-11-22-packaged-inverse-compiler-smoke.md), direct Windows PowerShell 5.1 verification of both exact packaged helpers and their empty-Job receipts.
+
+- [PR 223 review prerequisite A](2026-11-22-pr223-review-prerequisite-a.md) — unmounted Wire source closure, unchanged marketplace metadata and a separately reviewable integration backlog.
