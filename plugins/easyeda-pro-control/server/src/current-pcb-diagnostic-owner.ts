@@ -1212,7 +1212,8 @@ import { CURRENT_PROJECT_SAVE_PRODUCER_CACHE_CALLERS, currentProjectSaveProducer
 import type { CurrentProjectSaveProducerCacheCaller } from "./current-project-save-producer-cache-source.ts";
 import { CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_ARRAY_LENGTH, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_PROFILES, CURRENT_NATIVE_CACHE_RESPONSE_INTRINSIC_CALLS as PRODUCER_INTRINSICS, decodeCurrentNativeCacheResponseIntrinsic } from "./current-native-cache-response-intrinsics.ts";
 
-import { observeCurrentPcb209StartPageCandidate } from "./current-pcb-209-start-page-selection.ts";
+import { observeCurrentPcb209StartPageCandidate, proveCurrentPcb209OriginalStartPageRoster } from "./current-pcb-209-start-page-selection.ts";
+import type { CurrentPcb209OriginalStartPageRoster } from "./current-pcb-209-start-page-selection.ts";
 import { currentPcbViaSavedStartPageNativeFrame } from "./current-pcb-via-saved-start-page-protocol.ts";
 import { currentPcbViaSavedSceneNativeFrame } from "./current-pcb-via-saved-scene-protocol.ts";
 import { currentPcbViaSavedModelNativeFrame } from "./current-pcb-via-saved-model-protocol.ts";
@@ -4026,6 +4027,7 @@ class CurrentPcbRetainedOwnerCore {
   #framesConsumed = false;
   #scriptConsumed = false;
   #browserTargets: readonly Readonly<RecordValue>[] | null = null;
+  #originalStartPageRoster: CurrentPcb209OriginalStartPageRoster | null = null;
   #stagedContext: CurrentPcbDiagnosticContext | null = null;
   #stagedAttachment: Readonly<{ targetId: string; sessionId: string }> | null = null;
   #workerContext: CurrentPcbDiagnosticWorkerContext | null = null;
@@ -5179,6 +5181,16 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
   public getVersion(): Promise<RecordValue> { return this.#discover("version"); }
   public getTargets(): Promise<RecordValue> { return this.#discover("targets"); }
 
+  #originalStartPageExecutable(): string | null {
+    if (footprintForwardWriterCompleteFactories.has(this)) { assertOriginalCurrentFootprintForwardWriterCompleteNativeOwner(this); }
+    else if (footprintInverseV4Factories.get(this)?.allocation.sourceKind === "full") { assertOriginalCurrentFootprintInverseFullNativeContinuationV4Owner(this); }
+    else { return null; }
+    const executable = this.#installation?.plan.files[0];
+    if (executable === undefined || !this.#launchSucceeded || this.#binding === null) { throw error("PCB209_START_PAGE_INSTALLATION"); }
+    // The original launch compared this immutable file pin and retained its native file lease.
+    return executable.windowsPath;
+  }
+
   /** One fixed browser sample. No attachment, bridge startup or profile claim. */
   public async browserObservation(): Promise<Readonly<RecordValue>> {
     if (this.#browserObservationConsumed || this.#inspectionConsumed) { throw error("BROWSER_OBSERVATION_CONSUMED"); }
@@ -5190,10 +5202,14 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
           Object.values(version).some(value => typeof value !== "string" || value.length > 8192 || value.includes("\0"))) {
         throw error("BROWSER_VERSION_REPLY");
       }
-      this.#browserTargets = diagnosticTargetInventory(await this.#transfer(() => this.#pipe.getTargets(), completeWriter ? "browser" : "default"));
+      const inventory = diagnosticTargetInventory(await this.#transfer(() => this.#pipe.getTargets(), completeWriter ? "browser" : "default"));
+      const executable = this.#originalStartPageExecutable();
+      const roster = executable === null ? null : proveCurrentPcb209OriginalStartPageRoster(inventory, executable);
+      this.#originalStartPageRoster = roster;
+      this.#browserTargets = inventory;
       if (bornFootprintTransport(this.#purpose) || heldCachePurpose(this.#purpose)) { this.#savedCacheBrowserVersion = Object.freeze(structuredClone(version)); }
       return diagnosticBoundedObservation({ schema: "easyeda-pro-control.pcb-diagnostic-browser-observation.v1", version: structuredClone(version),
-        targets: this.#browserTargets.map(value => diagnosticTargetSummary(value)), projectFreeVerified: false, profileIsolated: false,
+        targets: roster === null ? inventory.map(value => diagnosticTargetSummary(value)) : [roster.editor], projectFreeVerified: false, profileIsolated: false,
         debuggerSocketAbsenceVerified: false, bridgeAuthentication: false, executionAuthorized: false });
     } catch (caughtError) { this.#input.emit("error", error("BROWSER_OBSERVATION_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
@@ -5294,13 +5310,20 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
    * IDs. This original context/event sink stays retained between tool calls. */
   public async inspectFrames(targetId: string): Promise<Readonly<RecordValue>> {
     if (this.#framesConsumed || this.#inspectionConsumed || this.#browserTargets === null) { throw error("FRAME_INSPECTION_UNAVAILABLE"); }
-    const original = this.#browserTargets.find(item => item["targetId"] === targetId);
-    if (original?.["type"] !== "page" || original["attached"] !== false) { throw error("FRAME_TARGET_UNOBSERVED"); }
+    const original = this.#browserTargets.find(item => item["targetId"] === targetId), roster = this.#originalStartPageRoster;
+    if (original?.["type"] !== "page" || original["attached"] !== false || roster !== null && roster.editor.targetId !== targetId) {
+      throw error("FRAME_TARGET_UNOBSERVED");
+    }
     this.#enter(true); this.#framesConsumed = true;
     const context = new CurrentPcbDiagnosticContext(targetId); this.#stagedContext = context;
     try {
       const targets = await this.#transfer(() => this.#pipe.getTargets());
       const currentInventory = diagnosticTargetInventory(targets);
+      if (roster !== null) {
+        const executable = this.#originalStartPageExecutable();
+        if (executable === null) { throw error("FRAME_TARGET_CHANGED"); }
+        proveCurrentPcb209OriginalStartPageRoster(currentInventory, executable, roster);
+      }
       if (JSON.stringify(currentInventory.find(item => item["targetId"] === targetId)) !== JSON.stringify(original)) {
         const refusal = error("FRAME_TARGET_CHANGED");
         if (heldCachePurpose(this.#purpose)) { issueCurrentFootprintHeldCacheFrameTargetTransition(refusal, this.#browserTargets, currentInventory, targetId); }
