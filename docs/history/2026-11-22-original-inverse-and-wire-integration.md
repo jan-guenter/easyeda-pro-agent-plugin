@@ -254,6 +254,14 @@ Diagnostic target summaries omit query strings and fragments from local
 file URLs. The same owner continues to use the original target values
 internally when checking identity.
 
+The renderer-only launch spent most of its wall time in the existing
+admission checks before it opened EasyEDA. Live process counters showed
+another 4.83 GB of reads during one sample interval. The guarded
+artifact scan streams and verifies bytes even when its projected summary
+is cached. Two adjacent diagnostic traversals could share one
+descriptor-checked result. The separate safety checks across
+installation and allocation still require fresh evidence.
+
 ## Compile-only Wire V6 composition
 
 The optional generator composed the early and late bounded native

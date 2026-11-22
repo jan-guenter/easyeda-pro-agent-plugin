@@ -5370,6 +5370,14 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
       context.selectTarget(targets);
       await this.#attach(context, targetId, polling);
       if (polling === "startup") {
+        const originalVersion = this.#savedCacheBrowserVersion;
+        if (originalVersion === null) { throw error("FORWARD_WRITER_ORIGINAL_BROWSER_VERSION"); }
+        context.assertCurrent();
+        const version = await this.#transfer(() => this.#pipe.getVersion(), polling);
+        if (this.#savedCacheBrowserVersion !== originalVersion || canonicalJson(version) !== canonicalJson(originalVersion)) {
+          throw error("FORWARD_WRITER_ORIGINAL_BROWSER_VERSION");
+        }
+        context.assertCurrent();
         context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree(), polling));
       }
       const page = await this.#transfer(() => this.#pipe.enablePage(), polling);

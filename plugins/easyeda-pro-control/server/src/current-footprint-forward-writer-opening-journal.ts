@@ -10,7 +10,9 @@ import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, s
 import type { UnknownRecord } from "./core.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import { CURRENT_COMPLETE_FORWARD_STARTUP_METHODS, CURRENT_COMPLETE_FORWARD_STARTUP_READ, CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULE, CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE } from "./current-footprint-forward-writer-startup-transport.ts";
+import { CURRENT_COMPLETE_FORWARD_STARTUP_METHODS, CURRENT_COMPLETE_FORWARD_STARTUP_READ,
+  CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULES, CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE,
+  currentCompleteForwardStartupEvidenceMethod } from "./current-footprint-forward-writer-startup-transport.ts";
 import { CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_BUDGET as BUDGET, CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_NORMAL_STAGES as NORMAL,
   CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_PRODUCER_STEPS as PRODUCER_STEPS, CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_PROFILE as PROFILE,
   currentFootprintForwardWriterOpeningIdSchema, currentFootprintForwardWriterOpeningRecordSchema,
@@ -20,8 +22,6 @@ import type { CurrentFootprintForwardWriterOpeningRecord as Entry, CurrentFootpr
 
 const PREFIX = "footprint-forward-writer-";
 const MAX_RECORDS = BUDGET.records;
-// Preserve request identities in older private discovery records.
-const priorFrameDiscoveryMethods = new Map<number, string>([[5, "Page.enable"], [6, "Page.getFrameTree"]]);
 const BUDGET_SHA256 = sha256Json(BUDGET);
 const TERMINAL = new Set<Phase>(["release-result", "cleanup-before-launch", "cleanup-unlaunched-owner", "cleanup-no-process", "cleanup-no-allocation", "cleanup-unowned-helper"]);
 function need(condition: boolean, code: string): asserts condition { if (!condition) { throw new Error(`FORWARD_WRITER_JOURNAL_${code}`); } }
@@ -38,7 +38,7 @@ function cleanupEvidence(entry: Entry): void {
        const rendererTransport = z.strictObject({ writeAcknowledged: z.boolean(),
          rendererPolls: z.number().int().min(0).max(CURRENT_COMPLETE_FORWARD_STARTUP_READ.maximumPolls), rendererBytesObserved: z.boolean() });
        const browser = z.strictObject({ method: z.enum(CURRENT_COMPLETE_FORWARD_STARTUP_METHODS).nullable(),
-         schedule: z.literal(CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULE).optional(),
+         schedule: z.enum(CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULES).optional(),
          requestId: z.number().int().min(1).max(CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE.length).nullable().optional(),
          deadline: z.boolean(), mainPause: z.enum(["forward-head", "selected-sql", "registration", "other"]).nullable().optional(),
          versionTransport: rendererTransport.optional(), openingTransport: rendererTransport.optional(), windowPresent: z.boolean().nullable().optional(),
@@ -54,11 +54,8 @@ function cleanupEvidence(entry: Entry): void {
           const requestId = evidence?.requestId;
           if (requestId === undefined || requestId === null) {
             if (evidence?.openingTransport !== undefined) { context.addIssue({ code: "custom", message: "Renderer transport evidence requires a request" }); }
-          } else {
-            const priorMethod = evidence?.schedule === undefined ? priorFrameDiscoveryMethods.get(requestId) : undefined;
-            if ((priorMethod ?? CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE[requestId - 1]) !== evidence?.method) {
-              context.addIssue({ code: "custom", message: "Renderer evidence request and method disagree" });
-            }
+          } else if (currentCompleteForwardStartupEvidenceMethod(requestId, evidence?.schedule) !== evidence?.method) {
+            context.addIssue({ code: "custom", message: "Renderer evidence request and method disagree" });
           }
         }).parse(entry.evidence); break;
     }

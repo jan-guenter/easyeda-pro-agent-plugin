@@ -6,9 +6,10 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { CurrentFootprintCopyForwardDiscoveryPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import { CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULE, currentCompleteForwardStartupEvidenceMethod } from "../src/current-footprint-forward-writer-startup-transport.ts";
 import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringWorkerCommand } from "../src/current-pcb-string-commands.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
-import { CURRENT_RENDERER_CAPTURE_PARAMS, DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticNativeRequest, diagnosticPadShapes209Params, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticWorkerEvaluationParams, visualDiagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
+import { CURRENT_RENDERER_CAPTURE_PARAMS, DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticNativeRequest, diagnosticPadShapes209Params, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticWorkerEvaluationParams, visualDiagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 
 /** Real Node byte streams only, with no Windows process, application, bridge,
  * filesystem, socket or native process-owner authority in these tests. */
@@ -275,11 +276,18 @@ void test("complete forward discovery extends the fixed Start Page sequence and 
   const value = fixture(context, false, false, true);
   const { pipe } = value;
   const sessionId = "original-session";
+  const methods = [
+    "Browser.getVersion", "Target.getTargets", "Target.getTargets", "Target.attachToTarget", "Browser.getVersion",
+    "Page.getFrameTree", "Page.enable", "Target.getTargets", "Page.getFrameTree", "Target.getTargets", "Page.getFrameTree",
+    "Runtime.enable", "Debugger.enable", "Debugger.getScriptSource", "Target.getTargets", "Page.getFrameTree",
+  ] as const;
+  const browserVersion = { protocolVersion: "1.3", product: "Chromium/original", revision: "r", userAgent: "agent", jsVersion: "original" };
   const steps = [
-    [pipe.getVersion.bind(pipe), {}, false],
+    [pipe.getVersion.bind(pipe), browserVersion, false],
     [pipe.getTargets.bind(pipe), {}, false],
     [pipe.getTargets.bind(pipe), {}, false],
     [pipe.attachTarget.bind(pipe, "original-target", (): never => assert.fail("Unexpected startup event")), { sessionId }, false],
+    [pipe.getVersion.bind(pipe), browserVersion, false],
     [pipe.getFrameTree.bind(pipe), {}, true],
     [pipe.enablePage.bind(pipe), {}, true],
     [pipe.getTargets.bind(pipe), {}, false],
@@ -292,10 +300,20 @@ void test("complete forward discovery extends the fixed Start Page sequence and 
     [pipe.getTargets.bind(pipe), {}, false],
     [pipe.getFrameTree.bind(pipe), {}, true],
   ] as const;
+  const specialParams = new Map<string, object>([
+    ["Target.attachToTarget", { targetId: "original-target", flatten: true }],
+    ["Debugger.enable", { maxScriptsCacheSize: DIAGNOSTIC_SOURCE_FRAME_BYTES }],
+    ["Debugger.getScriptSource", { scriptId: "source-original" }],
+  ]);
   for (const [offset, [request, result, session]] of steps.entries()) {
     const id = offset + 1;
+    const method = methods[offset];
+    assert.ok(method !== undefined);
+    const params = specialParams.get(method) ?? (session ? {} : undefined);
     const pending = request();
-    context.mock.timers.tick(id === 13 ? 15_001 : 5001);
+    assert.deepEqual(value.sent[offset], wire({ id, method, ...(params === undefined ? {} : { params }), ...(session ? { sessionId } : {}) }));
+    assert.equal(currentCompleteForwardStartupEvidenceMethod(id, CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULE), method);
+    context.mock.timers.tick(method === "Debugger.getScriptSource" ? 15_001 : 5001);
     assert.equal(pipe.status().pendingRequestId, id);
     value.input.write(wire({ id, result, ...(session ? { sessionId } : {}) }));
     await pending;
@@ -303,7 +321,14 @@ void test("complete forward discovery extends the fixed Start Page sequence and 
   const next = assert.rejects(pipe.getTargets(), /PIPE_DEADLINE/u);
   context.mock.timers.tick(5001);
   await next;
-  assert.equal(value.sent.length, 16);
+  assert.equal(value.sent.length, 17);
+  const frameTreeFirst = "frame-tree-before-page-events";
+  const oldPrefix = methods.slice(0, 4), oldSuffix = methods.slice(7);
+  const historicRequestIds = Array.from({ length: 16 }, (_, index) => index + 1);
+  assert.deepEqual(historicRequestIds.map(id => currentCompleteForwardStartupEvidenceMethod(id)),
+    [...oldPrefix, "Page.enable", "Page.getFrameTree", ...oldSuffix, undefined]);
+  assert.deepEqual(historicRequestIds.map(id => currentCompleteForwardStartupEvidenceMethod(id, frameTreeFirst)),
+    [...oldPrefix, "Page.getFrameTree", "Page.enable", ...oldSuffix, undefined]);
 });
 
 void test("diagnostic pipe rejects every contradictory or unsolicited response envelope", async context => {
