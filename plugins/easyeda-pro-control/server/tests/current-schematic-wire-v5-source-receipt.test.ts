@@ -123,18 +123,18 @@ void test("V5 opening retains one exact acknowledged navigation with the existin
   const pending = fixture.pipe.observeSchematicWireV5Navigation(binding, target, value => { receipts.push(value); });
   const observed = Promise.allSettled([pending]);
   const original = receipts[0]; assert.ok(original !== undefined);
-  const command = currentSchematicWireWriterV5NativeCommand("navigate", binding, target);
-  assert.deepEqual(writes[1], wire({ id: 2, ...command, sessionId: session }));
+  const navigationCommand = currentSchematicWireWriterV5NativeCommand("navigate", binding, target);
+  assert.deepEqual(writes[1], wire({ id: 2, ...navigationCommand, sessionId: session }));
   assert.equal(fixture.pipe.status().requestCount, 2);
-  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, target), /NOT_ORIGINAL_PENDING/u);
+  assert.throws(() => { fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, target); }, /NOT_ORIGINAL_PENDING/u);
 
   fixture.acknowledge();
   await setImmediate();
   fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, target);
-  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(pending, session, binding, target), /NOT_ORIGINAL_PENDING/u);
-  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, "other", binding, target), /NOT_ORIGINAL_PENDING/u);
-  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, "other", target), /CONTEXT_CHANGED/u);
-  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, { ...target, pageUuid: "f".repeat(32) }), /CONTEXT_CHANGED/u);
+  assert.throws(() => { fixture.pipe.requireOriginalSchematicWireV5NavigationPending(pending, session, binding, target); }, /NOT_ORIGINAL_PENDING/u);
+  assert.throws(() => { fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, "other", binding, target); }, /NOT_ORIGINAL_PENDING/u);
+  assert.throws(() => { fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, "other", target); }, /CONTEXT_CHANGED/u);
+  assert.throws(() => { fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, { ...target, pageUuid: "f".repeat(32) }); }, /CONTEXT_CHANGED/u);
   await assert.rejects(fixture.pipe.getVersion(), /RETAINED_PENDING_SCOPE/u);
   assert.equal(writes.length, 2);
 
@@ -142,7 +142,7 @@ void test("V5 opening retains one exact acknowledged navigation with the existin
   const [outcome] = await observed;
   assert.ok(outcome?.status === "fulfilled");
   assert.equal(outcome.value, await original);
-  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, target), /NOT_ORIGINAL_PENDING/u);
+  assert.throws(() => { fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, target); }, /NOT_ORIGINAL_PENDING/u);
   await assert.rejects(fixture.pipe.observeSchematicWireV5Navigation(binding, target, (): void => { assert.fail("Unexpected retry"); }), /NAVIGATION_CONSUMED/u);
   assert.equal(writes.length, 2);
 
@@ -152,5 +152,5 @@ void test("V5 opening retains one exact acknowledged navigation with the existin
   const rejected = assert.rejects(failed, /PIPE_OUTPUT/u);
   broken.acknowledge(new Error("inert native write refusal"));
   await rejected;
-  assert.throws(() => broken.pipe.requireOriginalSchematicWireV5NavigationPending(failedOriginal, session, binding, target), /NOT_ORIGINAL_PENDING/u);
+  assert.throws(() => { broken.pipe.requireOriginalSchematicWireV5NavigationPending(failedOriginal, session, binding, target); }, /NOT_ORIGINAL_PENDING/u);
 });

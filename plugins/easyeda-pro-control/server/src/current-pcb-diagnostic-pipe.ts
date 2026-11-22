@@ -1440,8 +1440,15 @@ class CurrentPcbFixedPipeCore {
     if (!this.#schematicWireWriterV5Purpose || this.#sessionId === null || typeof retain !== "function" || types.isProxy(retain)) {
       throw new Error("WIRE_V5_NAVIGATION_ORIGINAL_PIPE");
     }
+    const sessionId = this.#sessionId;
     const command = currentSchematicWireWriterV5NativeCommand("navigate", binding, target);
-    return this.#request({ id: this.#nextId, ...command, sessionId: this.#sessionId }, "schematic-display-navigate", retain);
+    const parameters = canonicalJson(command.params);
+    return this.#request({ id: this.#nextId, ...command, sessionId }, "schematic-display-navigate", pending => {
+      const slot = this.#viaRetainedPending;
+      if (slot?.sessionId !== sessionId || this.#wireV5Navigation !== null) { throw new Error("WIRE_V5_NAVIGATION_ORIGINAL_SLOT"); }
+      this.#wireV5Navigation = Object.freeze({ slot, pending, parameters });
+      retain(pending);
+    });
   }
 
   protected requireSchematicWireV5NavigationPendingCommand(
@@ -2215,8 +2222,7 @@ class CurrentPcbFixedPipeCore {
     if(this.#inverseNativeReferenceNextPending!==null&&!(this.#inverseNativeLifecycle&&(phase==="inverse-native-reference-next-read"&&"inverseNativeReferenceNextRead" in command||phase==="inverse-native-reference-next-sender"&&"inverseNativeReferenceNextSender" in command)||this.#inverseNativeLifecycle&&phase==="inverse-native-reference-worker"&&"inverseNativeReferenceWorker" in command)){throw new Error("FOOTPRINT_INVERSE_NATIVE_REFERENCE_NEXT_PENDING");}
     if(this.#inverseNativeReferencePcbPending!==null&&!(this.#inverseNativeLifecycle&&phase==="inverse-native-reference-pcb-sender"&&"inverseNativeReferencePcbSender" in command || this.#inverseNativeLifecycle&&phase==="inverse-native-reference-pcb-dependencies"&&"inverseNativeReferencePcbDependencies" in command || this.#inverseNativeLifecycle&&phase==="inverse-native-reference-pcb-callback"&&"inverseNativeReferencePcbCallback" in command || this.#inverseNativeLifecycle&&phase==="inverse-native-reference-pcb-manager"&&"inverseNativeReferencePcbManager" in command || this.#inverseNativeLifecycle&&phase==="inverse-native-reference-pcb-channel"&&"inverseNativeReferencePcbChannel" in command || this.#inverseNativeLifecycle&&phase==="inverse-native-reference-pcb-forward"&&"inverseNativeReferencePcbForward" in command || this.#inverseNativeLifecycle&&phase==="inverse-native-reference-pcb-result"&&"inverseNativeReferencePcbResult" in command || this.#inverseNativeLifecycle&&phase==="inverse-native-reference-worker"&&"inverseNativeReferenceWorker" in command)){throw new Error("FOOTPRINT_INVERSE_NATIVE_REFERENCE_PCB_PENDING");}
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
-    const wireV5Navigation = this.#schematicWireWriterV5Purpose && phase === "schematic-display-navigate" &&
-      "schematicWireWriterV5Phase" in command && command.schematicWireWriterV5Phase === "navigate";
+    const wireV5Navigation = this.#schematicWireWriterV5Purpose && phase === "schematic-display-navigate";
     if (wireV5Navigation && this.#wireV5NavigationAttempted) { throw new Error("WIRE_V5_NAVIGATION_CONSUMED"); }
     let limit = this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT;
     if (this.#schematicSavedPurpose) { limit = this.#schematicSavedParent ? SCH_SAVED_PROFILE.renderer.activeCache : SCH_SAVED_PROFILE.renderer.total; if (this.#schematicSavedBackup) { limit = this.#schematicSavedGuards.has("loading") ? SCH_SAVED_PROFILE.renderer.activeLoading : SCH_SAVED_PROFILE.renderer.activeInvalidation; } if (this.#schematicSavedRegistrationAttempted) { limit = SCH_SAVED_PROFILE.renderer.activeRegistration; } if (this.#schematicSavedOpening) { limit = SCH_SAVED_PROFILE.renderer.activeOpening; } if (this.#schematicSavedColdPair !== null) { limit = this.#schematicSavedColdObservation ? SCH_SAVED_PROFILE.renderer.activeCold : SCH_SAVED_PROFILE.renderer.activeBootstrap; } if (this.#schematicSavedScene) { limit = SCH_SAVED_PROFILE.renderer.activeScene; } }
@@ -2285,7 +2291,6 @@ class CurrentPcbFixedPipeCore {
     // Reserve before write, including synchronous throw and synchronous peer
     if (wireV5Navigation) {
       this.#wireV5NavigationAttempted = true;
-      this.#wireV5Navigation = Object.freeze({ slot: pending, pending: deferred.promise, parameters: canonicalJson(command.params) });
       try { retainOriginalPending?.(deferred.promise); } catch { this.#fail("output"); return deferred.promise; }
     } else if (this.#schematicRelevanceDisplayPurpose && phase === "schematic-display-navigate") {
       if (retainOriginalPending === undefined || !this.#schematicDisplayRegistrationAttempted || this.#schematicDisplayRegistrationPromise !== null || !("schematicRelevanceDisplayPhase" in command) || command.schematicRelevanceDisplayPhase !== "navigate") { this.#fail("output"); return deferred.promise; }
