@@ -117,3 +117,12 @@ It records whether the native pipe acknowledged the first write, how many
 renderer polls returned, and whether any bytes arrived. Prior disposable
 Via runs with the same synchronous write implementation produced both
 successful discovery and the same first-request timeout.
+
+The next original disposable candidate returned the browser version and
+target inventory in about 13 seconds. It stopped before attaching the
+editor frame because the exact original target list included both the
+Start Page and the application's bundled account view. The original Job
+terminated and the helper released. The registered fixture had its exact
+previous bytes and no SQLite sidecars. There was no explicit Save attempt.
+The facade retired with acknowledged lease release and exit code zero;
+the same foreground manager remains available for the next candidate.
