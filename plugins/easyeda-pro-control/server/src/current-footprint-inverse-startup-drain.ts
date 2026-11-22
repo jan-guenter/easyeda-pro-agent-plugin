@@ -3,13 +3,16 @@
 import { types } from "node:util";
 import { CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_REQUESTS, currentFootprintInverseInitialCacheBudget } from "./current-footprint-inverse-initial-cache-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_INITIAL_SYNC_NATIVE_REQUESTS } from "./current-footprint-inverse-initial-sync-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_REQUESTS, currentFootprintInverseStartupCallbackBudget } from "./current-footprint-inverse-startup-callback-protocol.ts";
 
 // Initial sync, two library holds and two natural ticket timer holds.
 const fixedPauses = CURRENT_FOOTPRINT_INVERSE_INITIAL_SYNC_NATIVE_REQUESTS.holds + 2 + 2;
-const maximumPauses = fixedPauses + CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_REQUESTS.holds;
-export function currentFootprintInverseStartupDrainMaximumPauses(cacheJobs: number): number {
+const maximumPauses = fixedPauses + CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_REQUESTS.holds +
+  CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_REQUESTS.held;
+export function currentFootprintInverseStartupDrainMaximumPauses(cacheJobs: number, startupCallbackRecords: number): number {
   const cacheHolds = cacheJobs === 0 ? 0 : currentFootprintInverseInitialCacheBudget(cacheJobs).holds;
-  return fixedPauses + cacheHolds;
+  const callbackHolds = startupCallbackRecords === 0 ? 0 : currentFootprintInverseStartupCallbackBudget(startupCallbackRecords).held;
+  return fixedPauses + cacheHolds + callbackHolds;
 }
 
 export interface CurrentFootprintInverseStartupDrainBindings<T> {

@@ -406,11 +406,13 @@ void test("retained V4 GET result dispatch joins original completion and exact p
  ].join("\n");vm.runInContext(stripTypeScriptTypes(program),context);
 });
 
-void test("post-ready drain admits the full eight-cache-job allowance and refuses any larger roster", async () => {
-  const maximumPauses = currentFootprintInverseStartupDrainMaximumPauses(8);
-  assert.equal(maximumPauses, 37);
-  assert.equal(currentFootprintInverseStartupDrainMaximumPauses(7), 34);
-  assert.throws(() => currentFootprintInverseStartupDrainMaximumPauses(9), /INITIAL_CACHE_JOB_BOUND/u);
+void test("post-ready drain admits the full cache and callback budgets and refuses a larger roster", async () => {
+  const maximumPauses = currentFootprintInverseStartupDrainMaximumPauses(8, 512);
+  assert.equal(maximumPauses, 1573);
+  assert.equal(currentFootprintInverseStartupDrainMaximumPauses(8, 0), 37);
+  assert.equal(currentFootprintInverseStartupDrainMaximumPauses(7, 2), 40);
+  assert.throws(() => currentFootprintInverseStartupDrainMaximumPauses(9, 0), /INITIAL_CACHE_JOB_BOUND/u);
+  assert.throws(() => currentFootprintInverseStartupDrainMaximumPauses(0, 513), /STARTUP_CALLBACK_SOURCE_BOUND/u);
   let polls = 0, serviced = 0;
   const bindings = Object.freeze({
     maximumPauses, assertCurrent: (): Promise<void> => Promise.resolve(),

@@ -335,8 +335,8 @@ work that depends on it. The owner settles its cold-helper arrival waits
 on a termination refusal, and native delete cleanup can observe exit after
 an earlier normal observation rejects.
 
-The V4 startup drain derives its ceiling from the eight-job cache budget.
-Selected work receives the preflight or invalidation failure on its original
+The startup drain derives its ceiling from the cache and callback budgets
+for both the legacy and V4 workers. Selected work receives the preflight or invalidation failure on its original
 promise. The V4 structure observer requires the original inverse construction
 binding. The pipe associates inverse write acknowledgments with the exposed
 original request and settles pre-dispatch refusals without reporting a write.
