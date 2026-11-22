@@ -45,3 +45,25 @@ still pending at the action-completion fixture. Its result is not a passed
 check; the original log and process are retained until it settles. Full facade
 and bridge suite acceptance remains for exact-commit CI. No application,
 native owner, marketplace publication or installation occurred.
+
+## Review repairs
+
+The inverse TypeScript changes make the final drain settlement fail once
+the original allowance is consumed, snapshot local cursor bindings,
+preserve original errors, and retain helper and Main cleanup custody.
+The author tested 13 focused inverse cases under the pinned toolchain.
+
+The Wire follow-up checks the original Map descriptor roster, retains
+acknowledged callback breakpoint IDs, and replaces title placeholders in
+one pass. It also fixes cleanup sequencing and makes the negative
+assertions isolate their intended input. Focused Wire checks and the
+independent managed title-encoder smoke passed. The longer action and tick
+runs on this follow-up reached their local time limits.
+
+The initial CodeRabbit review marked three V4 artifacts too large to
+process. An independent audit compared the authored receive-bound change
+in both identical C# files and decoded the PowerShell package back to the
+exact canonical source. That audit covers the changed receive path and
+generator provenance. The existing Windows compile smoke covers helper
+construction and an empty Job. It leaves live TCP coalescing and the
+unchanged inherited C# outside those checks.
