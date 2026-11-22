@@ -29,5 +29,5 @@ export const currentFootprintInverseControlResultSchema = z.strictObject({
  validationOnly:z.literal(true),connectedValidation:z.literal(false),ordinaryProjectsSupported:z.literal(false),generalSdkWriter:z.literal(false),
  executionAuthorized:z.literal(false),saveAuthorized:z.literal(false),explicitSaveAttempts:z.literal(0),
  }).refine(value=>value.operationId.slice("footprint-inverse-flow-".length)===value.sourceOperationId.slice("footprint-forward-flow-".length)&&(value.completed===null||value.completed.operationId===value.operationId&&value.completed.sourceOperationId===value.sourceOperationId)&&
- (value.state!=="completed"||value.completed!==null&&value.execution.settled&&value.cleanup.originalResourcesClosed&&!value.cleanup.publicationPending&&value.publication.settled));
+ (value.state!=="completed"||value.completed!==null&&value.execution.settled&&!value.execution.failed&&value.cleanup.originalResourcesClosed&&!value.cleanup.publicationPending&&value.publication.settled&&!value.publication.failed));
 export type CurrentFootprintInverseControlResult = z.infer<typeof currentFootprintInverseControlResultSchema>;

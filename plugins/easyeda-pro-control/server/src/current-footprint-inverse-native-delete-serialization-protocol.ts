@@ -3,6 +3,7 @@ import { z } from "zod";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentFootprintInversePreferenceReply as capture } from "./current-footprint-inverse-public-preferences-replies.ts";
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_PROGRAMS as PROGRAMS } from "./current-footprint-inverse-native-delete-serialization-programs.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_PROGRAMS as V4_PROGRAMS } from "./current-footprint-inverse-v4-native-delete-serialization-programs.ts";
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_BEGIN as BEGIN, CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_ORDER as ROLES, CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_SITES as SITES } from "./current-footprint-inverse-native-delete-serialization-profile.ts";
 
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_GROUP = "easyeda-footprint-inverse-native-delete-serialization-worker-v1";
@@ -42,19 +43,45 @@ export type CurrentFootprintInverseNativeDeleteSerializationCommand=z.infer<type
 function need(ok:boolean):asserts ok{if(!ok){throw new Error("INVERSE_NATIVE_DELETE_SERIALIZATION_PROTOCOL");}}
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_FLAGS=Object.freeze({silent:true,generatePreview:false,throwOnSideEffect:true,awaitPromise:false,userGesture:false,objectGroup:group} as const);
 export function currentFootprintInverseNativeDeleteSerializationExpression(role:typeof frames[number]):string{return role==="begin"?BEGIN.expression:SITES[role].expression;}
-export function validateCurrentFootprintInverseNativeDeleteSerializationCommand(input:unknown):CurrentFootprintInverseNativeDeleteSerializationCommand{
+type Command = CurrentFootprintInverseNativeDeleteSerializationCommand;
+type Validate = (input: unknown) => Command;
+function validateCommand(input: unknown, programs: Readonly<Record<(typeof calls)[number], string>>): Command {
  const command=schema.parse(capture(input));
- if(command.phase===`${prefix}call`){need(command.params.functionDeclaration===PROGRAMS[command.role]);argumentsFor[command.role].parse(command.params.arguments);}
+ if(command.phase===`${prefix}call`){need(command.params.functionDeclaration===programs[command.role]);argumentsFor[command.role].parse(command.params.arguments);}
  else if(command.method==="Debugger.getPossibleBreakpoints"){need(command.params.start.scriptId===command.params.end.scriptId);}
  else if(command.phase===`${prefix}frame`){need(command.params.expression===currentFootprintInverseNativeDeleteSerializationExpression(command.role));}
  else if(command.phase===`${prefix}arm`){const site=SITES[command.role];need(command.params.location.lineNumber===site.lineNumber&&command.params.location.columnNumber===site.columnNumber);}
  else if(command.phase===`${prefix}helper`){const [kind,role]=command.role.split("/");need(kind==="call"?calls.some(r=>r===role):kind==="frame"&&frames.some(r=>r===role));}
  return freezeDeep(command);
 }
-export function currentFootprintInverseNativeDeleteSerializationProgram(input:CurrentFootprintInverseNativeDeleteSerializationCommand):string|null{const c=validateCurrentFootprintInverseNativeDeleteSerializationCommand(input);if(c.method==="Runtime.callFunctionOn"){return c.params.functionDeclaration;}return c.method==="Debugger.evaluateOnCallFrame"?c.params.expression:null;}
-export function currentFootprintInverseNativeDeleteSerializationKey(input:CurrentFootprintInverseNativeDeleteSerializationCommand):string{const c=validateCurrentFootprintInverseNativeDeleteSerializationCommand(input);return `${c.phase.slice(prefix.length)}/${c.role}`;}
-export function currentFootprintInverseNativeDeleteSerializationHelperCommand(input:CurrentFootprintInverseNativeDeleteSerializationCommand,scriptId:string):CurrentFootprintInverseNativeDeleteSerializationCommand{const c=validateCurrentFootprintInverseNativeDeleteSerializationCommand(input);need(currentFootprintInverseNativeDeleteSerializationProgram(c)!==null);return validateCurrentFootprintInverseNativeDeleteSerializationCommand({phase:`${prefix}helper`,role:currentFootprintInverseNativeDeleteSerializationKey(c),method:"Debugger.getScriptSource",params:{scriptId}});}
-export function qualifyCurrentFootprintInverseNativeDeleteSerializationHelper(source:unknown,input:CurrentFootprintInverseNativeDeleteSerializationCommand):void{const p=currentFootprintInverseNativeDeleteSerializationProgram(input);need(p!==null&&source===(p.startsWith("[")?p:`(${p})`));}
+export function validateCurrentFootprintInverseNativeDeleteSerializationCommand(input: unknown): Command {
+ return validateCommand(input, PROGRAMS);
+}
+function commandProgram(command: Command): string | null {
+ if (command.method === "Runtime.callFunctionOn") { return command.params.functionDeclaration; }
+ return command.method === "Debugger.evaluateOnCallFrame" ? command.params.expression : null;
+}
+function commandKey(command: Command): string { return `${command.phase.slice(prefix.length)}/${command.role}`; }
+function commandHelper(command: Command, scriptId: string, validate: Validate): Command {
+ need(commandProgram(command) !== null);
+ return validate({ phase: `${prefix}helper`, role: commandKey(command), method: "Debugger.getScriptSource", params: { scriptId } });
+}
+function qualifyHelper(source: unknown, command: Command): void {
+ const program = commandProgram(command);
+ need(program !== null && source === (program.startsWith("[") ? program : `(${program})`));
+}
+export function currentFootprintInverseNativeDeleteSerializationProgram(input: Command): string | null {
+ return commandProgram(validateCurrentFootprintInverseNativeDeleteSerializationCommand(input));
+}
+export function currentFootprintInverseNativeDeleteSerializationKey(input: Command): string {
+ return commandKey(validateCurrentFootprintInverseNativeDeleteSerializationCommand(input));
+}
+export function currentFootprintInverseNativeDeleteSerializationHelperCommand(input: Command, scriptId: string): Command {
+ return commandHelper(validateCurrentFootprintInverseNativeDeleteSerializationCommand(input), scriptId, validateCurrentFootprintInverseNativeDeleteSerializationCommand);
+}
+export function qualifyCurrentFootprintInverseNativeDeleteSerializationHelper(source: unknown, input: Command): void {
+ qualifyHelper(source, validateCurrentFootprintInverseNativeDeleteSerializationCommand(input));
+}
 const normal=[
  "call/environment","properties/environment",...["push","join","stringify","string","promise","then","self"].map(r=>`properties/${r}`),
  "frame/begin","call/begin","properties/begin",...ROLES.map(r=>r==="uploadEntry"?"original-point/before":`arm/${r}`),"resume/begin",
@@ -69,7 +96,15 @@ const normal=[
 need(normal.length===53);
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_ORDER=Object.freeze(normal.flatMap(k=>k.startsWith("call/")||k.startsWith("frame/")?[k,`helper/${k}`]:[k]));
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_REQUESTS=Object.freeze({normal:53,helpers:16,cdpRequests:69,resumes:6,events:34,controls:84,uploadResumed:false,publicationComplete:false,saveAuthorized:false} as const);
-export function currentFootprintInverseNativeDeleteSerializationWire(input:CurrentFootprintInverseNativeDeleteSerializationCommand,id:number,sessionId:string):CurrentFootprintInverseNativeDeleteSerializationCommand&Readonly<{id:number;sessionId:string;inverseNativeDeleteSerialization:true}>{need(Number.isSafeInteger(id)&&id>0&&id<=2_147_483_647);handle.parse(sessionId);return freezeDeep({...validateCurrentFootprintInverseNativeDeleteSerializationCommand(input),id,sessionId,inverseNativeDeleteSerialization:true});}
+type Wire = Command & Readonly<{id: number; sessionId: string; inverseNativeDeleteSerialization: true}>;
+function serializationWire(input: Command, id: number, sessionId: string, validate: Validate): Wire {
+ need(Number.isSafeInteger(id) && id > 0 && id <= 2_147_483_647);
+ handle.parse(sessionId);
+ return freezeDeep({ ...validate(input), id, sessionId, inverseNativeDeleteSerialization: true });
+}
+export function currentFootprintInverseNativeDeleteSerializationWire(input: Command, id: number, sessionId: string): Wire {
+ return serializationWire(input, id, sessionId, validateCurrentFootprintInverseNativeDeleteSerializationCommand);
+}
 type Scalar=string|number;
 function scalarFields(c:CurrentFootprintInverseNativeDeleteSerializationCommand):Readonly<Record<string,Scalar>>{
  const f:Record<string,Scalar>={};
@@ -108,7 +143,26 @@ export function currentFootprintInverseNativeDeleteSerializationCases():readonly
  const active=out.filter(c=>{const v=z.looseObject({phase:z.string(),role:z.string()}).parse(c);return v.role!=="uploadEntry"||!["inverse-native-delete-serialization-arm","inverse-native-delete-serialization-remove"].includes(v.phase);});
  const checked=active.map(c=>validateCurrentFootprintInverseNativeDeleteSerializationCommand(c));return freezeDeep([...checked,...checked.filter(c=>currentFootprintInverseNativeDeleteSerializationProgram(c)!==null).map(c=>currentFootprintInverseNativeDeleteSerializationHelperCommand(c,"original_ref"))]);
 }
-export function currentFootprintInverseNativeDeleteSerializationNativeFrame(bytes:Buffer,input:CurrentFootprintInverseNativeDeleteSerializationCommand,sessionId:string):Readonly<Record<string,Scalar>>{
- need(bytes.length<=65_536&&bytes.at(-1)===0);const raw:unknown=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes.subarray(0,-1)));const id=z.looseObject({id:z.number().int().positive().max(2_147_483_647)}).parse(capture(raw)).id;const command=validateCurrentFootprintInverseNativeDeleteSerializationCommand(input);
- need(bytes.toString("utf8")===`${JSON.stringify(currentFootprintInverseNativeDeleteSerializationWire(command,id,sessionId))}\0`);return Object.freeze({action:"footprint-inverse-native-delete-serialization",requestId:id,phase:command.phase,method:command.method,role:command.role,...scalarFields(command)});
+function serializationFrame(bytes: Buffer, input: Command, sessionId: string, validate: Validate): Readonly<Record<string, Scalar>> {
+ need(bytes.length <= 65_536 && bytes.at(-1) === 0);
+ const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, -1)));
+ const id = z.looseObject({ id: z.number().int().positive().max(2_147_483_647) }).parse(capture(raw)).id;
+ const command = validate(input);
+ need(bytes.toString("utf8") === `${JSON.stringify(serializationWire(command, id, sessionId, validate))}\0`);
+ return Object.freeze({ action: "footprint-inverse-native-delete-serialization", requestId: id, phase: command.phase, method: command.method, role: command.role, ...scalarFields(command) });
 }
+export function currentFootprintInverseNativeDeleteSerializationNativeFrame(bytes: Buffer, input: Command, sessionId: string): Readonly<Record<string, Scalar>> {
+ return serializationFrame(bytes, input, sessionId, validateCurrentFootprintInverseNativeDeleteSerializationCommand);
+}
+
+function validateV4(input: unknown): Command { return validateCommand(input, V4_PROGRAMS); }
+/** Matches the fixed V4 native DsrBook, including its retained worker version. */
+export const CURRENT_FOOTPRINT_INVERSE_V4_NATIVE_DELETE_SERIALIZATION_PROTOCOL = Object.freeze({
+ validate: validateV4,
+ program: (input: Command): string | null => commandProgram(validateV4(input)),
+ key: (input: Command): string => commandKey(validateV4(input)),
+ helper: (input: Command, scriptId: string): Command => commandHelper(validateV4(input), scriptId, validateV4),
+ qualifyHelper: (source: unknown, input: Command): void => { qualifyHelper(source, validateV4(input)); },
+ wire: (input: Command, id: number, sessionId: string): Wire => serializationWire(input, id, sessionId, validateV4),
+ nativeFrame: (bytes: Buffer, input: Command, sessionId: string): Readonly<Record<string, Scalar>> => serializationFrame(bytes, input, sessionId, validateV4),
+});

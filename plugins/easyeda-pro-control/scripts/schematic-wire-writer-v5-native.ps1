@@ -996,6 +996,7 @@ try {
           $baseFields=@('action','helperInstance','id','jobId','rootCreated','rootPid','requestId','sessionId','phase');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
           foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'wire-v4-native-field'}}
           foreach ($property in $request.PSObject.Properties) {if ($baseFields -cnotcontains $property.Name) {$fields.Add($property.Name,$property.Value)}}
+          if ($request.requestId -lt 1 -or $request.requestId -gt 6910) {throw 'wire-v5-stage-request-limit'}
           $owner.SendWireWriterV4Native([int]$request.requestId,$request.sessionId,$request.phase,$fields);$result=@{written=$true}
         }
         'schematic-wire-writer-v4-native' {

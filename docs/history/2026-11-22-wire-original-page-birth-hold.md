@@ -7,3 +7,18 @@ The next reusable source cut is ready here. Both installed schematic variants ca
 Five separate requests cover two frame projections, one descriptor-only helper, its exact generated-source check and its five-slot result read. Neither a general debugger vocabulary nor arm, resume or navigation controls enter this reader. The Node Inspector test executes the original page _init and consistency init callback at their original source locations in both variants. It retains all five real fixed request/reply projections and uses them to exercise the reader's exact reply sequence, original event and receipt identity and refusal once the supplied hold ends. The isolated actors have an inert consistency implementation and model surroundings. The test does not establish a native opening, watch registration or geometry effect.
 
 The smallest remaining owner work is a distinct renderer opening reservation before the once-only navigation dispatch in #openGeneratedSchematicOperation. It must retain that exact navigation Promise in a dedicated pending slot, arm only the selected page _init source point, and route its resolved arm and original pause through the existing #attach-owned renderer subscriber. The retained start-page realm can supply the fixed globals collector before the page exists. The original source body must be fetched and proved while the initializer is held, then the five-request reader supplies the watch driver's bound inputs before that initializer resumes. After the same navigation settles, the existing V5 capture/preflight holder can be compared to the already retained registration. Source selection, native transport, scoped debugger cleanup and process/Job shutdown still require their own reviewed budgets and release. Existing V5 helper bytes and execution permissions are unchanged.
+
+## Unacknowledged arm cleanup
+
+The early-init cursor records the exact variant before dispatch. A missing,
+malformed or foreign acknowledgement leaves that attempt unresolved.
+Retirement removes only arms with a strictly shaped, matching reply
+correlated by the original transport. An unresolved attempt causes retirement
+to reject. Removal uses the acknowledged breakpoint ID on its original
+allocation. The enclosing owner must prove original process and Job closure
+before retiring an allocation with unresolved debugger state.
+
+The V5 PowerShell stage now checks the same 1–6,910 request-ID range as its
+inherited V4 encoder. The V4 helper and V5 C# review and compiler retain
+their exact bytes. The optional V6 generator inherits the same stage guard
+from its regenerated V5 predecessor and remains compile-only.

@@ -87,3 +87,21 @@ replacement, cleanup fsync failure and reordered-but-canonically-equal manifest
 refusal. These use isolated real managed storage and explicit fault hooks, with
 no native owner or application. The moved original-owner fixtures are preserved
 for the final owner batch and are not hidden behind skips.
+
+## Amended passive-review custody corrections — 2026-11-22
+
+The cold helper retains bigint device/inode values and nanosecond timestamps
+through every named/descriptor stat and keeps the exact byte/hash checks.
+Journal publication rechecks unresolved pending records after loading the
+manifest; stage admission repeats its requested tail check after the final
+artifact/publication await. Neither path can turn concurrent advancement or an
+unsettled failure publication into admission.
+
+The focused fixtures race each filesystem barrier against the original
+admission result, protect directory restoration before replacement setup, and
+count writable temporary opens as well as link calls. Fourteen cases passed,
+including numeric identity collisions, nanosecond substitutions, stage
+advancement and a failed record publication during the final manifest load.
+All three new regressions fail against the unchanged amended-review baseline.
+These are isolated storage and inert reader checks; no native owner,
+application, connected saved result or new retry authority is claimed.
