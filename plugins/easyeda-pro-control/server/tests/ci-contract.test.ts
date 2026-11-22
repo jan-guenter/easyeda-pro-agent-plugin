@@ -33,7 +33,7 @@ const mutations = [
   ["optional step", "      - name: Build MCP bundle\n", "      - name: Build MCP bundle\n        continue-on-error: true\n"],
   ["conditional step", "      - name: Build MCP bundle\n", "      - name: Build MCP bundle\n        if: false\n"],
   ["conditional matrix", "  facade-tests:\n", "  facade-tests:\n    if: false\n"],
-  ["insufficient shard job budget", "    timeout-minutes: 30", "    timeout-minutes: 20"],
+  ["insufficient shard job budget", "    timeout-minutes: 40", "    timeout-minutes: 20"],
   ["fail fast", "fail-fast: false", "fail-fast: true"],
   ["unexpected job", "  facade-tests:\n", "  Unexpected_job2:\n    runs-on: ubuntu-24.04\n  facade-tests:\n"],
 ] as const;
