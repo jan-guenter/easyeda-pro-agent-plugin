@@ -3,7 +3,7 @@
  * helper source and owner before issuing the distinct readiness token. */
 import { z } from "zod";
 import { captureCurrentFootprintInverseDeleteBindingReply as capture } from "./current-footprint-inverse-delete-binding-capture.ts";
-import { CURRENT_FOOTPRINT_INVERSE_NATIVE_REFERENCE_WORKER_FLAGS as FLAGS, CURRENT_FOOTPRINT_INVERSE_NATIVE_REFERENCE_WORKER_MODEL_LIMIT as MODEL_LIMIT, CURRENT_FOOTPRINT_INVERSE_NATIVE_REFERENCE_WORKER_PROGRAMS as PROGRAMS, currentFootprintInverseNativeReferenceWorkerBudget, validateCurrentFootprintInverseNativeReferenceWorkerCommand } from "./current-footprint-inverse-native-reference-worker-protocol.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_REFERENCE_WORKER_FLAGS as FLAGS, CURRENT_FOOTPRINT_INVERSE_NATIVE_REFERENCE_WORKER_MODEL_LIMIT as MODEL_LIMIT, CURRENT_FOOTPRINT_INVERSE_NATIVE_REFERENCE_WORKER_PROGRAMS as PROGRAMS, CURRENT_FOOTPRINT_INVERSE_NATIVE_REFERENCE_WORKER_TEXT_LIMIT as TEXT_LIMIT, currentFootprintInverseNativeReferenceWorkerBudget, validateCurrentFootprintInverseNativeReferenceWorkerCommand } from "./current-footprint-inverse-native-reference-worker-protocol.ts";
 import type { CurrentFootprintInverseNativeReferenceWorkerCommand as Command } from "./current-footprint-inverse-native-reference-worker-protocol.ts";
 import { qualifyCurrentFootprintInverseReferenceWorkerSource } from "./current-footprint-inverse-reference-worker-source.ts";
 import { qualifyCurrentFootprintInverseReferenceQueryFunction, requireCurrentFootprintInverseReferenceQueryDescription } from "./current-footprint-inverse-reference-query-source.ts";
@@ -55,8 +55,7 @@ export function currentFootprintInverseReferenceAscii(value: unknown): string { 
 function nodes(value: Value, depth = 0): number { need(depth <= 8 && (value.kind === "array" || value.kind === "object")); const children = value.kind === "array" ? value.values : value.entries.map(row => row[1]); need(children.length <= 63); let total = 1; for (const child of children) { if (child.kind === "array" || child.kind === "object") { total += nodes(child, depth + 1); } } need(total <= 63); return total; }
 function graphNodeText(value: Value): string {
   const encoded = currentFootprintInverseReferenceAscii(value);
-  // The fixed graph-node text argument is limited to 32,768 ASCII characters.
-  if (encoded.length > 32_768) { throw new Error("FOOTPRINT_INVERSE_REFERENCE_GRAPH_TEXT_BOUND"); }
+  if (encoded.length > TEXT_LIMIT) { throw new Error("FOOTPRINT_INVERSE_REFERENCE_GRAPH_TEXT_BOUND"); }
   return encoded;
 }
 export function currentFootprintInverseReferenceModelValues(data: CurrentFootprintInverseReferenceData): readonly Value[] {
