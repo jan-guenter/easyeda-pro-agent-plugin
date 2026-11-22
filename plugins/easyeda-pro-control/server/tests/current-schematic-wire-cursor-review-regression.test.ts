@@ -1,7 +1,10 @@
 /** Synthetic Inspector packets test cursor snapshots and contradictory metadata.
  * These regressions supply no original event or connected runtime evidence. */
 import assert from "node:assert/strict";
+import {Session} from "node:inspector/promises";
 import {test} from "node:test";
+import {CurrentSchematicWireDependencyCursor} from "../src/current-schematic-wire-dependencies-cursor.ts";
+import {CURRENT_SCHEMATIC_WIRE_DEPENDENCY_NATIVE_ROLES as NATIVE_ROLES} from "../src/current-schematic-wire-dependencies-programs.ts";
 import {CurrentSchematicWireCallbackCursor} from "../src/current-schematic-wire-callback-cursor.ts";
 import {decodeCurrentFootprintCopyClockRpcV2Array as array} from "../src/current-footprint-copy-clock-rpc-v2-protocol.ts";
 import {CURRENT_SCHEMATIC_WIRE_DERIVED_RTREE_SOURCE as SOURCE,decodeCurrentSchematicWireDerivedRtreeFunction as decode} from "../src/current-schematic-wire-derived-rtree-source.ts";
@@ -67,4 +70,40 @@ void test("callback input capture refuses property and array getters without inv
   const values = Array.from({length: 8}, () => "value");
   Object.defineProperty(values, "0", {get(): string {calls += 1; return "value";}, enumerable: true, configurable: true});
   assert.throws(() => new CurrentSchematicWireCallbackCursor({role: "values", holder: "holder", values})); assert.equal(calls, 0);
+});
+
+void test("Wire dependency cursor admits the original Map species and refuses extra own metadata", async () => {
+ const session = new Session();
+ session.connect();
+ try {
+  const original = await session.post("Runtime.evaluate", { expression: "Map", returnByValue: false });
+  assert.ok(original.result.objectId !== undefined);
+  const metadata = await session.post("Runtime.getProperties", {
+   objectId: original.result.objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false,
+  });
+  assert.ok(metadata.result.some(field => field.name === "Symbol(Symbol.species)"));
+  const atMap = (): CurrentSchematicWireDependencyCursor => {
+   const cursor = new CurrentSchematicWireDependencyCursor("holder", "target", "operation");
+   const first = cursor.next(); assert.ok(first !== null);
+   cursor.reserve(first); cursor.accept(first, tuple("nativeTuple", NATIVE_ROLES.length));
+   const second = cursor.next(); assert.ok(second !== null);
+   cursor.reserve(second); cursor.accept(second, fields(NATIVE_ROLES.map(([,name], index) => ({
+    type: "function", className: "Function", description: `function ${name}() { [native code] }`, objectId: `function${String(index)}`,
+   }))));
+   return cursor;
+  };
+  for (const result of [metadata.result, metadata.result.filter(row => row.name !== "groupBy")]) {
+   const cursor = atMap(); const read = cursor.next(); assert.ok(read !== null);
+   cursor.reserve(read); cursor.accept(read, { ...metadata, result });
+   assert.equal(cursor.next()?.method, "Runtime.getProperties");
+  }
+  const confirmed = metadata.result.find(row => row.name === "Symbol(Symbol.species)"); assert.ok(confirmed !== undefined);
+  const mutated = [metadata.result.filter(row => row !== confirmed), [...metadata.result, { ...structuredClone(confirmed), name: "unexpected" }],
+   metadata.result.map(row => row === confirmed ? { ...row, enumerable: true } : row)];
+  for (const result of mutated) {
+   const cursor = atMap(); const read = cursor.next(); assert.ok(read !== null);
+   cursor.reserve(read);
+   assert.throws(() => { cursor.accept(read, { ...metadata, result }); }, /SCHEMATIC_WIRE_DEPENDENCY_CURSOR/u);
+  }
+ } finally { session.disconnect(); }
 });

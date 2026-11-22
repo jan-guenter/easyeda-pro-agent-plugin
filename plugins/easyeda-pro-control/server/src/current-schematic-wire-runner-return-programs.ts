@@ -26,3 +26,6 @@ export const CURRENT_SCHEMATIC_WIRE_RUNNER_RETURN_PROGRAMS=Object.freeze({
  runReturned:make('promise(this);if(helper===holder||this===retainedPromise(helper))bad();return[this,native[1](this)];'),
  tick:make('const v=planState();dense(this,1);const bbox=own(own(v[0][0],"shapes"),"bboxMonitor");if(own(this,0)!==bbox||own(bbox,"_nextTickPromise")!==v[4])bad();if(helper===holder||runner===holder||helper===runner)bad();return true;'),
 });
+
+// Shared baseline; the separate tick lane alone admits its explicit source effects.
+export {guard as CURRENT_SCHEMATIC_WIRE_RUNNER_RETURN_GUARD};

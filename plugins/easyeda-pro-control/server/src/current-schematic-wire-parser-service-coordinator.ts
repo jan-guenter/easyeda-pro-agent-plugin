@@ -40,10 +40,11 @@ import{CurrentSchematicWireTitleDriver}from"./current-schematic-wire-title-drive
 import type{CurrentSchematicWireTitleData}from"./current-schematic-wire-title-driver.ts";
 import type{CurrentSchematicWireTitlePreflightData}from"./current-schematic-wire-title-preflight.ts";
 import type{CurrentSchematicWireTitleCommand}from"./current-schematic-wire-title-protocol.ts";
+import type {CurrentSchematicWireTitleFtV5Command,CurrentSchematicWireTitleFtV5ReturnData} from "./current-schematic-wire-title-ft-v5-protocol.ts";
 import type{CurrentSchematicWireTitleFtCommand,CurrentSchematicWireTitleFtReturnData}from"./current-schematic-wire-title-ft-protocol.ts";
 
 type Owner="title"|"parser"|"rpc"|"registration"|"service"|"provider"|"uiRuntime"|"treeBefore"|"treeRuntime";
-export type CurrentSchematicWireParserServiceCommand=CurrentSchematicWireTitleFtCommand|CurrentSchematicWireTitleCommand|CurrentSchematicWireParserDriverCommand|CurrentSchematicWireClassicRpcDriverCommand|CurrentSchematicWireServiceRegistrationRead|CurrentSchematicWireServiceDriverCommand|CurrentSchematicWireUiProviderCommand|CurrentSchematicWireUiRuntimeDriverCommand|CurrentSchematicWireTreePreflightCommand|CurrentSchematicWireTreeRuntimeDriverCommand;
+export type CurrentSchematicWireParserServiceCommand=CurrentSchematicWireTitleFtV5Command|CurrentSchematicWireTitleFtCommand|CurrentSchematicWireTitleCommand|CurrentSchematicWireParserDriverCommand|CurrentSchematicWireClassicRpcDriverCommand|CurrentSchematicWireServiceRegistrationRead|CurrentSchematicWireServiceDriverCommand|CurrentSchematicWireUiProviderCommand|CurrentSchematicWireUiRuntimeDriverCommand|CurrentSchematicWireTreePreflightCommand|CurrentSchematicWireTreeRuntimeDriverCommand;
 export interface CurrentSchematicWireParserServiceTransport {
  readonly request:(command:CurrentSchematicWireParserServiceCommand)=>Promise<unknown>;
  readonly assertCurrent:()=>void;readonly assertOriginalExit:()=>void;readonly fail:(cause:unknown)=>void;
@@ -83,6 +84,7 @@ export class CurrentSchematicWireParserServiceCoordinator {
  readonly #input:Input;readonly #transport:CurrentSchematicWireParserServiceTransport;readonly #methods:readonly unknown[];
  readonly #parser:CurrentSchematicWireParserDriver;readonly #rpc:CurrentSchematicWireClassicRpcDriver;readonly #service:CurrentSchematicWireServiceDriver;readonly #uiRuntime:CurrentSchematicWireUiRuntimeDriver;readonly #treeRuntime:CurrentSchematicWireTreeRuntimeDriver;
  readonly #title:CurrentSchematicWireTitleDriver;
+ #titleFtV5Before:Promise<CurrentSchematicWireTitlePreflightData>|null=null;
  #titleFtBefore:Promise<CurrentSchematicWireTitlePreflightData>|null=null;
  #titleBefore:Promise<CurrentSchematicWireTitlePreflightData>|null=null;#titleTask:Promise<CurrentSchematicWireTitleData>|null=null;#titlePacket:CurrentSchematicWireTitleData|null=null;
  readonly #fault=Promise.withResolvers<never>();readonly #attempts:Attempt[]=[];readonly #events:unknown[]=[];readonly #points=new Map<string,Owner>();
@@ -107,7 +109,7 @@ export class CurrentSchematicWireParserServiceCoordinator {
   this.#service=new CurrentSchematicWireServiceDriver(input,Object.freeze({request:(command:CurrentSchematicWireServiceDriverCommand)=>this.#send("service",command),assertCurrent:current,assertOriginalExit:originalExit,fail}));
   this.#uiRuntime=new CurrentSchematicWireUiRuntimeDriver(input,Object.freeze({request:(command:CurrentSchematicWireUiRuntimeDriverCommand)=>this.#send("uiRuntime",command),assertCurrent:current,assertOriginalExit:originalExit,fail}));
   this.#treeRuntime=new CurrentSchematicWireTreeRuntimeDriver(input,Object.freeze({request:(command:CurrentSchematicWireTreeRuntimeDriverCommand)=>this.#send("treeRuntime",command),assertCurrent:current,assertOriginalExit:originalExit,fail}),this.#parser);
-  this.#title=new CurrentSchematicWireTitleDriver(input,Object.freeze({request:(command:CurrentSchematicWireTitleCommand|CurrentSchematicWireTitleFtCommand)=>this.#send("title",command),assertCurrent:current,assertOriginalExit:originalExit,fail}));
+  this.#title=new CurrentSchematicWireTitleDriver(input,Object.freeze({request:(command:CurrentSchematicWireTitleCommand|CurrentSchematicWireTitleFtCommand|CurrentSchematicWireTitleFtV5Command)=>this.#send("title",command),assertCurrent:current,assertOriginalExit:originalExit,fail}));
   Object.freeze(this);
  }
  #current(cleanup=false):void{need(methods(this.#transport).every((value,index)=>value===this.#methods[index]));if(!cleanup){need(!this.#closing&&this.#failure===null);this.#transport.assertCurrent();}}
@@ -214,8 +216,15 @@ export class CurrentSchematicWireParserServiceCoordinator {
  /** Opt into the separately bounded shared-helper return while all original
   * title/tree/service preflight remains before any observation or Modify. */
  public prepareTitleFtReturn():Promise<CurrentSchematicWireTitlePreflightData>{
-  if(this.#titleFtBefore!==null){return this.#titleFtBefore;}this.#current();need(this.#armTask===null&&this.#runTask===null);
+  if(this.#titleFtBefore!==null){return this.#titleFtBefore;}this.#current();need(this.#titleFtV5Before===null&&this.#armTask===null&&this.#runTask===null);
   const task=(async():Promise<CurrentSchematicWireTitlePreflightData>=>{try{const before=await this.prepareTitles();this.#current();await this.#title.prepareFtReturn();this.#current();return before;}catch(error){this.#fail(error);throw error;}})();this.#titleFtBefore=task;return task;
+ }
+ public prepareTitleFtReturnV5():Promise<CurrentSchematicWireTitlePreflightData>{
+  if(this.#titleFtV5Before!==null){return this.#titleFtV5Before;}this.#current();need(this.#titleFtBefore===null&&this.#armTask===null&&this.#runTask===null);
+  const task=(async():Promise<CurrentSchematicWireTitlePreflightData>=>{try{const before=await this.prepareTitles();this.#current();await this.#title.prepareFtReturnV5();this.#current();return before;}catch(error){this.#fail(error);throw error;}})();this.#titleFtV5Before=task;return task;
+ }
+ public requireTitleFtReturnV5(data:CurrentSchematicWireParserServiceData):CurrentSchematicWireTitleFtV5ReturnData{
+  this.requireLiveComparison(data);need(this.#titleFtV5Before!==null&&this.#titlePacket!==null);return this.#title.originalFtReturnV5(this.#titlePacket);
  }
  public requireTitleFtReturn(data:CurrentSchematicWireParserServiceData):CurrentSchematicWireTitleFtReturnData{
   this.requireLiveComparison(data);need(this.#titleFtBefore!==null&&this.#titlePacket!==null);return this.#title.originalFtReturn(this.#titlePacket);
@@ -223,7 +232,7 @@ export class CurrentSchematicWireParserServiceCoordinator {
  public runTitles():Promise<CurrentSchematicWireTitleData>{if(this.#titleTask!==null){return this.#titleTask;}this.#current();need(this.#titleBefore!==null);const task=(async():Promise<CurrentSchematicWireTitleData>=>{await this.#titleBefore;await this.arm();const data=await this.#title.run();this.#titlePacket=data;return data;})();this.#titleTask=task;return task;}
  /** Arm every observation before the original owner dispatches Modify. */
  public arm():Promise<void>{
-  if(this.#armTask!==null){return this.#armTask;}this.#current();const task=(async():Promise<void>=>{try{await this.prepareServices();await this.prepareProviders();if(this.#treeBeforeTask!==null){await this.#treeBeforeTask;}if(this.#titleBefore!==null){await this.#titleBefore;await this.#titleFtBefore;}await this.#parser.arm();await this.#rpc.arm();await this.#service.arm();await this.#uiRuntime.arm();if(this.#treeBeforeTask!==null){await this.#treeRuntime.arm();}if(this.#titleBefore!==null){await this.#title.arm();}this.#current();}catch(error){this.#fail(error);throw error;}})();this.#armTask=task;return task;
+  if(this.#armTask!==null){return this.#armTask;}this.#current();const task=(async():Promise<void>=>{try{await this.prepareServices();await this.prepareProviders();if(this.#treeBeforeTask!==null){await this.#treeBeforeTask;}if(this.#titleBefore!==null){await this.#titleBefore;await this.#titleFtBefore;await this.#titleFtV5Before;}await this.#parser.arm();await this.#rpc.arm();await this.#service.arm();await this.#uiRuntime.arm();if(this.#treeBeforeTask!==null){await this.#treeRuntime.arm();}if(this.#titleBefore!==null){await this.#title.arm();}this.#current();}catch(error){this.#fail(error);throw error;}})();this.#armTask=task;return task;
  }
  public runUiProviders():Promise<CurrentSchematicWireUiRuntimeDriverData>{
   if(this.#uiTask!==null){return this.#uiTask;}this.#current();const task=(async():Promise<CurrentSchematicWireUiRuntimeDriverData>=>{await this.arm();return this.#uiRuntime.run();})();this.#uiTask=task;return task;
@@ -250,7 +259,7 @@ export class CurrentSchematicWireParserServiceCoordinator {
   if(this.#retireTask!==null){return this.#retireTask;}this.#current(true);this.#transport.assertOriginalExit();this.#closing=true;
   const title=this.#titleBefore===null?null:this.#title.retireAfterOriginalExit();
   const parser=this.#parser.retireAfterOriginalExit(),rpc=this.#rpc.retireAfterOriginalExit(),service=this.#service.retireAfterOriginalExit(),tree=this.#treeBeforeTask===null?null:this.#treeRuntime.retireAfterOriginalExit(),ui=this.#uiRuntime.retireAfterOriginalExit();
-  const task=(async():Promise<void>=>{await settled(this.#registrationTask);await settled(this.#providerTask);await settled(this.#treeBeforeTask);await settled(this.#titleBefore);await settled(this.#titleFtBefore);await settled(this.#titleTask);await settled(this.#armTask);await Promise.all([settled(parser),settled(rpc),settled(service),settled(ui),settled(tree),settled(title)]);await settled(this.#runTask);await settled(this.#childrenTask);await settled(this.#uiTask);await settled(this.#treeTask);await settled(this.#finishTask);await this.#functions;for(const attempt of this.#attempts){await settled(attempt.pending??null);}this.#current(true);this.#transport.assertOriginalExit();})();this.#retireTask=task;return task;
+  const task=(async():Promise<void>=>{await settled(this.#registrationTask);await settled(this.#providerTask);await settled(this.#treeBeforeTask);await settled(this.#titleBefore);await settled(this.#titleFtBefore);await settled(this.#titleFtV5Before);await settled(this.#titleTask);await settled(this.#armTask);await Promise.all([settled(parser),settled(rpc),settled(service),settled(ui),settled(tree),settled(title)]);await settled(this.#runTask);await settled(this.#childrenTask);await settled(this.#uiTask);await settled(this.#treeTask);await settled(this.#finishTask);await this.#functions;for(const attempt of this.#attempts){await settled(attempt.pending??null);}this.#current(true);this.#transport.assertOriginalExit();})();this.#retireTask=task;return task;
  }
  public requireLiveComparison(data:CurrentSchematicWireParserServiceData):void{
   this.#current();need(this.#packet===data&&this.#completed);this.#parser.requireLiveComparison(data.parser);this.#rpc.requireLiveComparison(data.rpc);this.#service.requireLiveComparison(data.service);need(this.#uiPacket!==null);this.#uiRuntime.requireLiveComparison(this.#uiPacket);if(this.#treeBeforeTask!==null){need(this.#treePacket!==null);this.#treeRuntime.requireLiveComparison(this.#treePacket);}if(this.#titleBefore!==null){need(this.#titlePacket!==null);this.#title.requireLiveComparison(this.#titlePacket);}

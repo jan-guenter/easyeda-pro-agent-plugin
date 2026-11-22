@@ -227,9 +227,24 @@ identity, generated with `schematic:saved:native:update` and verified with
 `schematic:saved:native:check`. The readonly helper retains its own birth and
 SQL installation leases. Keep the shared published baseline
 immutable. Verify all four build layouts and all six released forward artifacts
-after generator changes. Each runtime helper and compiler input remains within
-the existing 2 MiB bound. Native compilation and an empty Job prove neither an
-application launch nor a writer lifecycle.
+after generator changes. Each released shared/historical runtime helper and
+compiler input remains within the existing 2 MiB bound. Native compilation and
+an empty Job prove neither an application launch nor a writer lifecycle.
+
+The separate new inverse-native-continuation.v4 build envelope fixes its
+compiler maximum at 2,490,368 bytes, expanded-input envelope at 2,654,208 bytes
+and review maximum at 2,621,440 bytes. The generated V4 identity in
+`server/src/current-footprint-inverse-native-continuation-v4-identity.ts` pins
+2,436,796 compiler bytes and a 1,858,684-byte PowerShell helper. The emitted
+helper remains within the 2 MiB source-file guard. This exception is confined to the new V4
+layout and its exact decoder/identity chain. It changes no released shared or
+historical compiler limit. The readonly cold-UI helper/compiler/review ceilings
+remain 2 MiB. Canonical readable owner/driver inputs have independent fixed-path,
+byte/hash and profile-bound checks; generated targets are comparison/output
+only. Actual public generation, types, build and selecting runtime data bindings
+must be validated after curation. Reusing exact native compiler evidence requires
+byte-identical helpers and compiler inputs within their recorded limits;
+source presence and compiler admission issue no owner or connected execution.
 
 Compile each exact C#5 runtime input with warnings treated as errors, matching
 the PowerShell helper checks. Retain original compiler diagnostics; a timeout

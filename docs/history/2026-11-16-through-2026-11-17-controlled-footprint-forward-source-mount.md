@@ -155,3 +155,12 @@ also passing. Its final 5,689-file plugin manifest is SHA-256
 `2d5b956cde64a680dfb39aaddfd9b991ded71f8b0c04f5af57037bbfaa8e52aa`.
 All production source and bundle bytes remain those of the reviewed initial
 controls/Wire payload. New exact-head CI/review remain required before merge.
+
+## Publication and installation terminal result
+
+The [release record](2026-11-17-controlled-footprint-controls-release.md) records
+PR #222's exact final successful checks, reviewed/merged commits, both official
+installations, original facade exits and the fresh-context host connection proof.
+It also corrects the earlier ext4 label: the actual successful evidence backend
+reported XFS. Connected forward/inverse and ordinary-project admission remain
+separate pending work.
