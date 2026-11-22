@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- This fixture compares the original renderer events and pipe bytes with the real navigation and encoder commands. */
 import assert from "node:assert/strict";
 import { PassThrough, Writable } from "node:stream";
 import { test } from "node:test";

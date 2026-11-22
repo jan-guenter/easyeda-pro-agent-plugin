@@ -48,3 +48,25 @@ replayed helper qualification. Live dispatch awaits the separate combined
 early-init and encoder helper, its native action and budgets, and the Core
 bridge which forwards those exact reserved frames. The legacy V5 helper
 bytes and existing Core write cutoff remain pinned.
+
+## Combined helper native sender
+
+The build-only encoder fragment uses the combined V6 birth and pins its
+session and holder to the native preflight. Its V6-only checks retain the
+actual title bundle script IDs and reflection tuple from the existing
+qualified sends. The sender writes the fixed binder, properties and helper
+source commands around the unchanged fourteen-row codec. Membership must
+reuse each ordered row and upload-function ID seen by the metadata reads.
+
+The native sender bounds physical frame bytes, requires consecutive request
+IDs and meters at most 18 writes and 5,012 polls. Completion spends one
+separate control and emits no CDP frame. An ambiguous native write closes
+the lane through the existing owner failure path. Helper event and full
+reply qualification remain with the original typed renderer pipe.
+
+The focused managed C#5 smoke checked all 18 frame bytes and refused foreign
+session, holder, method, helper script, membership function and replayed
+requests. It ran with the retained fixed-table decoder and a non-writing
+owner stub. The original V5 payload and selector are still pinned. The live
+Core forwarding and completion bridge awaits the combined helper's
+separate runtime admission.

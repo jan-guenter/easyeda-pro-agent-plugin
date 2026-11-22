@@ -11,14 +11,44 @@ import {CURRENT_SCHEMATIC_WIRE_NET_WATCH_SOURCE as SOURCE} from "../src/current-
   import {INSTALLED_EASYEDA_SOURCE_SKIP_REASON,readConfiguredEasyedaAsset} from "./helpers/installed-easyeda-source.ts";
 
  void test("Wire original nonempty bbox registration binds its actual source/receiver before mutation",async context=>{
-  for(const[variant,foreign,iterator]of[[0,false,false],[1,false,false],[0,true,false],[0,false,true]]as const){
+  for(const[variant,foreign,iterator,retirementFailure]of[[0,false,false,false],[1,false,false,false],[0,true,false,false],[0,false,true,false],[0,false,false,true]]as const){
    const source=await readConfiguredEasyedaAsset(SOURCE[variant].relativePath);if(source===null){context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON);return;}
 
-   const vm=createContext({});const key=`__wireNetWatch${String(variant)}${String(foreign)}${String(iterator)}`;const url=`${key}.js`;
+   const vm=createContext({});const key=`__wireNetWatch${String(variant)}${String(foreign)}${String(iterator)}${String(retirementFailure)}`;const url=`${key}.js`;
    const fixture:{roots:unknown}={roots:null};
-  const worker=new Worker(new URL("helpers/current-schematic-wire-net-watch-worker.ts",import.meta.url),{workerData:{key,source,variant,foreign,iterator}});const done=Promise.withResolvers<unknown>();const exit=Promise.withResolvers<number>();const needFixture=Promise.withResolvers<null>();worker.once("error",done.reject);let dispatched=false;let originalWatchReturn:unknown;worker.on("message",(message:unknown)=>{if(message!==null&&typeof message==="object"&&Reflect.get(message,"needFixture")===true){needFixture.resolve(null);}else if(message!==null&&typeof message==="object"&&Reflect.get(message,"armed")===true){assert.equal(dispatched,false);dispatched=true;setImmediate(()=>{const roots=fixture.roots;assert.ok(roots!==null&&typeof roots==="object");const run:unknown=Reflect.get(roots,"run");assert.ok(typeof run==="function");originalWatchReturn=Reflect.apply(run,roots,[]);worker.postMessage({originalWatchReturned:true},[]);});}else{done.resolve(message);}});worker.once("exit",exit.resolve);
+   const worker=new Worker(new URL("helpers/current-schematic-wire-net-watch-worker.ts",import.meta.url),{workerData:{key,source,variant,foreign,iterator,retirementFailure}});
+   const done=Promise.withResolvers<unknown>(),exit=Promise.withResolvers<number>(),needFixture=Promise.withResolvers<null>();
+   let dispatched=false,ready=false,reported=false;let originalWatchReturn:unknown;
+   const fail=(error:Error):void=>{if(ready){done.reject(error);}else{needFixture.reject(error);}};
+   worker.once("error",fail);
+   worker.once("exit",(code:number):void=>{
+    exit.resolve(code);
+    if(!reported){fail(new Error(`Wire watch worker exited before reporting its result (${String(code)})`));}
+   });
+   worker.on("message",(message:unknown)=>{
+    if(message!==null&&typeof message==="object"&&Reflect.get(message,"needFixture")===true){
+     ready=true;needFixture.resolve(null);
+    }else if(message!==null&&typeof message==="object"&&Reflect.get(message,"armed")===true){
+     assert.equal(dispatched,false);dispatched=true;setImmediate(()=>{
+      const roots=fixture.roots;assert.ok(roots!==null&&typeof roots==="object");const run:unknown=Reflect.get(roots,"run");assert.ok(typeof run==="function");
+      originalWatchReturn=Reflect.apply(run,roots,[]);worker.postMessage({originalWatchReturned:true},[]);
+     });
+    }else{
+     reported=true;
+     if(ready){done.resolve(message);}
+     else{
+      const reportedError:unknown=message!==null&&typeof message==="object"?Reflect.get(message,"error"):undefined;
+      fail(new Error(typeof reportedError==="string"?reportedError:"Wire watch worker reported before fixture readiness"));
+     }
+    }
+   });
    context.after(async()=>{Reflect.deleteProperty(globalThis,key);await worker.terminate();});await needFixture.promise;runInContext(wireNetWatchFixture(source,variant),vm,{filename:url});fixture.roots=Reflect.get(vm,"netWatchRoots");Object.defineProperty(globalThis,key,{value:fixture.roots,configurable:true});worker.postMessage({fixtureReady:true},[]);
-   const raw=await done.promise;assert.equal(await exit.promise,0);const roots=fixture.roots;if(roots!==null&&typeof roots==="object"){const shapes:unknown=Reflect.get(roots,"shapes");assert.ok(shapes!==null&&typeof shapes==="object");assert.equal(originalWatchReturn,Reflect.get(shapes,"_baseWatchSubscriptions"));}assert.ok(raw!==null&&typeof raw==="object"&&!("error"in raw),JSON.stringify(raw));context.diagnostic(JSON.stringify({variant,foreign,iterator,raw,originalWorkerExit:0}));
+   const raw=await done.promise;assert.equal(await exit.promise,0);const roots=fixture.roots;if(roots!==null&&typeof roots==="object"){const shapes:unknown=Reflect.get(roots,"shapes");assert.ok(shapes!==null&&typeof shapes==="object");assert.equal(originalWatchReturn,Reflect.get(shapes,"_baseWatchSubscriptions"));}assert.ok(raw!==null&&typeof raw==="object");if("error"in raw){const message:unknown=Reflect.get(raw,"stack");assert.fail(typeof message==="string"?message:String(raw.error));}
+   context.diagnostic(JSON.stringify({variant,foreign,iterator,retirementFailure,raw,originalWorkerExit:0}));
+   if(retirementFailure){
+    assert.equal(Reflect.get(raw,"retirementRejected"),true);assert.equal(Reflect.get(raw,"removals"),LIMIT.cleanup);
+    assert.equal(Reflect.get(raw,"originalInvocationSettled"),true);
+   }else{
    assert.deepEqual(Reflect.get(raw,"state"),{modify:false,save:false,failed:false});assert.equal(Reflect.get(raw,"originalInvocationSettled"),true);assert.equal(Reflect.get(raw,"refused"),foreign||iterator);
    if(foreign||iterator){assert.equal(Reflect.get(raw,"sameSourceForeign"),foreign);}else{
    const packet:unknown=Reflect.get(raw,"packet");assert.ok(packet!==null&&typeof packet==="object");assert.equal(Reflect.get(packet,"schema"),"private.schematic-wire-original-net-watch-preflight.v1");
@@ -26,6 +56,7 @@ import {CURRENT_SCHEMATIC_WIRE_NET_WATCH_SOURCE as SOURCE} from "../src/current-
    for(const field of["originalWholeScriptSourceJoined","originalNativeOwnerJoined","continuousGlobalsVerified","markerRefreshObserved","sourceSerializationObserved","modifyAuthorized","saveAuthorized"]){assert.equal(Reflect.get(packet,field),false);}
    assert.equal(Reflect.get(packet,"normalRequests"),LIMIT.normal);assert.equal(Reflect.get(packet,"helperSources"),LIMIT.helperSources);assert.equal(Reflect.get(packet,"cleanupRequests"),LIMIT.cleanup);
    const events:unknown=Reflect.get(raw,"events");assert.ok(Array.isArray(events));assert.equal(events.length,LIMIT.events);assert.equal(events.filter(e=>Reflect.get(e,"method")==="Debugger.paused").length,6);assert.equal(events.filter(e=>Reflect.get(e,"method")==="Debugger.resumed").length,6);}
+   }
   }
   for(const body of Object.values(PROGRAMS)){assert.ok(body.length<=16_384);assert.doesNotThrow(()=>new Script(`(${body})`));}
   const command=currentSchematicWireNetWatchCall("selectNet","123.1.2",["123.1.3","123.1.4"]);assert.throws(()=>validateCurrentSchematicWireNetWatchCommand({...command,params:{...command.params,throwOnSideEffect:false}}));assert.throws(()=>validateCurrentSchematicWireNetWatchCommand({...command,params:{...command.params,functionDeclaration:"function(){return true}"}}));assert.throws(()=>validateCurrentSchematicWireNetWatchCommand({phase:"net-watch-resume",method:"Debugger.stepInto",params:{}}));

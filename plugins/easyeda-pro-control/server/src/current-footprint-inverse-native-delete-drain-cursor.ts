@@ -118,6 +118,7 @@ export class CurrentFootprintInverseNativeDeleteDrainCursor{
   }
   if(fulfilled){const result=boolean.parse(await this.#call("drain","final",this.#original(),[{objectId:this.#original()},{objectId:this.#original()},...this.#refs()],0,this.#passes)).result.value;
    if(result){await this.#b.complete();await this.#current();this.#completed=true;}}
+  need(this.#completed||this.#passes<CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_DRAIN_CURSOR_REQUESTS.settlementPasses,"SETTLEMENT_EXHAUSTED");
  }
  public async settle():Promise<void>{need(!this.#busy&&!this.#failed&&!this.#completed,"SETTLE_ONCE");this.#busy=true;try{await this.#settle();}catch(error){this.#fail(error);throw error;}finally{this.#busy=false;}}
  public requirePostHistorySyncEntry():void{need(!this.#busy&&!this.#failed&&!this.#completed&&["syncEntry","syncDeferred","historyQueued","cloudReturned","cloudFinally"].every(role=>this.#done.has(z.enum(ROLES).parse(role)))&&!this.#b.postSyncProgress().completed,"ORIGINAL_FULL_SYNC_FRONTIER");}

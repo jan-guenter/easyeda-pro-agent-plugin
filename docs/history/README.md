@@ -1397,3 +1397,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [PR 223 API coverage regression repair](2026-11-22-pr223-api-coverage-regressions.md) — stale assertions and evidence/discovery links; no connected acceptance.
 
 - [PR 223 review prerequisite A](2026-11-22-pr223-review-prerequisite-a.md) — unmounted Wire source closure, unchanged marketplace metadata and a separately reviewable integration backlog.
+
+- [PR224 native transport and installation review](2026-11-22-pr224-native-transport-review.md)

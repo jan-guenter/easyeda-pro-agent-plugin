@@ -4,10 +4,11 @@ import {z} from "zod";
 import {canonicalJson} from "./core.ts";
 import {captureCurrentPcbStringClockReply} from "./current-pcb-string-clock-reply.ts";
 import {freezeDeep} from "./sqlite-inventory-core.ts";
-import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READ_FUNCTIONS as FUNCTIONS,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READS as READS,validateCurrentFootprintInverseNativeDeleteMainReadCommand as validate} from "./current-footprint-inverse-native-delete-main-read-protocol.ts";
+import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READ_FUNCTIONS as FUNCTIONS,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READ_KINDS as KINDS,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READS as READS,validateCurrentFootprintInverseNativeDeleteMainReadCommand as validate} from "./current-footprint-inverse-native-delete-main-read-protocol.ts";
 import type {CurrentFootprintInverseNativeDeleteMainReadCommand as Command,CurrentFootprintInverseNativeDeleteMainReadKind as Kind} from "./current-footprint-inverse-native-delete-main-read-protocol.ts";
 import {currentFootprintInverseMainHistoryValueSchema} from "./current-footprint-inverse-main-history-baseline.ts";
 import {decodeCurrentGeneratedSyncCallee} from "./current-generated-initial-sync-replies.ts";
+import type {CurrentFootprintInverseNativeDeleteMainRequestOrigin} from "./current-footprint-inverse-native-delete-main-origin.ts";
 import type {CurrentFootprintInverseNativeDeleteMainBeginPause as Pause} from "./current-footprint-inverse-native-delete-main-begin-custody.ts";
 import type {CurrentSelectedFileMainRequestObservation as Request} from "./current-selected-file-main-request-reader.ts";
 
@@ -20,6 +21,7 @@ export interface CurrentFootprintInverseNativeDeleteMainReadExpectation{
  readonly compare:(kind:Kind,value:CurrentFootprintInverseNativeDeleteMainReadValue)=>void;
 }
 export interface CurrentFootprintInverseNativeDeleteMainReadHost{
+ readonly origin:CurrentFootprintInverseNativeDeleteMainRequestOrigin;
  readonly scriptId:string;readonly sqlCaptureObjectId:string;readonly persistentDriverBreakpointId:string;readonly assertCurrent:()=>void;
  readonly expected:()=>CurrentFootprintInverseNativeDeleteMainReadExpectation;
  readonly pause:()=>Pause;readonly pendingRequestId:()=>number|null;readonly busy:()=>boolean;
@@ -29,7 +31,7 @@ export interface CurrentFootprintInverseNativeDeleteMainReadHost{
  readonly removePoint:(id:string)=>void;readonly pointCurrent:(id:string)=>boolean;
 }
 const location=z.strictObject({scriptId:handle,lineNumber:z.number().int(),columnNumber:z.number().int()});
-const frame=z.looseObject({callFrameId:handle,functionName:z.string(),location,functionLocation:location});
+const frame=z.looseObject({callFrameId:handle,functionName:z.string(),location,functionLocation:location.optional()});
 const pause=z.looseObject({reason:z.literal("other"),hitBreakpoints:z.tuple([handle]),callFrames:z.array(frame).min(1).max(64)});
 const remote=z.looseObject({type:z.string(),subtype:z.string().optional(),objectId:handle.optional(),value:z.unknown().optional()});
 const member=z.looseObject({name:z.string(),value:remote.optional()});
@@ -38,14 +40,27 @@ const array=z.strictObject({result:z.looseObject({type:z.literal("object"),subty
 const byValue=z.strictObject({result:z.strictObject({type:z.literal("object"),value:z.unknown()})});
 function need(value:boolean,code:string):asserts value{if(!value){throw new Error(`INVERSE_NATIVE_DELETE_MAIN_READ_${code}`);}}
 const normalOrder=["arm","frame","join-capture","properties-packet","properties-promise","join-resolved","join-value","remove","step","release"]as const;
+/** The three reads share the original Main object's CDP group. Keep their
+ * identity and order in one ledger per original Main request origin. */
+const originReads = new WeakMap<CurrentFootprintInverseNativeDeleteMainRequestOrigin, Map<Kind, CurrentFootprintInverseNativeDeleteMainReadCustody>>();
 export class CurrentFootprintInverseNativeDeleteMainReadCustody{
  readonly #kind:Kind;readonly #host:CurrentFootprintInverseNativeDeleteMainReadHost;readonly #order:readonly string[];
  readonly #functions=new Map<string,string>();
+ readonly #previous:CurrentFootprintInverseNativeDeleteMainReadCustody|null;
  #stage=0;#driverAttempted=false;#failed=false;#failureHandedOff=false;#point:string|null=null;#frame:string|null=null;#capture:string|null=null;#requestCapture:string|null=null;#promise:string|null=null;#resolved:string|null=null;
  #expected:CurrentFootprintInverseNativeDeleteMainReadExpectation|null=null;#value:CurrentFootprintInverseNativeDeleteMainReadValue|null=null;
  #active:Readonly<{command:Command;consumed:boolean}>|null=null;
  public constructor(kind:Kind,host:CurrentFootprintInverseNativeDeleteMainReadHost){
-  this.#kind=kind;this.#host=Object.freeze({...host});this.#order=kind==="history"?[...normalOrder.slice(0,6),"properties-projectSql","properties-table","properties-branches",...normalOrder.slice(6)]:normalOrder;Object.freeze(this);
+  this.#kind=kind;this.#host=Object.freeze({...host});this.#order=kind==="history"?[...normalOrder.slice(0,6),"properties-projectSql","properties-table","properties-branches",...normalOrder.slice(6)]:normalOrder;
+  this.#host.assertCurrent();
+  const reads=originReads.get(this.#host.origin)??new Map<Kind,CurrentFootprintInverseNativeDeleteMainReadCustody>();
+  const previousKind=KINDS[KINDS.indexOf(kind)-1];
+  const previous=previousKind===undefined?null:reads.get(previousKind);
+  need(!reads.has(kind)&&previous!==undefined,"ORIGINAL_READ_ORDER");
+  this.#previous=previous;
+  reads.set(kind,this);
+  originReads.set(this.#host.origin,reads);
+  Object.freeze(this);
  }
  public failOriginalObservation(cause:unknown):void{this.#failed=true;if(!this.#failureHandedOff){this.#failureHandedOff=true;try{this.#host.fail(cause);}catch{
  // A failed handoff cannot restore an observation or authorize a resume.
@@ -62,7 +77,7 @@ export class CurrentFootprintInverseNativeDeleteMainReadCustody{
  #held():Pause{
   const held=this.#host.pause();const event=pause.parse(captureCurrentPcbStringClockReply(held.raw).value),first=event.callFrames[0],site=READS[this.#kind].site;
   need(first!==undefined&&held.frameId===first.callFrameId&&held.sqlSite===null&&held.pendingEvents===0&&!held.resumed&&!held.resumeAttempted&&
-   first.functionName===site.name&&first.functionLocation.scriptId===this.#host.scriptId&&first.functionLocation.lineNumber===site.lineNumber&&first.functionLocation.columnNumber===site.functionColumn&&
+   first.functionName===site.name&&first.functionLocation?.scriptId===this.#host.scriptId&&first.functionLocation.lineNumber===site.lineNumber&&first.functionLocation.columnNumber===site.functionColumn&&
    first.location.scriptId===this.#host.scriptId&&first.location.lineNumber===site.lineNumber&&first.location.columnNumber===site.columnNumber&&event.hitBreakpoints[0]===this.#point,"ORIGINAL_RETURN");return held;
  }
  #driverHeld():Pause{
@@ -73,6 +88,9 @@ export class CurrentFootprintInverseNativeDeleteMainReadCustody{
  #expect(command:Command):void{
   if(command.phase==="inverse-native-delete-main-read-driver-step"){
    need(command.kind===this.#kind&&this.#stage===1&&this.#requestCapture!==null&&!this.#driverAttempted,"ONCE_DRIVER");
+   // Early successor arm is allowed.
+   // Keep its driver held until the predecessor's group release is acknowledged.
+   this.#previous?.result();
    this.#driverHeld();return;
   }
   const suffix=command.phase.replace("inverse-native-delete-main-read-","");const step=suffix+("role"in command?"-"+command.role:"");
@@ -101,7 +119,13 @@ export class CurrentFootprintInverseNativeDeleteMainReadCustody{
    if(command.phase==="inverse-native-delete-main-read-driver-step"){this.#driverAttempted=true;}
    const raw=await(resumeIdentity===null?this.#host.send(command,cleanup):this.#host.resume(resumeIdentity,command));
    const reply=captureCurrentPcbStringClockReply(raw).value;need(this.#active.consumed,"NATIVE_ACK");this.#same();
-   if(command.phase==="inverse-native-delete-main-read-arm"){const result=z.strictObject({breakpointId:handle,actualLocation:location}).parse(reply);need(canonicalJson(result.actualLocation)===canonicalJson(command.params.location),"EXACT_POINT");this.#point=result.breakpointId;this.#host.registerPoint(this.#point,result.actualLocation);}
+   if(command.phase==="inverse-native-delete-main-read-arm"){
+    const result=z.strictObject({breakpointId:handle,actualLocation:z.unknown()}).parse(reply);
+    this.#point=result.breakpointId;
+    const actualLocation=location.parse(result.actualLocation);
+    this.#host.registerPoint(this.#point,actualLocation);
+    need(canonicalJson(actualLocation)===canonicalJson(command.params.location),"EXACT_POINT");
+   }
    else if(command.phase==="inverse-native-delete-main-read-frame"){this.#frame=array.parse(reply).result.objectId;}
    else if(command.phase==="inverse-native-delete-main-read-join"){
     if(command.role==="capture"){this.#capture=array.parse(reply).result.objectId;}

@@ -1,4 +1,4 @@
-/* oxlint-disable import/max-dependencies -- This separate V5 graph joins the immutable preimage, its fixed readonly codebooks and its own explicitly bounded compiler envelope. */
+/* oxlint-disable import/max-dependencies -- Both fixed graphs join exact preimages, purpose-specific codebooks and bounded compiler storage. */
 /** Separate V5 projection of an exact reviewed V4 build. The maintained
  * older schematic compiler continues to publish its original bytes. */
 import {CURRENT_SCHEMATIC_WIRE_WRITER_V5_CSHARP_COMPILER_MAX_BYTES,packCurrentSchematicWireWriterV5CSharpStorage} from "../server/src/current-schematic-wire-writer-v5-csharp-storage.ts";
@@ -14,6 +14,9 @@ import {currentPcbDiagnosticCSharpReviewSource,currentPcbDiagnosticCSharpRuntime
 import {CURRENT_PCB_DIAGNOSTIC_HELPER_SOURCE_MAX_BYTES as MAXIMUM} from "../server/src/current-pcb-diagnostic-helper-source-profile.ts";
 import {installOwnedNativeDispatch} from "../server/src/native-owned-dispatch.ts";
 import {SCHEMATIC_WIRE_WRITER_V4_PREIMAGE} from "../server/src/current-schematic-wire-writer-v4-native-preimage.ts";
+import {CURRENT_SCHEMATIC_WIRE_WRITER_V5_NATIVE_IDENTITY} from "../server/src/current-schematic-wire-writer-v5-native-identity.ts";
+import {CURRENT_SCHEMATIC_WIRE_V5_EARLY_INIT_NATIVE_LIMITS as EARLY, currentSchematicWireV5EarlyInitNativeDispatch, currentSchematicWireV5EarlyInitNativePreimage} from "../server/src/current-schematic-wire-v5-early-init-native.ts";
+import {CURRENT_SCHEMATIC_WIRE_V5_ENCODER_NATIVE_LIMITS as ENCODER, currentSchematicWireV5EncoderNativeDispatch, currentSchematicWireV5EncoderNativePreimage} from "../server/src/current-schematic-wire-encoder-dispatch-native.ts";
 
 function once(source:string,before:string,after:string):string{if(source.split(before).length!==2){throw new Error("WIRE_V5_NATIVE_EXACT_PREIMAGE");}return source.replace(before,()=>after);}
 const hash=(source:string):string=>createHash("sha256").update(source).digest("hex");
@@ -102,4 +105,118 @@ export function schematicWireWriterV5NativeIdentity(data:ReturnType<typeof gener
 
  const rows=Object.entries(fields).map(([key,value])=>`${JSON.stringify(key)}:${typeof value==="string"?JSON.stringify(value):`Object.freeze(${literal(value)} as const)`}`);
  return `/** Generated separate V5 graph. The exact Wire V4 compiler input remains pinned. */\nexport const CURRENT_SCHEMATIC_WIRE_WRITER_V5_NATIVE_IDENTITY=Object.freeze({${rows.join(",")}} as const);\n`;
+}
+
+const V6_HELPER = "scripts/schematic-wire-writer-v6-native.ps1";
+export const SCHEMATIC_WIRE_WRITER_V6_REVIEW_PATH = "native-review/easyeda-pro-control/schematic-wire-writer-v6-native.cs";
+const V6_RENDERER_LIMIT = PROFILE.renderer.total + EARLY.requests + ENCODER.requests;
+
+function v6Once(source: string, before: string, after: string): string {
+  if (source.split(before).length !== 2) { throw new Error("WIRE_V6_NATIVE_EXACT_PREIMAGE"); }
+  return source.replace(before, () => after);
+}
+
+const v6Owner = `
+public sealed partial class EasyedaDiagnosticOwner {
+  private bool wireWriterV6;
+  private int wireV6EarlyInitPolls;
+  public static EasyedaDiagnosticOwner CreateSchematicWireWriterV6() {
+    EasyedaDiagnosticOwner owner = CreateSchematicWireWriterV5EarlyInit();
+    owner.wireWriterV6 = true;
+    return owner;
+  }
+  public void AdmitWireV6EarlyInitPoll() {
+    if (!wireWriterV6 || wireV5EarlyInit == null || schematicDisplayStages[2] ||
+        ++wireV6EarlyInitPolls > __EARLY_POLLS__) throw Error("wire-v6-early-init-poll");
+    AdmitWireV5EarlyInitAction();
+  }
+  public static void VerifySchematicWireWriterV6Smoke() {
+    EasyedaDiagnosticOwner owner = CreateSchematicWireWriterV6();
+    try {
+      if (!owner.wireWriterV6 || !owner.wireWriterV5 || !owner.wireV5EarlyInitEnabled ||
+          owner.RequestLimit != __RENDERER_LIMIT__ || owner.root != IntPtr.Zero || owner.job != IntPtr.Zero ||
+          owner.wireV5EarlyInit != null) throw Error("wire-v6-birth-smoke");
+    } finally { owner.originalMain.Release(); }
+    VerifyWireV5EncoderSmoke();
+  }
+}
+`.replace("__EARLY_POLLS__", String(EARLY.polls)).replace("__RENDERER_LIMIT__", String(V6_RENDERER_LIMIT));
+
+const v6EarlyPoll = `        'schematic-wire-v5-early-init-poll' {
+          if (-not $SchematicWireWriterV6 -or -not $launched -or
+              (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,rootCreated,rootPid') {throw 'wire-v6-early-init-poll-fields'}
+          $owner.AdmitWireV6EarlyInitPoll()
+          $result=@{bytes=$owner.Poll()}
+        }
+`;
+
+const v6Admission = `      if ($SchematicWireWriterV6) {
+        if ($request.action -ceq 'poll') {
+          if (-not $owner.AdmitWireV5EncoderPoll()) {$owner.AdmitWireWriterV5Action($request.action)}
+        } elseif (@('schematic-wire-v5-early-init','schematic-wire-v5-early-init-poll','schematic-wire-v5-encoder') -cnotcontains $request.action) {
+          $owner.AdmitWireWriterV5Action($request.action)
+        }
+      }`;
+
+interface V6NativeSource {
+  readonly helper: string;
+  readonly review: string;
+  readonly compiler: string;
+  readonly preimageSha256: string;
+}
+
+/** One build graph with its own compile-only entry and both fixed dispatchers.
+ * The legacy helper remains the exact frozen preimage. */
+export function generateSchematicWireWriterV6NativeSource(legacyHelper: string): V6NativeSource {
+  const previous = CURRENT_SCHEMATIC_WIRE_WRITER_V5_NATIVE_IDENTITY;
+  const preimageSha256 = hash(legacyHelper);
+  if (Buffer.byteLength(legacyHelper) !== previous.helper.bytes || preimageSha256 !== previous.helper.sha256 ||
+      hash(currentPcbDiagnosticCSharpRuntimeCompilerInput(legacyHelper)) !== previous.compiler.sha256) {
+    throw new Error("WIRE_V6_NATIVE_V5_PREIMAGE");
+  }
+
+  let source = expandCurrentPcbDiagnosticCSharpReviewSource(legacyHelper);
+  const legacyReview = currentPcbDiagnosticCSharpReviewSource(legacyHelper);
+  let body = currentSchematicWireV5EarlyInitNativePreimage(legacyReview);
+  body = currentSchematicWireV5EncoderNativePreimage(body);
+  body = v6Once(body, `int RequestLimit { get { if(wireV5EarlyInitEnabled)return ${String(PROFILE.renderer.total + EARLY.requests)};`,
+    `int RequestLimit { get { if(wireWriterV6)return ${String(V6_RENDERER_LIMIT)}; if(wireV5EarlyInitEnabled)return ${String(PROFILE.renderer.total + EARLY.requests)};`);
+  const literalBegin = "Add-Type @'\n", literalEnd = "\n'@\n";
+  source = v6Once(source, `${literalBegin}${legacyReview}${literalEnd}`, `${literalBegin}${body}${v6Owner}${literalEnd}`);
+
+  source = v6Once(source, "param([switch]$CompileOnly,[switch]$SchematicWireWriterV5)", `param([switch]$CompileOnly,[switch]$SchematicWireWriterV6)
+if (-not $CompileOnly -or -not $SchematicWireWriterV6 -or $args.Count -ne 0) {throw 'wire-v6-compile-only'}
+$SchematicWireWriterV5=[System.Management.Automation.SwitchParameter]$true`);
+  source = v6Once(source, "$owner=[EasyedaDiagnosticOwner]::CreateSchematicWireWriterV5()", `[EasyedaDiagnosticOwner]::VerifySchematicWireWriterV6Smoke()
+[Console]::Out.WriteLine('Wire writer V6 compile-only smoke passed')
+return
+$owner=[EasyedaDiagnosticOwner]::CreateSchematicWireWriterV6()`);
+  source = v6Once(source, "      if ($SchematicWireWriterV5) {$owner.AdmitWireWriterV5Action($request.action)}", v6Admission);
+  source = v6Once(source, `          if ($SchematicWireWriterV5) {$requestLimit=${String(PROFILE.renderer.total)}}`,
+    `          if ($SchematicWireWriterV6) {$requestLimit=${String(V6_RENDERER_LIMIT)}}`);
+  const dispatchAnchor = "        'schematic-wire-writer-v5-native' {";
+  source = installOwnedNativeDispatch(source, currentSchematicWireV5EarlyInitNativeDispatch(), dispatchAnchor);
+  source = installOwnedNativeDispatch(source, v6EarlyPoll, dispatchAnchor);
+  source = installOwnedNativeDispatch(source, currentSchematicWireV5EncoderNativeDispatch(), dispatchAnchor);
+
+  const helper = packCurrentSchematicWireWriterV5CSharpStorage(source);
+  const compiler = currentPcbDiagnosticCSharpRuntimeCompilerInput(helper), review = currentPcbDiagnosticCSharpReviewSource(helper);
+  if (Buffer.byteLength(helper) > MAXIMUM || Buffer.byteLength(compiler) > CURRENT_SCHEMATIC_WIRE_WRITER_V5_CSHARP_COMPILER_MAX_BYTES) {
+    throw new Error("WIRE_V6_FIXED_SOURCE_BOUND");
+  }
+  return Object.freeze({ helper, review, compiler, preimageSha256 });
+}
+
+export function schematicWireWriterV6NativeIdentity(data: V6NativeSource): string {
+  const fields = {
+    schema: "private.current-schematic-wire-writer-v6-native-identity.v1",
+    purpose: "schematic-wire-writer-v6-209", compileOnly: true, preimageSha256: data.preimageSha256,
+    helper: { relativePath: V6_HELPER, bytes: Buffer.byteLength(data.helper), sha256: hash(data.helper) },
+    review: { repositoryRelativePath: SCHEMATIC_WIRE_WRITER_V6_REVIEW_PATH, bytes: Buffer.byteLength(data.review), sha256: hash(data.review) },
+    compiler: { bytes: Buffer.byteLength(data.compiler), sha256: hash(data.compiler) },
+    renderer: { total: V6_RENDERER_LIMIT }, early: EARLY, encoder: ENCODER,
+  };
+  const fieldsSource = Object.entries(fields).map(([key, value]) =>
+    `${JSON.stringify(key)}:${typeof value === "object" ? `Object.freeze(${literal(value)} as const)` : JSON.stringify(value)}`);
+  return `/** Compile-only combined V6 native graph with exact legacy V5 preimage. */\nexport const CURRENT_SCHEMATIC_WIRE_WRITER_V6_NATIVE_IDENTITY = Object.freeze({${fieldsSource.join(", ")}} as const);\n`;
 }

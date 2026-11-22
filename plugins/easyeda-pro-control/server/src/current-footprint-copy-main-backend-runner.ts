@@ -2973,9 +2973,9 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #handleFootprintInverseNativeDeleteMainTail(pending:Promise<unknown>):Promise<void>{try{await pending;}catch(error){this.#fail(error);}}
   async #prepareFootprintInverseNativeDeleteMainTail(source:CurrentFootprintInverseNativeDeleteMainSource,original:CurrentFootprintInverseNativeDeleteMainSourceOriginal):Promise<void>{
     this.requireFootprintInverseNativeDeleteMainRequestArmed(source);need(this.#selectedRequestReader instanceof CurrentFootprintInverseV4SelectedMainRequestReader,"INVERSE_DELETE_MAIN_TAIL_WARM_READER");this.#selectedRequestReader.requireOriginalWarmFetchBinding();const preflight=this.preflightFootprintInverseNativeDeleteMainTail(source);
-    const script=this.#appScriptId,sql=this.#sqlCapture;const driver=[...this.#sqlBreakpoints].find(([,site])=>site==="driver")?.[0];
-    need(script!==null&&sql!==null&&driver!==undefined&&this.#deleteMain!==null,"INVERSE_DELETE_MAIN_TAIL_ORIGINAL_DEPENDENCIES");
-    const same=():void=>{need(this.#deleteMainSource===source&&this.#deleteMainOriginal===original&&!this.#deleteMainEnded&&!this.#deleteMainTailEnded&&this.#appScriptId===script&&this.#sqlCapture===sql&&this.#sqlBreakpoints.get(driver)==="driver","INVERSE_DELETE_MAIN_TAIL_CHANGED");original.assertCurrent();this.#same(false);};
+    const script=this.#appScriptId,sql=this.#sqlCapture,origin=this.#deleteMainOrigin;const driver=[...this.#sqlBreakpoints].find(([,site])=>site==="driver")?.[0];
+    need(script!==null&&sql!==null&&origin!==null&&driver!==undefined&&this.#deleteMain!==null,"INVERSE_DELETE_MAIN_TAIL_ORIGINAL_DEPENDENCIES");
+    const same=():void=>{need(this.#deleteMainSource===source&&this.#deleteMainOriginal===original&&this.#deleteMainOrigin===origin&&!this.#deleteMainEnded&&!this.#deleteMainTailEnded&&this.#appScriptId===script&&this.#sqlCapture===sql&&this.#sqlBreakpoints.get(driver)==="driver","INVERSE_DELETE_MAIN_TAIL_CHANGED");original.assertCurrent();this.#same(false);};
     const send=async(command:CurrentFootprintInverseNativeDeleteMainReadCommand,cleanup:boolean):Promise<unknown>=>{
       same();need(!this.#busy&&this.#deleteMainReadCommand===null,"INVERSE_DELETE_MAIN_READ_BUSY");
       this.#deleteMainReadCommand={command,id:null,consumed:false};this.#busy=true;
@@ -2983,7 +2983,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       try{return await this.#request(command,cleanup);}finally{this.#deleteMainReadArming=null;this.#deleteMainReadCommand=null;this.#busy=false;}
     };
     const component=new CurrentFootprintInverseNativeDeleteMainTailController(source,original,{
-      scriptId:script,sqlCaptureObjectId:sql,persistentDriverBreakpointId:driver,assertCurrent:same,
+      origin,scriptId:script,sqlCaptureObjectId:sql,persistentDriverBreakpointId:driver,assertCurrent:same,
       pendingRequestId:():number|null=>this.#pendingId,busy:():boolean=>this.#busy,
       pause:():CurrentFootprintInverseNativeDeleteMainBeginPause=>{same();const pause=this.#pause;need(pause!==null&&pause===this.#deleteMainDelivered,"INVERSE_DELETE_MAIN_TAIL_DELIVERED");return Object.freeze({identity:pause,frameId:pause.frameId,raw:this.#deleteMainDeliveredEvent,sqlSite:pause.sqlSite??null,pendingEvents:this.#deleteMainEvents.length,resumed:pause.resumed,resumeAttempted:pause.resumeAttempted});},
       registerPoint:(id,point):void=>{same();need(!this.#deleteMainPoints.has(id)&&!this.#sqlBreakpoints.has(id),"INVERSE_DELETE_MAIN_TAIL_POINT_ALIAS");this.#deleteMainPoints.set(id,point);},

@@ -44,7 +44,10 @@ export function diagnosticBoundedObservation(value: Row): Row {
   return Object.freeze(value);
 }
 export function diagnosticTargetSummary(value: Row): Row {
-  return Object.freeze({ targetId: value["targetId"], type: value["type"], url: value["url"], attached: value["attached"] });
+  const original = value["url"];
+  // Installed application views can carry account data in local URL parameters.
+  const url = typeof original === "string" && /^file:/iu.test(original) ? original.replace(/[?#][\s\S]*/u, "") : original;
+  return Object.freeze({ targetId: value["targetId"], type: value["type"], url, attached: value["attached"] });
 }
 function frameSummary(value: Row): Row {
   return Object.freeze({ id: value["id"], loaderId: value["loaderId"], url: value["url"], securityOrigin: value["securityOrigin"],

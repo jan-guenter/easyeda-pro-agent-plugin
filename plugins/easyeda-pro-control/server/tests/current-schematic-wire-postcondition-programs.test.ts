@@ -28,6 +28,6 @@ import {qualifyCurrentSchematicWirePostconditionGuard} from "../src/current-sche
    const own=await session.post("Runtime.getProperties",{objectId:actual.result.objectId,ownProperties:true});
    let scriptId:string|null=null;for(const candidate of seen){const source=await session.post("Debugger.getScriptSource",{scriptId:candidate});if(source.scriptSource===`(${PROGRAMS.guardFactory})`){assert.equal(scriptId,null);scriptId=candidate;}}
    assert.ok(scriptId!==null);assert.equal(qualifyCurrentSchematicWirePostconditionGuard(own,actual.result,scriptId),actual.result.objectId);
-   const copied=structuredClone(own);const at=copied.internalProperties?.find(row=>row.name==="[[FunctionLocation]]");assert.ok(at?.value!==undefined);at.value.value={scriptId:"123.99.99",lineNumber:0,columnNumber:0};assert.throws(()=>qualifyCurrentSchematicWirePostconditionGuard(copied,actual.result,scriptId));
+   const copied=structuredClone(own);const at=copied.internalProperties?.find(row=>row.name==="[[FunctionLocation]]");assert.ok(at?.value!==undefined);const original:unknown=at.value.value;assert.ok(original!==null&&typeof original==="object");assert.notEqual(Reflect.get(original,"scriptId"),"123.99.99");at.value.value={...original,scriptId:"123.99.99"};assert.throws(()=>qualifyCurrentSchematicWirePostconditionGuard(copied,actual.result,scriptId));
   }finally{session.disconnect();}
  });

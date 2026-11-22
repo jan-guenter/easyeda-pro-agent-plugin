@@ -18,6 +18,23 @@ export interface CurrentSchematicWireDependencyValues {
   readonly mapPrototypeObjectId: string; readonly iteratorTupleObjectId: string;
   readonly iteratorObjectId: string; readonly iteratorPrototypeObjectId: string; readonly iteratorNextObjectId: string;
 }
+function mapPrototype(input: unknown): string {
+  const prototype = currentSchematicRelevanceRawNativeConstructor(input, "Map");
+  const rows = currentSchematicRelevanceRawProperties(input);
+  const species = rows.get("Symbol(Symbol.species)");
+  const groupBy = rows.get("groupBy");
+  // Inspector presents the original native species accessor as a resolved value.
+  need(rows.size === (groupBy === undefined ? 4 : 5) && species?.value?.type === "function" &&
+    species.value.description === "function Map() { [native code] }" && species.value.objectId !== undefined &&
+    species.symbol?.type === "symbol" && species.symbol.description === "Symbol(Symbol.species)" && species.symbol.objectId !== undefined &&
+    species.configurable && !species.enumerable && species.writable === false && species.get === undefined && species.set === undefined);
+  if (groupBy !== undefined) {
+    need(groupBy.value?.type === "function" && groupBy.value.description === "function groupBy() { [native code] }" &&
+      groupBy.value.objectId !== undefined && groupBy.configurable && !groupBy.enumerable && groupBy.writable === true &&
+      groupBy.get === undefined && groupBy.set === undefined && groupBy.symbol === undefined);
+  }
+  return prototype;
+}
 /** Validate the actual iterator and its distinct native prototype; a plain
  * object or a prototype-only packet cannot stand in for the iterator. */
 export function decodeCurrentSchematicWireDependencyIterator(input: unknown): Readonly<{ iteratorObjectId: string; iteratorPrototypeObjectId: string; iteratorNextObjectId: string }> {
@@ -50,7 +67,7 @@ export class CurrentSchematicWireDependencyCursor {
     for (const [index, row] of ROLES.entries()) {
       const value = fields.get(String(index)); need(value?.type === "function" && value.subtype === undefined && value.className === "Function" && value.objectId !== undefined && value.value === undefined && value.description === `function ${row[1]}() { [native code] }`);
       refs.push(value.objectId); const raw = yield CurrentSchematicWireDependencyCursor.#properties(value.objectId);
-      if (row[0] === "mapConstructor") { mapPrototypeObjectId = currentSchematicRelevanceRawNativeConstructor(raw, "Map"); need(currentSchematicRelevanceRawProperties(raw).size === 3); }
+      if (row[0] === "mapConstructor") { mapPrototypeObjectId = mapPrototype(raw); }
       else { decodeCurrentNativeFunctionMetadata(raw, { name: row[1], arity: row[2], constructor: false }); }
     }
     const iteratorTupleObjectId = decodeCurrentFootprintCopyClockRpcV2ArrayCapture(yield this.#call("iterator", [nativeArrayObjectId]), 3);
