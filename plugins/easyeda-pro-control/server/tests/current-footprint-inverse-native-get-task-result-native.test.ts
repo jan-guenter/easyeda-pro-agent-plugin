@@ -9,6 +9,7 @@ import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_RESULT_CALLS as CALLS, curren
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_GET_TASK_RESULT_LEGACY as LEGACY, currentFootprintInverseNativeGetTaskResultNativeSource as source } from "../src/current-footprint-inverse-native-get-task-result-native.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_RESULT_CALLS as OLD } from "../src/current-footprint-inverse-get-result-protocol.ts";
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_PROFILE as PROFILE } from "../src/current-footprint-inverse-native-profile.ts";
+import { readCurrentInverseNativeCanonicalInputs } from "../../scripts/inverse-native-canonical-inputs.ts";
 
 /** Hash only fully restored native bytes; JSON property order and the final
  * NUL are included, matching the actual static native encoder's wire format. */
@@ -43,11 +44,11 @@ void test("UI result dispatch is confined to the retained V4 GET completion", as
   assert.equal(resultRoute.test(text), false, name);
  }
 
- const [owner, pipe, driver, native] = await Promise.all([
+ const [owner, pipe, driver, {ownerSource: native}] = await Promise.all([
   readFile(new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url), "utf8"),
   readFile(new URL("../src/current-pcb-diagnostic-pipe.ts", import.meta.url), "utf8"),
   readFile(new URL("../../scripts/footprint-inverse-native-continuation-v4.ps1", import.meta.url), "utf8"),
-  readFile(new URL("../../scripts/footprint-inverse-native-continuation-v4.cs", import.meta.url), "utf8"),
+  readCurrentInverseNativeCanonicalInputs("inverse-native-continuation.v4"),
  ]);
  const completion = /^ {2}public completeFootprintInverseNativeGetTaskResult\([^\n]+\n([\s\S]+?)^ {2}\}$/mu.exec(owner)?.[1];
  assert.ok(completion !== undefined);
