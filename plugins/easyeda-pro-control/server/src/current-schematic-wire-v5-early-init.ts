@@ -190,16 +190,16 @@ export class CurrentSchematicWireV5EarlyInit {
   async #remove(current: () => void): Promise<void> {
     for (const arm of this.#arms.values()) {
       if (!arm.removalAttempted) {
+        current();
+        arm.removalAttempted = true;
         try {
-          current();
-          arm.removalAttempted = true;
           const raw = await this.#transport.request(Object.freeze({
             phase: "remove", variant: arm.variant, breakpointId: arm.breakpointId,
           }));
           empty.parse(capture(raw).value);
           arm.removed = true;
-          current();
         } catch (error) { this.#removalFailure ??= Object.freeze({ cause: error }); }
+        if (arm.removed) { current(); }
       }
     }
     if (this.#removalFailure !== null) { throw this.#removalFailure.cause; }

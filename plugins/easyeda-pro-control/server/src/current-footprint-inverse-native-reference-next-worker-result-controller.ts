@@ -62,9 +62,38 @@ export class CurrentFootprintInverseNativeReferenceNextWorkerResultController {
   * state, with no public result, reference or delete grant inferred. */
  async #control(phase:"functions"|"prepared"|"complete",fields:Readonly<Record<string,string>>={}):Promise<void> { this.#current();if(phase==="functions"){need(this.#functions===null&&Reflect.ownKeys(fields).length===8&&["reply","execute","callback","innerExecute","innerSubscribe","innerRpc","uiScript","managerScript"].every(name=>typeof fields[name]==="string")&&fields["uiScript"]===this.#b.scripts.ui&&fields["managerScript"]===this.#b.scripts.manager);this.#functions=Object.freeze({...fields});}else if(phase==="prepared"){need(!this.#prepared&&this.#functions!==null&&this.#points.size===7&&this.#helper===null);this.#b.assertOriginalUiHeld();this.#prepared=true;}else{need(this.#prepared&&this.#resumes===11&&this.#pauses===10&&this.#delivered===10&&this.#held===null&&this.#helper===null&&this.#removed.size===9&&!this.#awaitResume);}await this.#b.control(phase,fields);this.#current(); }
  /** Deliver each actual pause once, after the paired real resumed event. */
- async #wait():Promise<Held> { const started=performance.now();while(this.#queued===null){this.#current();need(performance.now()-started<30_000);await this.#b.poll();this.#current();}const event=this.#queued;this.#queued=null;this.#held=event;this.#b.assertOriginalEvent(event);const held=pause(event,this.#b.sessionId,this.#b.scripts,this.#points,this.#b.forwarded.onMessagePoint);need((this.#delivered+=1)===this.#pauses);await this.#b.control("held",{role:held.role,breakpointId:z.tuple([z.string()]).parse(event.params["hitBreakpoints"])[0]});this.#current();return held; }
+ async #wait(): Promise<Held> {
+   const deadline = performance.now() + 30_000;
+   while (this.#queued === null) {
+     this.#current();
+     need(performance.now() < deadline);
+     await this.#b.poll();
+     this.#current();
+     need(performance.now() < deadline);
+   }
+   const event = this.#queued;
+   this.#queued = null;
+   this.#held = event;
+   this.#b.assertOriginalEvent(event);
+   const held = pause(event, this.#b.sessionId, this.#b.scripts, this.#points, this.#b.forwarded.onMessagePoint);
+   need((this.#delivered += 1) === this.#pauses);
+   await this.#b.control("held", { role: held.role, breakpointId: z.tuple([z.string()]).parse(event.params["hitBreakpoints"])[0] });
+   this.#current();
+   return held;
+ }
  /** Empty resume ACKs cannot replace the original stream notification. */
- async #waitResumed():Promise<void> { const started=performance.now();while(!this.#resumed){this.#current();need(performance.now()-started<30_000);await this.#b.poll();this.#current();}await this.#b.control("resumed");this.#current(); }
+ async #waitResumed(): Promise<void> {
+   const deadline = performance.now() + 30_000;
+   while (!this.#resumed) {
+     this.#current();
+     need(performance.now() < deadline);
+     await this.#b.poll();
+     this.#current();
+     need(performance.now() < deadline);
+   }
+   await this.#b.control("resumed");
+   this.#current();
+ }
  /** Require the exact completed receipt under current original custody. */
  public requireOriginalCompletion(receipt:Receipt):Receipt { this.#current();need(this.#receipt===receipt&&this.#pending!==null&&!this.#reading&&this.#helper===null&&this.#held===null);return receipt; }
  /** Join the retained original pipeline after real root/Job exit; cleanup

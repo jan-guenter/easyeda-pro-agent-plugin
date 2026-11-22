@@ -10,6 +10,8 @@ import { currentSchematicRelevanceRawHandle, currentSchematicRelevanceRawPropert
 import { CurrentSchematicWireEncoderBeforeGraphCursor } from "../src/current-schematic-wire-encoder-before-graph.ts";
 import { CURRENT_SCHEMATIC_WIRE_ENCODER_BEFORE_GRAPH_PROGRAM } from "../src/current-schematic-wire-encoder-programs.ts";
 import { CURRENT_SCHEMATIC_WIRE_WRITER_FLAGS } from "../src/current-schematic-wire-writer-protocol.ts";
+// oxlint-disable-next-line import/max-dependencies -- Exercise the real dispatcher timeout beside its original graph fixture.
+import { CurrentSchematicWireEncoderDispatch } from "../src/current-schematic-wire-encoder-dispatch.ts";
 
 class FixtureModel {
   public uploadTo(): never { throw new Error(`${this.constructor.name} upload must never be called by the binding`); }
@@ -134,4 +136,38 @@ void test("the encoder cursor refuses a copied plan before dispatch and retains 
   assert.equal(cursor.retireAfterOriginalExit(), retirement);
   await retirement;
   assert.throws(() => cursor.observe(transport), /WIRE_ENCODER_ORIGINAL_BEFORE_GRAPH/u);
+});
+
+void test("the encoder write deadline rejects a stalled acknowledgement without polling or replay", async context => {
+  context.mock.timers.enable({ apis: ["setTimeout"] });
+  const acknowledgement = Promise.withResolvers<null>();
+  const written = (async (): Promise<void> => { await acknowledgement.promise; })();
+  const reply = Promise.withResolvers<unknown>();
+  let sends = 0;
+  const dispatch = new CurrentSchematicWireEncoderDispatch({
+    pipe: {}, sessionId: "fixture-session", contextId: 1, scriptId: "fixture-script",
+    holder: "fixture.holder", native: "fixture.native",
+    status: (): { requestCount: number; pendingRequestId: null } => ({ requestCount: 0, pendingRequestId: null }),
+    assertCurrent: (): void => { assert.ok(sends <= 1); },
+    assertOriginalEvent: (): never => assert.fail("The write was never acknowledged"),
+    post: (): { written: Promise<void>; reply: Promise<unknown> } => {
+      sends += 1;
+      return { written, reply: reply.promise };
+    },
+    poll: (): never => assert.fail("A pending write cannot be polled"),
+  });
+  const command = {
+    phase: "wire-encoder-before-graph", method: "Runtime.callFunctionOn",
+    params: { ...CURRENT_SCHEMATIC_WIRE_WRITER_FLAGS, objectId: "fixture.holder",
+      functionDeclaration: CURRENT_SCHEMATIC_WIRE_ENCODER_BEFORE_GRAPH_PROGRAM,
+      arguments: [{ objectId: "fixture.native" }], returnByValue: false, awaitPromise: false, userGesture: false },
+  } as const;
+
+  const pending = assert.rejects(dispatch.transport.request(command), /WIRE_ENCODER_DISPATCH_ORIGINAL_WRITE_DEADLINE/u);
+  context.mock.timers.tick(30_000);
+  await pending;
+  acknowledgement.resolve(null);
+  reply.resolve({});
+  await assert.rejects(dispatch.transport.request(command), /WIRE_ENCODER_DISPATCH_FAILED/u);
+  assert.equal(sends, 1);
 });

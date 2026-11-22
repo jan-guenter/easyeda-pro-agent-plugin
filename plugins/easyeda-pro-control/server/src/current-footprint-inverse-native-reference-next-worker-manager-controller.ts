@@ -87,7 +87,21 @@ export class CurrentFootprintInverseNativeReferenceNextWorkerManagerController {
   /** Keep newly projected slots opaque until the fixed equality proof. */
   async #frame(role: keyof typeof ALL_EXPRESSIONS[Kind], callFrameId: string): Promise<string> { const id = result(await this.#read(validate({queryKind:this.#b.kind, phase: "inverse-native-reference-next-worker-manager-frame", role, method: "Debugger.evaluateOnCallFrame", params: { callFrameId, expression: ALL_EXPRESSIONS[this.#b.kind][role], objectGroup: FLAGS.objectGroup, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } })), sizes[role]); array(await this.#props(id), sizes[role]); return id; }
   /** Pump only the original event stream until this selected entry is held. */
-  async #wait(): Promise<DiagnosticEvent> { const started = performance.now(); while (this.#queued === null) { this.#current(); need(performance.now() - started < 30_000); await this.#b.poll(); this.#current(); } const event = this.#queued; this.#queued = null; this.#held = event; this.#waiting = false; return event; }
+  async #wait(): Promise<DiagnosticEvent> {
+    const deadline = performance.now() + 30_000;
+    while (this.#queued === null) {
+      this.#current();
+      need(performance.now() < deadline);
+      await this.#b.poll();
+      this.#current();
+      need(performance.now() < deadline);
+    }
+    const event = this.#queued;
+    this.#queued = null;
+    this.#held = event;
+    this.#waiting = false;
+    return event;
+  }
   /** Remove the prior owned point and perform one guarded original resume. */
   async #advance(role: Role, oldPoint: string, first: boolean): Promise<ReturnType<typeof pause>> { this.#current(); need(!this.#waiting && !this.#resumeAttempted); this.#role = role; this.#resumeAttempted = true; const removal = validate({queryKind:this.#b.kind, phase: "inverse-native-reference-next-worker-manager-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: oldPoint } }); const removed = await this.#read(removal); z.strictObject({}).parse(capture(removed)); await this.#b.control("resuming", role); this.#current(); need((this.#requests += 1) <= 76); const raw = await this.#b.resume(validate({queryKind:this.#b.kind, phase: "inverse-native-reference-next-worker-manager-resume", method: "Debugger.resume", params: {} }), first, (): void => { this.#current(); need(!this.#waiting && this.#resumeAttempted && (first ? !this.#transferred : this.#transferred)); this.#transferred = true; this.#waiting = true; this.#resumed = false; this.#held = null; }); this.#current(); need(this.#waiting && this.#transferred); z.strictObject({}).parse(capture(raw)); const event = await this.#wait(); this.#b.assertOriginalEvent(event); const selected = this.#points.get(role); need(selected !== undefined); const entry = pause(event, role, this.#b.sessionId, this.#b.scripts, selected,this.#b.kind); await this.#b.control("held", role); this.#current(); this.#resumeAttempted = false; return entry; }
   /** Qualify original wrapper/body lexicals, manager selection and the actual

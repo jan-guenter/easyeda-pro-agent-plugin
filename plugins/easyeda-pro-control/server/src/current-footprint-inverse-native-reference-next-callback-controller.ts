@@ -80,7 +80,20 @@ export class CurrentFootprintInverseNativeReferenceNextCallbackController {
    * the next fixed program has compared their known JS identities. */
   async #frame(role: keyof typeof EXPRESSIONS, callFrameId: string): Promise<Readonly<{ id: string; values: ReturnType<typeof array> }>> { const id = result(await this.#read(validate({ queryKind:this.#b.kind,phase: "inverse-native-reference-next-callback-frame", role, method: "Debugger.evaluateOnCallFrame", params: { callFrameId, expression: EXPRESSIONS[role], objectGroup: FLAGS.objectGroup, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } })), 20); return { id, values: array(await this.#props(id), 20) }; }
   /** Pump only original events while retaining the same pending invocation. */
-  async #wait(): Promise<DiagnosticEvent> { const started = performance.now(); while (this.#queued === null) { this.#current(); need(performance.now() - started < 30_000); await this.#b.poll(); this.#current(); } const event = this.#queued; this.#queued = null; this.#held = event; return event; }
+  async #wait(): Promise<DiagnosticEvent> {
+    const deadline = performance.now() + 30_000;
+    while (this.#queued === null) {
+      this.#current();
+      need(performance.now() < deadline);
+      await this.#b.poll();
+      this.#current();
+      need(performance.now() < deadline);
+    }
+    const event = this.#queued;
+    this.#queued = null;
+    this.#held = event;
+    return event;
+  }
   /** Prepare the exact prefix, reprove a fresh original RPC frame, spend the
    * old entry at actual resume and qualify the actual callback before receipt. */
   async #run(): Promise<CurrentFootprintInverseNativeReferenceNextCallbackHold> {
