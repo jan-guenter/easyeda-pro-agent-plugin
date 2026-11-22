@@ -275,23 +275,22 @@ void test("complete forward discovery extends the fixed Start Page sequence and 
   const value = fixture(context, false, false, true);
   const { pipe } = value;
   const sessionId = "original-session";
-  const unexpected = (): never => assert.fail("Unexpected startup event");
   const steps = [
-    [() => pipe.getVersion(), {}, false],
-    [() => pipe.getTargets(), {}, false],
-    [() => pipe.getTargets(), {}, false],
-    [() => pipe.attachTarget("original-target", unexpected), { sessionId }, false],
-    [() => pipe.enablePage(), {}, true],
-    [() => pipe.getFrameTree(), {}, true],
-    [() => pipe.getTargets(), {}, false],
-    [() => pipe.getFrameTree(), {}, true],
-    [() => pipe.getTargets(), {}, false],
-    [() => pipe.getFrameTree(), {}, true],
-    [() => pipe.enableRuntime(), {}, true],
-    [() => pipe.enableDebugger(), {}, true],
-    [() => pipe.getScriptSource("source-original"), { scriptSource: "const original = 1;" }, true],
-    [() => pipe.getTargets(), {}, false],
-    [() => pipe.getFrameTree(), {}, true],
+    [pipe.getVersion.bind(pipe), {}, false],
+    [pipe.getTargets.bind(pipe), {}, false],
+    [pipe.getTargets.bind(pipe), {}, false],
+    [pipe.attachTarget.bind(pipe, "original-target", (): never => assert.fail("Unexpected startup event")), { sessionId }, false],
+    [pipe.enablePage.bind(pipe), {}, true],
+    [pipe.getFrameTree.bind(pipe), {}, true],
+    [pipe.getTargets.bind(pipe), {}, false],
+    [pipe.getFrameTree.bind(pipe), {}, true],
+    [pipe.getTargets.bind(pipe), {}, false],
+    [pipe.getFrameTree.bind(pipe), {}, true],
+    [pipe.enableRuntime.bind(pipe), {}, true],
+    [pipe.enableDebugger.bind(pipe), {}, true],
+    [pipe.getScriptSource.bind(pipe, "source-original"), { scriptSource: "const original = 1;" }, true],
+    [pipe.getTargets.bind(pipe), {}, false],
+    [pipe.getFrameTree.bind(pipe), {}, true],
   ] as const;
   for (const [offset, [request, result, session]] of steps.entries()) {
     const id = offset + 1;
