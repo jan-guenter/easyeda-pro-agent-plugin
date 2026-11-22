@@ -39,6 +39,7 @@
   readonly #arms:Arm[]=[];readonly #attempts:Attempt[]=[];readonly #events:CurrentSchematicWireEventRecord[]=[];
   readonly #ready=Promise.withResolvers<CurrentSchematicWireNetWatchRegistration>();
   #prepare:Promise<null>|null=null;#tail:Promise<void>=Promise.resolve();#retire:Promise<void>|null=null;
+  #removeFailure:Readonly<{cause:unknown}>|null=null;
   #failure:Readonly<{cause:unknown}>|null=null;#notification:Readonly<{cause:unknown}>|null=null;#closing=false;
   #source:Readonly<{program:string;scripts:string[]}>|null=null;#normal=0;#cleanup=0;#sources=0;#pauses=0;#resumes=0;
   #prepared=false;#step=0;#completed=0;#resume:Readonly<{signal:PromiseWithResolvers<null>;event:{seen:boolean}}>|null=null;
@@ -87,7 +88,17 @@
    const prior=this.#tail;this.#tail=(async():Promise<void>=>{await prior;try{await this.#process(held);}catch(error){this.#fail(error);}})();return true;
   }
   async #resumeOnce():Promise<void>{need(this.#resume===null&&this.#resumes<LIMIT.resumes);const active={signal:Promise.withResolvers<null>(),event:{seen:false}};void settled(active.signal.promise);this.#resume=active;empty.parse(capture(await this.#send({phase:"net-watch-resume",method:"Debugger.resume",params:{}})).value);await active.signal.promise;this.#current();need(this.#resume===active&&active.event.seen);this.#resume=null;this.#resumes+=1;}
-  async #remove():Promise<void>{let failure:Readonly<{cause:unknown}>|null=null;for(const arm of this.#arms){if(!arm.attempted){arm.attempted=true;try{empty.parse(capture(await this.#send({phase:"net-watch-remove",method:"Debugger.removeBreakpoint",params:{breakpointId:arm.id}},true)).value);arm.removed=true;}catch(error){failure??=Object.freeze({cause:error});}}}if(failure!==null){throw failure.cause;}}
+  async #remove():Promise<void>{
+   for(const arm of this.#arms){
+    if(!arm.attempted){
+     arm.attempted=true;
+     try{empty.parse(capture(await this.#send({phase:"net-watch-remove",method:"Debugger.removeBreakpoint",params:{breakpointId:arm.id}},true)).value);arm.removed=true;}
+     catch(error){this.#removeFailure??=Object.freeze({cause:error});}
+    }
+   }
+   if(this.#removeFailure!==null){throw this.#removeFailure.cause;}
+   need(this.#arms.every(arm=>arm.removed));
+  }
   async #watch(held:Held):Promise<void>{
    const n=this.#input.native;const first=await this.#frame("watch",held.frame,1);const net=object(first.values.get("0"));
    const selected=await this.#send(call("selectNet",net,[n,this.#input.net]));const roots=await this.#tuple(selected,3);const shapes=object(roots.values.get("0"));const subs=object(roots.values.get("1"));const netProto=object(roots.values.get("2"));
@@ -139,6 +150,6 @@
    return Object.freeze({sessionId, scriptId, variant, native, holder: bound.holder, source: this.#sourceReceipt, ...original});
   }
   public inspect():Readonly<{ownedArms:number;qualifiedArms:number;pendingArmCleanup:number;normalRequests:number;failed:boolean;originalNativeOwnerJoined:false}>{return Object.freeze({ownedArms:this.#arms.length,qualifiedArms:this.#arms.filter(x=>x.qualified).length,pendingArmCleanup:this.#arms.filter(x=>!x.removed).length,normalRequests:this.#normal,failed:this.#failure!==null,originalNativeOwnerJoined:false});}
-  public retireAfterOriginalExit():Promise<void>{if(this.#retire!==null){return this.#retire;}this.#current(true);this.#transport.assertOriginalExit();this.#closing=true;this.#ready.reject(this.#failure?.cause??new Error("WIRE_NET_WATCH_ORIGINAL_EXIT"));this.#bindReady?.reject(this.#failure?.cause??new Error("WIRE_NET_WATCH_ORIGINAL_EXIT"));this.#resume?.signal.reject(this.#failure?.cause??new Error("WIRE_NET_WATCH_ORIGINAL_EXIT"));const task=(async():Promise<void>=>{await settled(this.#prepare);await this.#tail;await this.#remove();for(const attempt of this.#attempts){await settled(attempt.pending);}this.#transport.assertOriginalExit();})();this.#retire=task;return task;}
+  public retireAfterOriginalExit():Promise<void>{if(this.#retire!==null){return this.#retire;}this.#current(true);this.#transport.assertOriginalExit();this.#closing=true;this.#ready.reject(this.#failure?.cause??new Error("WIRE_NET_WATCH_ORIGINAL_EXIT"));this.#bindReady?.reject(this.#failure?.cause??new Error("WIRE_NET_WATCH_ORIGINAL_EXIT"));this.#resume?.signal.reject(this.#failure?.cause??new Error("WIRE_NET_WATCH_ORIGINAL_EXIT"));const task=(async():Promise<void>=>{await settled(this.#prepare);await this.#tail;try{await this.#remove();}finally{for(const attempt of this.#attempts){await settled(attempt.pending);}this.#transport.assertOriginalExit();}})();this.#retire=task;return task;}
  }
  Object.freeze(CurrentSchematicWireNetWatchDriver.prototype);Object.freeze(CurrentSchematicWireNetWatchDriver);
