@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "a0f1271dd5bcbb44a93200b6d46232784fc0c7c130275e244b75a89c0be5b917",
-      "fileCount": 3302,
+      "sha256": "fd55708163172ee36de1f4e0eb4ffa99a5671de9968857e5f1997210f32c2eb4",
+      "fileCount": 3314,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -4127,6 +4127,11 @@
           "sha256": "4be3f59db578ff648704c451fe3873a316e4b7852f9dd5a102e181db797de312"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-drain-controller.ts",
+          "bytes": 26281,
+          "sha256": "e55adb87d311064c01261cff79b2359e43a19233b8d1c36a8effc61872ba8c72"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-drain-cursor.ts",
           "bytes": 18325,
           "sha256": "4947ed2b3b2af1a67d9230a4b428b952cc59337d92e1081f149d12a527575889"
@@ -4145,6 +4150,11 @@
           "relativePath": "current-footprint-inverse-native-delete-drain-metadata.ts",
           "bytes": 3370,
           "sha256": "6234f1ffbe8b83b73799eadfc3c78efdbb92df1e9c4e364d1fd50c0b34c03a58"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-drain-observer.ts",
+          "bytes": 10755,
+          "sha256": "115d9453892a5b0c851d1c9f79dc376d90464d3e47ec430c7037fec77814de70"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-drain-programs.ts",
@@ -4170,6 +4180,11 @@
           "relativePath": "current-footprint-inverse-native-delete-drain-source-programs.ts",
           "bytes": 1187,
           "sha256": "c9b5abcbc427adb633bc70a99429780ca161656b258ff37a3c57aa0c0230c261"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-drain-sync-cursor.ts",
+          "bytes": 10498,
+          "sha256": "074c1696ed0d9daf0db6daf3b9ea0831bafeeb81520cb5a6a4fa9d4def81b232"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-drain-sync-programs.ts",
@@ -4377,6 +4392,11 @@
           "sha256": "2311ed3b3a0e1d3d041396fad3f91bde3cf17996296dd7e2cfa51f4472c74ce2"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-main-begin-observer.ts",
+          "bytes": 12544,
+          "sha256": "d8beefb4796bd88708cd64e406a60c7de84bd5352fe721783cec030b775da4af"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-main-begin-programs.ts",
           "bytes": 698,
           "sha256": "bf5ce3e64c30d0a4eaa8327e3b1b81bdef89709d33489af9bd991fd03fd58b72"
@@ -4412,6 +4432,11 @@
           "sha256": "d019a229098fb2d6cf6fdf92402890e953468e2612f87ba3d05684434e7619d4"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-main-controller.ts",
+          "bytes": 19781,
+          "sha256": "282b55db152e964f0fcd72154265ca3e5359c567c42b33055f3abe033f654b58"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-main-history-ack.ts",
           "bytes": 2154,
           "sha256": "b64a396e4dfd70c90077a1dd3b123cd5591e2dba4c96fdce8b366350f471475d"
@@ -4420,6 +4445,11 @@
           "relativePath": "current-footprint-inverse-native-delete-main-history-custody.ts",
           "bytes": 33275,
           "sha256": "7874d9b723b7103d6a7d4c0076694e42947039d61dfe78cb253a49abdce45d61"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-main-history-observer.ts",
+          "bytes": 17697,
+          "sha256": "5e3a7a3e2e6865499ee9d1737f5c32c76e79383e857ade760c2b46c624e3c5b4"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-history-programs.ts",
@@ -4467,9 +4497,29 @@
           "sha256": "be1fed8c3d0f83d0bdf22e850b1028be0a324dab8af9942ccc4ad33328b22b4b"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-main-request-observer.ts",
+          "bytes": 24654,
+          "sha256": "96c6d85a554c07229b855f3cd36204517bdc06d88ee78441121735afe4a8bece"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-main-source.ts",
+          "bytes": 2444,
+          "sha256": "fe0a826245aa89e991605790c90fe5eba09b9e0ec597f2136d34422a9f560c79"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-main-step-protocol.ts",
           "bytes": 1844,
           "sha256": "b551ba95fc4e50112051a56cb7ce88187de1925c7c2d756b52b08f744399da89"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-main-tail-controller.ts",
+          "bytes": 18969,
+          "sha256": "3c997bca7494b4c9d714281e62dea4d2442960dafee1d2f40e9afa9d13064f61"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-main-tail-data.ts",
+          "bytes": 16117,
+          "sha256": "c0fb90c729ccff9587be1abb601788c03f3c3ea8af500944aea602c79071b3e0"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-tail-source.ts",
@@ -4490,6 +4540,11 @@
           "relativePath": "current-footprint-inverse-native-delete-poststate-native.ts",
           "bytes": 7881,
           "sha256": "4b74bbd7a4c4b115a81d8b1af9879d6c8262e94125cbd16edd9ff8f8ac9ccfcf"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-poststate-origin.ts",
+          "bytes": 1201,
+          "sha256": "09fe5dcda48b0f40ced61f6ede14c47b532b5bc8c50c8873b037cbc1828d7502"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-poststate-protocol.ts",
@@ -6275,6 +6330,11 @@
           "relativePath": "current-footprint-inverse-v4-initialized-get-replies.ts",
           "bytes": 5347,
           "sha256": "64a365fb5431212f428c029cb10cff8fcd97ed444b0620780626b9bc5b53ba23"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-main-joint-data.ts",
+          "bytes": 948,
+          "sha256": "ba0e5668ee2894673651cb4d77cb26542d1de1afeb7253c94bb1ba1ff7f0bb4e"
         },
         {
           "relativePath": "current-footprint-inverse-v4-native-delete-clock-controller.ts",
@@ -16543,7 +16603,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-22T18:12:16.752Z",
+  "reviewedAt": "2026-11-22T18:19:32.258Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {
