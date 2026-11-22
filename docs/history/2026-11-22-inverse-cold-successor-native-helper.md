@@ -40,3 +40,19 @@ owner starts after persistence. A declined proof prevents the current
 effect write, and cancellation during a proof keeps that write closed.
 An inert Core regression exercises each effect boundary and the pending
 cancellation path.
+
+## Passive review corrections — 2026-11-22
+
+The passive review now tests invalid distribution names through the actual
+helper path-selector function with a deterministic UNC fixture and a separate
+drive-path success. Both birth-smoke and initialization calls must exist before
+their order is compared. The two cold owner/accounting/cancellation fixtures and
+the GET Core/pipe routing assertions belong to the final original-owner batch;
+they are preserved for that batch instead of adding unmounted runtime code or
+skipping failures here. The restored GET fixture exercises all four original
+continuation/pending combinations: only an active original V4 continuation
+without another pending task may dispatch.
+
+The native cold-UI budget now reads the same exported controller cleanup count
+used by the profile, preserving its existing numeric value and profile shape.
+These corrections create no native owner or connected proof.
