@@ -5,14 +5,15 @@ import { captureCurrentPcbStringClockReply as capture } from "./current-pcb-stri
 import type { CurrentSchematicWireEventRecord } from "./current-schematic-wire-event-observer.ts";
 import { CURRENT_SCHEMATIC_WIRE_NET_BIRTH_FLAGS as FLAGS, CURRENT_SCHEMATIC_WIRE_NET_BIRTH_HELPER as HELPER, CURRENT_SCHEMATIC_WIRE_NET_BIRTH_REQUESTS as LIMIT, currentSchematicWireNetBirthHandle as handle, currentSchematicWireNetBirthPage as pageUuid, currentSchematicWireNetBirthProject as projectUuid, validateCurrentSchematicWireNetBirthCommand as validate } from "./current-schematic-wire-net-birth-protocol.ts";
 import type { CurrentSchematicWireNetBirthCommand as Command } from "./current-schematic-wire-net-birth-protocol.ts";
-import { CURRENT_SCHEMATIC_WIRE_NET_BIRTH_SOURCE as SOURCE, qualifyCurrentSchematicWireNetBirthSource as qualify } from "./current-schematic-wire-net-birth-source.ts";
+import { CURRENT_SCHEMATIC_WIRE_NET_BIRTH_SOURCE as SOURCE, currentSchematicWireNetBirthSite, qualifyCurrentSchematicWireNetBirthSource as qualify } from "./current-schematic-wire-net-birth-source.ts";
 import type { CurrentSchematicWireNetWatchDriver } from "./current-schematic-wire-net-watch-driver.ts";
 import { netWatchArray as array, netWatchObject as object, netWatchArrayCapture as tuple } from "./current-schematic-wire-net-watch-replies.ts";
 
 const site = z.strictObject({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
+const breakpointId = z.string().max(256);
 const pausedFrame = z.strictObject({ callFrameId: handle, location: site, functionLocation: site });
 const pause = z.strictObject({ sessionId: handle, method: z.literal("Debugger.paused"), params: z.strictObject({
-  reason: z.literal("other"), hitBreakpoints: z.tuple([handle]), callFrames: z.tuple([pausedFrame, pausedFrame]),
+  reason: z.literal("other"), hitBreakpoints: z.tuple([breakpointId]), callFrames: z.tuple([pausedFrame, pausedFrame]),
 }) });
 const helperSource = z.strictObject({ scriptSource: z.string().max(16_384) });
 
@@ -55,6 +56,23 @@ function equalSite(a: z.infer<typeof site>, scriptId: string, line: number, colu
   return a.scriptId === scriptId && a.lineNumber === line && a.columnNumber === column;
 }
 
+/** Compare the fixed initializer and suspended consistency caller on an
+ * owner-qualified held event. This comparison grants no event custody. */
+export function qualifyCurrentSchematicWireNetBirthPause(
+  event: CurrentSchematicWireEventRecord, breakpoint: string, binding: SourceBinding,
+): readonly [string, string] {
+  const data = pause.parse(capture(event.event).value);
+  const { scriptId, sessionId, variant } = binding;
+  const [page, caller] = data.params.callFrames;
+  const source = SOURCE[variant];
+  need(data.sessionId === sessionId && data.params.hitBreakpoints[0] === breakpoint && page.callFrameId !== caller.callFrameId);
+  need(equalSite(page.location, scriptId, source.page.lineNumber, source.page.held) &&
+    equalSite(page.functionLocation, scriptId, source.page.lineNumber, source.page.columnNumber) &&
+    equalSite(caller.location, scriptId, source.caller.lineNumber, source.caller.held) &&
+    equalSite(caller.functionLocation, scriptId, source.caller.lineNumber, source.caller.columnNumber));
+  return Object.freeze([page.callFrameId, caller.callFrameId]);
+}
+
 export class CurrentSchematicWireNetBirthReader {
   readonly #input: Readonly<Input>;
   readonly #bound: SourceBinding;
@@ -70,10 +88,13 @@ export class CurrentSchematicWireNetBirthReader {
     const source = input.source;
     need(!types.isProxy(input.target) && Object.isFrozen(input.target));
     need(source !== null && typeof source === "object" && !types.isProxy(source) && Object.isFrozen(source));
-    this.#input = Object.freeze({ ...input, native: handle.parse(input.native), breakpoint: handle.parse(input.breakpoint) });
+    const variant = qualify(source);
+    const breakpoint = input.breakpoint === currentSchematicWireNetBirthSite(variant).breakpointId ?
+      input.breakpoint : handle.parse(input.breakpoint);
+    this.#input = Object.freeze({ ...input, native: handle.parse(input.native), breakpoint });
     this.#targetIds = Object.freeze({ projectUuid: projectUuid.parse(input.target.projectUuid), pageUuid: pageUuid.parse(input.target.pageUuid) });
     this.#transport = transport;
-    this.#bound = Object.freeze({ scriptId: handle.parse(input.scriptId), sessionId: handle.parse(input.sessionId), variant: qualify(source) });
+    this.#bound = Object.freeze({ scriptId: handle.parse(input.scriptId), sessionId: handle.parse(input.sessionId), variant });
     Object.freeze(this);
   }
 
@@ -84,25 +105,13 @@ export class CurrentSchematicWireNetBirthReader {
     need(target.pageUuid === this.#targetIds.pageUuid && target.projectUuid === this.#targetIds.projectUuid);
   }
 
-  #samePause(): readonly [string, string] {
-    const data = pause.parse(capture(this.#input.event.event).value);
-    const { scriptId, sessionId, variant } = this.#bound;
-    const [page, caller] = data.params.callFrames;
-    const source = SOURCE[variant];
-    need(data.sessionId === sessionId && data.params.hitBreakpoints[0] === this.#input.breakpoint && page.callFrameId !== caller.callFrameId);
-    need(equalSite(page.location, scriptId, source.page.lineNumber, source.page.held) &&
-      equalSite(page.functionLocation, scriptId, source.page.lineNumber, source.page.columnNumber) &&
-      equalSite(caller.location, scriptId, source.caller.lineNumber, source.caller.held) &&
-      equalSite(caller.functionLocation, scriptId, source.caller.lineNumber, source.caller.columnNumber));
-    return Object.freeze([page.callFrameId, caller.callFrameId]);
-  }
 
   public readOriginal(): Promise<CurrentSchematicWireNetBirthResult> {
     if (this.#pending !== null) { return this.#pending; }
     this.#current();
     const { event } = this.#input;
     need(!claimed.has(event));
-    this.#frames = this.#samePause();
+    this.#frames = qualifyCurrentSchematicWireNetBirthPause(event, this.#input.breakpoint, this.#bound);
     claimed.add(event);
     const pending = Promise.withResolvers<CurrentSchematicWireNetBirthResult>();
     this.#pending = pending.promise;

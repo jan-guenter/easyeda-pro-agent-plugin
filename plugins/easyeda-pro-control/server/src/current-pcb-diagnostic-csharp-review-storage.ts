@@ -1,3 +1,4 @@
+import {currentSchematicWireWriterV5CSharpCompilerInput,currentSchematicWireWriterV5CSharpReviewSource,expandCurrentSchematicWireWriterV5CSharpSource,hasCurrentSchematicWireWriterV5CSharpStorage,packCurrentSchematicWireWriterV5CSharpStorage} from "./current-schematic-wire-writer-v5-csharp-storage.ts";
 /** V2 alone separates original review bytes from compact runtime compiler
  * bytes. Historical v1 parsing/decoding and its original bounds stay intact. */
 import { currentPcbDiagnosticCSharpRuntimeCompilerInputV3, expandCurrentPcbDiagnosticCSharpReviewSourceV3, hasCurrentPcbDiagnosticCSharpReviewStorageV3, packCurrentPcbDiagnosticCSharpReviewStorageV3 as packV3 } from "./current-pcb-diagnostic-csharp-review-storage-v3.ts";
@@ -66,16 +67,19 @@ function read(source: string): Readonly<{ start: number; stop: number; original:
 }
 /** Original bytes/markers only. This is NOT the actual runtime compiler input. */
 export function expandCurrentPcbDiagnosticCSharpReviewSource(source: string): string {
+  if(hasCurrentSchematicWireWriterV5CSharpStorage(source)){return expandCurrentSchematicWireWriterV5CSharpSource(source);}
   if (hasCurrentPcbDiagnosticCSharpReviewStorageV3(source)) { return expandCurrentPcbDiagnosticCSharpReviewSourceV3(source); }
   if (!source.includes(BEGIN.slice(0, -1)) && !source.includes(END.slice(0, -1))) { return expandCurrentPcbDiagnosticCSharpStorage(source); }
   const value = read(source); return source.slice(0, value.start) + LITERAL_BEGIN + value.original + LITERAL_END + source.slice(value.stop);
 }
 export function currentPcbDiagnosticCSharpReviewSource(input: string): string {
+  if(hasCurrentSchematicWireWriterV5CSharpStorage(input)){return currentSchematicWireWriterV5CSharpReviewSource(input);}
   const source = expandCurrentPcbDiagnosticCSharpReviewSource(input); const { start, stop } = section(source, LITERAL_BEGIN, LITERAL_END); const body = source.slice(start + LITERAL_BEGIN.length, stop - LITERAL_END.length); const bytes = Buffer.from(body);
   if (bytes.length === 0 || bytes.length > CURRENT_PCB_DIAGNOSTIC_CSHARP_REVIEW_MAX_BYTES || bytes.some(byte => byte > 127 || byte === 0)) { return bad(); } return body;
 }
 /** Only these bytes may be written to Native.cs or passed to a compiler. */
 export function currentPcbDiagnosticCSharpRuntimeCompilerInput(input: string): string {
+  if(hasCurrentSchematicWireWriterV5CSharpStorage(input)){return currentSchematicWireWriterV5CSharpCompilerInput(input);}
   if (hasCurrentPcbDiagnosticCSharpReviewStorageV3(input)) { return currentPcbDiagnosticCSharpRuntimeCompilerInputV3(input); }
   return input.includes(BEGIN.slice(0, -1)) || input.includes(END.slice(0, -1)) ? read(input).compact : currentPcbDiagnosticCSharpCompilerInput(input);
 }
@@ -92,6 +96,7 @@ export function packCurrentPcbDiagnosticCSharpReviewStorage(input: string): stri
 /** V1 marker operations retain their old format/limits. Only explicit final
  * combined composition introduces the separately versioned review format. */
 export function retainCurrentPcbDiagnosticCSharpReviewStorage(source: string, original: string): string {
+  if(hasCurrentSchematicWireWriterV5CSharpStorage(original)){return packCurrentSchematicWireWriterV5CSharpStorage(expandCurrentPcbDiagnosticCSharpReviewSource(source));}
   if (hasCurrentPcbDiagnosticCSharpReviewStorageV3(original)) { return packV3(expandCurrentPcbDiagnosticCSharpReviewSource(source)); }
   return original.includes(BEGIN) ? packCurrentPcbDiagnosticCSharpReviewStorage(source) : retainCurrentPcbDiagnosticCSharpStorage(source, original);
 }

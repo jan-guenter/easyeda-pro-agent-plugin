@@ -3,7 +3,7 @@
  * this family. The original inverse Core must provide all four retained handles. */
 import {CURRENT_FOOTPRINT_FORWARD_WRITER_TICKET_TIMER_BINDING_PROGRAMS as TIMER,qualifyCurrentFootprintForwardWriterTicketTimerBindingSource} from "./current-footprint-forward-writer-ticket-timer-bindings.ts";
 import {CURRENT_NATIVE_OWN_DATA_CHECK as CHECK} from "./current-native-own-data-intrinsics.ts";
-import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_HELPERS as SERIAL} from "./current-footprint-inverse-native-delete-serialization-programs.ts";
+import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_HELPERS as SERIAL} from "./current-footprint-inverse-v4-native-delete-serialization-programs.ts";
 import {CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES as DEPENDENCIES} from "./current-footprint-copy-dependency-profiles.ts";
 import {CURRENT_FOOTPRINT_COPY_DESTINATION_PROFILES as DESTINATIONS} from "./current-footprint-copy-destination-profiles.ts";
 import {qualifyCurrentFootprintForwardWriterStartupNonprivateSource} from "./current-footprint-forward-writer-startup-nonprivate-source.ts";

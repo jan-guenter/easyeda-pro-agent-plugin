@@ -74,6 +74,8 @@ const MANAGER_SCRIPT_INPUTS = new Set([
   "scripts/control-session-via-adapter.ts", "scripts/control-session-spatial-adapter.ts",
   "scripts/control-session-schematic-display-adapter.ts",
   "scripts/control-session-footprint-forward-writer-adapter.ts",
+  "scripts/control-session-footprint-inverse-adapter.ts",
+  "scripts/control-session-footprint-inverse-cold-ui-adapter.ts",
   "scripts/control-session-arguments-file.ts",
   "scripts/control-session.ts", "scripts/control-session-transport.ts", "scripts/private-temporary-directory.ts",
 ]);
