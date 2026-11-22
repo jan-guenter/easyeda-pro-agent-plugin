@@ -716,7 +716,7 @@ class CurrentPcbFixedPipeCore {
   #pending: Pending | null = null;
   #wireV5Encoder: CurrentSchematicWireEncoderDispatch | null = null;
   #wireV5EncoderEvent: DiagnosticEvent | null = null;
-  #wireV5EncoderWrite: Readonly<{ id: number; written: ReturnType<typeof Promise.withResolvers<void>> }> | null = null;
+  #wireV5EncoderWrite: Readonly<{ id: number; written: ReturnType<typeof Promise.withResolvers<undefined>> }> | null = null;
   #wireV5NavigationAttempted = false;
   #wireV5Navigation: WireV5Navigation | null = null;
   // Only the new Via birth may retain its sole opening/SDK Save response while one
@@ -1387,7 +1387,7 @@ class CurrentPcbFixedPipeCore {
         current();
         if (this.#wireV5Encoder !== dispatch || this.#wireV5EncoderWrite !== null || fixed.wire.id !== this.#nextId ||
             fixed.wire.sessionId !== sessionId) { throw new Error("WIRE_V5_ENCODER_ORIGINAL_WRITE"); }
-        const written = Promise.withResolvers<void>();
+        const written = Promise.withResolvers<undefined>();
         const write = Object.freeze({ id: fixed.wire.id, written });
         this.#wireV5EncoderWrite = write;
         const reply = this.#request(fixed.wire, "wire-v5-encoder");
@@ -2453,7 +2453,10 @@ class CurrentPcbFixedPipeCore {
           // oxlint-disable-next-line unicorn/no-useless-undefined -- The original write acknowledgement has exactly an undefined payload.
           this.#inverseNativeReferencePcbWritten?.resolve(undefined);
          }
-         if (this.#wireV5EncoderWrite?.id === pending.id) { this.#wireV5EncoderWrite.written.resolve(); }
+         if (this.#wireV5EncoderWrite?.id === pending.id) {
+           // oxlint-disable-next-line unicorn/no-useless-undefined -- The original write acknowledgement has exactly an undefined payload.
+           this.#wireV5EncoderWrite.written.resolve(undefined);
+         }
          this.#complete(); }
       });
     } catch { this.#fail("output"); }

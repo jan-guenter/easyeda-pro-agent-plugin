@@ -47,7 +47,7 @@ interface EncoderEvent {
   readonly params: Readonly<Record<string, unknown>>;
 }
 interface Helper {
-  readonly command: CurrentSchematicWireEncoderBeforeGraphHelper;
+  readonly command: object;
   readonly program: string;
   readonly id: number;
   scriptId: string | null;
