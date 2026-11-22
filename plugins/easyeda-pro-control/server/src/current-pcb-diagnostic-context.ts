@@ -371,11 +371,41 @@ export class CurrentPcbDiagnosticContext {
       attributes: this.#ancillaryOwner.attributes, shape: "source-shaped-ui-resize-sensor-object",
       domParentVerified: false, observerRegistryOwnershipVerified: false, continuousObservation: false, executionAuthorized: false });
   }
+  #schematicWireScripts(contextId: number): readonly Readonly<{ row: Row; variant: number }>[] {
+    return GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE.flatMap((profile, variant) =>
+      [...this.#scripts.values()].filter(row => row["executionContextId"] === contextId &&
+        scriptUrlMatches(row["url"], { family: "ui", relativePath: profile.relativePath, scriptBytes: profile.bytes, scriptSha256: profile.sha256 }))
+        .map(row => ({ row, variant })));
+  }
+
+  public schematicWireV5OpeningContext(): Readonly<{ sessionId: string; uniqueContextId: string; contextId: number }> {
+    const ui = this.openingContext();
+    const source = this.#sourceIdentity;
+    if (source === null || !this.#openingConsumed || this.#schematicNavigation === null || this.#schematicOpening === null) { return refuse(); }
+    return Object.freeze({ ...ui, contextId: source.contextId });
+  }
+
+  /** The candidate must still be unique in the original Start Page realm.
+   * The pipe separately proves receipt during the pending native navigation. */
+  public schematicWireV5OpeningScript(): Readonly<{ scriptId: string; contextId: number; variant: 0 | 1; parsed: Row }> {
+    const { contextId } = this.schematicWireV5OpeningContext();
+    const candidates = this.#schematicWireScripts(contextId);
+    const selected = candidates[0];
+    if (candidates.length !== 1 || selected === undefined || (selected.variant !== 0 && selected.variant !== 1)) { return refuse(); }
+    const { row, variant } = selected;
+    const scriptId = row["scriptId"];
+    if (!diagnosticToken(scriptId) || row["startLine"] !== 0 || row["startColumn"] !== 0 ||
+        (row["hasSourceURL"] !== undefined && row["hasSourceURL"] !== false) ||
+        (row["isLiveEdit"] !== undefined && row["isLiveEdit"] !== false) ||
+        (row["scriptLanguage"] !== undefined && row["scriptLanguage"] !== "JavaScript")) { return refuse(); }
+    return Object.freeze({ scriptId, contextId, variant, parsed: row });
+  }
+
   /** Actual retained script events in the selected original UI realm. The
    * owner still fetches and qualifies both full source bodies before binding. */
   public schematicWireTitleSources():Readonly<{scriptId:string;busScriptId:string;variant:0|1}>{
     const realm=this.schematicWireGlobalsContext();
-    const candidates=GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE.flatMap((profile,variant)=>[...this.#scripts.values()].filter(row=>row["executionContextId"]===realm.contextId&&scriptUrlMatches(row["url"],{family:"ui",relativePath:profile.relativePath,scriptBytes:profile.bytes,scriptSha256:profile.sha256})).map(row=>({row,variant})));
+    const candidates=this.#schematicWireScripts(realm.contextId);
     const selected=candidates[0];if(candidates.length!==1||selected===undefined||selected.variant!==0&&selected.variant!==1||!diagnosticToken(selected.row["scriptId"])){return this.#refuse();}
     const scriptId=selected.row["scriptId"];this.schematicCalleeContext(scriptId,selected.variant);
     const busProfile=STATUS_BUS_SOURCE[2];const buses=[...this.#scripts.values()].filter(row=>row["executionContextId"]===realm.contextId&&scriptUrlMatches(row["url"],{family:"ui",relativePath:busProfile.relativePath,scriptBytes:busProfile.bytes,scriptSha256:busProfile.sha256}));const bus=buses[0];

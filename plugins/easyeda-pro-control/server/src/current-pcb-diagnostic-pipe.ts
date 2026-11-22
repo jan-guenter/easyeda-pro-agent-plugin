@@ -410,6 +410,9 @@ import { CURRENT_PCB_DIAGNOSTIC_TRANSPORT_LIMITS as TRANSPORT } from "./current-
 import type { Readable, Writable } from "node:stream";
 import { CURRENT_RENDERER_CAPTURE_PARAMS, DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExact, diagnosticExtendedPrimitives209Params, diagnosticGeneratedFixtureRegistrationParams, diagnosticImageShapes209Params, diagnosticLayers209Params, diagnosticOpeningParams, diagnosticPadShapes209Params, diagnosticPcbOpeningParams, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticToken, diagnosticVisual209Params, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticCommand, DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
+import { CurrentSchematicWireEventObserver } from "./current-schematic-wire-event-observer.ts";
+import type { CurrentSchematicWireEventRecord } from "./current-schematic-wire-event-observer.ts";
+import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE } from "./generated-schematic-display-accessor-source.ts";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import { assertOriginalGeneratedPcbReadTarget as assertOriginalGeneratedFixtureTarget } from "./managed-pcb-fixture-read-target.ts";
@@ -574,6 +577,16 @@ interface Pending {
   sourceFrameBytes?: number;
 }
 
+interface WireV5Navigation {
+  readonly slot: Pending;
+  readonly pending: Promise<Reply>;
+  readonly parameters: string;
+  readonly contextId: number;
+  readonly observer: CurrentSchematicWireEventObserver;
+  script: CurrentSchematicWireEventRecord | null;
+  scriptRefused: boolean;
+}
+
 export interface CurrentSchematicWireV5BundleSourceReceive {
   readonly requestId: number;
   readonly sessionId: string;
@@ -685,7 +698,7 @@ class CurrentPcbFixedPipeCore {
   #lastRequest: RequestObservation | null = null;
   #pending: Pending | null = null;
   #wireV5NavigationAttempted = false;
-  #wireV5Navigation: Readonly<{ slot: Pending; pending: Promise<Reply>; parameters: string }> | null = null;
+  #wireV5Navigation: WireV5Navigation | null = null;
   // Only the new Via birth may retain its sole opening/SDK Save response while one
   // Fixed observer request uses the same original stream and ID allocator.
   #viaRetainedPending: Pending | null = null;
@@ -1434,8 +1447,9 @@ class CurrentPcbFixedPipeCore {
     const result = decodeCurrentSchematicRelevanceDisplayRegistrationNavigation(slot.reply, qualification).navigation.registration;
     if (result === null || !result.priorRegistrationPresent || result.registrationDispatched) { throw new Error("SCHEMATIC_DISPLAY_REGISTRATION_NO_DISPATCH_REQUIRED"); }
   }
-  protected observeSchematicWireV5NavigationCommand(binding: string, target: unknown, retain: (pending: Promise<Reply>) => void): Promise<Reply> {
-    if (!this.#schematicWireWriterV5Purpose || this.#sessionId === null || typeof retain !== "function" || types.isProxy(retain)) {
+  protected observeSchematicWireV5NavigationCommand(binding: string, contextId: number, target: unknown, retain: (pending: Promise<Reply>) => void): Promise<Reply> {
+    if (!this.#schematicWireWriterV5Purpose || this.#sessionId === null || !Number.isSafeInteger(contextId) || contextId < 1 ||
+        typeof retain !== "function" || types.isProxy(retain)) {
       throw new Error("WIRE_V5_NAVIGATION_ORIGINAL_PIPE");
     }
     const sessionId = this.#sessionId;
@@ -1444,7 +1458,10 @@ class CurrentPcbFixedPipeCore {
     return this.#request({ id: this.#nextId, ...command, sessionId }, "schematic-display-navigate", pending => {
       const slot = this.#viaRetainedPending;
       if (slot?.sessionId !== sessionId || this.#wireV5Navigation !== null) { throw new Error("WIRE_V5_NAVIGATION_ORIGINAL_SLOT"); }
-      this.#wireV5Navigation = Object.freeze({ slot, pending, parameters });
+      this.#wireV5Navigation = {
+        slot, pending, parameters, contextId, observer: new CurrentSchematicWireEventObserver(this),
+        script: null, scriptRefused: false,
+      };
       retain(pending);
     });
   }
@@ -1461,6 +1478,43 @@ class CurrentPcbFixedPipeCore {
     }
     const command = currentSchematicWireWriterV5NativeCommand("navigate", binding, target);
     if (canonicalJson(command.params) !== original.parameters) { throw new Error("WIRE_V5_NAVIGATION_CONTEXT_CHANGED"); }
+  }
+
+  protected requireSchematicWireV5NavigationScriptCommand(
+    pending: Promise<Reply>, sessionId: string, binding: string, target: unknown,
+    canonicalScript: Readonly<{ contextId: number; scriptId: string; parsed: Readonly<Record<string, unknown>> }>,
+  ): CurrentSchematicWireEventRecord {
+    this.requireSchematicWireV5NavigationPendingCommand(pending, sessionId, binding, target);
+    const original = this.#wireV5Navigation;
+    if (original === null || original.script === null || original.scriptRefused || original.contextId !== canonicalScript.contextId) {
+      throw new Error("WIRE_V5_NAVIGATION_SCRIPT_UNAVAILABLE");
+    }
+    const event = original.observer.requireOriginal(original.script, this);
+    if (!record(event.original) || !record(event.original["params"]) ||
+        event.original["params"]["scriptId"] !== canonicalScript.scriptId ||
+        canonicalJson(event.original["params"]) !== canonicalJson(canonicalScript.parsed)) {
+      throw new Error("WIRE_V5_NAVIGATION_SCRIPT_CHANGED");
+    }
+    return event;
+  }
+
+  #retainWireV5NavigationScript(event: DiagnosticEvent, bytes: Buffer): void {
+    const original = this.#wireV5Navigation;
+    if (original === null || original.scriptRefused || !original.slot.written || original.slot.reply !== null ||
+        event.method !== "Debugger.scriptParsed" || event.sessionId !== original.slot.sessionId) { return; }
+    const { params } = event;
+    const url = params["url"];
+    if (params["executionContextId"] !== original.contextId || typeof url !== "string" ||
+        !GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE.some(source => url.endsWith(`/${source.relativePath}`))) { return; }
+    if (original.script !== null || params["hasSourceURL"] === true || params["isLiveEdit"] === true) {
+      original.scriptRefused = true;
+      return;
+    }
+    try { original.script = original.observer.captureRaw(bytes.toString("utf8"), this); }
+    catch {
+      // This optional observer acquires no receipt from malformed script metadata.
+      original.scriptRefused = true;
+    }
   }
 
   protected observeSchematicDisplayCommand(phase: CurrentSchematicDisplayNativePhase, binding: string, target?: unknown, operation?: unknown): Promise<Reply> {
@@ -2405,7 +2459,7 @@ class CurrentPcbFixedPipeCore {
     try { decoded = decodeCurrentPcbDiagnosticJson(bytes); }
     catch { this.#fail("framing"); return; }
     if (!record(decoded)) { this.#fail("reply", "nonobject-frame"); return; }
-    if (Object.hasOwn(decoded, "method")) { this.#receiveEvent(decoded, bytes.length); return; }
+    if (Object.hasOwn(decoded, "method")) { this.#receiveEvent(decoded, bytes); return; }
     let pending = this.#pending; if(this.#inverseNativeDeleteExecutionPending?.id===decoded["id"]){pending=this.#inverseNativeDeleteExecutionPending;}else if(this.#inverseNativeReferenceNextPending?.id===decoded["id"]){pending=this.#inverseNativeReferenceNextPending;}else if(this.#inverseNativeReferencePcbPending?.id===decoded["id"]){pending=this.#inverseNativeReferencePcbPending;}else if (this.#inverseNativeGetTaskPending?.id === decoded["id"]) { pending = this.#inverseNativeGetTaskPending; } else if (this.#inverseNativeGetLookupPending?.id === decoded["id"]) { pending = this.#inverseNativeGetLookupPending; } else if (this.#inversePublicDeletePending?.id === decoded["id"]) { pending = this.#inversePublicDeletePending; } else if (this.#viaRetainedPending?.id === decoded["id"]) { pending = this.#viaRetainedPending; }
     if (pending === null) { this.#fail("reply", "reply-unsolicited"); return; }
     let maximum = MAX_FRAME_BYTES; if (pending.source) { maximum = DIAGNOSTIC_SOURCE_FRAME_BYTES; } else if (pending.common) { maximum = COMMON_FRAME_BYTES; }
@@ -2431,7 +2485,8 @@ class CurrentPcbFixedPipeCore {
   #originalWorkerHandler(): ((event: DiagnosticEvent) => void) | null {
     if (this.#viaPurpose) { return this.#viaWorkerEvent; } if (this.#schematicDisplayPurpose) { return this.#schematicWorkerEvent; } return this.#workerEvent;
   }
-  #receiveEvent(value: Record<string, unknown>, bytes: number): void {
+  #receiveEvent(value: Record<string, unknown>, raw: Buffer): void {
+    const bytes = raw.length;
     const method = value["method"], params = value["params"], sessionId = value["sessionId"];
     try { this.#observeEventBytes?.(bytes); }
     catch { this.#fail("reply", "event-budget-or-handler", eventKind(method)); return; }
@@ -2506,7 +2561,11 @@ class CurrentPcbFixedPipeCore {
         observeWorker(event);
       } else if (sessionId === this.#sessionId && method === "Target.detachedFromTarget" && (this.#workerEvent !== null || this.#viaWorkerEvent !== null || this.#schematicWorkerEvent !== null)) {
         const observeDetached = this.#originalWorkerHandler(); if (observeDetached === null) { throw new Error("PCB_VIA_WORKER_HANDLER"); } observeDetached(event);
-      } else { if (this.#event === null) { throw new Error("SAVED_READBACK_EARLY_ACTOR_EVENT"); } this.#event(event); }
+      } else {
+        if (this.#event === null) { throw new Error("SAVED_READBACK_EARLY_ACTOR_EVENT"); }
+        this.#event(event);
+        this.#retainWireV5NavigationScript(event, raw);
+      }
     }
     catch { this.#fail("reply", "event-callback", eventKind(method)); }
   }
@@ -2967,11 +3026,17 @@ export class CurrentSchematicWireEditPipe extends CurrentSchematicDisplayFamilyP
   public constructor(input: Readable, output: Writable) { super(input, output, "schematic-wire-edit209"); }
 }
 export class CurrentSchematicWireWriterV5Pipe extends CurrentSchematicDisplayFamilyPipe {
-  public observeSchematicWireV5Navigation(binding: string, target: unknown, retain: (pending: Promise<Reply>) => void): Promise<Reply> {
-    return this.observeSchematicWireV5NavigationCommand(binding, target, retain);
+  public observeSchematicWireV5Navigation(binding: string, contextId: number, target: unknown, retain: (pending: Promise<Reply>) => void): Promise<Reply> {
+    return this.observeSchematicWireV5NavigationCommand(binding, contextId, target, retain);
   }
   public requireOriginalSchematicWireV5NavigationPending(pending: Promise<Reply>, sessionId: string, binding: string, target: unknown): void {
     this.requireSchematicWireV5NavigationPendingCommand(pending, sessionId, binding, target);
+  }
+  public requireOriginalSchematicWireV5NavigationScript(
+    pending: Promise<Reply>, sessionId: string, binding: string, target: unknown,
+    canonicalScript: Readonly<{ contextId: number; scriptId: string; parsed: Readonly<Record<string, unknown>> }>,
+  ): CurrentSchematicWireEventRecord {
+    return this.requireSchematicWireV5NavigationScriptCommand(pending, sessionId, binding, target, canonicalScript);
   }
   public observeSchematicWireV5Title(command:CurrentSchematicWireV5TitleCommand):Promise<Reply>{return this.observeSchematicWireV5TitleCommand(command);}
   public endSchematicWireGlobalsAfterOriginalExit():void{this.endSchematicWireGlobalsCommand();}

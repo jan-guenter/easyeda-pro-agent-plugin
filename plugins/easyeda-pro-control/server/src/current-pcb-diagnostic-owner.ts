@@ -1381,6 +1381,7 @@ import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
 
 import type { CurrentPcbDiagnosticFailureObservation, CurrentSchematicWireV5BundleSourceReceive } from "./current-pcb-diagnostic-pipe.ts";
+import type { CurrentSchematicWireEventRecord } from "./current-schematic-wire-event-observer.ts";
 import { CurrentPcbSpatialPipe, spatialDiagnosticNativeRequest } from "./current-pcb-spatial-pipe.ts";
 import { CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION } from "./current-pcb-spatial-profile.ts";
 import { CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE } from "./current-pcb-209-spatial-source-profile.ts";
@@ -5658,6 +5659,21 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
     );
   }
 
+  /** The canonical renderer event received during this original navigation.
+   * The complete script body and initializer pause require their own proofs. */
+  public requireOriginalSchematicWireV5NavigationScript(
+    argumentsValue: GeneratedSchematicWireEditNativeArguments,
+  ): Readonly<{ event: CurrentSchematicWireEventRecord; variant: 0 | 1 }> {
+    this.requireOriginalSchematicWireV5NavigationPending(argumentsValue);
+    const original = this.#schematicWireV5Navigation;
+    if (original === null) { throw error("WIRE_V5_NAVIGATION_ORIGINAL_OWNER"); }
+    const script = original.context.schematicWireV5OpeningScript();
+    const event = original.pipe.requireOriginalSchematicWireV5NavigationScript(
+      original.pending, original.parent.sessionId, original.parent.uniqueContextId, argumentsValue.target, script,
+    );
+    return Object.freeze({ event, variant: script.variant });
+  }
+
   async #openGeneratedSchematicOperation(argumentsValue: CurrentSchematicDisplayOperationArguments, retainWireV5Navigation = false): Promise<ReturnType<typeof validateGeneratedSchematicNavigation>> {
     const selected = this.#schematicReadContext(argumentsValue);
     if (this.#schematicNavigationAttempted || this.#projectOpeningConsumed || this.#schematicArguments !== null) { throw error("SCHEMATIC_DISPLAY_OPEN_CONSUMED"); }
@@ -5682,7 +5698,9 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
           this.#schematicNavigationDispatchAttempted = true;
           if (retainWireV5Navigation) {
             if (!(pipe instanceof CurrentSchematicWireWriterV5Pipe)) { throw error("WIRE_V5_NAVIGATION_ORIGINAL_PIPE"); }
-            return pipe.observeSchematicWireV5Navigation(parent.uniqueContextId, argumentsValue.target, pending => {
+            const realm = selected.context.schematicWireV5OpeningContext();
+            if (realm.sessionId !== parent.sessionId || realm.uniqueContextId !== parent.uniqueContextId) { throw error("WIRE_V5_NAVIGATION_ORIGINAL_OWNER"); }
+            return pipe.observeSchematicWireV5Navigation(parent.uniqueContextId, realm.contextId, argumentsValue.target, pending => {
               selected.current();
               if (this.#schematicWireV5Navigation !== null) { throw error("WIRE_V5_NAVIGATION_CONSUMED"); }
               this.#schematicWireV5Navigation = Object.freeze({ pipe, context: selected.context, parent, pending });
