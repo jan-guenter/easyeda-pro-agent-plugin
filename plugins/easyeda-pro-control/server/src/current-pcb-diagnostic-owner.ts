@@ -101,7 +101,7 @@ import type {CurrentFootprintInverseNativeReferencePcbCall, CurrentFootprintInve
 import {captureCurrentFootprintInverseNativeDeleteColdSuccessor} from "./current-footprint-inverse-native-delete-cold-successor-helper.ts";
 import type {CurrentFootprintInverseNativeDeleteColdSuccessorCapture} from "./current-footprint-inverse-native-delete-cold-successor-helper.ts";
 import {captureCurrentFootprintInverseNativeContinuationV4Helper} from "./current-footprint-inverse-native-continuation-v4-helper.ts";
-import {CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentFootprintInverseNativeContinuationV4Pipe, CurrentFootprintInversePipe, CurrentFootprintInverseNativeContinuationV4Pipe as CurrentFootprintInverseV4Pipe, CurrentPcbComponentSpatialPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaSavedReadbackPipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, CurrentSchematicRelevanceDisplayWritePipe, CurrentSchematicRelevanceSavedReadbackPipe, CurrentSchematicWireEditPipe, CurrentSchematicWireWriterV4Pipe, CurrentSchematicWireWriterV5Pipe, assertOriginalCurrentFootprintInversePipe, assertOriginalCurrentFootprintInverseNativeContinuationV4Pipe as assertOriginalCurrentFootprintInverseV4Pipe, decodeCurrentPcbDiagnosticJson} from "./current-pcb-diagnostic-pipe.ts";
+import {CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentFootprintInverseNativeContinuationV4Pipe, CurrentFootprintInversePipe, CurrentFootprintInverseNativeContinuationV4Pipe as CurrentFootprintInverseV4Pipe, CurrentPcbComponentSpatialPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaSavedReadbackPipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, CurrentSchematicRelevanceDisplayWritePipe, CurrentSchematicRelevanceSavedReadbackPipe, CurrentSchematicWireEditPipe, CurrentSchematicWireWriterV4Pipe, CurrentSchematicWireWriterV5Pipe, requireCurrentSchematicWireV5BundleSourceReceive, assertOriginalCurrentFootprintInversePipe, assertOriginalCurrentFootprintInverseNativeContinuationV4Pipe as assertOriginalCurrentFootprintInverseV4Pipe, decodeCurrentPcbDiagnosticJson} from "./current-pcb-diagnostic-pipe.ts";
 import type {CurrentFootprintInverseNativeReferenceReadiness, CurrentFootprintInverseNativeReferenceReadinessBindings, CurrentFootprintInverseNativeReferenceWorkerCompletion, CurrentFootprintInverseNativeReferenceWorkerCompletionBindings} from "./current-footprint-inverse-native-reference-worker.ts";
 import type {CurrentFootprintInversePreparedCheckpoint} from "./current-footprint-inverse-prepared-checkpoint.ts";
 import type {CurrentFootprintInverseFullPreparation, requireOriginalCurrentFootprintInverseFullPreparation as RequireInverseFullPreparation, verifyCurrentFootprintInverseFullPreparation as VerifyInverseFullPreparation} from "./current-footprint-inverse-full-preparation.ts";
@@ -1586,6 +1586,9 @@ import {CURRENT_SCHEMATIC_WIRE_WRITER_V5_NATIVE_PROFILE,CURRENT_SCHEMATIC_WIRE_W
 import {currentSchematicWireWriterV5NativeRequest,decodeCurrentSchematicWireWriterV5Capture} from "./current-schematic-wire-writer-v5-protocol.ts";
 import {CurrentSchematicWireParserServiceCoordinator} from "./current-schematic-wire-parser-service-coordinator.ts";
 import type {CurrentSchematicWireParserServiceData} from "./current-schematic-wire-parser-service-coordinator.ts";
+import type { CurrentSchematicWireV5BundleSourceReceive } from "./current-pcb-diagnostic-pipe.ts";
+import { qualifyCurrentSchematicWireEncoderSource } from "./current-schematic-wire-encoder-source.ts";
+import type { CurrentSchematicWireEncoderSourceCheckpoint } from "./current-schematic-wire-encoder-source.ts";
 import {currentSchematicWireV5TitleWire,validateCurrentSchematicWireV5TitleCommand} from "./current-schematic-wire-v5-title-protocol.ts";
 import type {CurrentSchematicWireV5TitleCommand} from "./current-schematic-wire-v5-title-protocol.ts";
 import type {CurrentSchematicWireTitleFtV5ReturnData} from "./current-schematic-wire-title-ft-v5-protocol.ts";
@@ -2114,8 +2117,45 @@ interface WireGlobalsOriginal {readonly owner:CurrentPcbRetainedOwnerCore;readon
 const wireGlobalsOriginals=new WeakMap<object,WireGlobalsOriginal>();
 export interface CurrentSchematicWireV5TitleRuntime {readonly schema:"private.schematic-wire-v5-title-runtime.v1";readonly comparison:CurrentSchematicWireParserServiceData;readonly ft:CurrentSchematicWireTitleFtV5ReturnData;readonly originalNativeOwnerJoined:true;readonly globalsReprovedAroundEverySend:true;readonly titleRuntimeJoined:true;readonly annotationReturnJoined:false;readonly executionAuthorized:false;readonly saveAuthorized:false}
 export interface CurrentSchematicWireV5TitlePreparation {readonly schema:"private.schematic-wire-v5-title-preparation.v1";readonly title:CurrentSchematicWireTitlePreflightData;readonly originalNativeOwnerJoined:true;readonly globalsReprovedAroundEverySend:true;readonly originalFtScopePrepared:true;readonly originalRetainedNativeFilterPrepared:true;readonly titleRuntimeJoined:false;readonly executionAuthorized:false;readonly saveAuthorized:false}
-interface WireV5TitleOriginal{readonly args:GeneratedSchematicWireEditNativeArguments;readonly globals:WireGlobalsOriginal;readonly pending:Promise<CurrentSchematicWireV5TitlePreparation>;send:((input:unknown)=>Promise<unknown>)|null;tail:Promise<void>;inflight:boolean;arm:Promise<void>|null;run:Promise<CurrentSchematicWireV5TitleRuntime>|null;runtime:CurrentSchematicWireV5TitleRuntime|null;coordinator:CurrentSchematicWireParserServiceCoordinator|null;command:CurrentSchematicWireV5TitleCommand|null;packet:CurrentSchematicWireV5TitlePreparation|null;reads:number;failed:boolean;ended:boolean}
+interface WireV5EncoderSourceOriginal {
+  readonly raw: unknown;
+  readonly scriptId: string;
+  readonly variant: 0 | 1;
+  receipt: CurrentSchematicWireV5EncoderSourceReceipt | null;
+}
+export interface CurrentSchematicWireV5EncoderSourceReceipt {
+  readonly schema: "private.schematic-wire-v5-encoder-source-receipt.v1";
+  readonly receive: CurrentSchematicWireV5BundleSourceReceive;
+  readonly source: CurrentSchematicWireEncoderSourceCheckpoint;
+  readonly originalCoreSourceOwnerJoined: true;
+  readonly executionAuthorized: false;
+  readonly saveAuthorized: false;
+}
+interface WireV5TitleOriginal{encoderSource:WireV5EncoderSourceOriginal|null;readonly args:GeneratedSchematicWireEditNativeArguments;readonly globals:WireGlobalsOriginal;readonly pending:Promise<CurrentSchematicWireV5TitlePreparation>;send:((input:unknown)=>Promise<unknown>)|null;tail:Promise<void>;inflight:boolean;arm:Promise<void>|null;run:Promise<CurrentSchematicWireV5TitleRuntime>|null;runtime:CurrentSchematicWireV5TitleRuntime|null;coordinator:CurrentSchematicWireParserServiceCoordinator|null;command:CurrentSchematicWireV5TitleCommand|null;packet:CurrentSchematicWireV5TitlePreparation|null;reads:number;failed:boolean;ended:boolean}
 const wireV5TitleOriginals=new WeakMap<object,WireV5TitleOriginal>();
+/** Join the existing title source read to the encoder checkpoint without
+ * issuing any request or claiming the encoder's native peer lane. */
+export function requireOriginalCurrentSchematicWireV5EncoderSource(
+  owner: CurrentSchematicWireWriterV5Owner, args: GeneratedSchematicWireEditNativeArguments,
+): CurrentSchematicWireV5EncoderSourceReceipt {
+  assertOriginalCurrentSchematicWireWriterV5Owner(owner);
+  const original = wireV5TitleOriginals.get(owner);
+  if (original === undefined || original.args !== args || original.packet === null || original.encoderSource === null ||
+      original.failed || original.ended) { throw error("WIRE_V5_ENCODER_ORIGINAL_SOURCE"); }
+  original.globals.current();
+  const retained = original.encoderSource;
+  const { sessionId, scriptId } = original.globals.context.schematicCalleeContext(retained.scriptId, retained.variant);
+  const receive = requireCurrentSchematicWireV5BundleSourceReceive(original.globals.pipe, retained.raw, sessionId, scriptId);
+  if (retained.receipt !== null) { return retained.receipt; }
+  const source = qualifyCurrentSchematicWireEncoderSource(scriptId, retained.raw);
+  if (source.variant !== retained.variant) { throw error("WIRE_V5_ENCODER_ORIGINAL_VARIANT"); }
+  retained.receipt = Object.freeze({
+    schema: "private.schematic-wire-v5-encoder-source-receipt.v1", receive, source,
+    originalCoreSourceOwnerJoined: true, executionAuthorized: false, saveAuthorized: false,
+  });
+  return retained.receipt;
+}
+
 export function requireOriginalCurrentSchematicWireV5TitlePreparation(owner:CurrentSchematicWireWriterV5Owner,args:GeneratedSchematicWireEditNativeArguments):CurrentSchematicWireV5TitlePreparation{
  assertOriginalCurrentSchematicWireWriterV5Owner(owner);const original=wireV5TitleOriginals.get(owner);if(original===undefined||original.args!==args||original.packet===null||original.failed||original.ended){throw error("WIRE_V5_TITLE_ORIGINAL_PREPARATION");}original.globals.current();return original.packet;
 }
@@ -5379,7 +5419,7 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
   public prepareSchematicWireV5Titles(args:GeneratedSchematicWireEditNativeArguments):Promise<CurrentSchematicWireV5TitlePreparation>{
     assertOriginalCurrentSchematicWireWriterV5Owner(this);const previous=wireV5TitleOriginals.get(this);if(previous!==undefined){if(previous.args!==args){throw error("WIRE_V5_TITLE_ORIGINAL_ARGUMENTS");}return previous.pending;}
     requireOriginalCurrentSchematicWireGlobals(this,args);const globals=wireGlobalsOriginals.get(this);const holder=this.#schematicSdkBinding;if(globals===undefined||holder===null||this.#busy||globals.pipe.status().pendingRequestId!==null){throw error("WIRE_V5_TITLE_ORIGINAL_GLOBALS");}
-    const completion=Promise.withResolvers<CurrentSchematicWireV5TitlePreparation>();const original:WireV5TitleOriginal={args,globals,pending:completion.promise,send:null,tail:Promise.resolve(),inflight:false,arm:null,run:null,runtime:null,coordinator:null,command:null,packet:null,reads:0,failed:false,ended:false};wireV5TitleOriginals.set(this,original);
+    const completion=Promise.withResolvers<CurrentSchematicWireV5TitlePreparation>();const original:WireV5TitleOriginal={encoderSource:null,args,globals,pending:completion.promise,send:null,tail:Promise.resolve(),inflight:false,arm:null,run:null,runtime:null,coordinator:null,command:null,packet:null,reads:0,failed:false,ended:false};wireV5TitleOriginals.set(this,original);
     const current=():void=>{globals.current();if(wireV5TitleOriginals.get(this)!==original||original.failed||original.ended||this.#schematicSdkBinding!==holder){throw error("WIRE_V5_TITLE_CHANGED");}};
     const write=async(input:unknown):Promise<unknown>=>{
       current();const command=validateCurrentSchematicWireV5TitleCommand(input);if(original.command!==null||original.reads>=CURRENT_SCHEMATIC_WIRE_WRITER_V5_NATIVE_PROFILE.title.commands){throw error("WIRE_V5_TITLE_RESERVATION");}
@@ -5400,7 +5440,9 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
     void(async():Promise<void>=>{try{
       const sources=globals.context.schematicWireTitleSources();const source=await send({phase:"wire-v5-title-bundle-source",method:"Debugger.getScriptSource",params:{scriptId:sources.scriptId}});current();const busSource=await send({phase:"wire-v5-title-bundle-source",method:"Debugger.getScriptSource",params:{scriptId:sources.busScriptId}});current();
       const capturedGlobals=globals.capture;if(capturedGlobals===null){throw error("WIRE_V5_TITLE_ORIGINAL_GLOBALS");}const coordinator=new CurrentSchematicWireParserServiceCoordinator({sessionId:globals.context.schematicWireGlobalsContext().sessionId,scriptId:sources.scriptId,holder,native:capturedGlobals.tuple,variant:sources.variant,source,busScriptId:sources.busScriptId,busSource},Object.freeze({request:send,assertCurrent:current,assertOriginalExit:()=>{assertOriginalCurrentSchematicWireWriterV5Owner(this);if(!this.#terminationObserved||this.#terminationObservation?.originalRootExited!==true||this.#terminationObservation.originalJobEmpty!==true){throw error("WIRE_V5_TITLE_RETAIN_ORIGINAL_JOB");}},fail:()=>{original.failed=true;this.#schematicFailed=true;}}));original.coordinator=coordinator;
-      const title=await coordinator.prepareTitleFtReturnV5();current();const packet:CurrentSchematicWireV5TitlePreparation=Object.freeze({schema:"private.schematic-wire-v5-title-preparation.v1",title,originalNativeOwnerJoined:true,globalsReprovedAroundEverySend:true,originalFtScopePrepared:true,originalRetainedNativeFilterPrepared:true,titleRuntimeJoined:false,executionAuthorized:false,saveAuthorized:false});original.packet=packet;completion.resolve(packet);
+      const title=await coordinator.prepareTitleFtReturnV5();current();const packet:CurrentSchematicWireV5TitlePreparation=Object.freeze({schema:"private.schematic-wire-v5-title-preparation.v1",title,originalNativeOwnerJoined:true,globalsReprovedAroundEverySend:true,originalFtScopePrepared:true,originalRetainedNativeFilterPrepared:true,titleRuntimeJoined:false,executionAuthorized:false,saveAuthorized:false});
+      original.encoderSource = { raw: source, scriptId: sources.scriptId, variant: sources.variant, receipt: null };
+      original.packet=packet;completion.resolve(packet);
     }catch(caughtError){original.failed=true;this.#schematicFailed=true;completion.reject(caughtError);}})();return completion.promise;
   }
   public armSchematicWireV5Titles(args:GeneratedSchematicWireEditNativeArguments):Promise<void>{

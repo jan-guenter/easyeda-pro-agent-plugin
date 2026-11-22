@@ -1,5 +1,9 @@
 # Project history
 
+- [Original Wire page before-watch hold](2026-11-22-wire-original-page-birth-hold.md). Exact held page initializer and original caller supply the fixed watch root input before registration.
+
+- [Original Wire encoder source receipt](2026-11-22-wire-encoder-original-source-receipt.md). Reuses the settled V5 title source frame under the same Core owner and renderer session.
+
 - [Wire encoder native checkpoint codebook](2026-11-22-wire-encoder-native-checkpoint-codebook.md). Fixed 14-request source and membership lanes with original Core, event and worker joins pending.
 
 - [Wire V5 net observation codebook](2026-11-22-wire-v5-net-codebook.md). Fixed original watch and geometry selectors, native request encoding and separate request budgets.

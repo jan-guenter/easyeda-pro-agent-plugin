@@ -569,6 +569,34 @@ interface Pending {
   readonly heldCache: boolean;
   written: boolean;
   reply: Reply | null;
+  sourceFrameBytes?: number;
+}
+
+export interface CurrentSchematicWireV5BundleSourceReceive {
+  readonly requestId: number;
+  readonly sessionId: string;
+  readonly scriptId: string;
+  readonly frameBytes: number;
+}
+const wireV5BundleSourceReplies = new WeakMap<object, Readonly<{
+  pipe: object;
+  receipt: CurrentSchematicWireV5BundleSourceReceive;
+  source: string;
+  current: () => boolean;
+}>>();
+
+/** Recognize the same completed result object from an already issued V5
+ * bundle read. Core separately binds the selected original script and owner. */
+export function requireCurrentSchematicWireV5BundleSourceReceive(
+  pipe: CurrentSchematicWireWriterV5Pipe, raw: unknown, sessionId: string, scriptId: string,
+): CurrentSchematicWireV5BundleSourceReceive {
+  const held = typeof raw === "object" && raw !== null ? wireV5BundleSourceReplies.get(raw) : undefined;
+  if (held?.pipe !== pipe || held.receipt.sessionId !== sessionId || held.receipt.scriptId !== scriptId ||
+      !held.current() || !record(raw) || Reflect.ownKeys(raw).length !== 1 || !diagnosticExact(raw, ["scriptSource"]) ||
+      Object.getOwnPropertyDescriptor(raw, "scriptSource")?.value !== held.source) {
+    throw new Error("WIRE_V5_BUNDLE_SOURCE_ORIGINAL_REPLY");
+  }
+  return held.receipt;
 }
 
 export interface CurrentPcbWorkerStartupPipeHandoff {
@@ -2271,7 +2299,24 @@ class CurrentPcbFixedPipeCore {
          } this.#complete(); }
       });
     } catch { this.#fail("output"); }
-    const raw=await deferred.promise;if(relevanceReceipt){const receipt=this.#relevanceReceipt;if(receipt===null){this.#fail("output");throw failureError("output");}try{await receipt(command,raw);}catch(error){this.#fail("output");throw error;}}return raw;
+    const raw = await deferred.promise;
+    if (phase === "wire-v5-title" && "schematicWireV5Title" in command && "phase" in command &&
+        command.phase === "wire-v5-title-bundle-source" && command.method === "Debugger.getScriptSource") {
+      const { sessionId, sourceFrameBytes } = pending;
+      const scriptId = command.params["scriptId"];
+      const source = raw["scriptSource"];
+      if (sessionId !== null && sourceFrameBytes !== undefined && diagnosticToken(scriptId) &&
+          diagnosticExact(raw, ["scriptSource"]) && typeof source === "string") {
+        const receipt = Object.freeze({ requestId: pending.id, sessionId, scriptId, frameBytes: sourceFrameBytes });
+        wireV5BundleSourceReplies.set(raw, Object.freeze({
+          pipe: this, receipt, source,
+          current: () => this.#sessionId === sessionId && this.#failure === null && !this.#released && !this.#handedOff &&
+            !this.#inputEnded && !this.#inputClosed && !this.#outputClosed,
+        }));
+      }
+    }
+    if(relevanceReceipt){const receipt=this.#relevanceReceipt;if(receipt===null){this.#fail("output");throw failureError("output");}try{await receipt(command,raw);}catch(error){this.#fail("output");throw error;}}
+    return raw;
   }
 
   /** Quarantine the transport once and reject every original retained slot
@@ -2336,6 +2381,7 @@ class CurrentPcbFixedPipeCore {
     if (!record(result)) { this.#fail("reply", "reply-result"); return; }
     // Keep the complete decoded result, including unknown fields. No target or
     // Script token is issued and no semantic completeness claim is made here.
+    if (pending.source) { pending.sourceFrameBytes = bytes.length; }
     pending.reply = result;
   }
 
