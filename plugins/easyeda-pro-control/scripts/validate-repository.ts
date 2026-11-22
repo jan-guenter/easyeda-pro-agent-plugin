@@ -224,6 +224,11 @@ const required = [
   "scripts/footprint-forward-writer-complete/native-sync.cs",
   "scripts/footprint-forward-writer-complete/native-tail.cs",
   "scripts/check-footprint-forward-cold-native-graph.ts",
+  "scripts/footprint-inverse-native-delete-cold-successor.ps1",
+  "scripts/footprint-inverse-native-delete-cold-successor.cs",
+  "scripts/generate-footprint-inverse-native-delete-cold-successor.ts",
+  "server/src/current-footprint-inverse-native-delete-cold-successor-helper.ts",
+  "server/src/current-footprint-inverse-native-delete-cold-successor-identity.ts",
   "scripts/generate-footprint-forward-cold-native-graph.ts",
   "scripts/main-reference/OwnedSyntheticJob.cs",
   "scripts/main-reference/EasyedaClockObservation.cs",
@@ -588,10 +593,11 @@ check(
     pluginPackageManifest.scripts?.["native:forward:source:check"] === "node scripts/generate-footprint-forward-native-graph.ts --check" &&
     pluginPackageManifest.scripts?.["inverse:native:v4:check"] === "node scripts/generate-footprint-inverse-native-continuation-v4.ts --check" &&
     pluginPackageManifest.scripts?.["inverse:native:cold-ui:check"] === "node scripts/generate-footprint-inverse-native-delete-cold-ui.ts --check" &&
+    pluginPackageManifest.scripts?.["inverse:native:cold-successor:check"] === "node scripts/generate-footprint-inverse-native-delete-cold-successor.ts --check" &&
     pluginPackageManifest.scripts?.["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     pluginPackageManifest.scripts?.["build"] ===
-      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run native:forward:writer:check && npm run native:forward:writer:complete:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run schematic:native:check && npm run schematic:saved:native:check && npm run inverse:native:check && npm run inverse:native:v4:check && npm run inverse:native:cold-ui:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
+      "npm run native:helper:check && npm run native:forward:check && npm run native:forward:source:check && npm run native:forward:cold:check && npm run native:forward:cold:source:check && npm run native:forward:writer:check && npm run native:forward:writer:complete:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run schematic:native:check && npm run schematic:saved:native:check && npm run inverse:native:check && npm run inverse:native:v4:check && npm run inverse:native:cold-ui:check && npm run inverse:native:cold-successor:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && npm run pcb209:spatial:check && node scripts/build-server.ts && node scripts/build-control-manager.ts" &&
     pluginPackageManifest.scripts?.["schematic:native:check"] === "node scripts/generate-schematic-edit-native.ts --check" &&
     pluginPackageManifest.scripts?.["schematic:native:update"] === "node scripts/generate-schematic-edit-native.ts --write" &&
     pluginPackageManifest.scripts?.["schematic:saved:native:check"] === "node scripts/generate-schematic-saved-readback-native.ts --check" &&

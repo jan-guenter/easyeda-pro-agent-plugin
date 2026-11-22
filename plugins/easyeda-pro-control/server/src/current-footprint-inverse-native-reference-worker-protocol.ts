@@ -18,7 +18,8 @@ const arities:Readonly<Record<string,readonly ("ref"|"text"|"kind"|"uuid")[]>>=O
  "tail-state":["ref","ref","ref","ref"],"tail-entryQueue":[],"tail-returned":["ref"],"tail-post":["ref","ref","kind"],"tail-samePost":["ref"],"tail-nextTask":[],"tail-serviceReturn":["ref"],"tail-taskReturn":["ref"],"tail-eventReturn":["ref"],"tail-reprove":[]});
 const byValue=(role:string):boolean=>role==="graph-reprove"||role==="input-modelRoster"||role==="delivery-reprove"||role==="tail-entryQueue"||role==="tail-reprove";
 const variadic=(role:string):boolean=>role==="graph-collect"||role==="input-collectModels";
-const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);const ref=z.strictObject({objectId:handle});const text=z.strictObject({value:z.string().max(32_768).regex(/^[\u0020-\u007E]*$/u)});const kind=z.strictObject({value:z.enum(["WHOHAS","PUBLISH","pcb-all","footprint-derived","device-all"])});
+export const CURRENT_FOOTPRINT_INVERSE_NATIVE_REFERENCE_WORKER_TEXT_LIMIT=32_768;
+const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);const ref=z.strictObject({objectId:handle});const text=z.strictObject({value:z.string().max(CURRENT_FOOTPRINT_INVERSE_NATIVE_REFERENCE_WORKER_TEXT_LIMIT).regex(/^[\u0020-\u007E]*$/u)});const kind=z.strictObject({value:z.enum(["WHOHAS","PUBLISH","pcb-all","footprint-derived","device-all"])});
 const roles=ROLES;
 const props=z.strictObject({objectId:handle,ownProperties:z.literal(true),accessorPropertiesOnly:z.literal(false),generatePreview:z.literal(false)});
 /* oxlint-disable unicorn/max-nested-calls -- Literal finite Inspector source and original-only substitutions. */

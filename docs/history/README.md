@@ -1,6 +1,38 @@
 # Project history
 
-- [PR224 native transport and installation review](2026-11-22-pr224-native-transport-review.md)
+- [Wire encoder before-graph binding](2026-11-22-wire-encoder-before-graph-binding.md). Original Core plan and holder custody, a fixed six-peer binder and a private source-first cursor awaiting native routing.
+
+- [Wire encoder fourteen-frame proof](2026-11-22-wire-encoder-fourteen-frame-proof.md). Exact per-frame and aggregate byte checks for both pinned bundle variants, with native graph and event binding still pending.
+
+- [Original Wire page before-watch hold](2026-11-22-wire-original-page-birth-hold.md). Exact held page initializer and original caller supply the fixed watch root input before registration.
+
+- [Original Wire encoder source receipt](2026-11-22-wire-encoder-original-source-receipt.md). Reuses the settled V5 title source frame under the same Core owner and renderer session.
+
+- [Wire encoder native checkpoint codebook](2026-11-22-wire-encoder-native-checkpoint-codebook.md). Fixed 14-request source and membership lanes with original Core, event and worker joins pending.
+
+- [Wire V5 net observation codebook](2026-11-22-wire-v5-net-codebook.md). Fixed original watch and geometry selectors, native request encoding and separate request budgets.
+
+
+- [Inverse cold successor native helper](2026-11-22-inverse-cold-successor-native-helper.md). Dedicated source custody, fixed readonly startup and manager-GET birth, and compile-only proof.
+
+- [Isolated inverse V4 owner, Main and pipe integration](2026-11-17-inverse-v4-owner-main-pipe-integration.md). Genuine full-allocation and original queue wiring, focused inert evidence, and explicit remaining readonly/native-helper/route blockers.
+
+- [Isolated inverse Core source checkpoint](2026-11-17-inverse-core-source-checkpoint.md). Genuine scoped issuers and selective Core bodies; unfinished factory/pipe/Main linkage, unserved and unvalidated.
+
+- [Original Wire tick body and held willDidRun](2026-11-17-wire-tick-body-will-did-run.md). Actual variant-zero vendor tick and empty-roster dispatcher execution, retained Promise reproof and the real action transition held before history/subscriber completion; live native/Modify/Save acceptance remains closed.
+
+- [Original Wire action and Promise completion](2026-11-17-wire-action-promise-completion.md). Original empty-roster finish/didRun/immediate resume and retained helper/run fulfillment to the held writer post-await; live SDK/native/Modify/Save joins remain closed.
+
+- [Original Wire postconditions and receipt](2026-11-22-wire-original-postconditions-receipt.md). Fixed original writer continuation, retained native Promise and genuine receipt; derived publication and native/Modify/Save gates remain closed.
+
+- [Wire encoder source checkpoint](2026-11-22-wire-encoder-source-checkpoint.md). Both complete source variants and six persistent-model descriptors, with original runtime codec and natural invocation still pending.
+
+- [Original Wire bbox listener registration](2026-11-22-wire-original-net-watch-registration.md). Exact original watch/event/register/return joins and one-listener holder qualification before mutation; native and Save admission remain closed.
+
+- [Wire V5 native curation](2026-11-22-wire-v5-native-curation.md). Exact V4 preimage and separately pinned V5 readonly globals, title and ft continuation.
+
+- [Original Wire net-point geometry observation](2026-11-22-wire-original-net-geometry.md). Fixed source-qualified delivery, constructor, factory and graph comparisons. Live owner composition remains open.
+
 - [Controlled footprint and original Wire runner release](2026-11-17-controlled-footprint-controls-release.md). PR222 exact-head review/CI, official both-host install, actual fresh-agent connection without Codex restart and bounded fixture cleanup.
 
 - [Wire callback support release](2026-11-16-wire-callback-support-release.md). PR217 exact-head and merged-main CI, all reported review issues resolved, immutable Git payload proof and one combined installation planned.
@@ -1361,4 +1393,8 @@ layout. The connected ledger retains its generation and case anchors.
 
 - [Packaged inverse compiler smoke](2026-11-22-packaged-inverse-compiler-smoke.md), direct Windows PowerShell 5.1 verification of both exact packaged helpers and their empty-Job receipts.
 
+- [PR 223 API coverage regression repair](2026-11-22-pr223-api-coverage-regressions.md) — stale assertions and evidence/discovery links; no connected acceptance.
+
 - [PR 223 review prerequisite A](2026-11-22-pr223-review-prerequisite-a.md) — unmounted Wire source closure, unchanged marketplace metadata and a separately reviewable integration backlog.
+
+- [PR224 native transport and installation review](2026-11-22-pr224-native-transport-review.md)

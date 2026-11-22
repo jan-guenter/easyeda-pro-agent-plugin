@@ -64,27 +64,38 @@ export function currentSchematicWireEncoderNativeSource(): string {
     currentSchematicWireEncoderComparison("membership", field("objectId"), argNames.map(name => field(name))),
   ];
   const maximumHandle = "x".repeat(256);
-  const records = examples.map(command => {
+  const [source, metadata, membership] = examples.map(command => {
     const { phase, method, fields } = currentSchematicWireEncoderNativeRequest(command);
     const template = JSON.stringify({ method, params: command.params });
-    if (Buffer.byteLength(frame(template, 2_147_483_647, maximumHandle, () => maximumHandle)) > wireBytes) {
-      throw new Error("WIRE_ENCODER_NATIVE_WIRE_BOUND");
-    }
-    return { template, row: [phase, method, Object.keys(fields).join(","), template].join("\t") };
+    const maximumBytes = Buffer.byteLength(frame(template, 2_147_483_647, maximumHandle, () => maximumHandle));
+    if (maximumBytes > wireBytes) { throw new Error("WIRE_ENCODER_NATIVE_WIRE_BOUND"); }
+    return { template, maximumBytes, row: [phase, method, Object.keys(fields).join(","), template].join("\t") };
   });
+  if (source === undefined || metadata === undefined || membership === undefined) { throw new Error("WIRE_ENCODER_NATIVE_ROWS"); }
+  const records = [source, metadata, membership];
+  const aggregateBytes = source.maximumBytes + PEER_BUDGET.metadata * metadata.maximumBytes + membership.maximumBytes;
   const raw = Buffer.from(records.map(({ row }) => row).join("\0"));
   if (raw.length > 65_536) { throw new Error("WIRE_ENCODER_NATIVE_TABLE_BOUND"); }
   // oxlint-disable-next-line node/no-sync -- The immutable build-time table uses the shared bounded native decoder.
   const packed = gzipSync(raw, { level: 9 });
   const smokeHandle = field("arg0ObjectId");
-  const hashes = records.map(({ template }, index) => sha256(frame(template,
-    index === 2 ? 80 + PEER_BUDGET.metadata : 79 + index, "session29",
-    name => name === "scriptId" ? "script27" : smokeHandle)));
+  const smokeFrames = [
+    frame(source.template, 79, "session29", () => "script27"),
+    ...Array.from({ length: PEER_BUDGET.metadata }, (_, offset) => frame(
+      metadata.template, 80 + offset, "session29", () => offset === 0 ? smokeHandle : `peer${String(offset)}`,
+    )),
+    frame(membership.template, 80 + PEER_BUDGET.metadata, "session29", name => name === "objectId" ? smokeHandle : name),
+  ];
+  const smokeLengths = smokeFrames.map(message => Buffer.byteLength(message));
+  let smokeBytes = 0;
+  for (const length of smokeLengths) { smokeBytes += length; }
+  const hashes = smokeFrames.map(message => sha256(message));
   const table = `EasyedaDiagnosticFixedTable.Load("${packed.toString("base64")}",${String(raw.length)},"${sha256(raw)}","${sha256(packed)}",3,4)`;
   return String.raw`internal sealed class EasyedaSchematicWireEncoderCheckpointProtocol {
   const int SourceRequests = ${String(sourceRequests)};
   const int MetadataRequests = ${String(PEER_BUDGET.metadata)};
   const int TotalRequests = ${String(totalRequests)};
+  const int AggregateWireBytes = ${String(aggregateBytes)};
   static readonly string[][] Rows = ${table};
   static readonly System.Text.RegularExpressions.Regex HandlePattern = new System.Text.RegularExpressions.Regex(@"\A[A-Za-z0-9_.:-]{1,256}\z", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
   static readonly System.Text.RegularExpressions.Regex SlotPattern = new System.Text.RegularExpressions.Regex(@"""__wire_encoder_([A-Za-z0-9]+)__""", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
@@ -93,6 +104,7 @@ export function currentSchematicWireEncoderNativeSource(): string {
   readonly string script;
   int issued;
   int previous;
+  int issuedBytes;
 
   internal EasyedaSchematicWireEncoderCheckpointProtocol(string session, string script) {
     this.session = RequireHandle(session);
@@ -128,7 +140,9 @@ export function currentSchematicWireEncoderNativeSource(): string {
       string body = SlotPattern.Replace(row[3], match => "\"" + values[match.Groups[1].Value] + "\"");
       string message = "{\"id\":" + id.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
         body.Substring(1, body.Length - 2) + ",\"sessionId\":\"" + session + "\"}\0";
-      Need(System.Text.Encoding.UTF8.GetByteCount(message) <= ${String(wireBytes)});
+      int messageBytes = System.Text.Encoding.UTF8.GetByteCount(message);
+      Need(messageBytes <= ${String(wireBytes)} && issuedBytes + messageBytes <= AggregateWireBytes);
+      issuedBytes += messageBytes;
       previous = id;
       issued++;
       return message;
@@ -153,28 +167,36 @@ export function currentSchematicWireEncoderNativeSource(): string {
     var source = SmokeFields(0, "script27");
     var metadata = SmokeFields(1, "${smokeHandle}");
     var membership = SmokeFields(2, "${smokeHandle}");
+    foreach (string key in Rows[2][2].Split(',')) if (key != "objectId") membership[key] = key;
+    var messages = new string[TotalRequests];
+    int[] lengths = { ${smokeLengths.join(", ")} };
     Refuse(() => cursor.Encode(79, Rows[1][0], Rows[1][1], metadata));
     Refuse(() => cursor.Encode(79, Rows[0][0], Rows[0][1], SmokeFields(0, "foreign")));
-    string first = cursor.Encode(79, Rows[0][0], Rows[0][1], source);
+    messages[0] = cursor.Encode(79, Rows[0][0], Rows[0][1], source);
     Refuse(() => cursor.Encode(80, Rows[0][0], Rows[0][1], source));
     Refuse(() => cursor.Encode(79, Rows[1][0], Rows[1][1], metadata));
     Refuse(() => cursor.Encode(80, Rows[1][0], "Runtime.evaluate", metadata));
     Refuse(() => cursor.Encode(80, Rows[1][0], Rows[1][1], new System.Collections.Hashtable { { "ObjectId", "original" } }));
     Refuse(() => cursor.Encode(80, Rows[1][0], Rows[1][1], SmokeFields(1, new string('x', 257))));
     Refuse(() => cursor.Encode(80, Rows[2][0], Rows[2][1], membership));
-    string descriptor = cursor.Encode(80, Rows[1][0], Rows[1][1], metadata);
-    for (int offset = 1; offset < MetadataRequests; offset++) cursor.Encode(80 + offset, Rows[1][0], Rows[1][1], metadata);
+    messages[1] = cursor.Encode(80, Rows[1][0], Rows[1][1], metadata);
+    for (int offset = 1; offset < MetadataRequests; offset++) {
+      string peer = "peer" + offset.ToString(System.Globalization.CultureInfo.InvariantCulture);
+      messages[1 + offset] = cursor.Encode(80 + offset, Rows[1][0], Rows[1][1], SmokeFields(1, peer));
+    }
     int last = 80 + MetadataRequests;
     Refuse(() => cursor.Encode(last, Rows[1][0], Rows[1][1], metadata));
     membership.Add("callerCode", "foreign");
     Refuse(() => cursor.Encode(last, Rows[2][0], Rows[2][1], membership));
     membership.Remove("callerCode");
-    string comparison = cursor.Encode(last, Rows[2][0], Rows[2][1], membership);
+    messages[TotalRequests - 1] = cursor.Encode(last, Rows[2][0], Rows[2][1], membership);
     Refuse(() => cursor.Encode(last + 1, Rows[2][0], Rows[2][1], membership));
-    string[] messages = { first, descriptor, comparison };
+    Need(cursor.issuedBytes == ${String(smokeBytes)});
     using (var sha = System.Security.Cryptography.SHA256.Create()) {
       for (int index = 0; index < messages.Length; index++) {
-        byte[] digest = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(messages[index]));
+        byte[] frame = System.Text.Encoding.UTF8.GetBytes(messages[index]);
+        Need(frame.Length == lengths[index]);
+        byte[] digest = sha.ComputeHash(frame);
         Need(System.BitConverter.ToString(digest).Replace("-", "").ToLowerInvariant() == hashes[index]);
       }
     }

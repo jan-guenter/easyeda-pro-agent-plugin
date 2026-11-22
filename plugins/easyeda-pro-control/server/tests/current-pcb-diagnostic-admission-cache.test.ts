@@ -24,7 +24,12 @@ void test("launch gate reuses only parsing after every current record byte is ch
   await publishCurrentPcbDiagnosticLifecycleRecord(operationId, "not-dispatched.json", terminal);
 
   const originalParse = JSON.parse, parses: string[] = [];
-  context.mock.method(JSON, "parse", (input: string): unknown => { parses.push(input); return originalParse(input) as unknown; });
+  context.mock.method(JSON, "parse", (input: string): unknown => {
+    const parsed = originalParse(input) as unknown;
+    // Lazy startup modules may parse fixed source tables. Measure only this lifecycle's records.
+    if (typeof parsed === "object" && parsed !== null && "operationId" in parsed && parsed.operationId === operationId) { parses.push(input); }
+    return parsed;
+  });
   await assertNoUnresolvedCurrentPcbDiagnosticLaunches(); assert.equal(parses.length, 3);
   parses.length = 0;
   await assertNoUnresolvedCurrentPcbDiagnosticLaunches(); assert.equal(parses.length, 0);

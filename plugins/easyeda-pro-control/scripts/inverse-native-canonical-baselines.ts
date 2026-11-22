@@ -25,6 +25,7 @@ export const CURRENT_INVERSE_NATIVE_CANONICAL_BASELINES=Object.freeze({
     } as const),
     "outputReview": Object.freeze({
       "path": "scripts/footprint-inverse-native-continuation-v4.cs",
+      "repositoryRelativePath": "native-review/easyeda-pro-control/footprint-inverse-native-continuation-v4.cs",
       "bytes": 2_544_814,
       "sha256": "5e4c73862115208e2163431ed73c3a439e9c4b4fc3b5b671ccc62e6dadebfd17"
     } as const),

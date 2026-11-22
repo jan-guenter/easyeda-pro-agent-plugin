@@ -14,6 +14,12 @@ import { runInNewContext } from "node:vm";
 import { sha256Text } from "../src/core.ts";
 import { CURRENT_FOOTPRINT_INVERSE_PUBLIC_ROW_FILES as FILES, CURRENT_FOOTPRINT_INVERSE_PUBLIC_ROW_SOURCE as SOURCE, qualifyCurrentFootprintInversePublicRowSource } from "../src/current-footprint-inverse-public-row-source.ts";
 import { CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS,deriveCurrentFootprintInverseGetModelInputData,deriveCurrentFootprintInversePublicRowData,deriveCurrentFootprintInverseReferenceData } from "../src/current-footprint-inverse-public-row-data.ts";
+import {
+  deriveCurrentFootprintInverseFullProjectionData,
+  deriveCurrentFootprintInverseGetModelInputData as deriveV4GetModelInput,
+  deriveCurrentFootprintInversePublicRowData as deriveV4PublicRow,
+  deriveCurrentFootprintInverseReferenceData as deriveV4ReferenceData,
+} from "../src/current-footprint-inverse-v4-public-row-data.ts";
 import type { CurrentFootprintInversePublicRowValue } from "../src/current-footprint-inverse-public-row-data.ts";
 import { prepareCurrentFootprintInversePublicRowPlan, requireOriginalCurrentFootprintInversePublicRowPlan } from "../src/current-footprint-inverse-public-row-plan.ts";
 import { readExactSqlInventory } from "../src/sqlite-inventory.ts";
@@ -94,5 +100,19 @@ void test("reference profile derives from complete original histories and refuse
  const first=source.chunks[0];assert.ok(first!==null&&typeof first==="object"&&"plaintext"in first&&typeof first.plaintext==="string");
  const variant=(docType:string,meta:unknown):unknown=>{const plaintext=first.plaintext+line("DOCHEAD",{uuid:"9".repeat(32),docType,client:"native",updateTime:1_700_000_002_000,version:"v1"},{ticket:5})+line("META",meta,{id:"META",ticket:6});return{...source,chunks:[{...first,plaintext,plaintextSha256:sha256Text(plaintext)}]};};
  const mixed=variant("PCB",{title:"Board"});const mixedRow=deriveCurrentFootprintInversePublicRowData(mixed,footprintUuid,sql);assert.throws(()=>deriveCurrentFootprintInverseReferenceData(mixed,footprintUuid,sql,mixedRow),/INVERSE_PUBLIC_ROW_DATA/u);
+ const untitled=variant("FOOTPRINT",{title:null,description:"Unrelated footprint",tags:[]});
+ const combined=deriveCurrentFootprintInverseFullProjectionData(untitled,footprintUuid,sql);
+ assert.deepEqual(combined.row,deriveV4PublicRow(untitled,footprintUuid,sql));
+ assert.deepEqual(combined.model,deriveV4GetModelInput(untitled,footprintUuid,sql,combined.row));
+ assert.deepEqual(combined.reference,deriveV4ReferenceData(untitled,footprintUuid,sql,combined.row));
+ assert.equal(combined.reference.models.length,2);
+ const unrelatedUuid="9".repeat(32);
+ const mismatchedPlaintext=first.plaintext+
+   line("DOCHEAD",{uuid:unrelatedUuid,docType:"BOARD",client:"native",updateTime:1_700_000_003_000,version:"v1"},{ticket:5})+
+   line("DOCHEAD",{uuid:unrelatedUuid,docType:"FOOTPRINT",client:"native",updateTime:1_700_000_002_000,version:"v2"},{ticket:6})+
+   line("META",{title:"Foreign family"},{id:"META",ticket:7});
+ const mismatched={...source,chunks:[{...first,plaintext:mismatchedPlaintext,plaintextSha256:sha256Text(mismatchedPlaintext)}]};
+ const unaffected=deriveV4PublicRow(mismatched,footprintUuid,sql);
+ assert.throws(()=>deriveV4ReferenceData(mismatched,footprintUuid,sql,unaffected),/INVERSE_REFERENCE_PROJECTION/u);
  const linked=variant("FOOTPRINT",{title:"Derived copy",description:"",tags:[],source:footprintUuid});const linkedRow=deriveCurrentFootprintInversePublicRowData(linked,footprintUuid,sql);assert.throws(()=>deriveCurrentFootprintInverseReferenceData(linked,footprintUuid,sql,linkedRow),/INVERSE_PUBLIC_ROW_DATA/u);
 });
