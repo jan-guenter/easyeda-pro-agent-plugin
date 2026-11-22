@@ -24,6 +24,7 @@
         "easyeda_control_pcb209_opening": { "approval_mode": "prompt" },
         "easyeda_control_pcb209_worker_startup": { "approval_mode": "prompt" },
         "easyeda_control_current_pcb_via_write": { "approval_mode": "prompt" },
+        "easyeda_control_current_footprint_inverse_cold_ui": { "approval_mode": "prompt" },
         "easyeda_control_current_schematic_relevance_display_write": { "approval_mode": "prompt" },
         "easyeda_control_fixture_import": { "approval_mode": "prompt" },
         "easyeda_control_extensions": { "approval_mode": "prompt" },
@@ -73,7 +74,8 @@
         "easyeda_control_evidence_recover": { "approval_mode": "prompt" },
         "easyeda_control_evidence_verify": { "approval_mode": "approve" },
         "easyeda_control_artifact_read": { "approval_mode": "approve" },
-        "easyeda_control_current_footprint_forward_write": { "approval_mode": "prompt" }
+        "easyeda_control_current_footprint_forward_write": { "approval_mode": "prompt" },
+        "easyeda_control_current_footprint_inverse": { "approval_mode": "prompt" }
       },
       "startup_timeout_sec": 30,
       "tool_timeout_sec": 3720

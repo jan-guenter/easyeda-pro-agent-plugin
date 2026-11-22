@@ -5,6 +5,7 @@ import {dirname,join} from "node:path";
 import {test} from "node:test";
 import {sha256Json} from "../src/core.ts";
 import {operationPath} from "../src/artifacts.ts";
+import { assertNoUnresolvedCurrentPcbDiagnosticLaunches } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import {CURRENT_FOOTPRINT_INVERSE_FULL_WORKFLOW_BUDGET as BUDGET,assertCurrentFootprintInverseFullWorkflowChain as assertChain,currentFootprintInverseFullWorkflowRecordSchema,currentFootprintInverseFullWorkflowRequestSchema} from "../src/current-footprint-inverse-full-workflow-contract.ts";
 import type {CurrentFootprintInverseFullWorkflowRecord as Entry} from "../src/current-footprint-inverse-full-workflow-contract.ts";
 import {CurrentFootprintInverseFullWorkflowJournal as Journal,readCurrentFootprintInverseFullWorkflowHistory as read,scanCurrentFootprintInverseFullWorkflowSummaries as scan} from "../src/current-footprint-inverse-full-workflow-journal.ts";
@@ -22,7 +23,9 @@ void test("strict consent refuses mismatched original operation and caller dispa
  assert.equal(BUDGET.records,12);assert.equal(BUDGET.records*BUDGET.recordBytes,49_152);
 });
 void test("real inverse journal retains exact interrupted bytes and terminal cleanup requires its original durable intent",async()=>{
- const input=request("retained-publication");const journal=new Journal(input);await journal.reserve();await journal.append("stage-intent",{stage:"preparation"});
+ const input=request("retained-publication");const journal=new Journal(input);await journal.reserve();
+ await assert.rejects(assertNoUnresolvedCurrentPcbDiagnosticLaunches(), /UNRESOLVED_OTHER_WORKFLOW/u);
+ await journal.append("stage-intent",{stage:"preparation"});
  await assert.rejects(journal.append("cleanup-result",{originalOwnersClosed:true,originalPendingJoined:true,released:true}));
  await journal.append("failure",{stage:"preparation",originalErrorRetained:true});
  const path=join(dirname(operationPath(input.operationId)),input.operationId,"03-cleanup-intent.json");
@@ -35,6 +38,7 @@ void test("real inverse journal retains exact interrupted bytes and terminal cle
  await journal.append("terminal-failure",{originalOwnersClosed:true,originalPendingJoined:true,released:true});
  const after=await read(input.operationId);assert.equal(after.operation["state"],"completed");assert.equal(after.records.filter(row=>row.kind==="cleanup-intent").length,1);
  await assert.rejects(journal.append("stage-intent",{stage:"opening"}));const summaries=await scan();assert.equal(summaries.find(row=>row.operationId===input.operationId)?.settled,true);
+ await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
 });
 void test("real scanner refuses a completed manifest whose original record artifact changed",async()=>{
  const input=request("artifact-drift"),journal=new Journal(input);await journal.reserve();

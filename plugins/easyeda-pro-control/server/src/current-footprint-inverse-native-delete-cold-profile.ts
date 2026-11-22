@@ -10,7 +10,7 @@ const sourceTotal=Object.values(source).reduce((total,value)=>total+value,0);
 const normal=HELD.requests.startup+HELD.requests.parserConstruction+HELD.requests.initialState+HELD.requests.heldCacheNormal+sourceTotal;
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_PROFILE=freezeDeep({
  profile:"private.current-footprint-inverse-native-delete-cold-profile.v1",
- purpose:HELD.purpose,nativeSwitch:"-FootprintInverseNativeDeleteCold209",
+ purpose:HELD.purpose,helperLayout:"inverse-native-delete-cold-successor.v1",nativeSwitch:"-FootprintInverseNativeDeleteCold209",
  nativeConstructor:"CreateFootprintInverseNativeDeleteCold209",
  normalRequestLimit:normal,cleanupRequestLimit:HELD.cleanupRequestLimit,requestLimit:normal+HELD.cleanupRequestLimit,
  normalIdCeiling:normal+HELD.cleanupRequestLimit,

@@ -25,6 +25,9 @@ void test("new complete generation preserves separate six-role outputs and every
 void test("complete graph captures all original files and rejects malformed native challenge text",async()=>{
  const capture=await captureCurrentFootprintForwardWriterCompleteNativeGraph("archlinux","a".repeat(32));await capture.verify();
  assert.ok(capture.bootstrap.includes("-WorkerStartupFootprintForwardWriterComplete209"));
+ assert.ok(Buffer.from(capture.bootstrap,"utf16le").toString("base64").length<=16_000);
+ assert.equal([...capture.bootstrap.matchAll(/[=]Read-WriterGraphRole /gu)].length,7);
+ assert.equal([...capture.bootstrap.matchAll(/\[IO.File\]::Open/gu)].length,1);
  assert.ok(capture.bootstrap.includes("$forwardWriterTailBytes=$b6"));
  assert.equal(capture.bootstrap.includes("-WorkerStartupFootprintForwardWriter209"),false);
  for(const challenge of ["a".repeat(31),"a".repeat(33),`${"a".repeat(32)}\n`,"x".repeat(32)]){await assert.rejects(captureCurrentFootprintForwardWriterCompleteNativeGraph("archlinux",challenge));}

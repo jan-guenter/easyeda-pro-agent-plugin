@@ -1,5 +1,8 @@
 /* oxlint-disable unicorn/prefer-top-level-await -- Retain the worker while the original main-thread fixture is held. */
 import assert from "node:assert/strict";
+import {validateCurrentSchematicWireTitleFtCommand} from "../../src/current-schematic-wire-title-ft-protocol.ts";
+import {currentSchematicWireV5TitleWire} from "../../src/current-schematic-wire-v5-title-protocol.ts";
+import {currentSchematicWireWriterV5NativeRequest} from "../../src/current-schematic-wire-writer-v5-protocol.ts";
 import { Session } from "node:inspector/promises";
 import { parentPort,workerData } from "node:worker_threads";
 import { z } from "zod";
@@ -7,30 +10,35 @@ import { observeWireFixtureTask, wireFixtureCompletion } from "./current-schemat
 import { CurrentSchematicWireParserServiceCoordinator,consumeCurrentSchematicWireParserServiceData as consume } from "../../src/current-schematic-wire-parser-service-coordinator.ts";
 import type { CurrentSchematicWireParserServiceCommand } from "../../src/current-schematic-wire-parser-service-coordinator.ts";
 
-const config=z.strictObject({key:z.string(),scriptId:z.string(),busScriptId:z.string(),source:z.string(),busSource:z.string(),variant:z.union([z.literal(0),z.literal(1)]),mode:z.enum(["complete","surplus-sheet","wrong-enum","swap-helper","missing-return","ft-return","ft-missing-return","ft-foreign-request","ft-native-predicate"]).default("complete")}).parse(workerData);
+const config=z.strictObject({key:z.string(),scriptId:z.string(),busScriptId:z.string(),source:z.string(),busSource:z.string(),variant:z.union([z.literal(0),z.literal(1)]),mode:z.enum(["complete","surplus-sheet","wrong-enum","swap-helper","missing-return","ft-return","ft-missing-return","ft-foreign-request","ft-native-predicate","ft-v5-return","ft-v5-missing-return","ft-v5-foreign-request"]).default("complete")}).parse(workerData);
 const port=parentPort??(():never=>{throw new Error("worker port");})();port.on("message",()=>{
  // Keep observing while the main thread is held.
 });
 const session=new Session();session.connectToMainThread();let coordinator:CurrentSchematicWireParserServiceCoordinator|null=null;let originalExit=false;let cleanupTask:Promise<void>|null=null;
+let ftReturnFrames=0;let ftParameterReads=0;
 const alteredLocation=z.looseObject({columnNumber:z.number()});
 const alteredFrame=z.looseObject({location:alteredLocation});
 const alteredPause=z.looseObject({callFrames:z.array(alteredFrame)});
 function missingReturn(params:unknown):unknown{
  const copy=alteredPause.parse(structuredClone(params));
  const column=config.variant===0?42_982:239_500;
- const expected=config.mode==="ft-missing-return"?4891:column,top=copy.callFrames[0];
- if(top!==undefined&&top.location.columnNumber===expected){Reflect.deleteProperty(top,"returnValue");}
+ const expected=config.mode==="ft-missing-return"||config.mode==="ft-v5-missing-return"?4891:column,top=copy.callFrames[0];
+ if(top!==undefined&&top.location.columnNumber===expected){ftReturnFrames+=1;if(config.mode!=="ft-v5-missing-return"||ftReturnFrames===2){Reflect.deleteProperty(top,"returnValue");}}
  return copy;
 }
 function listener(method:"Debugger.scriptParsed"|"Debugger.paused"|"Debugger.resumed"):(raw:unknown)=>void{return(raw:unknown):void=>{
  const event=z.object({params:z.unknown()}).parse(raw);
- const params=(config.mode==="missing-return"||config.mode==="ft-missing-return")&&method==="Debugger.paused"?missingReturn(event.params):event.params;
+ const params=(config.mode==="missing-return"||config.mode==="ft-missing-return"||config.mode==="ft-v5-missing-return")&&method==="Debugger.paused"?missingReturn(event.params):event.params;
  coordinator?.observe({sessionId:"123.4",method,params});
 };}
 for(const method of["Debugger.scriptParsed","Debugger.paused","Debugger.resumed"]as const){session.on(method,listener(method));}
 function exception(raw:unknown):unknown{if(raw!==null&&typeof raw==="object"){const value:unknown=Reflect.get(raw,"exceptionDetails");return value;}return undefined;}
 async function request(command:CurrentSchematicWireParserServiceCommand):Promise<unknown>{
-const params=config.mode==="ft-foreign-request"&&command.phase==="wire-title-ft-frame"?{...command.params,expression:"[{},e]"}:command.params;
+ // Historical conditional FTv1 remains its own source profile. Current V5
+ // This profile admits only its separate empty-condition arm and retained-native filter.
+ if(command.phase==="wire-title-ft-arm"&&!config.mode.startsWith("ft-v5-")){validateCurrentSchematicWireTitleFtCommand(command);}else{const fixed=currentSchematicWireV5TitleWire(command,79,"session27");const bytes=Buffer.from(`${JSON.stringify(fixed.wire)}\0`);assert.deepEqual(currentSchematicWireWriterV5NativeRequest(bytes),fixed.request);}
+if(command.phase==="wire-title-ft-frame"){ftParameterReads+=1;}
+ const substitute=(config.mode==="ft-foreign-request"||config.mode==="ft-v5-foreign-request"&&ftParameterReads===2)&&command.phase==="wire-title-ft-frame";const params=substitute?{...command.params,expression:"[{},e]"}:command.params;
  const pending:unknown=Reflect.apply(session.post.bind(session),session,[command.method,params]);const raw:unknown=await pending;
  if(config.mode==="ft-native-predicate"&&command.phase==="wire-title-ft-properties"){
   const copy:unknown=structuredClone(raw);const field=z.object({name:z.string(),value:z.unknown().optional()});const candidate=z.object({result:z.array(field)}).safeParse(copy);
@@ -56,7 +64,7 @@ async function main():Promise<void>{
  const holder=roots[0],native=roots[1];assert.ok(holder!==undefined&&native!==undefined);const failures:unknown[]=[];
  const current=new CurrentSchematicWireParserServiceCoordinator({sessionId:"123.4",scriptId:config.scriptId,busScriptId:config.busScriptId,holder,native,variant:config.variant,source:{scriptSource:config.source},busSource:{scriptSource:config.busSource}},{request,assertCurrent:():void=>{assert.equal(originalExit,false);},assertOriginalExit:():void=>{assert.equal(originalExit,true);},fail:(cause:unknown):void=>{failures.push(cause);}});
  coordinator=current;
- await(config.mode.startsWith("ft-")?current.prepareTitleFtReturn():current.prepareTitles());
+ if(config.mode.startsWith("ft-v5-")){await current.prepareTitleFtReturnV5();}else if(config.mode.startsWith("ft-")){await current.prepareTitleFtReturn();}else{await current.prepareTitles();}
  const watchdog=setTimeout(()=>{const kept=current.retained();void complete({fixtureTimeout:true,attempts:kept.attempts.length,firstFailure:kept.firstFailure?.cause instanceof Error?kept.firstFailure.cause.stack:String(kept.firstFailure?.cause),tail:kept.attempts.slice(-8).map(row=>({phase:row.command.phase,method:row.command.method,cause:String(row.cause),exception:exception(row.raw)}))});},15_000);
  const pending=current.run();void observeWireFixtureTask(pending);assert.equal(pending,current.run());const armed=current.arm();assert.equal(armed,current.arm());await armed;port.postMessage({ready:true});
  try{const result=await pending;
@@ -77,8 +85,8 @@ const bindings=current.consumeServiceComparison(result);
 assert.equal(bindings.roles.length,3);
 assert.equal(bindings.roles[2]?.first.request.role,"titles");
 assert.throws(()=>current.consumeServiceComparison(result));
-const ft=config.mode==="ft-return"?current.requireTitleFtReturn(result):null;
-if(ft!==null){assert.equal(ft.originalFtNormalReturnPromiseRetainedBeforeResume,true);assert.equal(ft.sameOriginalPromiseFulfilledUndefinedAfterResume,true);assert.throws(()=>current.requireTitleFtReturn(structuredClone(result)));}
+let ft:ReturnType<CurrentSchematicWireParserServiceCoordinator["requireTitleFtReturn"]>|ReturnType<CurrentSchematicWireParserServiceCoordinator["requireTitleFtReturnV5"]>|null=null;if(config.mode==="ft-return"){ft=current.requireTitleFtReturn(result);}else if(config.mode==="ft-v5-return"){assert.throws(()=>current.requireTitleFtReturn(result));ft=current.requireTitleFtReturnV5(result);}
+if(ft!==null){assert.equal(ft.originalFtNormalReturnPromiseRetainedBeforeResume,true);assert.equal(ft.sameOriginalPromiseFulfilledUndefinedAfterResume,true);if(config.mode==="ft-v5-return"){assert.throws(()=>current.requireTitleFtReturnV5(structuredClone(result)));}else{assert.throws(()=>current.requireTitleFtReturn(structuredClone(result)));}}
 const finished=current.finish();
 assert.equal(finished,current.finish());
 await finished;

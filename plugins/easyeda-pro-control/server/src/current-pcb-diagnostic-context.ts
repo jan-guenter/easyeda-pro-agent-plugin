@@ -367,6 +367,22 @@ export class CurrentPcbDiagnosticContext {
       attributes: this.#ancillaryOwner.attributes, shape: "source-shaped-ui-resize-sensor-object",
       domParentVerified: false, observerRegistryOwnershipVerified: false, continuousObservation: false, executionAuthorized: false });
   }
+  /** Actual retained script events in the selected original UI realm. The
+   * owner still fetches and qualifies both full source bodies before binding. */
+  public schematicWireTitleSources():Readonly<{scriptId:string;busScriptId:string;variant:0|1}>{
+    const realm=this.schematicWireGlobalsContext();
+    const candidates=GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE.flatMap((profile,variant)=>[...this.#scripts.values()].filter(row=>row["executionContextId"]===realm.contextId&&scriptUrlMatches(row["url"],{family:"ui",relativePath:profile.relativePath,scriptBytes:profile.bytes,scriptSha256:profile.sha256})).map(row=>({row,variant})));
+    const selected=candidates[0];if(candidates.length!==1||selected===undefined||selected.variant!==0&&selected.variant!==1||!diagnosticToken(selected.row["scriptId"])){return this.#refuse();}
+    const scriptId=selected.row["scriptId"];this.schematicCalleeContext(scriptId,selected.variant);
+    const busProfile=STATUS_BUS_SOURCE[2];const buses=[...this.#scripts.values()].filter(row=>row["executionContextId"]===realm.contextId&&scriptUrlMatches(row["url"],{family:"ui",relativePath:busProfile.relativePath,scriptBytes:busProfile.bytes,scriptSha256:busProfile.sha256}));const bus=buses[0];
+    if(buses.length!==1||bus===undefined||!diagnosticToken(bus["scriptId"])){return this.#refuse();}this.schematicStatusBusContext(bus["scriptId"],2);return Object.freeze({scriptId,busScriptId:bus["scriptId"],variant:selected.variant});
+  }
+  /** The V5 fixed literal uses this already selected original UI realm. */
+  public schematicWireGlobalsContext():Readonly<{sessionId:string;uniqueContextId:string;contextId:number}>{
+    const ui=this.#uiSourceContext();const source=this.#sourceIdentity;
+    if(source===null||!this.#openingConsumed||this.#schematicNavigation===null||this.#schematicOpening!==null){return this.#refuse();}
+    return Object.freeze({...ui,contextId:source.contextId});
+  }
   public openingContext(): Readonly<{ sessionId: string; uniqueContextId: string }> {
     const selected = this.#uiSourceContext();
     const ancillary = this.openingAncillaryFrame();

@@ -3,12 +3,14 @@
 import {currentFootprintForwardWriterMainMutationNativeSource,installCurrentFootprintForwardWriterMainMutationNativeSource,installCurrentFootprintForwardWriterMainMutationNativeTail} from "./current-footprint-forward-writer-main-mutation-native.ts";
 import {installCurrentFootprintForwardWriterRequestGuard} from "./current-footprint-forward-writer-request-native.ts";
 import {createHash} from "node:crypto";
+import {applyCurrentForwardWriterSelectedInstallation} from "./current-selected-file-main-installation-native.ts";
 import {currentFootprintForwardWriterTicketTimerNativeSource} from "./current-footprint-forward-writer-ticket-timer-native.ts";
 import {currentFootprintForwardWriterNativeOutputs} from "./current-footprint-forward-writer-native-source.ts";
 import {currentFootprintForwardWriterProfile} from "./current-footprint-forward-writer-profile.ts";
 import {currentFootprintForwardWriterCompleteProfile} from "./current-footprint-forward-writer-complete-profile.ts";
 import {CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_NATIVE_GRAPH_LIMITS as LIMITS} from "./current-footprint-forward-writer-complete-native-limits.ts";
 import {CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_TAIL_ACTIONS as ACTIONS,currentFootprintForwardWriterCompleteTailDispatch,currentFootprintForwardWriterCompleteTailNativeSource} from "./current-footprint-forward-writer-complete-tail-native.ts";
+// oxlint-disable-next-line import/max-dependencies -- The split native graph retains the independent installation and completion contracts.
 import {CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS as COMPLETION} from "./current-footprint-copy-main-completion-protocol.ts";
 
 const hash=(source:string):string=>createHash("sha256").update(source).digest("hex");
@@ -27,8 +29,21 @@ export function currentFootprintForwardWriterCompleteNativeOutputs(shared:string
  const timer=rename(currentFootprintForwardWriterTicketTimerNativeSource());
  if(Buffer.byteLength(timer)>LIMITS.timerSource){throw new Error("FORWARD_COMPLETE_NATIVE_TIMER_SOURCE");}
  if(Buffer.byteLength(currentFootprintForwardWriterMainMutationNativeSource())>LIMITS.sqlSource){throw new Error("FORWARD_COMPLETE_NATIVE_SQL_SOURCE");}
- const core=installCurrentFootprintForwardWriterMainMutationNativeSource(`${get("core")}\n${timer}`);
+ const installation=applyCurrentForwardWriterSelectedInstallation(
+  installCurrentFootprintForwardWriterMainMutationNativeSource(`${get("core")}\n${timer}`),
+  installCurrentFootprintForwardWriterRequestGuard(get("driver"),true),
+ );
+ const core=one(installation.core,'MainPurpose();AssertLive();string startupText=EasyedaSelectedFileMainSqlFenceProtocol.Encode(id,phase,method,fields);mainRequest=id;originalMain.SendFixed(startupText,false);StockRegistrationMainComplete(phase);AssertLive();return;',
+  `MainPurpose();AssertLive();
+        bool completeHeadCapture=forwardWriterCompleteBirth&&phase=="sql-fence-capture";
+        if(completeHeadCapture&&forwardHeadSqlCaptured)throw Error("forward-complete-head-capture-once");
+        string startupText=EasyedaSelectedFileMainSqlFenceProtocol.Encode(id,phase,method,fields);mainRequest=id;originalMain.SendFixed(startupText,false);
+        if(completeHeadCapture)forwardHeadSqlCaptured=true;
+        StockRegistrationMainComplete(phase);AssertLive();return;`);
  let phase=one(get("phase"),"forwardWriterBirth=true;stockMainEligible=true;","forwardWriterCompleteBirth=true;forwardWriterBirth=true;stockMainEligible=true;");
+ phase=one(phase,'public void SendForwardHeadMain(int id,string phase,string method,System.Collections.IDictionary fields){',
+  `public void SendForwardHeadMain(int id,string phase,string method,System.Collections.IDictionary fields){
+ if(forwardWriterCompleteBirth&&(phase==null||phase.StartsWith("forward-head-sql:",StringComparison.Ordinal)||phase=="forward-head-open:release"||!forwardHeadSqlCaptured))throw Error("forward-complete-head-sql-ownership");`);
  phase=one(phase,`public const int Requests=${String(previous.renderer.requestLimit)},NormalRequests=${String(previous.renderer.requestLimit)},NormalClass=${String(previous.renderer.normalClassLimit)},CleanupClass=${String(previous.renderer.cleanupClassLimit)};`,
   `public const int Requests=${String(profile.renderer.requestLimit)},NormalRequests=${String(profile.renderer.requestLimit)},NormalClass=${String(profile.renderer.normalClassLimit)},CleanupClass=${String(profile.renderer.cleanupClassLimit)};`);
  phase=one(phase,`public const int MainNormal=${String(previous.main.normalRequestLimit)},MainCleanup=${String(previous.main.cleanupRequestLimit)},MainRequests=${String(previous.main.requestLimit)};`,
@@ -44,7 +59,7 @@ export function currentFootprintForwardWriterCompleteNativeOutputs(shared:string
  let sync=one(get("sync"),"string encoded=EasyedaForwardWriterFrontierProtocol.Encode(","string encoded=EasyedaForwardWriterCompleteFrontierProtocol.Encode(");
  sync=one(sync,"public void BeginForwardWriterAllocatedClock(int first){","public void BeginForwardWriterAllocatedClock(int first){\nRequireForwardWriterCompletePrecreate();");
  const tail=installCurrentFootprintForwardWriterMainMutationNativeTail(rename(currentFootprintForwardWriterCompleteTailNativeSource()));
- let driver=installCurrentFootprintForwardWriterRequestGuard(get("driver"),true);
+ let driver=installation.driver;
  const dispatch=currentFootprintForwardWriterCompleteTailDispatch();
  const actual=[...dispatch.matchAll(/^ {8}'([^']+)' \{/gmu)].map(match=>match[1]);
  if(actual.length!==ACTIONS.length||ACTIONS.some(action=>!actual.includes(action))||new Set(actual).size!==actual.length){throw new Error("FORWARD_COMPLETE_NATIVE_DISPATCH_ROSTER");}

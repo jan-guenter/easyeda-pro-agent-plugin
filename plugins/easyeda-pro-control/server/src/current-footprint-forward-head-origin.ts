@@ -15,4 +15,4 @@ export interface CurrentFootprintForwardHeadSource {
   readonly rawWindowsPath: string;
 }
 // oxlint-disable-next-line import/no-cycle -- The genuine owner creates the Main runner; bootstrap lookup occurs only after both original objects exist.
-export { requireCurrentFootprintForwardHeadBootstrap, sendCurrentFootprintForwardHeadAgeMainCommand, sendCurrentFootprintForwardHeadMainCommand } from "./current-pcb-diagnostic-owner.ts";
+export { requireCurrentFootprintForwardHeadBootstrap, requireCurrentFootprintForwardWriterMainBootstraps, sendCurrentFootprintForwardHeadAgeMainCommand, sendCurrentFootprintForwardHeadMainCommand } from "./current-pcb-diagnostic-owner.ts";

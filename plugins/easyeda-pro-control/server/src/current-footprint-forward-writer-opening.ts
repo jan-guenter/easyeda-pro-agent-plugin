@@ -388,7 +388,7 @@ export class CurrentFootprintForwardWriterOpeningProvider {
  public status():Readonly<Record<string,unknown>> {
   this.#current(true);return Object.freeze({stage:this.#stage,failed:this.#failed,busy:this.#busy,cleanupBusy:this.#cleanupBusy,factoryInvoked:this.#factoryInvoked,factorySettled:this.#factorySettled,launchInvoked:this.#launchInvoked,
    openingPending:this.#openingPending!==null&&this.#openingOutcome===null,openingSettled:this.#openingOutcome!==null,originalReadPending:this.#read!==null&&this.#held===null,producerOrdinal:this.#producerOrdinal,
-   producer:this.#owner?.footprintForwardWriterProducerProgress()??null,abortDispatched:this.#abortDispatched,abortAcknowledged:this.#abortAcknowledged,terminated:this.#terminated,released:this.#released,
+   producer:this.#owner?.footprintForwardWriterProducerProgress()??null,createProcessError:this.#owner?.status().createProcessError??null,abortDispatched:this.#abortDispatched,abortAcknowledged:this.#abortAcknowledged,terminated:this.#terminated,released:this.#released,
    publicationPending:this.#journal.retained().publicationPending,sourceSealed:this.#stage==="sealed",executionAuthorized:false,saveAuthorized:false});
  }
 }

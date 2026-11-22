@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "5ed9d403ac6e06f80393258ccc98914cb6f4473ff292f66c449965a2f13de6e9",
-      "fileCount": 3173,
+      "sha256": "36950e94a4da814e8c94fbbf2cfc49080433ec14836c801a1ac768bdb4f4f7aa",
+      "fileCount": 3364,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -1003,8 +1003,8 @@
         },
         {
           "relativePath": "current-footprint-copy-main-backend-runner.ts",
-          "bytes": 399705,
-          "sha256": "61d3a645db186e37b2c6ddd09af61a4b4dc0ae11bca2ac78d5f73deeb0a909dc"
+          "bytes": 443318,
+          "sha256": "8b973972d99b291c7196cf02dd7e9faa9e839ded593b363111278bf8939dfd5f"
         },
         {
           "relativePath": "current-footprint-copy-main-backend-source.ts",
@@ -1233,8 +1233,8 @@
         },
         {
           "relativePath": "current-footprint-copy-preopen-source.ts",
-          "bytes": 15201,
-          "sha256": "c741cc0b4622b50be676da0dcc6bafc5d54e45826fd18a05918be7bec7509233"
+          "bytes": 17023,
+          "sha256": "589237ea3192d75d8e892cd68974989ba2265de6d36d80bfec1d399c78882d7e"
         },
         {
           "relativePath": "current-footprint-copy-preparation-capacity.ts",
@@ -1723,8 +1723,8 @@
         },
         {
           "relativePath": "current-footprint-forward-head-main.ts",
-          "bytes": 13275,
-          "sha256": "70b5ab7150e70e6b03f19e10e2161a69fed5bc74801e60aa65546a2458564427"
+          "bytes": 14156,
+          "sha256": "20f58693e7ad5621e9e98f17cdf9b2276f9d476b76073cdd98c65352fe893d40"
         },
         {
           "relativePath": "current-footprint-forward-head-native.ts",
@@ -1733,8 +1733,8 @@
         },
         {
           "relativePath": "current-footprint-forward-head-origin.ts",
-          "bytes": 1167,
-          "sha256": "622abdc985aaa6daf47a5a9a8027097db48f2c91c77757c23fe483aa62d6f18d"
+          "bytes": 1219,
+          "sha256": "49e2931426309566d60a87b7c19990b1efd82a9be2b53f6ac57b3d9d69f47725"
         },
         {
           "relativePath": "current-footprint-forward-head-programs.ts",
@@ -1988,18 +1988,18 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-native-graph.ts",
-          "bytes": 6032,
-          "sha256": "a71ff63ea2e22240a03f629142b75d52fc9b52f94452c52d6f7e3549cca2ab93"
+          "bytes": 6291,
+          "sha256": "9240bb34946f505aeab9603c2efcb7947e8b92f8abe850d4a17a6cc3a0c741ce"
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-native-limits.ts",
           "bytes": 1113,
-          "sha256": "c8c9e205c8a242494dac890347d64252620deb2bf9945282b7929c044ad8c433"
+          "sha256": "4c11447a6af83f19fc2f041be398b12e4d9622835a4e850cca6b777110156a9e"
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-native-pins.ts",
           "bytes": 2074,
-          "sha256": "4d730282f0fd607b29cc039385720b346b6e0656761e43e6777bb0b31e032ac9"
+          "sha256": "19c7435c4710e16030034778bcceaee14af9fc6e6ce13c5c4e0654f06a646b8d"
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-native-smoke.ts",
@@ -2008,8 +2008,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-native-source.ts",
-          "bytes": 11782,
-          "sha256": "c5da102a807ca886c569b1e8f57e1077920b37bcc23e2bdf2297e1855108740f"
+          "bytes": 13363,
+          "sha256": "78c13f273560947ce4fd6d67e91bbda638c53fb3b01da8f735564a2ef6153323"
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-profile.ts",
@@ -2018,8 +2018,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-complete-tail-native.ts",
-          "bytes": 42684,
-          "sha256": "4fc865fdc08cbfd8da16d82c679e27b77f8ba3bb427bfb313e29cbfc50135cc7"
+          "bytes": 42769,
+          "sha256": "aa62ea9590943b31a5171e5b214fadc52a5d488e30691e7e8dadce264d3e80a3"
         },
         {
           "relativePath": "current-footprint-forward-writer-control-contract.ts",
@@ -2033,8 +2033,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-coordinator.ts",
-          "bytes": 10593,
-          "sha256": "9702e0342eec0554a15775d6837281c6aa4c109d17646ffa99900650080b72bb"
+          "bytes": 22458,
+          "sha256": "a62a2a7a22f6f29f1b8e3ffacd0adfa26900de88e9c3f21eee546b5fab5d6c82"
         },
         {
           "relativePath": "current-footprint-forward-writer-copy-drain-origin.ts",
@@ -2288,8 +2288,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-opening.ts",
-          "bytes": 48512,
-          "sha256": "3d79e74b20f2834e612a8735f7d59a70895ba3ded5a4684049ba1ad0908ffe9e"
+          "bytes": 48578,
+          "sha256": "18339f646495d3f4bffbe7e3b8ed8dfc504f54b06a324ba6063120d1a24ffed7"
         },
         {
           "relativePath": "current-footprint-forward-writer-own-data-collector.ts",
@@ -2563,8 +2563,8 @@
         },
         {
           "relativePath": "current-footprint-forward-writer-workflow.ts",
-          "bytes": 59782,
-          "sha256": "0a13197e289007ab6b0b0ddf9aa19dccfbc571b5293d30f2c0e4c93fdf1d3383"
+          "bytes": 60257,
+          "sha256": "ee2170fbaabfe871bd73abf06dcb835add8d44c5f2728f22cdd933a13fdc5262"
         },
         {
           "relativePath": "current-footprint-head-age-cdp-exception.ts",
@@ -2752,6 +2752,21 @@
           "sha256": "cfaa3ab58dc0c807faf6c39b64ce8c60c3349fa25c7cb9dde71285b0999982e0"
         },
         {
+          "relativePath": "current-footprint-inverse-cold-ui-continuation.ts",
+          "bytes": 12632,
+          "sha256": "adf96801b968a8cffa7a0d81b56095ab4ceeb2d57d09fdabec989de5b7fecdc3"
+        },
+        {
+          "relativePath": "current-footprint-inverse-cold-ui-control-contract.ts",
+          "bytes": 4667,
+          "sha256": "1036d9ddc971db28eff69089738caf92f65fabd65ac43c37e8cf3c9d14ed12f5"
+        },
+        {
+          "relativePath": "current-footprint-inverse-cold-ui-control-validation.ts",
+          "bytes": 2848,
+          "sha256": "7a644dfe77558ee883bcd76de8117ea90c24c09ff02db2e338821c08a71ccc01"
+        },
+        {
           "relativePath": "current-footprint-inverse-common-private-fields.ts",
           "bytes": 9973,
           "sha256": "8f39f31219ce5b4c4bf649d8ecbf1dd475947b8367954609e07be03200d58af0"
@@ -2770,6 +2785,16 @@
           "relativePath": "current-footprint-inverse-construction-protocol.ts",
           "bytes": 4242,
           "sha256": "822c522fb4bb97155b04213c493be451c215c652c65ed69bfb9c13ea9396d248"
+        },
+        {
+          "relativePath": "current-footprint-inverse-control-contract.ts",
+          "bytes": 3963,
+          "sha256": "6219513fa6c92bb513130919ed1d807fbdf37434b02c742a48483949310249d1"
+        },
+        {
+          "relativePath": "current-footprint-inverse-control-validation.ts",
+          "bytes": 2850,
+          "sha256": "eda86a4064db7e9c3e5795f9ac0c69c162ea86be82e84f9d1b6580eae017472b"
         },
         {
           "relativePath": "current-footprint-inverse-delete-binding-capture.ts",
@@ -3177,6 +3202,16 @@
           "sha256": "df719191fb096fb8dc8d43e373c89a84b0fae191c416ce9d4f500b6ad8057f78"
         },
         {
+          "relativePath": "current-footprint-inverse-full-native-generation.ts",
+          "bytes": 27457,
+          "sha256": "2040332e4b9f57057799c9ab2d1d6f46faabce4f8dbc38eefcd7e2f4b43f6d85"
+        },
+        {
+          "relativePath": "current-footprint-inverse-full-preparation.ts",
+          "bytes": 14272,
+          "sha256": "f8bac384f3e102686289ff46cb044bec5a1d6f13de391e8cf204b1101c1bec62"
+        },
+        {
           "relativePath": "current-footprint-inverse-full-workflow-contract.ts",
           "bytes": 7842,
           "sha256": "7abdd9568ed276cac9a8eccb70568e873d2675e69e954a2120a7408b121e816b"
@@ -3185,6 +3220,11 @@
           "relativePath": "current-footprint-inverse-full-workflow-journal.ts",
           "bytes": 12617,
           "sha256": "e9d94b40e38f6e00c4f424647c00e67281d410425fdc34f44122c7ee223dc0fe"
+        },
+        {
+          "relativePath": "current-footprint-inverse-full-workflow.ts",
+          "bytes": 24516,
+          "sha256": "ee461cc8abd12777e5215a6b97d3ad2d03eb0deb7160bdfac0bb0dd2968ea410"
         },
         {
           "relativePath": "current-footprint-inverse-get-callback-collector.ts",
@@ -3573,8 +3613,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-initialized-get-replies.ts",
-          "bytes": 4471,
-          "sha256": "b17436728bbf5f6f9d02dc8933553a2d0f84bc692668bfabf6ac5744a7e12c0b"
+          "bytes": 5347,
+          "sha256": "64a365fb5431212f428c029cb10cff8fcd97ed444b0620780626b9bc5b53ba23"
         },
         {
           "relativePath": "current-footprint-inverse-initialized-get-source.review.ts",
@@ -3837,6 +3877,11 @@
           "sha256": "0cd453ab19ad1b907a8f0addfd364af3af2b104abcb3d852cf7b26647c1ac3b9"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-clock-origin.ts",
+          "bytes": 1568,
+          "sha256": "4f6e55c9a9f161406cbbc75e7bc134f927befe7cfab9ca9cea680b9d638b268d"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-clock-profile.ts",
           "bytes": 1478,
           "sha256": "9850e6bca5ddca50a4c7a9bd6967890457cd17282a60d0c44d2300619b354e2a"
@@ -3882,9 +3927,24 @@
           "sha256": "e0ee48a71811b496dc65f3e5a34ed891f65f9d0dfdb874b90d51b28e66804424"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-cold-absence.ts",
+          "bytes": 7427,
+          "sha256": "02fb44c6c912b85a61e2725cb040d7bc4297c618ce97e56dbd1c0443de796801"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-checkpoint.ts",
+          "bytes": 8616,
+          "sha256": "4a1b343cc3442a0f1adfcdbcc36b78852d1f9ff2a00a93628948662f5c29fa9f"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-cold-data.ts",
           "bytes": 7681,
           "sha256": "6e4d31b9d4e3f1f134b5c1b597b63d5160be10a1dfa3c086ba633a3a5053c3e9"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-generation.ts",
+          "bytes": 15785,
+          "sha256": "4a28788658b01a5534d623aa1ef5c7df037861e316d65060ff5ee673dfa18fac"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-get-collector.ts",
@@ -3903,13 +3963,18 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-native-fragment.ts",
-          "bytes": 16578,
-          "sha256": "ec038b35ff86e0d632deb476fb7ef7aed4bea9edda88806fe1f799722d6d7c00"
+          "bytes": 19849,
+          "sha256": "f4db135ce4bc0d943ada94670c4d0fef6e574b4ba6c86bbbec07a3df8696af12"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-native.ts",
           "bytes": 7306,
           "sha256": "59414be79da1450763350c3949b093321d660bf2eae11cd98e536ec71098b331"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-negative-source.ts",
+          "bytes": 3650,
+          "sha256": "613a3f927e8aeb57889e2ba92cb06865c26604665901799d744da7b96fd66a71"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-own-data-collector.ts",
@@ -3923,8 +3988,58 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-profile.ts",
-          "bytes": 1945,
-          "sha256": "b2229cbdeba4a47d31a3395868c6340600f7ab4d04902153707e6f41139e6052"
+          "bytes": 2000,
+          "sha256": "2a92ebec3db0d7b7d2e369bc3d3b3bb71ddb5b3a1446e84a352d7b5fcb778fde"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-read-origin.ts",
+          "bytes": 517,
+          "sha256": "643047126f4bf745a53faf0cf15d73f603944bdc778e49980ba9dbc118708cfb"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-startup-wire.ts",
+          "bytes": 878,
+          "sha256": "abf375e26a13f5a676633ed174e02e1e5d924468343130ff0286ad9cec784c69"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-successor-helper.ts",
+          "bytes": 4799,
+          "sha256": "097832adb22b7bbfba229b9c4e57297f10eeea299cd32c453492d3930885827b"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-successor-identity.ts",
+          "bytes": 1066,
+          "sha256": "ad36aea048bb77c5381d1e1987188ac844158b94f19bedda4572924d155b4edb"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-absence.ts",
+          "bytes": 7900,
+          "sha256": "c968df503119551c5dafb413ba8ca0b9b75820b0268d2eba5f0d29c9a5c613b1"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-capacity.ts",
+          "bytes": 16734,
+          "sha256": "a91b76b702595757364ffd2f294c32748d3f109079f41c3ae21ed5c5493451be"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-checkpoint.ts",
+          "bytes": 6548,
+          "sha256": "08f18348c59862b05cf84a4973454398578bf1e774e74558be42c22523aa4420"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-contract.ts",
+          "bytes": 3041,
+          "sha256": "10ce8729dc61bd01fe0a1da50427f4e078463b758dba4c7812b9058871669e63"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-controller.ts",
+          "bytes": 29925,
+          "sha256": "3edc2994fe851011288361f3f101833115b5942da8fd95d495469b0a1cd03251"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-generation.ts",
+          "bytes": 25350,
+          "sha256": "535937a8330f9246ff7724d794c1f766f9e532027bb75d30f5964c75bd1210fa"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-ui-helper-identity.ts",
@@ -3937,14 +4052,114 @@
           "sha256": "0d54b27ffef3f84f6f3c0816ed9d27b4a6d4ed2f9cdfaccb25ff258d3e4bb317"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-helper-source.ts",
+          "bytes": 6629,
+          "sha256": "ddb499af903dcc0a496d6c1ec997466faad4b7f979ed8f5f28f1898c2b4b6578"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-journal.ts",
+          "bytes": 20190,
+          "sha256": "f2a8332c6df32b034e9e424b8330250ec3680915959406f759157da15b3bf87d"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-native-budget.ts",
+          "bytes": 1365,
+          "sha256": "302395a6cf7fa8f7ed06a710991ca111b2581b776faadbc7b8f528582d79aa62"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-native.ts",
+          "bytes": 6826,
+          "sha256": "771f2c4081c37d9b7492b1805d20da2823887a8427f8837560ecf584a9adece4"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-primitive-collector.ts",
+          "bytes": 9686,
+          "sha256": "01f9274e9f421f50dbd69dcf97d6c0e74f7d4bb9166d32145f6dd927afa6da3e"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-primitive-programs.ts",
+          "bytes": 4369,
+          "sha256": "7b2c1d97af88a3eb4d655c8a1f1734ecfdba7293f2d5209eeb23341e0af7cd7a"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-cold-ui-profile.ts",
           "bytes": 2723,
           "sha256": "633d31df94f83a938361d8bae99b239d2062a571d361effdc4db6d1676beba6f"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-programs.ts",
+          "bytes": 10352,
+          "sha256": "286563e05e2597d447d63455d1ee75cac096f2c41372ed608a8ee9e152b98932"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-protocol.ts",
+          "bytes": 21096,
+          "sha256": "7eeca9eb0282b2ef38d74d11d94323a84de65f8772f7fafea2a981716c45ec5d"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-receiver-collector.ts",
+          "bytes": 12174,
+          "sha256": "bdb62aaf5ad5f8438c2406678008f16a9b18bff7f768f7b87012155ff60dea16"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-receiver-programs.ts",
+          "bytes": 7396,
+          "sha256": "a70fa27d752b318cafc70a9392f2edd141201f04d5f59322c2b8b0e64e9ae8c4"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-recipe.ts",
+          "bytes": 7310,
+          "sha256": "c2458dcb7861e4b16a06f863b7dae23147f11964c4e1927089913a846cbd6b65"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-replies.ts",
+          "bytes": 5015,
+          "sha256": "5c4dbb5e6a8246f8a219a2c992dc951fe0f57bfbabec04471005defeda4a32bf"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-cold-ui-request-budgets.ts",
           "bytes": 1713,
           "sha256": "ab2c32c88de61d21876ab55543254f79f5f5ea7052683995f5bead332eb2d743"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-return-collector.ts",
+          "bytes": 25354,
+          "sha256": "17ce1c7ab90776b21ae069de5b6bfc7defc0864c933d52ec5f3b16ab4f758bac"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-sender-collector.ts",
+          "bytes": 9454,
+          "sha256": "95cb87a775980b2449fef2c0eada5d5b641736378c4bf596b3a1becc6289d8c4"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-source.ts",
+          "bytes": 2523,
+          "sha256": "d5d1fa23bd87ddf592c4ec65a98b778a5245804a7ab67bc6c3d590df15131160"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-startup-wire.ts",
+          "bytes": 914,
+          "sha256": "4fa2dca1ab54c811a7699b117419743de6e5f5f78e8a646cb9e382c678ac343f"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-tombstone-collector.ts",
+          "bytes": 8001,
+          "sha256": "4f0b4e7ac2c571fbb94434ee3346f0873d5871238a52b7e4e3335428693cc25c"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-worker-collector.ts",
+          "bytes": 11831,
+          "sha256": "2eef7054678411c55c02e87a6e858f2ca5dcd465021d9f8a479f7bf31862c0d2"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-worker-programs.ts",
+          "bytes": 6959,
+          "sha256": "d04ae3a059f8ba53918779455e4a505f2d30ad31801e99b8a334e42ac4ed5d03"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-cold-ui-worker-source.ts",
+          "bytes": 15861,
+          "sha256": "616b89dbd0d563bf7c64023c11a808f445b205d2319e467bc5034713ab7079c4"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-collateral-collector.ts",
@@ -3977,6 +4192,11 @@
           "sha256": "4be3f59db578ff648704c451fe3873a316e4b7852f9dd5a102e181db797de312"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-drain-controller.ts",
+          "bytes": 26281,
+          "sha256": "e55adb87d311064c01261cff79b2359e43a19233b8d1c36a8effc61872ba8c72"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-drain-cursor.ts",
           "bytes": 18184,
           "sha256": "9f7d818858de65edfb5e5f0b0c2c0e23fa00ebd8b39b092fa46ae6bbcff132a2"
@@ -3995,6 +4215,16 @@
           "relativePath": "current-footprint-inverse-native-delete-drain-metadata.ts",
           "bytes": 3370,
           "sha256": "6234f1ffbe8b83b73799eadfc3c78efdbb92df1e9c4e364d1fd50c0b34c03a58"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-drain-observer.ts",
+          "bytes": 10755,
+          "sha256": "115d9453892a5b0c851d1c9f79dc376d90464d3e47ec430c7037fec77814de70"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-drain-origin.ts",
+          "bytes": 1264,
+          "sha256": "5060cbcfc7fedbef1b591f35da3a57502e749fe7b6cd32bf76ee830fe01ed89a"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-drain-programs.ts",
@@ -4022,6 +4252,11 @@
           "sha256": "c9b5abcbc427adb633bc70a99429780ca161656b258ff37a3c57aa0c0230c261"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-drain-sync-cursor.ts",
+          "bytes": 10498,
+          "sha256": "074c1696ed0d9daf0db6daf3b9ea0831bafeeb81520cb5a6a4fa9d4def81b232"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-drain-sync-programs.ts",
           "bytes": 9193,
           "sha256": "95b24d09acc1c7b756de9f5ea4c550b1afabecf99cc028b61161a413db87c0ba"
@@ -4045,6 +4280,11 @@
           "relativePath": "current-footprint-inverse-native-delete-execution-call-controller.ts",
           "bytes": 17606,
           "sha256": "389149d4bcce7d9e79d109a1a6bf1f47e10e9d06cc295ea7b6df62b1fc962011"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-execution-call.ts",
+          "bytes": 1804,
+          "sha256": "1a79f4456e1b70d8c5932c14760296370371646237e826bb6a8d1f3739e20b1d"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-execution-callback-controller.ts",
@@ -4127,9 +4367,19 @@
           "sha256": "85bfa9e92c88f7d1d184aab280eb6a161f5920f8989dc822b0abd9b8e7d819bc"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-execution-inner-rpc.ts",
+          "bytes": 1008,
+          "sha256": "7426a21c5491353b067d3e457f8290a6a039a5238533e76952bee44645256381"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-execution-invocation-custody.ts",
           "bytes": 5461,
           "sha256": "72b8eae52431a1646a7dc8c49a1b298764411eaa3c502411f252c66ee9943229"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-execution-job.ts",
+          "bytes": 1454,
+          "sha256": "0c7b7458879ff9123203d26248f722d9a3c47173bef59c88246e46db8d7471dc"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-execution-manager-controller.ts",
@@ -4182,9 +4432,24 @@
           "sha256": "d8821e9e801f8e7166fae3f9e88d36fdcaf14ab96eee1c7a9ebbb350de313a4c"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-execution-transfer.ts",
+          "bytes": 13541,
+          "sha256": "8febd8339cc9292eb4beca0bb3d24eac32445f591182df0c3e2e029574306844"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-flow-budget.ts",
           "bytes": 273,
           "sha256": "72578263347c012b164867d1cc5a4545e811d7b0d02af07e7ed149125c9fa0ed"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-flow-controller.ts",
+          "bytes": 27318,
+          "sha256": "88e5ad50f736619af5d5f4a754689629d7c90ef953f44e441ee61f19e7520504"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-flow-origin.ts",
+          "bytes": 1368,
+          "sha256": "06ad13313a8069565cb819c4dc14480b6446f3107dd1fe9263442a1f54851bcd"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-flow-protocol.ts",
@@ -4222,6 +4487,11 @@
           "sha256": "791dc75e5682e2494e8bacda43a9fc07d7840816c28951405f6b251148c383ec"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-main-begin-observer.ts",
+          "bytes": 12544,
+          "sha256": "d8beefb4796bd88708cd64e406a60c7de84bd5352fe721783cec030b775da4af"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-main-begin-programs.ts",
           "bytes": 698,
           "sha256": "bf5ce3e64c30d0a4eaa8327e3b1b81bdef89709d33489af9bd991fd03fd58b72"
@@ -4242,6 +4512,11 @@
           "sha256": "13bd9b78e363f8c7596b4dcdfedf06da1e08911ca1eb2e0804875aada19b9283"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-main-budget.ts",
+          "bytes": 1075,
+          "sha256": "326ffe3e37913bbb053a2dca8e5072b10b0ce637c87ce5fe0495c02d53c860db"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-main-captured-rebase.ts",
           "bytes": 7888,
           "sha256": "dce4ea70432940307ace7c893d7b7a024c4027f8f8831f8cf3c87aa26c7022d0"
@@ -4252,9 +4527,24 @@
           "sha256": "d019a229098fb2d6cf6fdf92402890e953468e2612f87ba3d05684434e7619d4"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-main-controller.ts",
+          "bytes": 19781,
+          "sha256": "282b55db152e964f0fcd72154265ca3e5359c567c42b33055f3abe033f654b58"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-main-history-ack.ts",
           "bytes": 2154,
           "sha256": "b64a396e4dfd70c90077a1dd3b123cd5591e2dba4c96fdce8b366350f471475d"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-main-history-custody.ts",
+          "bytes": 33275,
+          "sha256": "7874d9b723b7103d6a7d4c0076694e42947039d61dfe78cb253a49abdce45d61"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-main-history-observer.ts",
+          "bytes": 17697,
+          "sha256": "5e3a7a3e2e6865499ee9d1737f5c32c76e79383e857ade760c2b46c624e3c5b4"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-history-programs.ts",
@@ -4302,14 +4592,44 @@
           "sha256": "be1fed8c3d0f83d0bdf22e850b1028be0a324dab8af9942ccc4ad33328b22b4b"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-main-request-observer.ts",
+          "bytes": 24654,
+          "sha256": "96c6d85a554c07229b855f3cd36204517bdc06d88ee78441121735afe4a8bece"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-main-source.ts",
+          "bytes": 2730,
+          "sha256": "3fbb1f498b8cee4a91ff0ce67b5e69a70d9312de0691ee6c18518d8cb312d291"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-main-step-protocol.ts",
           "bytes": 1844,
           "sha256": "b551ba95fc4e50112051a56cb7ce88187de1925c7c2d756b52b08f744399da89"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-main-tail-controller.ts",
+          "bytes": 18969,
+          "sha256": "3c997bca7494b4c9d714281e62dea4d2442960dafee1d2f40e9afa9d13064f61"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-main-tail-data.ts",
+          "bytes": 16117,
+          "sha256": "c0fb90c729ccff9587be1abb601788c03f3c3ea8af500944aea602c79071b3e0"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-main-tail-source.ts",
           "bytes": 3697,
           "sha256": "c266132055b52e28ed2f0afa4c73c151931f42034f44adcfde35893f3d218998"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-persistence-origin.ts",
+          "bytes": 1485,
+          "sha256": "2252737ad0fb8452c5c4122cd77da4e0bc79ee468ba0adccbc0bfb77515a52b7"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-persistence.ts",
+          "bytes": 10010,
+          "sha256": "2bf892fd5a18bdd85894c3cd9984b2efec548f356f016207be8f3f42acd8edb4"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-poststate-budget.ts",
@@ -4325,6 +4645,11 @@
           "relativePath": "current-footprint-inverse-native-delete-poststate-native.ts",
           "bytes": 7881,
           "sha256": "4b74bbd7a4c4b115a81d8b1af9879d6c8262e94125cbd16edd9ff8f8ac9ccfcf"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-poststate-origin.ts",
+          "bytes": 1201,
+          "sha256": "09fe5dcda48b0f40ced61f6ede14c47b532b5bc8c50c8873b037cbc1828d7502"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-poststate-protocol.ts",
@@ -4343,8 +4668,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-publication-bindings.ts",
-          "bytes": 4956,
-          "sha256": "5719b27450ce2712bb8f4e976275deafc1774ef3077cf6fff52f274f10378c40"
+          "bytes": 4959,
+          "sha256": "95628774de0192ea248e6f754318f8d5abb86bc731217e5349b75d316e1e9dc5"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-publication-callback-protocol.ts",
@@ -4357,9 +4682,19 @@
           "sha256": "3524c13e5860addbdc9fb79c0a80eab49a40550a1d0b0e213c9928372aabda11"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-publication-controller.ts",
+          "bytes": 6616,
+          "sha256": "f059b5126aac7ba09021713fe91a2d5eeafbf9e59306d174a54f5ac4bd817d1a"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-publication-observer.ts",
           "bytes": 8752,
           "sha256": "53736b237ba5e3c00d7af8f64a0d01563ea5d85c07cdcbdcaf1768b4330cb957"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-publication-origin.ts",
+          "bytes": 1533,
+          "sha256": "5e66c61796dc0671ca346a058f94ced09bba2de67217a3f449867e9fd6c06f76"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-publication-protocol.ts",
@@ -4432,6 +4767,11 @@
           "sha256": "42e4b5b893bd153320d4ba48296c326cbc59e3b8e0418b1533b1245da890e75c"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-return-origin.ts",
+          "bytes": 803,
+          "sha256": "60de0b2a97896d160ca8703c78bb4e580f51379fa99e6e0396be822366f42090"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-return-programs.ts",
           "bytes": 1118,
           "sha256": "7295ba5f4c2b8934aec7f87ec6ed8426a146d1da9c78f8e5ae8d465089f9a4b8"
@@ -4447,6 +4787,11 @@
           "sha256": "fcd7214d84c58148d26c74910538242b5fbd8e0566f4d77c896a50cd12a613fd"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-saved-generation.ts",
+          "bytes": 18211,
+          "sha256": "9432ff4a02717c0edf7490ca301bc58c7831d555308d93f0266832d892fb6006"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-segments-controller.ts",
           "bytes": 10958,
           "sha256": "8195ea5385945856d1d902d887e6c84024f2a193603a5861f72495e09fc8ff68"
@@ -4455,6 +4800,11 @@
           "relativePath": "current-footprint-inverse-native-delete-segments-native.ts",
           "bytes": 6651,
           "sha256": "c3085a6d459099191a1cbb26cbc380d9ba4939f14b6fafb90c99e25101d17b0b"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-segments-origin.ts",
+          "bytes": 817,
+          "sha256": "a29261940534e2463324079102c08373c3cc29f0fe3660cd8d2fa9b72320c445"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-segments-programs.ts",
@@ -4507,6 +4857,11 @@
           "sha256": "c303f199653ba9d92ac6c033c9bead8f2dbd36ae5a479c19ea4924a524bdd71c"
         },
         {
+          "relativePath": "current-footprint-inverse-native-delete-serialization-origin.ts",
+          "bytes": 1853,
+          "sha256": "48de81d82dec8c395d9217ef7ac8674b931360e7ef305480944a0e2d90805946"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-delete-serialization-profile.ts",
           "bytes": 1999,
           "sha256": "a7efbc37caa3250fc6dee60f88575a3be5af2d0a5296682c98afcb053aa62402"
@@ -4540,6 +4895,11 @@
           "relativePath": "current-footprint-inverse-native-delete-upload-metadata.ts",
           "bytes": 2317,
           "sha256": "c2e51cb7949b48f86af09ee4d32901f138d852a1f628dd5479faec7eb9344aa0"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-delete-upload-origin.ts",
+          "bytes": 803,
+          "sha256": "0302421a3b9e3de8c3a1b8166dd96d90ccfd5fea07c2fb31684345dc74595a49"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-upload-programs.ts",
@@ -4907,6 +5267,11 @@
           "sha256": "bb034902d7e61d84de703cfca6e1e75795d053ea42ad8239b82b24b85cd257ee"
         },
         {
+          "relativePath": "current-footprint-inverse-native-get-task-ui-result.ts",
+          "bytes": 974,
+          "sha256": "28a9bbf0920a1e8eb2aceb618161596d34f1f8548265680040399a6de5b0746f"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-get-task-worker-completion.ts",
           "bytes": 1269,
           "sha256": "d8680945f281510fe7799b641563b323fcdf063057cfaa3fede69959d4658048"
@@ -4982,6 +5347,16 @@
           "sha256": "c77aaae83a6b48418629ea8effd1e63233f3df3ef8c574b6cf8a013da2ad191c"
         },
         {
+          "relativePath": "current-footprint-inverse-native-reference-next-call.ts",
+          "bytes": 1489,
+          "sha256": "76d2cf31bbc325ba3416319eb7d84385d460245c2eb96792c108c60eb319fb03"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-next-callback-controller.ts",
+          "bytes": 17088,
+          "sha256": "25b4bcd91ca63bb353ba0e9590a48490ea60b8d7dcde211a96b60ca47d48a24e"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-reference-next-callback-native.ts",
           "bytes": 8480,
           "sha256": "f5248f4ae885bfcdbbb21e62d193d8ab6e2417c1346ca458140ffe66f98e9a8c"
@@ -5003,8 +5378,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-dependencies-collector.ts",
-          "bytes": 9914,
-          "sha256": "2cf1da68ecf2ebe59632fe0e89b2abeed77ccfedff569e9780ef600fe3f9c52f"
+          "bytes": 9917,
+          "sha256": "eb5a71e3029ef1bcafc7fcef03aa1e7590a725d21660f96face0243e2e97668c"
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-dependencies-native.ts",
@@ -5047,6 +5422,11 @@
           "sha256": "35e17a706ef99aef13de72f7a258568a3f79cdaad3e34ed0304c775b3e38e132"
         },
         {
+          "relativePath": "current-footprint-inverse-native-reference-next-worker-channel-controller.ts",
+          "bytes": 18897,
+          "sha256": "e3a04ee2ec732ef79c7ea8c9b37f3f9dacdf9a7a7fadf59f78b84759db05fc74"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-reference-next-worker-channel-programs.ts",
           "bytes": 2341,
           "sha256": "25059dc7d09afecf4fed9fcbcd74a8caf5c435fc8637349925b5194e633c6de6"
@@ -5060,6 +5440,21 @@
           "relativePath": "current-footprint-inverse-native-reference-next-worker-channel-replies.ts",
           "bytes": 3695,
           "sha256": "b59688dd838e467f4b778afc93a4f27eee90ac22210b0ddf40dda5a7031c4464"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-next-worker-flow.ts",
+          "bytes": 21333,
+          "sha256": "c42497fb382813cda0f85174454fa219cde6c3fa49a1efa17228c24014c64df2"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-next-worker-forward-controller.ts",
+          "bytes": 12813,
+          "sha256": "f4fc0617fbf754f8fd37b01f97bbdcd14a4f8eafe88abfcfc2da7c4887e9cf76"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-next-worker-forward-observer.ts",
+          "bytes": 20525,
+          "sha256": "ababba04e876fb2c60abb25da2f656e2e962fafb9cd135206859771a9486899d"
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-worker-forward-programs.ts",
@@ -5077,6 +5472,11 @@
           "sha256": "b7bbe43266316b798af4fddb12a385af71b08221d2c35319be5ec1cd786b5f4b"
         },
         {
+          "relativePath": "current-footprint-inverse-native-reference-next-worker-manager-controller.ts",
+          "bytes": 20969,
+          "sha256": "006402862c16c55e92651fa16311d38d6331bc0f19aa17eb8d6f7df22f9f17f9"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-reference-next-worker-manager-programs.ts",
           "bytes": 3863,
           "sha256": "d181928ef5d8d546dd7249a1a78b5dea13e5c8662549c2dfd05dfa99588e4048"
@@ -5092,9 +5492,19 @@
           "sha256": "466eb798ecfb21b8fc39c249d75daacd55bcf5c4e05c6dcc34053d4dbc3a4927"
         },
         {
+          "relativePath": "current-footprint-inverse-native-reference-next-worker-result-controller.ts",
+          "bytes": 13950,
+          "sha256": "0aad4f5c9d8019935e4b631a919db44757e62926c239ca7ab23752dcafc45505"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-next-worker-result-observer.ts",
+          "bytes": 23982,
+          "sha256": "34e81a50257bf4fa0bb0bfedb8706564e46a2efc4a45a66a6429315108f770b7"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-reference-next-worker-result-programs.ts",
-          "bytes": 2069,
-          "sha256": "e0041770066671b36b35656460283178e0432eadbafc100cfa3ebdea328cb6fc"
+          "bytes": 2075,
+          "sha256": "8749b2495eec41c2ddcc3f808c758f09a009284fdc2ae6d1ae14a9fd08b2910d"
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-worker-result-protocol.ts",
@@ -5110,6 +5520,11 @@
           "relativePath": "current-footprint-inverse-native-reference-pcb-call-controller.ts",
           "bytes": 17398,
           "sha256": "9d821b587083de1c36f1939113916a79ddc570d505d150d3d696d0b63e23d658"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-pcb-call.ts",
+          "bytes": 1259,
+          "sha256": "a7897beec6ec90a8dea6baa764394e6b9970413af23d51a4dcd131b1754e7670"
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-pcb-callback-controller.ts",
@@ -5137,6 +5552,11 @@
           "sha256": "05210de06b3732c16c7224e86ad6ef81b3f4b975183a64ffb806d025f71c47fb"
         },
         {
+          "relativePath": "current-footprint-inverse-native-reference-pcb-callback.ts",
+          "bytes": 1685,
+          "sha256": "dd5bd84674264cb0705cf5a1e2d70c604862fa783250a1c322e67b8764ece2f4"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-reference-pcb-channel-controller.ts",
           "bytes": 17996,
           "sha256": "bba7c09c0bb18bd25c900e148c80d858b4b207516a2d10cd4df572b19c229289"
@@ -5162,6 +5582,11 @@
           "sha256": "e777aca4de8b5a8705c3f58c19e7b7732769b7b59cfd8ebebd62b9c9187c981e"
         },
         {
+          "relativePath": "current-footprint-inverse-native-reference-pcb-channel.ts",
+          "bytes": 1381,
+          "sha256": "fde51f170901340a78a3dc070103c8cee0fcff21a3099742f376acac34315528"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-reference-pcb-dependencies-collector.ts",
           "bytes": 8714,
           "sha256": "eaf237ad4cad6c8d7f3bd2fe416aef8cfc17eecb007fbef3ab4819582d7dea4a"
@@ -5175,6 +5600,11 @@
           "relativePath": "current-footprint-inverse-native-reference-pcb-dependencies-protocol.ts",
           "bytes": 10305,
           "sha256": "78d06221923de730726859e17095b04e9640e302f458e9f29b0c2647f1959796"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-pcb-dependencies.ts",
+          "bytes": 1307,
+          "sha256": "61f8ba4ca758215046065ee7a793d4532f07378b90d0e53eacee395f1ac9c024"
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-pcb-forward-controller.ts",
@@ -5237,6 +5667,11 @@
           "sha256": "4867e1ee9684e03c3cff39a665fa733100a374c63c3576e437bff120937019fc"
         },
         {
+          "relativePath": "current-footprint-inverse-native-reference-pcb-manager.ts",
+          "bytes": 1617,
+          "sha256": "52ee153043cdffe3f7ad520dc1717593d3fafa6a79588d3cd854133bc38f57c4"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-reference-pcb-result-controller.ts",
           "bytes": 13685,
           "sha256": "b18f1b1284a1bd46d8c934d208bbed5f9fa7be5c45702bc1f3e47604f60dc6ac"
@@ -5285,6 +5720,16 @@
           "relativePath": "current-footprint-inverse-native-reference-pcb-sender-replies.ts",
           "bytes": 4578,
           "sha256": "4e23244b51fb286802cdb048c19f19adf025d53d05461d4801657ddd3f133ee3"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-query-job.ts",
+          "bytes": 2836,
+          "sha256": "b44a20ef38668fff2f41f93638b0210921e0e2611719a9d45ab5228b7a9f5c2e"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-query-result.ts",
+          "bytes": 2144,
+          "sha256": "8972d05305edf3988f1ddbd33fc6294cfdd314c8a4281e06106821422c3e52ce"
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-roster.ts",
@@ -5337,9 +5782,24 @@
           "sha256": "710516491ff8352160dd87bb3d64575a69852797d4cf212d85ce80f464900e37"
         },
         {
+          "relativePath": "current-footprint-inverse-native-reference-worker-observer.ts",
+          "bytes": 15853,
+          "sha256": "d59a067b5032d1fa607d50f1dfe9f4e1940924ca6725c2ee05253d3c18275bba"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-worker-preparation.ts",
+          "bytes": 20418,
+          "sha256": "83e6adae61ad2543dc1a61df87644b6d52aad5a6ce3c96a248c51296679df5e0"
+        },
+        {
           "relativePath": "current-footprint-inverse-native-reference-worker-protocol.ts",
           "bytes": 16175,
           "sha256": "8607c46ee1f35d3cbed592f409f90a7afccead787136a7a02fb32d173d8e6920"
+        },
+        {
+          "relativePath": "current-footprint-inverse-native-reference-worker.ts",
+          "bytes": 1708,
+          "sha256": "b035c70c9ce1fad801df5368d36ef98a4a3c88a9d7e3a313af3c519ef565633f"
         },
         {
           "relativePath": "current-footprint-inverse-native-schematic-projection.ts",
@@ -5390,6 +5850,16 @@
           "relativePath": "current-footprint-inverse-polling-intent.ts",
           "bytes": 761,
           "sha256": "e3d9eb840fc1399fc35f0b3037c275be0942bf714f6baa3216818ad573595ec7"
+        },
+        {
+          "relativePath": "current-footprint-inverse-prepared-checkpoint.ts",
+          "bytes": 510,
+          "sha256": "2e96a379caca8d6aa26c8032e2d0b1c489d85b269bc259428625f89252c2e0da"
+        },
+        {
+          "relativePath": "current-footprint-inverse-prepared-plans.ts",
+          "bytes": 12960,
+          "sha256": "9fae514e97039cbefe8cdee86a44e3f62140524ee2d698985b48b04de08a2b24"
         },
         {
           "relativePath": "current-footprint-inverse-private-fields.ts",
@@ -6015,6 +6485,226 @@
           "relativePath": "current-footprint-inverse-ui-own-data-protocol.ts",
           "bytes": 8127,
           "sha256": "63d5761fb13642c4e79305537250cc82564e7a6f807e497685608c1c2ca39b0c"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-cache-backup.ts",
+          "bytes": 9952,
+          "sha256": "a3d7b345bbbc1446445fed38df225240fca8aee57f702e1e03b3d00d10e484b5"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-cache-observer.ts",
+          "bytes": 7013,
+          "sha256": "bfcb2efaef522e552dd00bc2c46d765b69c0836fa40349c89e7beaf3b099c0d8"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-cache-origin.ts",
+          "bytes": 2068,
+          "sha256": "a24763e86d4640332baf35e4aa8ccd27125adbedc719c2f8eb67f155d3ffdb2f"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-clock-worker-observer.ts",
+          "bytes": 9987,
+          "sha256": "de75ca01cd3367bf163189def7d68fbc620e6a96ff75e737aea03ea11d1f4ce3"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-clock-worker-origin.ts",
+          "bytes": 1058,
+          "sha256": "04802323d5833bae534e9722ced0cfff2fe314249614ca584c8d325bdc6afe3c"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-closed-snapshot.ts",
+          "bytes": 16529,
+          "sha256": "987304f767de2fe8b81b47888877bc800349f31f4f6fdaceeedbae57aa0b5eca"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-cold-load-origin.ts",
+          "bytes": 1301,
+          "sha256": "fcd7e1a0da792085a60a2fad9568d095fdf301e0c151c00b9dc2969332a91fd1"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-delete-binding-observer.ts",
+          "bytes": 9434,
+          "sha256": "fbe271a9c556e3da2d21c2ecae7ccc681d02f884464e6549aa5bb25b2587450d"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-delete-binding-origin.ts",
+          "bytes": 1354,
+          "sha256": "62b035422af27aeadb44c20b7df1750066bdcb56aa662e6dc1bca7f83ec36812"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-delete-encoder-observer.ts",
+          "bytes": 8569,
+          "sha256": "fb2948bf85801915fc55ef7efef44e9a74028b8e2b128b9239516a001489c944"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-delete-encoder-origin.ts",
+          "bytes": 1139,
+          "sha256": "15cac9f91f2da64627eab80332ca5e7a7f8c9945a0fd8b85e6c7841b5950aa4e"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-initial-cache-origin.ts",
+          "bytes": 1796,
+          "sha256": "ddaea0ab4a019c928e013aae7bf22998d0b0da061cd0a92388fd8bbafa8ec2d7"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-initial-sync-observer.ts",
+          "bytes": 10187,
+          "sha256": "882b0ee8d80707bd36393d6ecdea8c5a73bb373bbb6a724f7dc85dab034a2619"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-initial-sync-origin.ts",
+          "bytes": 2107,
+          "sha256": "993ec4d8acb36e79e95e9ea622e841ee796a4ce4de46f06a1bbcd8fa86d3e736"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-initialized-get-replies.ts",
+          "bytes": 5347,
+          "sha256": "64a365fb5431212f428c029cb10cff8fcd97ed444b0620780626b9bc5b53ba23"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-main-joint-data.ts",
+          "bytes": 948,
+          "sha256": "ba0e5668ee2894673651cb4d77cb26542d1de1afeb7253c94bb1ba1ff7f0bb4e"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-delete-caller-origin.ts",
+          "bytes": 1278,
+          "sha256": "f33927a2bd157177e23a267424a09027cd83fcece95933edf4c1e519eecfe697"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-delete-clock-controller.ts",
+          "bytes": 18639,
+          "sha256": "545098ec09531004e0c292ad43ff9f1d68438a5e858dd443ca105b20fe24e021"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-delete-serialization-controller.ts",
+          "bytes": 11718,
+          "sha256": "5810ac90117c0aaa4b4a7513248d597452c312967b28aa2acfb8eba105ad2732"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-delete-serialization-observer.ts",
+          "bytes": 10816,
+          "sha256": "927a92db570644ad7faf2a7a0dab4ec1d9b729662211151cf370a035fc53199b"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-delete-serialization-programs.ts",
+          "bytes": 12770,
+          "sha256": "a8292076705d914571e1fca7a6f090f26abde5579ac6dd5d8055ce490a2a0c7a"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-delete-serialization-replies.ts",
+          "bytes": 6848,
+          "sha256": "0d83fd18670509219d58b865269c1d5ba15c8c490c7e9b50fafccfc5276f2538"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-get-task-job.ts",
+          "bytes": 1996,
+          "sha256": "d8c33df1ec8c6eb9af85ebc398b5a1b0c634b6d11b1215b0bde2ee8544830880"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-get-task-result-controller.ts",
+          "bytes": 13561,
+          "sha256": "50d516ee15ca35eca3db6b023e0f874ed3f813ab5a8e819735be9bf09590cacb"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-get-task-result-observer.ts",
+          "bytes": 23197,
+          "sha256": "5be9a660d7f94e605c2f1da59d3ae05dfe208a30b51c6fd8bb16948d82f6b4b0"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-get-task-result-programs.ts",
+          "bytes": 12979,
+          "sha256": "54936f7a984e522bdb6d73226392e8b3df0a85a411bf1a84ce43b1c29cfb5250"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-get-task-result-protocol.ts",
+          "bytes": 17610,
+          "sha256": "472290b2d2a98e3373bb3abd4c9e71284cb41d7e4851c423cc1a64148884044a"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-get-task-result-replies.ts",
+          "bytes": 5670,
+          "sha256": "1c297e3c8436b7b893d86b137608534aa206eadd0a96ddfd813bc6352456871a"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-owner.ts",
+          "bytes": 5501,
+          "sha256": "8b9e43f8b71e585989b91a041227c03080da88e398a82048ff503d02508bd191"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-native-reference-pcb-result-programs.ts",
+          "bytes": 1797,
+          "sha256": "0dc7f175f5c134d78b79d61b734178fc4d78e47c2bdbfad9fe3063f5144b8613"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-producer-origin.ts",
+          "bytes": 1142,
+          "sha256": "55d34e70077a9ff444aef31ef248028b06bace2060183198354a86a387a94a35"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-public-api-observer.ts",
+          "bytes": 9547,
+          "sha256": "29f474d22b05c18735ac659c0263816683764c11f206f9443b61b96cb4b94689"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-public-api-origin.ts",
+          "bytes": 1097,
+          "sha256": "c26535390939accf0ecc4563b7769ee5f93284117007bbe53a9228c5542be95c"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-public-lookup-entry.ts",
+          "bytes": 1178,
+          "sha256": "f2859e8668aff14b6731387184c73c47f4045ce8f3de9cfdce9a97a1be92a6ee"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-public-row-data.ts",
+          "bytes": 19340,
+          "sha256": "1b8aef3ab451c60236a45051caffe856efc0710331a9275999753ed8940f35c9"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-public-service-observer.ts",
+          "bytes": 12187,
+          "sha256": "c23e28f39afb1ccab629f30f8cc739bb799852739b991873082e647b249bb235"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-public-service-origin.ts",
+          "bytes": 1010,
+          "sha256": "c96656bba519c4c5ba87ac39a713166391617d6b383abf9824b835427965c683"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-registration-origin.ts",
+          "bytes": 973,
+          "sha256": "41e300f73ceffc6d0eb0c3ea624716a269acadf528b9ac7024be9db64102a1c5"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-selected-main-request-reader.ts",
+          "bytes": 11696,
+          "sha256": "67ccba96632dd07b809e38acf51543fe46a6d67d65b656e6950bddc697a12ead"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-startup-callback-origin.ts",
+          "bytes": 1569,
+          "sha256": "c9f52298fb40b553ce0b374353a0ceab96a098bacac1c965b19355cbbcd6be51"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-structure-observer.ts",
+          "bytes": 92325,
+          "sha256": "5da1e469358bb348cab536035aa2fd277c743871286e6e708cccf26f17c891aa"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-structure-origin.ts",
+          "bytes": 4966,
+          "sha256": "f00039055556edea6a4950635e5f9fcf3a988de8b444dd236674d584f63c1a01"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-worker-controller.ts",
+          "bytes": 160889,
+          "sha256": "c308f228c2700a19f105a84267bf62fe9a981fab57f486c9fbe79c8cfcce7add"
+        },
+        {
+          "relativePath": "current-footprint-inverse-v4-worker-origin.ts",
+          "bytes": 1314,
+          "sha256": "6cb412b232839ec4ccae76d603e295d0b371955003ebb666b107176e1b650747"
         },
         {
           "relativePath": "current-footprint-inverse-worker-controller.ts",
@@ -7113,8 +7803,8 @@
         },
         {
           "relativePath": "current-pcb-209-worker-startup-opening.ts",
-          "bytes": 65258,
-          "sha256": "e9ca7b526924eeaf0a9d53cc785ecec564a21dee3a2d0b9c023ea4ce27537c63"
+          "bytes": 81953,
+          "sha256": "4157b36e32e899b814bf92ccb2d928dc1c07ba95041af3c9660350eea16e43e8"
         },
         {
           "relativePath": "current-pcb-209-worker-startup-pcb-session.ts",
@@ -7273,8 +7963,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-context.ts",
-          "bytes": 58936,
-          "sha256": "49095456b982af577c3c88f9f746e25f891c96886be93c031cfe81cb214243ce"
+          "bytes": 60871,
+          "sha256": "c9f57f21ee227c825b7eba6f61b962f60ff7bea5c090aabe9231d7ae91d5a1bb"
         },
         {
           "relativePath": "current-pcb-diagnostic-csharp-review-storage-v3.ts",
@@ -7283,8 +7973,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-csharp-review-storage.ts",
-          "bytes": 10930,
-          "sha256": "d8cf1a7d09cb1e37993dca5592faadb2de113e2679ce281e85d766ec06b338aa"
+          "bytes": 11769,
+          "sha256": "a0d7854458ddf9f7fc37c697579c6a72f6b91472d68bd79faa7522d5c910d06c"
         },
         {
           "relativePath": "current-pcb-diagnostic-csharp-spacing-v3.ts",
@@ -7333,8 +8023,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-lifecycle-journal.ts",
-          "bytes": 187764,
-          "sha256": "24789de406fe5cdc1bc704d560602c0bd44c46b0001c05738eae3e9bc996ecc6"
+          "bytes": 188026,
+          "sha256": "24a5320ee247d8fee9e87863779a355d1b06db88134fc3644305c05a032378e5"
         },
         {
           "relativePath": "current-pcb-diagnostic-lifecycle.ts",
@@ -7368,8 +8058,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-owner.ts",
-          "bytes": 2911598,
-          "sha256": "beaa61354c315fb4ac5ec910338579f352ad71741756e26eb2aff51a8f1973a5"
+          "bytes": 4009394,
+          "sha256": "3f316f6d8b870acae3488367e84d61c8e2f54adc483973f423d51bbf23eb5ab5"
         },
         {
           "relativePath": "current-pcb-diagnostic-pcb-opening.ts",
@@ -7383,8 +8073,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-pipe.ts",
-          "bytes": 352562,
-          "sha256": "a8358e85ee3af6de159660de0a6909ac57e1e1c75f09347a42524ec8dbdfb1af"
+          "bytes": 416903,
+          "sha256": "0b77d0d227c737f3fbad1ee11912d71cacf8fe474f3954d02a9fbf6ba6b79d2d"
         },
         {
           "relativePath": "current-pcb-diagnostic-profile.ts",
@@ -8988,8 +9678,8 @@
         },
         {
           "relativePath": "current-pcb-worker-startup-channel.ts",
-          "bytes": 170315,
-          "sha256": "3bf59c46d97bc9a978296bbfe8e294968d0d141c13d7a2e559719417c033d3d3"
+          "bytes": 195906,
+          "sha256": "58502915bf511f71de16a286ffd95ba8dd0562231b972d521981f7cb1ea448d2"
         },
         {
           "relativePath": "current-pcb-worker-startup-contract.ts",
@@ -9023,8 +9713,8 @@
         },
         {
           "relativePath": "current-pcb-worker-startup-transport.ts",
-          "bytes": 94016,
-          "sha256": "e535173546af2d75e28026a2ff4c67cf573cddb16911eb0e421fa9f2085318da"
+          "bytes": 99716,
+          "sha256": "1041fd83eb18e37577e889bf211b380d32d5d58b4254fc05587fc6d71fed59eb"
         },
         {
           "relativePath": "current-pcb-worker-startup-validation.ts",
@@ -9818,8 +10508,8 @@
         },
         {
           "relativePath": "current-schematic-display-write-protocol.ts",
-          "bytes": 13420,
-          "sha256": "7cf11a03c78a6e1076625ed54d12a43e1e5672e68713c5a63286ae1a1e0219eb"
+          "bytes": 13938,
+          "sha256": "7aa8a092b9da8999812dc1ff08ea2ecc12c72aaadead48b0f22a792cd4b5c030"
         },
         {
           "relativePath": "current-schematic-document-constructor-replies.ts",
@@ -9855,6 +10545,11 @@
           "relativePath": "current-schematic-endpoint-membership.ts",
           "bytes": 6034,
           "sha256": "85bddf23d0d531e28cde8049dde39299848a676769daf40bd0ad22ffeac160ab"
+        },
+        {
+          "relativePath": "current-schematic-extra-private-fields.ts",
+          "bytes": 21777,
+          "sha256": "23f8eeafa748a9d5e207f559ceb6f0ba4d574d28908733d99d51b4d90b861710"
         },
         {
           "relativePath": "current-schematic-legacy-private-fields.ts",
@@ -12547,6 +13242,21 @@
           "sha256": "81fc643cbcf28a5445db901c3537362da221e94a8191c59430f57c8f1978b0a9"
         },
         {
+          "relativePath": "current-schematic-wire-action-complete-programs.ts",
+          "bytes": 8365,
+          "sha256": "4d35e0880712f4b19ab1377c618a06c0871513147ab2a9e31973d50289a5787d"
+        },
+        {
+          "relativePath": "current-schematic-wire-action-complete-protocol.ts",
+          "bytes": 5788,
+          "sha256": "8e895c9292a21b2d7b76d2edad505c25c5646cf44b32d4a300a94f2d3e171871"
+        },
+        {
+          "relativePath": "current-schematic-wire-action-complete-source.ts",
+          "bytes": 11188,
+          "sha256": "5da4f2cb0225d6ed6a90128372b8de10a09be25ee763d0b294f1b1f257361330"
+        },
+        {
           "relativePath": "current-schematic-wire-active-cursor.ts",
           "bytes": 10132,
           "sha256": "9aafa9f25c73c85c29e2c7922fe1922e0f95272ea140e7772c77304c6f101168"
@@ -12648,13 +13358,13 @@
         },
         {
           "relativePath": "current-schematic-wire-callback-driver-protocol.ts",
-          "bytes": 14737,
-          "sha256": "e5b979c3558f63e5d92cbe6f6590954e3c52285f2d60296f444797516a2cc8ee"
+          "bytes": 15869,
+          "sha256": "56c44135c588d8896e230a555bfb6660d827aa82e43d974f99ae7e9f89c3b406"
         },
         {
           "relativePath": "current-schematic-wire-callback-driver.ts",
-          "bytes": 272932,
-          "sha256": "45c4cb1c656942ea563f61cd9fac392883de6559769bd4b3ee0f2f19d082af06"
+          "bytes": 311020,
+          "sha256": "1c6cb6073e72a70940767f80e47e6acff7caac01f9197681abed1c84ca9e9d98"
         },
         {
           "relativePath": "current-schematic-wire-callback-protocol.ts",
@@ -12812,6 +13522,31 @@
           "sha256": "6ff152d09e77c5a60be8ad3f4b375a01f50c4a8edb5fe8b96859fb885a1c5b14"
         },
         {
+          "relativePath": "current-schematic-wire-dependencies-cursor.ts",
+          "bytes": 8103,
+          "sha256": "5f098f1e0005722ec8b8de2c39d5bf9a1032f5144885df9c0f07fad1b4ab8f56"
+        },
+        {
+          "relativePath": "current-schematic-wire-dependencies-native.ts",
+          "bytes": 4897,
+          "sha256": "2c4e341fa5f2e90c9bd239becaeead848e89e2ecc7fddef9cbcae66266060b6b"
+        },
+        {
+          "relativePath": "current-schematic-wire-dependencies-observer.ts",
+          "bytes": 7828,
+          "sha256": "49d4a64ad0217a46805d0ef73f385bb8e7450678e2703b43bce66c30f11d81b8"
+        },
+        {
+          "relativePath": "current-schematic-wire-dependencies-programs.ts",
+          "bytes": 5289,
+          "sha256": "13b02ebda5552d3ad5ab0d225ac0b48f9fa3ad745fe0161d994865e5830dd181"
+        },
+        {
+          "relativePath": "current-schematic-wire-dependencies-protocol.ts",
+          "bytes": 7010,
+          "sha256": "15235acd5f70e235549ed65404e2a4bf2dda511342c9eabcb20c1b5d7a032ffe"
+        },
+        {
           "relativePath": "current-schematic-wire-derived-rtree-census.ts",
           "bytes": 3804,
           "sha256": "85e9edcbf40789dfbceecbcac69d5730fa81ba7285105a7227b2aa8238ba80c1"
@@ -12872,6 +13607,31 @@
           "sha256": "f998708e586f50b12c443eb249ad2d22a1a77dade1b8ffd7cc26789a93c36dfc"
         },
         {
+          "relativePath": "current-schematic-wire-encoder-checkpoint.ts",
+          "bytes": 7423,
+          "sha256": "12cde1267c263a47dfd8229b5b75ba4fdb4eb80233827216e09f6eed6eb18429"
+        },
+        {
+          "relativePath": "current-schematic-wire-encoder-metadata.ts",
+          "bytes": 7755,
+          "sha256": "af84b836b68d3fb15ec5f159ec358ea8e44811ca43dce8163aa787757a367224"
+        },
+        {
+          "relativePath": "current-schematic-wire-encoder-programs.ts",
+          "bytes": 3839,
+          "sha256": "e25871b75be6a55f7508375a031001d6ce15c2766457e90549cd1a13922ca8da"
+        },
+        {
+          "relativePath": "current-schematic-wire-encoder-protocol.ts",
+          "bytes": 8921,
+          "sha256": "922e57604dff2316a5450fb7fafc90cb019186cbf13c51ef151943feaaaf90fd"
+        },
+        {
+          "relativePath": "current-schematic-wire-encoder-source.ts",
+          "bytes": 18681,
+          "sha256": "8f822fb8c2c9452109ad3dd322ae8aeb9d356568cfd005e0be548c950e7ca0e5"
+        },
+        {
           "relativePath": "current-schematic-wire-event-observer.ts",
           "bytes": 7853,
           "sha256": "4623b0aa27e9545d5a5a814e88478e53f76844a4b221bd6d3be39c1889ff0200"
@@ -12905,6 +13665,21 @@
           "relativePath": "current-schematic-wire-frontier-protocol.ts",
           "bytes": 10055,
           "sha256": "8c0b7f0b575d08fab3f756edc53121d8f53499cb75ca21aa601ee804545c5d87"
+        },
+        {
+          "relativePath": "current-schematic-wire-globals-collector.ts",
+          "bytes": 9772,
+          "sha256": "1762264083ebe94aea8a7453fd122dd39a8e3a41b0d244c3e147956942305d3e"
+        },
+        {
+          "relativePath": "current-schematic-wire-globals-native.ts",
+          "bytes": 7106,
+          "sha256": "865069690eb517fc483a8b27f318185fec94493f20f6824f4610884ff6c7b6f6"
+        },
+        {
+          "relativePath": "current-schematic-wire-globals-protocol.ts",
+          "bytes": 11745,
+          "sha256": "4726349c600a9cb4f40c142cfd4775c72a98263661bae695d340f1d59e534071"
         },
         {
           "relativePath": "current-schematic-wire-group-child-programs.ts",
@@ -13057,6 +13832,56 @@
           "sha256": "f317e2d2f57e8aa7efec55d92cbd009a9f99fcc6a65191fdc77cf33a6feeb24c"
         },
         {
+          "relativePath": "current-schematic-wire-net-geometry-driver.ts",
+          "bytes": 13943,
+          "sha256": "3c196f3ba48c9f9ae87bd88051b1b6da78876e7a8c7da6baa17eb9f410312bbe"
+        },
+        {
+          "relativePath": "current-schematic-wire-net-geometry-pins.ts",
+          "bytes": 8224,
+          "sha256": "63bdea5143d82ec6cd2676ec8732064d60adae4aed298ee040191bf5349cd5c3"
+        },
+        {
+          "relativePath": "current-schematic-wire-net-geometry-programs.ts",
+          "bytes": 9851,
+          "sha256": "49fc26e2d930be3aa10891605e3a853c82b6ec097f1f7b57b0fa28c8f5fd874b"
+        },
+        {
+          "relativePath": "current-schematic-wire-net-geometry-protocol.ts",
+          "bytes": 4877,
+          "sha256": "a568152aa10697ec7de4e4d776b0b9328a178f8919bf7dd3c145181b36a1de53"
+        },
+        {
+          "relativePath": "current-schematic-wire-net-geometry-source.ts",
+          "bytes": 3350,
+          "sha256": "3b19f3c9860149f8964f374deb06bfcae509c49f54824754f6f4ece8176562f0"
+        },
+        {
+          "relativePath": "current-schematic-wire-net-watch-driver.ts",
+          "bytes": 26907,
+          "sha256": "c2819ca762d5802cb72f12ab9fbf527d69dbdce021b8020e31fe755b8e5c624e"
+        },
+        {
+          "relativePath": "current-schematic-wire-net-watch-programs.ts",
+          "bytes": 12564,
+          "sha256": "903145002adc350ac0cd652ff86ab52ec2f8a4ff2dfdd5612b12031980eb5116"
+        },
+        {
+          "relativePath": "current-schematic-wire-net-watch-protocol.ts",
+          "bytes": 6765,
+          "sha256": "9fcaf33484888540518790b25a276ffb3beb0ec38292bfe4a34b233ef41b7482"
+        },
+        {
+          "relativePath": "current-schematic-wire-net-watch-replies.ts",
+          "bytes": 6010,
+          "sha256": "3dd9d95a9f522c356fc4b3f5f62f0086d93516bfe976fe1a016c2f0cff5b770e"
+        },
+        {
+          "relativePath": "current-schematic-wire-net-watch-source.ts",
+          "bytes": 12816,
+          "sha256": "4081cf41eecfac7cc8e0d0711a8f8a637c5053ae660439833a36a8a975a33cb3"
+        },
+        {
           "relativePath": "current-schematic-wire-parent-attr-protocol.ts",
           "bytes": 11431,
           "sha256": "f6bde3ff058e64968f41bd37a22d0835c38cae53597f1cdb47d1416a4cd83098"
@@ -13118,8 +13943,8 @@
         },
         {
           "relativePath": "current-schematic-wire-parser-service-coordinator.ts",
-          "bytes": 32850,
-          "sha256": "8a62d8828592d34fdd9c9919955b7ac13595312baa096c5c9287316d1543e51e"
+          "bytes": 34051,
+          "sha256": "c6ec6a1afc55f87c3827e4904149487ed2375e4fc3c5506233a42a7abc2e52a2"
         },
         {
           "relativePath": "current-schematic-wire-parser-source.ts",
@@ -13167,6 +13992,21 @@
           "sha256": "328d53b4f912797c6bf35c590b0133f1b91a7830c5ef726fae8d437963cb50f9"
         },
         {
+          "relativePath": "current-schematic-wire-postcondition-programs.ts",
+          "bytes": 7021,
+          "sha256": "0d1fc8b874b5adc8df8f2f674feb8cef98badff7805e4f90be4534fa9e7cbf29"
+        },
+        {
+          "relativePath": "current-schematic-wire-postcondition-protocol.ts",
+          "bytes": 6669,
+          "sha256": "2646cafeaab23bbd11c92c3224e72e9a39553a9e0332ed06808abf405f8557a4"
+        },
+        {
+          "relativePath": "current-schematic-wire-postcondition-source.ts",
+          "bytes": 4503,
+          "sha256": "fe2e0376dbd0ba69b2ef033117c90c14f655b19309e56b993a012ffadcb594ad"
+        },
+        {
           "relativePath": "current-schematic-wire-prefix-cursor.ts",
           "bytes": 4104,
           "sha256": "35ee912a847c65969358b7af8d4fafa1b2588247e7fc51ab23e5a1ec8b965c79"
@@ -13208,8 +14048,8 @@
         },
         {
           "relativePath": "current-schematic-wire-runner-return-programs.ts",
-          "bytes": 9967,
-          "sha256": "08519bb8c62df14fb0640850299ffdd744e85b93f819066f6cd473a87e24eb36"
+          "bytes": 10115,
+          "sha256": "cf902f3d307ea22b9acb6396656e7cc02a4c565eae7aae6a98e43000bbdb274b"
         },
         {
           "relativePath": "current-schematic-wire-runner-return-protocol.ts",
@@ -13317,9 +14157,24 @@
           "sha256": "2f1a9e6e87697349ba799657c447a0852482fce31db822c8aee6407c38e37db5"
         },
         {
+          "relativePath": "current-schematic-wire-tick-body-programs.ts",
+          "bytes": 6405,
+          "sha256": "c4963414067c6d4b018a2cf10b89dbac4d0cdee34a8efff2b03f4f5debd43c82"
+        },
+        {
+          "relativePath": "current-schematic-wire-tick-body-protocol.ts",
+          "bytes": 5072,
+          "sha256": "e5353cd32dbcbcdb9336bdbf2809dd0f1c12b937d7dc058bb49bb6bb0d2b9990"
+        },
+        {
+          "relativePath": "current-schematic-wire-tick-body-source.ts",
+          "bytes": 5638,
+          "sha256": "f04aafc0bfde39c50647bf9da433479ad07a6a55bbc2cc1425603d3fe1e30840"
+        },
+        {
           "relativePath": "current-schematic-wire-title-driver.ts",
-          "bytes": 31614,
-          "sha256": "f18fe2486a4d45a0a5079f689c59d810a6744848a799f2f0e44a5277aa6abf41"
+          "bytes": 34546,
+          "sha256": "40f4bdafd784daba00186c2fb8db5dfaf587bf27d3b990ad5eec223c86be530c"
         },
         {
           "relativePath": "current-schematic-wire-title-ft-preflight.ts",
@@ -13330,6 +14185,11 @@
           "relativePath": "current-schematic-wire-title-ft-protocol.ts",
           "bytes": 8236,
           "sha256": "c39aa9fa92d63205ccf8b5d37d294495f0144437dd5c120f0b20c74bfeb7517c"
+        },
+        {
+          "relativePath": "current-schematic-wire-title-ft-v5-protocol.ts",
+          "bytes": 4960,
+          "sha256": "bdd9e86ce143196d821855c315d8a2907bed321f40f897e3c87c27e9ac579d6e"
         },
         {
           "relativePath": "current-schematic-wire-title-preflight.ts",
@@ -13462,6 +14322,21 @@
           "sha256": "c0f63ae58bfa307935728cb9af0b1042021ce2bddba7046295e17b065322d9d6"
         },
         {
+          "relativePath": "current-schematic-wire-v5-runtime-protocol.ts",
+          "bytes": 11847,
+          "sha256": "9b4551fea98184835f648c6a90cd51f6e93702523f2b52e689749fef37cd53e5"
+        },
+        {
+          "relativePath": "current-schematic-wire-v5-title-native.ts",
+          "bytes": 4543,
+          "sha256": "76841f5b12e50721bf407c928fdc404dfb40eb1fb7c3d78f104095dfba4d6625"
+        },
+        {
+          "relativePath": "current-schematic-wire-v5-title-protocol.ts",
+          "bytes": 10182,
+          "sha256": "a3a83a72692778ad530d715fe406b18a675ed3942d51f32ab7868cd4b818e46a"
+        },
+        {
           "relativePath": "current-schematic-wire-view-bbox-protocol.ts",
           "bytes": 10054,
           "sha256": "8d26d3fbb400f114317830c8ef5df2a0a50dd844b48f80e1aeadede68abd1e17"
@@ -13502,9 +14377,89 @@
           "sha256": "85a8a8b43ef1f614da9327f955f95f5a982331166a27bafbcfebcda74a4b3016"
         },
         {
+          "relativePath": "current-schematic-wire-writer-v4-controller.ts",
+          "bytes": 20033,
+          "sha256": "86df497218db487d7d5b9cdd01084c3d17400f8af3428357d4d859d2cae1bc2c"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v4-native-command.ts",
+          "bytes": 5601,
+          "sha256": "98c4d7fd3a1bf24c873997e1b54e603f4dad69030020246eabcad17baa9aaf30"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v4-native-fragment.ts",
+          "bytes": 23664,
+          "sha256": "3aa4110e0863306ab3de926fc87fe30dc3423182212f9da323da1d2e9dc9acb3"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v4-native-preimage.ts",
+          "bytes": 421,
+          "sha256": "5c216574ae5a36de60a314d598e91def9e9b43bfa284e68d1b18557bf1532d5f"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v4-native-profile.ts",
+          "bytes": 2194,
+          "sha256": "1905aa1d410787dafeedcd30cb32d006745a11ad3346e89fa1bc11f127d4f2d7"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v4-owner.ts",
+          "bytes": 423,
+          "sha256": "528c23aaa396b0b41041ecf892ec03849c130a78ca01d7cb8dd048ced5c1cc20"
+        },
+        {
           "relativePath": "current-schematic-wire-writer-v4-programs.ts",
           "bytes": 2969,
           "sha256": "6fc02e70eec1f220671cef931e3f3c509c9045f235dee4cd0bfffa398b7c7a6c"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v4-protocol.ts",
+          "bytes": 5132,
+          "sha256": "beefb50e4531a17650c80734ee4c13a1e6b2d1400527349dae8956430f05c606"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v4-run-guard.ts",
+          "bytes": 3745,
+          "sha256": "2ddf291d122fa4d29bc368835bddab2a4dd56f7e98a3c524d11844277a791586"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v5-controller.ts",
+          "bytes": 5676,
+          "sha256": "c15bb24781e44d66c3161225406ff51054f9251347f9f07b26d76405f42dcc4f"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v5-csharp-storage.ts",
+          "bytes": 11096,
+          "sha256": "593cd8bdb974cdd3269b1522eaad3762813dff6cb113730cafceb0bebc98a293"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v5-native-command.ts",
+          "bytes": 1613,
+          "sha256": "8c6cf07d50ea0503960ccd4c28a452ee64916ba9c457f331b3112433a8f8c09f"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v5-native-helper.ts",
+          "bytes": 5379,
+          "sha256": "5caef5d571d39d96b65bfbff4887f30e222b19ec50b68e927d770c2beaf64797"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v5-native-identity.ts",
+          "bytes": 875,
+          "sha256": "58604a696a04bd7677083c8a05d1f09bced0af1cef127fa3689bf8694c0f3cba"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v5-native-profile.ts",
+          "bytes": 1640,
+          "sha256": "1970fcd2d2425b781602d391a9fa46d265e6431b6a12a272903b2e908c899607"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v5-owner.ts",
+          "bytes": 423,
+          "sha256": "5b91b22465211993b7c7ee428de3bd73b615c48f86155837cf460acbab36c72f"
+        },
+        {
+          "relativePath": "current-schematic-wire-writer-v5-protocol.ts",
+          "bytes": 3466,
+          "sha256": "a2a3a1f7f836b7f8fc8a00db4db3b80912b083015c813daf4a08900fb511ad2f"
         },
         {
           "relativePath": "current-scoped-cache-backup-data.ts",
@@ -13523,8 +14478,8 @@
         },
         {
           "relativePath": "current-selected-file-main-installation-native.ts",
-          "bytes": 4622,
-          "sha256": "998813253418e1151da0f6be072866420cbe89cfeb7d969d74c63832a68c6af6"
+          "bytes": 5183,
+          "sha256": "c0af2d1901157f94a2f9de5b0a12027306eced1f56ea53bb0df7198eaa90b13f"
         },
         {
           "relativePath": "current-selected-file-main-installation-profile.ts",
@@ -13553,8 +14508,8 @@
         },
         {
           "relativePath": "current-selected-file-main-sql-fence-bootstrap.ts",
-          "bytes": 1247,
-          "sha256": "e4e5ccc18161b4c1c06e18e5baf4030ef223395d6b06295045bad2892caba0f0"
+          "bytes": 1506,
+          "sha256": "66e87ea918a2f5f0d858dfa708393adb556a376bfb57f5d686bdaf8e900593b5"
         },
         {
           "relativePath": "current-selected-file-main-sql-fence-native.ts",
@@ -14138,8 +15093,8 @@
         },
         {
           "relativePath": "engine.ts",
-          "bytes": 231929,
-          "sha256": "106d5799f035f2197c27f4c0c4908e5ec33f4fb623cfc2b3ad03c8494c997aea"
+          "bytes": 232551,
+          "sha256": "ab063ec8bf4161b0efe3c5f0d94019b83869b88ecdf32112965539c4a166e8b3"
         },
         {
           "relativePath": "exact-readers.ts",
@@ -14158,13 +15113,13 @@
         },
         {
           "relativePath": "extension-api-coverage-routes.ts",
-          "bytes": 176232,
-          "sha256": "56f63cf376a83f40d0573dce80439d45b41307d8160abc2db9c7f20038e39299"
+          "bytes": 179539,
+          "sha256": "2de9799cf6775d783bc757ae399b6aae4eaf5c850061f528db1bfec7d7834ab9"
         },
         {
           "relativePath": "extension-api-coverage.ts",
-          "bytes": 97572,
-          "sha256": "e62324a9fc51e5b6961f96bd92673f2e6ad507f36b85334e2b2b59d086c719c1"
+          "bytes": 96491,
+          "sha256": "d810884819c45d11df3d996d4fbee668cf3ae8e431919cb65922a8eacb3d2622"
         },
         {
           "relativePath": "extension-api-declarations.ts",
@@ -14188,8 +15143,8 @@
         },
         {
           "relativePath": "facade-mode.ts",
-          "bytes": 20179,
-          "sha256": "5904a981c10ae82180c5f7796f3a7ccb04c6cbafb5ce2e226718e8521cb6b5af"
+          "bytes": 21280,
+          "sha256": "97794f07a76b3a211b928fc80cbeeca0acab7140aca1a9fdf874bede0bcc4eb7"
         },
         {
           "relativePath": "fixed-runtime-data-storage.ts",
@@ -14543,8 +15498,8 @@
         },
         {
           "relativePath": "index.ts",
-          "bytes": 437791,
-          "sha256": "8976d7c12229cfca95191246d9ae757b05a2129b116eb527ce28e878197c56fa"
+          "bytes": 444067,
+          "sha256": "a40087bf649b3527f77fa7378b12e7ac5026e6677a4f567fab031d155c9a0a2d"
         },
         {
           "relativePath": "lease.ts",
@@ -15038,8 +15993,8 @@
         },
         {
           "relativePath": "offline-api.ts",
-          "bytes": 61450,
-          "sha256": "3c8f85b94d9da4a9adb4a15a60f210e07228a9d1a1a2f9fd85eea54431dd8550"
+          "bytes": 63612,
+          "sha256": "3e42b3e030a6e806d367da39b99f7ebf535d4a2f377f4c0299a7191195551a44"
         },
         {
           "relativePath": "offline-control.ts",
@@ -15876,7 +16831,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "99519c81e5a865f46b2573f20b218abd6e3b367195f7737850d7edd70b187785",
+      "sha256": "7cb22da41fe1dfc4efb6c5c3a74e7664fcb24df0258bad87b103046f958f18f8",
       "fileCount": 3,
       "files": [
         {
@@ -15886,19 +16841,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 17254909,
-          "sha256": "f10080443652fad83a3e7ad8720a749d2b48057e31370a4500577bb440998061"
+          "bytes": 20048512,
+          "sha256": "d1850509b1d97e476d54565f7966da644d60de1abde524f84d0c8476da753f79"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 642490,
-          "sha256": "01f6a69b733815259c8b69c490cb2af07ba992a0f4ab9b3fc3440e8a0468f659"
+          "sha256": "cf55cc435f81fba32dc3ee0bd91639e040c1c064b229f3b3fc7422e0edc095a2"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-17T06:41:35.312Z",
+  "reviewedAt": "2026-11-22T14:14:05.123Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

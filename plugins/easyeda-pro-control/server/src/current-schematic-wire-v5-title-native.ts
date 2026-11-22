@@ -1,0 +1,25 @@
+/** Fixed readonly original V5 title preparation codebook. */
+import {createHash} from "node:crypto";
+import {gzipSync} from "node:zlib";
+import {currentSchematicWireV5TitleCases,currentSchematicWireV5TitleTemplate} from "./current-schematic-wire-v5-title-protocol.ts";
+import {CURRENT_SCHEMATIC_WIRE_WRITER_V5_NATIVE_PROFILE as PROFILE} from "./current-schematic-wire-writer-v5-native-profile.ts";
+
+const hash=(bytes:Uint8Array):string=>createHash("sha256").update(bytes).digest("hex");
+export function currentSchematicWireV5TitleNativeSource():string{
+ const rows=currentSchematicWireV5TitleCases().map(command=>currentSchematicWireV5TitleTemplate(command));const tables:string[][]=[];let table:string[]=[];let length=0;
+ for(const row of rows){const text=[row.method,row.names.join(","),row.template].join("\t");const bytes=Buffer.byteLength(text);if(bytes>65_536){throw new Error("WIRE_V5_TITLE_ROW_BOUND");}if(table.length===256||length+bytes+1>65_536){tables.push(table);table=[];length=0;}table.push(text);length+=bytes+1;}if(table.length>0){tables.push(table);}if(tables.length===0||tables.length>32){throw new Error("WIRE_V5_TITLE_TABLE_BOUND");}
+ const loads=tables.map(data=>{const source=Buffer.from(data.join("\0"));
+ // oxlint-disable-next-line node/no-sync -- Each immutable reviewed table retains the historical 64KiB/256-row decoder bound.
+ const packed=gzipSync(source,{level:9});return `EasyedaDiagnosticFixedTable.Load("${packed.toString("base64")}",${String(source.length)},"${hash(source)}","${hash(packed)}",${String(data.length)},3)`;});
+ return `internal static class EasyedaWireV5TitleProtocol {
+static readonly string[][][] Tables={${loads.join(",")}};
+static string[] Row(int selector){foreach(var table in Tables){if(selector<table.Length)return table[selector];selector-=table.Length;}throw new InvalidOperationException("wire-v5-title-selector");}
+internal static string Encode(int id,string session,int selector,string method,System.Collections.IDictionary fields){if(id<1||id>${String(PROFILE.renderer.total)}||selector<0||selector>=${String(rows.length)}||fields==null)throw new InvalidOperationException("wire-v5-title-selector");string[] row=Row(selector);if(row[0]!=method)throw new InvalidOperationException("wire-v5-title-method");string[] names=row[1].Length==0?new string[0]:row[1].Split(',');if(fields.Count!=names.Length)throw new InvalidOperationException("wire-v5-title-fields");string text=row[2];foreach(string name in names){string value=fields[name] as string;if(value==null||(name.StartsWith("scalar",StringComparison.Ordinal)?value.Length>8192:!System.Text.RegularExpressions.Regex.IsMatch(value,@"\\A[A-Za-z0-9_.:-]{1,256}\\z")))throw new InvalidOperationException("wire-v5-title-handle");text=text.Replace("\\"__wire_title_"+name+"__\\"",EasyedaDiagnosticOwner.WireGlobalsQuote(value));}string encoded="{\\"id\\":"+id.ToString(CultureInfo.InvariantCulture)+","+text.Substring(1,text.Length-2)+",\\"sessionId\\":"+EasyedaDiagnosticOwner.WireGlobalsQuote(session)+"}\\0";if(System.Text.Encoding.UTF8.GetByteCount(encoded)>65536)throw new InvalidOperationException("wire-v5-title-wire-bound");return encoded;}
+internal static void VerifySmoke(){for(int selector=0;selector<${String(rows.length)};selector++){string[] row=Row(selector);var fields=new System.Collections.Hashtable();if(row[1].Length!=0)foreach(string name in row[1].Split(','))fields.Add(name,"original27");string text=Encode(79,"session29",selector,row[0],fields);if(!text.StartsWith("{\\"id\\":79,",StringComparison.Ordinal)||!text.EndsWith(",\\"sessionId\\":\\"session29\\"}\\0",StringComparison.Ordinal)||text.Contains("__wire_title_"))throw new InvalidOperationException("wire-v5-title-smoke");bool refused=false;try{Encode(79,"session29",selector,"Runtime.evaluate",fields);}catch(InvalidOperationException){refused=true;}if(!refused)throw new InvalidOperationException("wire-v5-title-foreign-smoke");}}
+}
+public sealed partial class EasyedaDiagnosticOwner {
+int wireV5TitleReads,wireV5ContinuityChecks;
+public void SendWireV5Title(int id,int selector,string method,System.Collections.IDictionary fields){RequireWireGlobals();if(!wireGlobalsReady||wireGlobalsHelperPending||wireV5TitleReads>=${String(PROFILE.title.commands)}||wireV5ContinuityChecks!=wireV5TitleReads*2+1)throw Error("wire-v5-title-original-guard");string encoded=EasyedaWireV5TitleProtocol.Encode(id,schematicDisplaySession,selector,method,fields);AssertLive();wireV5TitleReads++;try{SendMessage(id,encoded);}catch{wireGlobalsFailed=true;throw;}}
+}
+`;
+}

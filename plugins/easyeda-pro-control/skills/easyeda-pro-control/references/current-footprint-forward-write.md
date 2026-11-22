@@ -51,7 +51,9 @@ Use the same operation ID for the single execute request:
 
 Replace the example suffix with the actual fresh lowercase identifier. This is
 an effectful copy: normal opening and the copy may persist data automatically.
-No explicit Save is submitted. The tool has no supported inverse.
+No explicit Save is submitted. The forward result continues to report
+`inverseAvailable:false`. The separately versioned [disposable inverse](current-footprint-inverse.md)
+requires this same facade's genuine completed and released forward result.
 
 Execute returns promptly while its original controller retains the operation.
 Use `inspect` with the same ID to observe its current stage, execution/cleanup

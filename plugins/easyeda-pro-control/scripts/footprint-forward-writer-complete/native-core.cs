@@ -79,6 +79,17 @@ public sealed class EasyedaStringClockObservation {
 // Independent native ancestry/file proof. Every component is retained without
 // write/delete sharing until the original Job exits. Ordinary child-file writes
 // remain possible; replacement or reparse changes of the leased objects do not.
+// BEGIN SELECTED SQL INSTALLATION
+public static class EasyedaSelectedSql209Installation {
+public const int FileCount=13;
+static readonly string[] Paths={@"..\..\..\easyeda-pro.exe",@"..\app.js",@"..\package.json",@"..\editor.ini",@"..\node_modules\sqlite3\package.json",@"..\node_modules\sqlite3\sqlite3.js",@"..\node_modules\sqlite3\lib\sqlite3.js",@"..\node_modules\sqlite3\lib\sqlite3-binding.js",@"..\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node",@"..\node_modules\sqlite3\src\database.cc",@"..\node_modules\sqlite3\src\statement.cc",@"pro-api\0.3.59.1ca9efb5\api.js"};
+static readonly long[] Sizes={222989936L,2657192L,248L,8031L,3619L,43L,6309L,449L,2742272L,21833L,29337L,1980754L};
+static readonly string[] Hashes={@"8770f2cea950d9483f230f961b486e5ceaeffd619e2c2816957cb6ff3fd0bb38",@"52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c",@"c63c12edae82c39c1fb2c0f0dd0e27678b83526c89ea174b3b79655711da8e51",@"ced74cf98aedf6b04d0f23871b945f4155978d7e35edbc1704b8cdaf566623f9",@"a7d2279dfd425ee3f2f368e5160955491333967f7207ff3690a747a11f049985",@"b6c7edef7b91e53f02d737e61148d4ec1b5e151806e339346248a2de227a6555",@"e453648b76b80be1334dc49bf3ba19672f7acbd11b5d8b1ebe0cab08e3c5edf3",@"946769d049dacf8a564ab0f7076e1762ebae7ee7aba43d8ac5d72103089b6ccf",@"a851d31983fd21ee3821b1a0ca148c013029f96c6e0d31afc400e6a62ea7b482",@"3778713244ecacaef7f6b75537d5c00e1cab28a79a7298d34729a9f5e115f979",@"7a12e9fd6efc9873025429cd9d86842ee01b4f0e730bda0402053900d30a94d0",@"e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1"};
+static void Need(bool ok){if(!ok)throw new InvalidOperationException("selected-sql-installation");}
+public static void Validate(string[] paths,long[] sizes,string[] hashes){Need(paths!=null&&sizes!=null&&hashes!=null&&paths.Length==FileCount&&sizes.Length==FileCount&&hashes.Length==FileCount);foreach(string path in paths)EasyedaDiagnosticInstallation.ValidatePath(path);string assets=Path.Combine(Path.GetDirectoryName(paths[0]),@"resources\app\assets");for(int i=0;i<Paths.Length;i++){int slot=i<4?i:i+1;Need(paths[slot]==Path.GetFullPath(Path.Combine(assets,Paths[i]))&&sizes[slot]==Sizes[i]&&hashes[slot]==Hashes[i]);}Need(paths[4]==@"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe");}
+}
+public sealed partial class EasyedaDiagnosticOwner {public bool SelectedSqlInstallation{get{return forwardWriterCompleteBirth;}}}
+// END SELECTED SQL INSTALLATION
 public sealed class EasyedaDiagnosticInstallation {
   [StructLayout(LayoutKind.Sequential)] struct INFO { public uint attributes,createdLow,createdHigh,accessLow,accessHigh,writeLow,writeHigh,volume,sizeHigh,sizeLow,links,idHigh,idLow; }
   [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr CreateFile(string path,uint access,uint share,IntPtr security,uint disposition,uint flags,IntPtr template);
@@ -192,6 +203,14 @@ public sealed class EasyedaDiagnosticInstallation {
     }
     Executable=paths[0]; ExecutableHash=hashes[0];
     BindNativePaths(Executable,root); admitted=true; AssertCurrent();
+  }
+  public void AdmitSelectedSql(string[] paths,long[] sizes,string[] hashes) {
+    EasyedaSelectedSql209Installation.Validate(paths,sizes,hashes);
+    string[] corePaths=new string[5],coreHashes=new string[5];long[] coreSizes=new long[5];
+    Array.Copy(paths,corePaths,5);Array.Copy(sizes,coreSizes,5);Array.Copy(hashes,coreHashes,5);
+    Admit(corePaths,coreSizes,coreHashes);
+    for(int i=5;i<paths.Length;i++)Pin(paths[i],sizes[i],hashes[i]);
+    AssertCurrent();
   }
   public void AdmitRatline(string[] paths,long[] sizes,string[] hashes) {
     EasyedaRatline209Installation.Validate(paths,sizes,hashes);
@@ -2286,7 +2305,12 @@ public sealed partial class EasyedaDiagnosticOwner {
       if(id!=mainRequest+1||id-stockMainRequests>EasyedaFootprintForwardExecutionLimits.MainRequests-2002)throw Error("forward-writer-ordinary-main-id");
       if(phase!=null&&phase.StartsWith("sql-fence-",StringComparison.Ordinal)){
         if(footprintClockRpcActive||footprintCreateClockActive||mainCompletionBegun)throw Error("forward-writer-startup-closed");
-        MainPurpose();AssertLive();string startupText=EasyedaSelectedFileMainSqlFenceProtocol.Encode(id,phase,method,fields);mainRequest=id;originalMain.SendFixed(startupText,false);StockRegistrationMainComplete(phase);AssertLive();return;
+        MainPurpose();AssertLive();
+        bool completeHeadCapture=forwardWriterCompleteBirth&&phase=="sql-fence-capture";
+        if(completeHeadCapture&&forwardHeadSqlCaptured)throw Error("forward-complete-head-capture-once");
+        string startupText=EasyedaSelectedFileMainSqlFenceProtocol.Encode(id,phase,method,fields);mainRequest=id;originalMain.SendFixed(startupText,false);
+        if(completeHeadCapture)forwardHeadSqlCaptured=true;
+        StockRegistrationMainComplete(phase);AssertLive();return;
       }
     }
 
@@ -2510,7 +2534,7 @@ public sealed partial class EasyedaDiagnosticOwner {
       AssertLimits(); AssertPipes(); if(JobCount()!=0) throw Error("job-not-empty");
       if(executable==null || !System.Text.RegularExpressions.Regex.IsMatch(executable,@"\A[A-Za-z]:\\[^\x00-\x1f\""\r\n]+\.exe\z") || Path.GetFileName(executable)!="easyeda-pro.exe" ||
          !System.Text.RegularExpressions.Regex.IsMatch(expectedHash??"",@"\A[a-f0-9]{64}\z")) throw Error("executable-input");
-      if(workerStartupRatline209)installation.AdmitRatline(paths,sizes,hashes);else installation.Admit(paths,sizes,hashes);
+      if(SelectedSqlInstallation)installation.AdmitSelectedSql(paths,sizes,hashes);else if(workerStartupRatline209)installation.AdmitRatline(paths,sizes,hashes);else installation.Admit(paths,sizes,hashes);
       if(installation.Executable!=executable || installation.ExecutableHash!=expectedHash) throw Error("installation-binding");
       installation.AssertCurrent(); ExistingApplicationAbsent();
       CreateVerifiedRoot();

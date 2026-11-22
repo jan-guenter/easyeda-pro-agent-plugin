@@ -546,4 +546,4 @@ Historical results neither admit the current runtime nor authorize replay.
 
 Add a narrow schema, fixed API/adapter implementation, complete source effect and applicable topology proof, durable journal, created-ID/inverse model and recovery path. Validate newly admitted behavior on a disposable project before describing it as live-tested. Do not route a refusal through raw JavaScript or native UI to evade a failed invariant.
 
-The [controlled disposable footprint copy](current-footprint-forward-write.md) has a separately registered original forward controller and fresh held saved reader. It remains validation only, with connected acceptance, ordinary-project writing, the public copy matcher and inverse support unclaimed.
+The [controlled disposable footprint copy](current-footprint-forward-write.md) has its own original controller and fresh held saved reader. The [separate disposable inverse and cold UI continuation](current-footprint-inverse.md) each require their same-facade original completion. Connected acceptance, ordinary-project writing, public SDK matcher parity and general rollback remain unclaimed.

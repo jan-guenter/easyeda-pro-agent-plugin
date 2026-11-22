@@ -39,6 +39,7 @@ public static void VerifySmoke(){string[] hashes=EasyedaDiagnosticFixedTable.Has
 public sealed partial class EasyedaDiagnosticOwner {
 int forwardHeadNormal,forwardHeadCleanup,forwardHeadProperties;bool forwardHeadSqlCaptured,forwardHeadReadAttempted,forwardHeadCompleted,forwardHeadReadReleased,forwardHeadSqlReleased;
 public void SendForwardHeadMain(int id,string phase,string method,System.Collections.IDictionary fields){
+ if(forwardWriterCompleteBirth&&(phase==null||phase.StartsWith("forward-head-sql:",StringComparison.Ordinal)||phase=="forward-head-open:release"||!forwardHeadSqlCaptured))throw Error("forward-complete-head-sql-ownership");
 if(!forwardExecution||originalMain==null||!originalMain.ForwardExecutionProfile||footprintCreateClockActive||footprintClockRpcActive||mainCompletionBegun||id!=mainRequest+1||id>EasyedaFootprintForwardExecutionLimits.MainRequests)throw Error("forward-head-owner");
 bool cleanup=method=="Debugger.removeBreakpoint"||method=="Debugger.resume"||method=="Runtime.releaseObjectGroup";
 if(cleanup?forwardHeadCleanup>=8:forwardHeadNormal>=20||forwardHeadCompleted)throw Error("forward-head-budget");

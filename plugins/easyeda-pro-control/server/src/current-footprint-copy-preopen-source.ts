@@ -11,8 +11,10 @@ import { yieldProofEventLoop } from "./cooperative-proof.ts";
 import type { Inventory } from "./closed-sql-equality.ts";
 // oxlint-disable-next-line import/no-cycle -- The raw reader consumes only the original native snapshot and never supplies a replaceable authority callback.
 import { requireCurrentFootprintCopyClosedSnapshot, requireCurrentFootprintForwardExecutionClosedSnapshot, requireCurrentFootprintForwardWriterClosedSnapshot, requireCurrentFootprintForwardWriterSavedClosedSnapshot, requireCurrentFootprintInverseClosedSnapshot } from "./current-footprint-copy-closed-snapshot.ts";
+// oxlint-disable-next-line import/no-cycle -- V4 registry lookup only runs after the original Core owner has closed.
+import { requireCurrentFootprintInverseNativeDeleteColdClosedSnapshot, requireCurrentFootprintInverseClosedSnapshot as requireCurrentFootprintInverseV4ClosedSnapshot } from "./current-footprint-inverse-v4-closed-snapshot.ts";
 import type { CurrentFootprintCopyClosedSnapshot, CurrentFootprintCopyClosedSourceIdentity } from "./current-footprint-copy-closed-snapshot.ts";
-import type { CurrentFootprintCopyGenerationOwner, CurrentFootprintForwardExecutionNativeOwner, CurrentFootprintForwardWriterHeldSavedNativeOwner, CurrentFootprintForwardWriterNativeOwner, CurrentFootprintInverseNativeOwner } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintCopyGenerationOwner, CurrentFootprintForwardExecutionNativeOwner, CurrentFootprintForwardWriterHeldSavedNativeOwner, CurrentFootprintForwardWriterNativeOwner, CurrentFootprintInverseNativeDeleteColdOwner, CurrentFootprintInverseNativeOwner } from "./current-pcb-diagnostic-owner.ts";
 
 const CHUNK_BYTES = 1_048_576, MAX_BYTES = 268_435_456n;
 interface Directory { readonly absolute: string; readonly handle: FileHandle; readonly info: BigIntStats }
@@ -164,6 +166,27 @@ export async function verifyCurrentFootprintInverseNativeDeletePosteditPreopenSo
   };
   const observed = await verifySource(snapshot, current); current();
   return Object.freeze({ ...observed, profile: "private.current-footprint-inverse-native-delete-preopen-source.v1", sourceMatchesClosedPostedit: true });
+}
+/** V4 persistence has its own original snapshot registry. */
+export async function verifyCurrentFootprintInverseV4NativeDeletePosteditPreopenSource(owner: CurrentFootprintInverseNativeOwner,
+  inventory: Inventory): Promise<Readonly<CurrentFootprintInverseNativeDeletePreopenSourceObservation>> {
+  const snapshot = requireCurrentFootprintInverseV4ClosedSnapshot(owner, inventory);
+  const current = (): void => {
+    need(requireCurrentFootprintInverseV4ClosedSnapshot(owner, inventory) === snapshot, "V4 inverse preopen original snapshot changed.");
+  };
+  const observed = await verifySource(snapshot, current); current();
+  return Object.freeze({ ...observed, profile: "private.current-footprint-inverse-native-delete-preopen-source.v1", sourceMatchesClosedPostedit: true });
+}
+
+/** Reprove the original completed cold-manager source for the cold UI open. */
+export async function verifyCurrentFootprintInverseNativeDeleteColdUiPreopenSource(owner: CurrentFootprintInverseNativeDeleteColdOwner,
+  inventory: Inventory): Promise<Readonly<SourceObservation>> {
+  const snapshot = requireCurrentFootprintInverseNativeDeleteColdClosedSnapshot(owner, inventory);
+  const current = (): void => {
+    need(requireCurrentFootprintInverseNativeDeleteColdClosedSnapshot(owner, inventory) === snapshot, "Cold UI predecessor source changed.");
+  };
+  const observed = await verifySource(snapshot, current); current();
+  return observed;
 }
 async function verifySource(copy: SourceBinding, current: () => void): Promise<Readonly<SourceObservation>> {
   current();

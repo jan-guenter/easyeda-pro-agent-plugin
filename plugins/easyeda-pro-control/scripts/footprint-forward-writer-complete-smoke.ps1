@@ -4,13 +4,13 @@ Set-StrictMode -Version Latest
 [Console]::OutputEncoding=New-Object Text.UTF8Encoding($false)
 if ($args.Count -ne 0 -or [Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT -or [IntPtr]::Size -ne 8 -or $PSVersionTable.PSVersion.Major -ne 5 -or $PSVersionTable.PSVersion.Minor -ne 1) {throw 'forward-writer-smoke-platform'}
 $specs=@(
-  @{role='driver';path='scripts/footprint-forward-writer-complete/owner.ps1';bytes=106065;maximum=131072;sha256='596802cc8e31f7ceec29791094928f0bf300dcf7702dedbb6aaf917bf1126f6f'},
-  @{role='core';path='scripts/footprint-forward-writer-complete/native-core.cs';bytes=1008236;maximum=1048576;sha256='b66c3859e5ae77fd2093d32021efb5a9083da23d60e3b4a34eb8dc919d5a95b5'},
-  @{role='phase';path='scripts/footprint-forward-writer-complete/native-phase.cs';bytes=63435;maximum=65536;sha256='14c4474f4ef1cef4ed92b62af14e44a468579098f4ff6879d43cbbfeafd40def'},
+  @{role='driver';path='scripts/footprint-forward-writer-complete/owner.ps1';bytes=106154;maximum=131072;sha256='33376331245d26d10b6f1613bb3d6c382915799f7ba0ca26230043846490db7a'},
+  @{role='core';path='scripts/footprint-forward-writer-complete/native-core.cs';bytes=1011496;maximum=1048576;sha256='a4d5bfba64dbe072bec6f8ffcea6c669cefda320847a637623ac01b36ceea3b2'},
+  @{role='phase';path='scripts/footprint-forward-writer-complete/native-phase.cs';bytes=63658;maximum=65536;sha256='25334438f10d785eb01757c09ee90a87af11d505462244177a3f23e1e0020203'},
   @{role='producer';path='scripts/footprint-forward-writer-complete/native-producer.cs';bytes=61898;maximum=65536;sha256='ddacf516e2faa1eea21ce7492998ad3516a418279ef3b016a0a93a4fb9a6657e'},
   @{role='startup';path='scripts/footprint-forward-writer-complete/native-startup.cs';bytes=128506;maximum=131072;sha256='250d49cda01de2ed2be5efdfcc86c2d84e1bc7ab187b5bb589cb4e6c0aca737a'},
   @{role='sync';path='scripts/footprint-forward-writer-complete/native-sync.cs';bytes=58622;maximum=65536;sha256='804fd9228923f8c2a3277930a467c8e7b3bb1b4fcd46cfcaaeb0e384d591b71c'},
-  @{role='tail';path='scripts/footprint-forward-writer-complete/native-tail.cs';bytes=124331;maximum=131072;sha256='ee754845a39519ee6a05652289fb3f9f404d9ecdad6251e10298cb796d2bc077'}
+  @{role='tail';path='scripts/footprint-forward-writer-complete/native-tail.cs';bytes=124416;maximum=131072;sha256='d3cde0d504d14f7f0d5e46ecb2902c5310077b586a82c50852f31861103988d2'}
 )
 $files=New-Object 'System.Collections.Generic.List[System.IO.FileStream]'
 $buffers=New-Object 'System.Collections.Generic.List[byte[]]'
@@ -30,7 +30,7 @@ try {
     if ($digest -cne $spec.sha256) {throw 'forward-writer-smoke-hash'}
     $buffers.Add($bytes);$aggregate+=$bytes.Length
   }
-  if ($aggregate -ne 1551093 -or $aggregate -gt 1572864) {throw 'forward-writer-smoke-aggregate'}
+  if ($aggregate -ne 1554750 -or $aggregate -gt 1572864) {throw 'forward-writer-smoke-aggregate'}
   $forwardWriterCoreBytes=$buffers[1];$forwardWriterPhaseBytes=$buffers[2]
   $forwardWriterProducerBytes=$buffers[3];$forwardWriterStartupBytes=$buffers[4];$forwardWriterSyncBytes=$buffers[5];$forwardWriterTailBytes=$buffers[6]
   $decoder=New-Object Text.UTF8Encoding($false,$true)

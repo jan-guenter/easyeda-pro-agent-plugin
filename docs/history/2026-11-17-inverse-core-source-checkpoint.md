@@ -1,0 +1,11 @@
+# Isolated inverse Core source checkpoint
+
+This is an unfinished, unserved source implementation on top of the independently validated foundation commit `090ee6f560e1e8fdae422c14d1426dd7120d36d1`. Its original donor is `28d147dfca3370efc5134646898c9c8808670d16`. No installation, runtime admission, connected effect or saved proof follows from this checkpoint.
+
+The actual nonshared implementation now has 37 separate V4 issuer source forks, 49 missing implementation modules and a direct Core facade. Relative imports, including retained namespace/dynamic lookups, point to their scoped issuers. The full preparation adapter uses its genuine disjoint plan registries. Existing historical source/DTOs, 32-character UUID reader, native helper bytes and shared bounded transport remain unchanged. No old source Core was copied over the current implementation, and no caller factory port, reflected private field or ownership DTO was introduced.
+
+The Core insertion adds actual donor implementation bodies under V4-specific names: 14 members, 140 registry/type/guard/factory declarations and 135 imports. Every original Core member and declaration body is retained by source insertion. New metadata dependencies select the already separate V4 profile; private legacy lifecycle/profile and unrelated Wire V5 imports are refused by the insertion tool. Static parsing succeeds. That proves source syntax only.
+
+The implementation is not linked or type-complete. The shared original factory/constructor and native V4 pipe birth/profile selection still need integration; the original Main/SQL sender, drain, startup/context/readers and complete owner-method closure remain pending. Current shared factory selectors still admit the historical path only. Actual typecheck results are not available for this checkpoint. Genuine original-factory regressions must follow the real linkage; no mocked positive factory was added to hide those gaps.
+
+This atomic checkpoint is kept private while the accepted controls/Wire release is installed. The foundation commit remains separately usable and retains its own generation/type/lint evidence. This checkpoint has no version, bundle, compatibility or public route update and must not be published as a working inverse feature.

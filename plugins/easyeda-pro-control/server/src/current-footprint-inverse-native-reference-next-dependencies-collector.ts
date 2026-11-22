@@ -14,7 +14,7 @@ import {currentFootprintInverseLookupArray as array,currentFootprintInverseLooku
 import type {CurrentFootprintInverseLookupRemote as Remote} from "./current-footprint-inverse-lookup-preentry-replies.ts";
 import {requireCurrentFootprintInverseInitializedGetDescription as description} from "./current-footprint-inverse-initialized-get-source.ts";
 import type {CurrentFootprintInverseInitializedGetRole as Role} from "./current-footprint-inverse-initialized-get-source.ts";
-import {decodeCurrentFootprintInverseInitializedGetFunction as metadata} from "./current-footprint-inverse-initialized-get-replies.ts";
+import {decodeCurrentFootprintInverseInitializedGetFunction as metadata} from "./current-footprint-inverse-v4-initialized-get-replies.ts";
 import {captureCurrentSchematicDisplayAccessorSource as captureSource} from "./current-schematic-display-accessor-replies.ts";
 import {requireCurrentFootprintInversePublicServiceTrue as truth} from "./current-footprint-inverse-public-service-replies.ts";
 

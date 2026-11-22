@@ -16,6 +16,8 @@ export const PUBLIC_UTILITIES_ONLY_TOOLS = Object.freeze([
   "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup", "easyeda_control_current_pcb_via_write",
   "easyeda_control_current_schematic_relevance_display_write",
   "easyeda_control_current_footprint_forward_write",
+  "easyeda_control_current_footprint_inverse",
+  "easyeda_control_current_footprint_inverse_cold_ui",
 ]);
 // MCP hosts may repeat server instructions beside every tool. Keep shared
 // Guidance short; the detailed status scope and per-tool contracts stay below.
@@ -67,6 +69,10 @@ export function publicUtilitiesOnlyCapabilities(): Record<string, unknown> {
     disposableFootprintForwardWrite:{tool:"easyeda_control_current_footprint_forward_write",validationOnly:true,connectedValidation:false,
       ordinaryProjectsSupported:false,generalSdkWriter:false,originalCoordinatorRequired:true,currentSourceAndRuntimeAdmissionRequired:true,explicitConfirmationsRequired:true,
       maximumCopyAttempts:1,maximumExplicitSaveAttempts:0,copyTriggeredPersistence:true,freshColdReaderRequired:true,inverseAvailable:false},
+    disposableFootprintInverseColdUi:{tool:"easyeda_control_current_footprint_inverse_cold_ui",validationOnly:true,connectedValidation:false,originalCompletedInverseCoordinatorRequired:true,independentColdUiConfirmationsRequired:true,maximumUiInvocations:1,maximumExplicitSaveAttempts:0,nativeUiTaskAbsenceRequiresOriginalCompletion:true,publicSdkParity:false,wholeInverseVerified:false,ordinaryProjectsSupported:false},
+    disposableFootprintInverse:{tool:"easyeda_control_current_footprint_inverse",validationOnly:true,connectedValidation:false,
+      originalCompletedForwardCoordinatorRequired:true,independentInverseConfirmationsRequired:true,ordinaryProjectsSupported:false,generalSdkWriter:false,
+      maximumInverseAttempts:1,maximumExplicitSaveAttempts:0,managerOnlyColdAbsence:true,nativeUiTaskAbsenceVerified:false,publicSdkParity:false,wholeInverseVerified:false},
     disposableViaWrite: { tool: "easyeda_control_current_pcb_via_write", validationOnly: true, connectedValidation: false,
       runtimeAdmissionRequired: true, sourceAdmissionRequired: true, originalClosedDataQualificationRequired: true,
       scope: "one-normal-unlocked-empty-net-via;original-generated-via-only-or-line-and-via-PCB", maximumCreateAttempts: 1, maximumSaveAttempts: 1,
@@ -112,7 +118,7 @@ export function configuredFacadeMode(environment: Readonly<Record<string, string
 
 export function facadeToolRegistered(mode: FacadeMode, name: string): boolean {
   if (name === "easyeda_control_public_readers" || name === "easyeda_control_netlist_files" || name === "easyeda_control_catalog_footprint" ||
-      name === "easyeda_control_catalog_components" || name === "easyeda_control_current_footprint_forward_write" || name === "easyeda_control_current_schematic_relevance_display_write" || name === "easyeda_control_current_pcb_via_write" || name === "easyeda_control_pcb209_opening" || name === "easyeda_control_pcb209_worker_startup") { return mode === "public-utilities-only"; }
+      name === "easyeda_control_catalog_components" || name === "easyeda_control_current_footprint_forward_write" || name === "easyeda_control_current_footprint_inverse" || name === "easyeda_control_current_footprint_inverse_cold_ui" || name === "easyeda_control_current_schematic_relevance_display_write" || name === "easyeda_control_current_pcb_via_write" || name === "easyeda_control_pcb209_opening" || name === "easyeda_control_pcb209_worker_startup") { return mode === "public-utilities-only"; }
   return mode === "legacy-reviewed" ||
     (mode === "public-utilities-only" ? PUBLIC_UTILITIES_ONLY_TOOLS : CALCULATION_ONLY_TOOLS).includes(name);
 }

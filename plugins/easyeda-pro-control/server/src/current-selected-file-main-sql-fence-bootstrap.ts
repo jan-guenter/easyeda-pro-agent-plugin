@@ -6,3 +6,7 @@ export interface CurrentSelectedFileMainSqlFenceBootstrap {
 }
 // oxlint-disable-next-line import/no-cycle -- Only the original native factory issues/retains this token; its registry is accessed after both classes exist.
 export { enrollOriginalCurrentMainStartupLibrary, sendOriginalCurrentMainStartupLibrary, sendOriginalCurrentMainStartupLibraryReadonly, sendOriginalCurrentSchematicRelevanceDisplayMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentFootprintInverseMainHistory, originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure } from "./current-pcb-diagnostic-owner.ts";
+
+export {originalCurrentFootprintInverseV4MainHistoryBaseline,sendOriginalCurrentFootprintInverseV4MainHistory}from"./current-pcb-diagnostic-owner.ts";
+
+export {isOriginalCurrentFootprintInverseV4MainSqlFenceBootstrap}from"./current-pcb-diagnostic-owner.ts";
