@@ -95,7 +95,9 @@ export class CurrentFootprintInverseNativeDeleteMainTailController{
   need(!this.#failed&&!this.#ended,"FAILED_OR_ENDED");this.#original.assertCurrent();this.#host.assertCurrent();
   need(requireCurrentFootprintInverseNativeDeleteMainTailPrerequisite(this.#original)===this.#prerequisite,"ORIGINAL_PREREQUISITE");this.#prerequisite.assertCurrent();
  }
- #fail(cause:unknown):void{if(!this.#failed){this.#failed=true;this.#failure=cause;this.#branchResult.reject(cause);this.#historyResult.reject(cause);this.#host.fail(cause);}}
+ #fail(cause:unknown):void{if(!this.#failed){this.#failed=true;this.#failure=cause;this.#branchResult.reject(cause);this.#historyResult.reject(cause);try{this.#host.fail(cause);}catch{
+  // Failure handoff cannot replace the retained original cause or strand its join.
+  }}}
  async #handledStage(pending:Promise<unknown>):Promise<void>{try{await pending;}catch(error){if(!this.#ended){try{this.#fail(error);}catch{
   // A throwing host handoff cannot replace the original stage rejection.
  }}

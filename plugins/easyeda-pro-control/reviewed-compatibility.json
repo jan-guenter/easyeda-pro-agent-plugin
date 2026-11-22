@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "f5a1415d0373176a09da8063c0e54926ca42930452297e87f1d473a3ab285732",
+      "sha256": "f1be147d79be082a12260e2b00c053b0ea327c82aba0a11c3d1b62e53820de3a",
       "fileCount": 3377,
       "files": [
         {
@@ -4533,8 +4533,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-controller.ts",
-          "bytes": 19781,
-          "sha256": "282b55db152e964f0fcd72154265ca3e5359c567c42b33055f3abe033f654b58"
+          "bytes": 19880,
+          "sha256": "1a88c5f50c008ca161ad8264be313b5ac703606dbd7b0f9657595e8a9b5446e9"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-history-ack.ts",
@@ -4613,8 +4613,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-tail-controller.ts",
-          "bytes": 18969,
-          "sha256": "3c997bca7494b4c9d714281e62dea4d2442960dafee1d2f40e9afa9d13064f61"
+          "bytes": 19068,
+          "sha256": "f66b133f588828ce10f261d3c38aa2ab2f5937738c7cc71104cbf08ae4d120c4"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-tail-data.ts",
@@ -16896,7 +16896,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "5ad2b2f9daef794e3b2c7d69c88d3a31d2f28ee3e1c4752c090dd40b06a867b3",
+      "sha256": "5d5564eb2cd84a349094070c9b50c82dcb1dfbd18c1e4738685a13f9d96a6eb9",
       "fileCount": 3,
       "files": [
         {
@@ -16906,19 +16906,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 20112973,
-          "sha256": "1012f8974ea39d9e513096abf8b5dafabdf00e40472e15903782af997f62e1fe"
+          "bytes": 20112997,
+          "sha256": "5b85c39bac112882dc337add8e4f0c2d9be45b3a9c818b1a44800306b818e265"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 642490,
-          "sha256": "81b5dca96a5fa96e94c82ca9fcb2be3d347071a9f2b95faec3eaa2baaec882c8"
+          "sha256": "8c4c598be10d94056ba387f5d8b64723529532f1b98d063729beadd2c95b80c3"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-22T19:03:36.321Z",
+  "reviewedAt": "2026-11-22T19:11:02.684Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {
