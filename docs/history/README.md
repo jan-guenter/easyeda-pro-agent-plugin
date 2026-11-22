@@ -1,5 +1,7 @@
 # Project history
 
+- [Wire encoder before-graph binding](2026-11-22-wire-encoder-before-graph-binding.md). Original Core plan and holder custody, a fixed six-peer binder and a private source-first cursor awaiting native routing.
+
 - [Wire encoder fourteen-frame proof](2026-11-22-wire-encoder-fourteen-frame-proof.md). Exact per-frame and aggregate byte checks for both pinned bundle variants, with native graph and event binding still pending.
 
 - [Original Wire page before-watch hold](2026-11-22-wire-original-page-birth-hold.md). Exact held page initializer and original caller supply the fixed watch root input before registration.
