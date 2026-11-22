@@ -1,7 +1,7 @@
 /** Descriptor custody for the distinct readonly cold successor. */
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
-import type { Stats } from "node:fs";
+import type { BigIntStats } from "node:fs";
 import { lstat, open, realpath } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_PROFILE as PROFILE } from "./current-footprint-inverse-native-delete-cold-profile.ts";
@@ -13,19 +13,19 @@ function need(value: boolean): asserts value {
   if (!value) { throw new Error("INVERSE_NATIVE_DELETE_COLD_HELPER_SOURCE"); }
 }
 
-function same(first: Stats, last: Stats): boolean {
+function same(first: BigIntStats, last: BigIntStats): boolean {
   return first.dev === last.dev && first.ino === last.ino && first.size === last.size &&
-    first.mode === last.mode && first.mtimeMs === last.mtimeMs && first.ctimeMs === last.ctimeMs && last.nlink === 1;
+    first.mode === last.mode && first.mtimeNs === last.mtimeNs && first.ctimeNs === last.ctimeNs && last.nlink === 1n;
 }
 
-async function readPinnedSource(path: string, original?: Stats): Promise<Stats> {
+async function readPinnedSource(path: string, original?: BigIntStats): Promise<BigIntStats> {
   const pin = IDENTITY.helper;
-  const named = await lstat(path);
-  need(named.isFile() && !named.isSymbolicLink() && named.nlink === 1 && named.size === pin.bytes && pin.bytes > 0 && pin.bytes <= MAXIMUM);
+  const named = await lstat(path, { bigint: true });
+  need(named.isFile() && !named.isSymbolicLink() && named.nlink === 1n && named.size === BigInt(pin.bytes) && pin.bytes > 0 && pin.bytes <= MAXIMUM);
   // oxlint-disable-next-line no-bitwise -- A substituted symlink or FIFO cannot enter a complete descriptor read.
   const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
-    const before = await file.stat();
+    const before = await file.stat({ bigint: true });
     need(before.isFile() && same(named, before) && (original === undefined || same(original, before)) && await realpath(path) === path);
     const bytes = Buffer.alloc(pin.bytes + 1);
     let offset = 0;
@@ -34,8 +34,8 @@ async function readPinnedSource(path: string, original?: Stats): Promise<Stats> 
       if (result.bytesRead === 0) { break; }
       offset += result.bytesRead;
     }
-    const after = await file.stat();
-    const final = await lstat(path);
+    const after = await file.stat({ bigint: true });
+    const final = await lstat(path, { bigint: true });
     need(offset === pin.bytes && same(before, after) && same(before, final) && !final.isSymbolicLink());
     const source = bytes.subarray(0, offset);
     need(!source.some(value => value > 127 || value === 0) && createHash("sha256").update(source).digest("hex") === pin.sha256);
