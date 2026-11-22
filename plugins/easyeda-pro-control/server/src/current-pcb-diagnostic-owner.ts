@@ -4940,6 +4940,7 @@ class CurrentPcbRetainedOwnerCore {
     windowCapture209RetainedObservation?: Readonly<RecordValue>; windowCaptureObservationAccepted?: false;
     visual209RetainedObservation?: Readonly<RecordValue>; visualObservationCurrent?: false; visualObservationAccepted?: false;
     mainNativeFailure?: Readonly<{ action: MainNativeAction; code: string }> | null;
+    selectedSqlFence?: Readonly<Record<string, unknown>> | null;
     mainCloseDetachAttempted?: boolean; mainCloseDetached?: boolean;
     combinedAbortAttempted?: boolean; combinedAbortDispatchAttempted?: boolean; combinedOutputCleanupOnly?: boolean;
     combinedReadiness?: CurrentFootprintCombinedFactoryFailureDiagnostics | null;
@@ -5129,13 +5130,14 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
   public async browserObservation(): Promise<Readonly<RecordValue>> {
     if (this.#browserObservationConsumed || this.#inspectionConsumed) { throw error("BROWSER_OBSERVATION_CONSUMED"); }
     this.#enter(true); this.#browserObservationConsumed = true;
+    const completeWriter = footprintForwardWriterCompleteFactories.has(this);
     try {
-      const version = await this.#transfer(() => this.#pipe.getVersion());
+      const version = await this.#transfer(() => this.#pipe.getVersion(), completeWriter);
       if (!exact(version, ["protocolVersion", "product", "revision", "userAgent", "jsVersion"]) ||
           Object.values(version).some(value => typeof value !== "string" || value.length > 8192 || value.includes("\0"))) {
         throw error("BROWSER_VERSION_REPLY");
       }
-      this.#browserTargets = diagnosticTargetInventory(await this.#transfer(() => this.#pipe.getTargets()));
+      this.#browserTargets = diagnosticTargetInventory(await this.#transfer(() => this.#pipe.getTargets(), completeWriter));
       if (bornFootprintTransport(this.#purpose) || heldCachePurpose(this.#purpose)) { this.#savedCacheBrowserVersion = Object.freeze(structuredClone(version)); }
       return diagnosticBoundedObservation({ schema: "easyeda-pro-control.pcb-diagnostic-browser-observation.v1", version: structuredClone(version),
         targets: this.#browserTargets.map(value => diagnosticTargetSummary(value)), projectFreeVerified: false, profileIsolated: false,
@@ -18493,7 +18495,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
     if (bytes.toString("base64") !== chunk["bytes"] || bytes.length > TRANSPORT.maximumNativePollBytes) { throw error("PIPE_CHUNK"); }
     if (bytes.length > 0) { this.#input.write(bytes); } else { await delay(20); }
   }
-  async #transfer(request: () => Promise<RecordValue>): Promise<RecordValue> {
+  async #transfer(request: () => Promise<RecordValue>, preferRendererPolling = false): Promise<RecordValue> {
     if (this.#startupParent !== null) { throw error("STARTUP_LEGACY_TRANSFER_DISABLED"); }
     try {
       if (!this.#launchSucceeded) { throw error("CLEANUP_ONLY"); }
@@ -18506,6 +18508,11 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
       })();
       await this.#send;
       while (selectedFileMainPurpose(this.#purpose) ? !settled : this.#pipe.status().pendingRequestId !== null) {
+        // Cold browser discovery may already have a reply queued. Read it before servicing a Main pause.
+        if (preferRendererPolling) {
+          await this.#pollRenderer();
+          if (settled) { break; }
+        }
         if (selectedFileMainPurpose(this.#purpose) && this.#mainRunner !== null && this.#savedReadbackEarlyActorStage === null && this.#schematicSavedEarlyStage === null && (this.#purpose===CURRENT_FOOTPRINT_INVERSE_NATIVE_CONTINUATION_V4_PROFILE.purpose?this.#inverseV4ActorStage:this.#inverseActorStage) === null) { await this.#mainRunner.pumpSelectedSqlFence(); }
         if (this.#purpose === SCH_SAVED_PURPOSE && this.#schematicSavedNavigationPending && this.#schematicSavedColdData === null && !this.#schematicSavedOpeningPumpRunning) { await this.#pumpSchematicSavedOpening(); }
         if (this.#purpose === CURRENT_PCB_VIA_SAVED_READBACK_PURPOSE && this.#savedReadbackProjectNavigationPending && this.#savedReadbackLoadData === null && !this.#savedReadbackOpeningPumpRunning) { await this.#pumpSavedReadbackOpening(); }
@@ -18513,7 +18520,7 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
         if (schematicDisplayPurpose(this.#purpose) && this.#schematicNavigationDispatchAttempted && this.#schematicWorkerController !== null && !this.#schematicWorkerController.status().pumping) { await this.#schematicWorkerController.pump(); }
         if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE && this.#inverseProjectDispatch !== null && this.#inverseWorkerController !== null && !this.#inverseWorkerController.status().pumping) { await this.#inverseWorkerController.pump(); }
         if(this.#purpose===CURRENT_FOOTPRINT_INVERSE_NATIVE_CONTINUATION_V4_PROFILE.purpose&&this.#inverseV4ProjectDispatch!==null&&this.#inverseV4WorkerController!==null&&!this.#inverseV4WorkerController.status().pumping){await this.#inverseV4WorkerController.pump();}
-        await this.#pollRenderer();
+        if (!preferRendererPolling) { await this.#pollRenderer(); }
       }
       const result = await observed;
       if ("cause" in result) {

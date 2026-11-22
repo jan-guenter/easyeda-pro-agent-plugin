@@ -79,6 +79,22 @@ export class CurrentFootprintForwardWriterOpeningProvider {
   if(!cleanup) { need(!this.#failed&&this.#abort===null&&!this.#abortDispatched&&!this.#released,"NORMAL_ENDED"); }
   if(this.#owner!==null) { assertOriginalCurrentFootprintForwardWriterNativeOwner(this.#owner);if(completeProviders.has(this)){assertOriginalCurrentFootprintForwardWriterCompleteNativeOwner(this.#owner);}for(const [key,value] of this.#methods??[]) { need(Reflect.get(this.#owner,key)===value,"ORIGINAL_NATIVE_METHOD"); } }
  }
+ #browserFailureEvidence(): Readonly<Record<string, unknown>> {
+  if (this.#stage !== "main" || !completeProviders.has(this) || this.#owner === null) { return {}; }
+  try {
+   const status = this.#owner.status();
+   const method = status.diagnosticFailureObservation?.request?.method;
+   const heldSite = status.selectedSqlFence?.["heldSite"];
+   return { browser: {
+    method: method === "Browser.getVersion" || method === "Target.getTargets" ? method : null,
+    deadline: status.diagnosticFailureObservation?.code === "deadline",
+    mainHeldSite: typeof heldSite === "string" && /^[A-Za-z][A-Za-z0-9]{0,47}$(?![\s\S])/u.test(heldSite) ? heldSite : null,
+   } };
+  } catch {
+   // Optional cached diagnostics must not delay original failure publication.
+   return {};
+  }
+ }
  async #normal<T>(action:()=>Promise<T>):Promise<T> {
   this.#current();need(!this.#busy&&!this.#cleanupBusy,"BUSY");this.#busy=true;
   try { return await action(); }
@@ -86,7 +102,9 @@ export class CurrentFootprintForwardWriterOpeningProvider {
    if(!this.#failed) { this.#failed=true;this.#failure=error; }
    if(this.#abort===null&&this.#journal.retained().reserved&&!this.#journal.retained().publicationPending&&!this.#failureRecordAttempted) {
     this.#failureRecordAttempted=true;
-    try { await this.#journal.append("failure",{phase:this.#stage,originalErrorRetained:true,code:"ORIGINAL_STAGE_FAILED"}); }
+    try {
+     await this.#journal.append("failure",{phase:this.#stage,originalErrorRetained:true,code:"ORIGINAL_STAGE_FAILED",...this.#browserFailureEvidence()});
+    }
     catch(publicationError) {
      // oxlint-disable-next-line eslint/preserve-caught-error -- Original operation error remains the cause; separate publication failure is retained in this aggregate.
      throw new AggregateError([error,publicationError],"FULL_FORWARD_FAILURE_PUBLICATION",{cause:error});

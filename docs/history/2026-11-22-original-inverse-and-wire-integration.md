@@ -92,3 +92,16 @@ complete baseline. The selected facade now accepts normal continuation only
 after the matching original read-only schedule has settled and its own Main
 runner observed the original rejection's resumed event. The normal library
 success schedule retains its separate completion condition.
+
+The next exact candidate completed the original Main construction after the
+installed-library fallback. Its request through the original browser pipe
+then exceeded the existing discovery deadline. The original Job terminated,
+the helper released, and the fixture's exact bytes and absence of SQLite
+sidecars were checked again.
+
+For initial discovery in the complete writer, the renderer pipe now gets the
+first poll before servicing selected-file Main pauses. Each iteration still
+uses the same owned transport and request limits. A bounded private failure
+record retains the browser method, deadline flag and held Main fence site when
+observed. This diagnostic supports the next original disposable run and does
+not issue any project mutation or Save authority.

@@ -31,7 +31,14 @@ function cleanupEvidence(entry: Entry): void {
   const kind: string = entry.kind;
   const empty = z.object({}).strict();
   switch (kind) {
-    case "failure": { z.object({ phase: z.enum(["new", "launched", "main", "browser", "frames", "ui-source", "sealed"]), originalErrorRetained: z.literal(true), code: z.literal("ORIGINAL_STAGE_FAILED") }).strict().parse(entry.evidence); break;
+    case "failure": {
+      const browser = z.strictObject({ method: z.enum(["Browser.getVersion", "Target.getTargets"]).nullable(),
+        deadline: z.boolean(), mainHeldSite: z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,47}$(?![\s\S])/u).nullable() });
+      z.strictObject({ phase: z.enum(["new", "launched", "main", "browser", "frames", "ui-source", "sealed"]),
+        originalErrorRetained: z.literal(true), code: z.literal("ORIGINAL_STAGE_FAILED"), browser: browser.optional() })
+        .superRefine((value, context) => {
+          if (value.browser !== undefined && value.phase !== "main") { context.addIssue({ code: "custom", message: "Browser evidence requires the Main stage" }); }
+        }).parse(entry.evidence); break;
     }
     case "close-intent": { z.object({ hwnd: z.string().regex(/^[1-9]\d{0,18}$(?![\s\S])/u) }).strict().parse(entry.evidence); break;
     }
