@@ -103,7 +103,9 @@ export class CurrentFootprintInverseNativeDeleteMainController {
  }
  async #handled(pending:Promise<unknown>):Promise<void>{try{await pending;}catch(error){this.#fail(error);}}
  #same():void{need(!this.#failed&&!this.#ended,"FAILED_OR_ENDED");this.#original.assertCurrent();this.#host.assertCurrent();requireCurrentFootprintInverseNativeDeleteMainBaseline(this.#baseline,this.#original.beforeInventory,this.#original.historyBaseline,this.#original.bodyPlan);}
- #fail(cause:unknown):void{if(!this.#failed){this.#failed=true;this.#failure=cause;this.#host.fail(cause);}}
+ #fail(cause:unknown):void{if(!this.#failed){this.#failed=true;this.#failure=cause;try{this.#host.fail(cause);}catch{
+  // Failure handoff cannot replace the retained original cause or strand its join.
+  }}}
  public get arming():Readonly<{scriptId:string;lineNumber:number;columnNumber:number}>|null{return this.#arming;}
  public prepare():Promise<void>{need(this.#prepare===null,"PREPARE_CONSUMED");const pending=this.#prepareNow();this.#prepare=pending;void this.#handled(pending);return pending;}
  async #prepareNow():Promise<void>{try{this.#same();this.#original.assertBeforeOriginalUpload();
