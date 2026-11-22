@@ -20,7 +20,7 @@ import {deriveCurrentFootprintInverseInitialSyncData} from "./current-footprint-
 import type {CurrentFootprintInverseInitialSyncData} from "./current-footprint-inverse-initial-sync-data.ts";
 import {deriveCurrentFootprintInverseColdLoadData} from "./current-footprint-inverse-cold-load-data.ts";
 import type {CurrentFootprintInverseColdLoadData} from "./current-footprint-inverse-cold-load-data.ts";
-import {deriveCurrentFootprintInverseGetModelInputData,deriveCurrentFootprintInversePublicRowData,deriveCurrentFootprintInverseReferenceData} from "./current-footprint-inverse-v4-public-row-data.ts";
+import { deriveCurrentFootprintInverseFullProjectionData } from "./current-footprint-inverse-v4-public-row-data.ts";
 import type {CurrentFootprintInverseGetModelInputData,CurrentFootprintInversePublicRowData,CurrentFootprintInverseReferenceData} from "./current-footprint-inverse-v4-public-row-data.ts";
 import type {CurrentFootprintSavedFlowCachePlan} from "./current-footprint-saved-flow-cache-plan.ts";
 import type {CurrentFootprintInverseStartupPlan} from "./current-footprint-inverse-startup-plan.ts";
@@ -88,9 +88,9 @@ export function prepareCurrentFootprintInverseFullPreparation(checkpoint:Current
   const flow=deriveCurrentFootprintSavedFlowCacheData(input);const startup=deriveCurrentFootprintInverseStartupData(input);
   const copied=startup.documentFamilies.find(document=>document.uuid===target.footprintUuid);
   need(copied!==undefined&&copied.families.length===1&&copied.families[0]?.docType==="FOOTPRINT"&&copied.families[0].rawRows>0);
-  const row=deriveCurrentFootprintInversePublicRowData(input,target.footprintUuid,prior.inventory);
+  const projections=deriveCurrentFootprintInverseFullProjectionData(input,target.footprintUuid,prior.inventory);
   const data:Readonly<Data>=freezeDeep({input,flow,startup,cache:deriveCurrentFootprintInverseInitialCacheData(flow),sync:deriveCurrentFootprintInverseInitialSyncData(input,flow),
-   cold:deriveCurrentFootprintInverseColdLoadData(input,flow,prior.inventory),row,model:deriveCurrentFootprintInverseGetModelInputData(input,target.footprintUuid,prior.inventory,row),reference:deriveCurrentFootprintInverseReferenceData(input,target.footprintUuid,prior.inventory,row)});
+   cold:deriveCurrentFootprintInverseColdLoadData(input,flow,prior.inventory),...projections});
   current(base);await verifyCurrentFootprintForwardWriterSavedCheckpoint(checkpoint);current(base);
   const prepared:CurrentFootprintInverseFullPreparation=Object.freeze({profile:"private.current-footprint-inverse-full-preparation.v1"});
   // Factual opaque plan shapes are shared; original maps and issuers are not.
