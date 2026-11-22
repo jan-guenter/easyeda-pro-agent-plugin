@@ -8,9 +8,7 @@ import type {
   CurrentSchematicWireEncoderBeforeGraphTransport,
 } from "./current-schematic-wire-encoder-before-graph.ts";
 import { currentSchematicWireEncoderFixedDispatch } from "./current-schematic-wire-encoder-dispatch-protocol.ts";
-import type {
-  CurrentSchematicWireEncoderDispatchCommand, CurrentSchematicWireEncoderFixedDispatch,
-} from "./current-schematic-wire-encoder-dispatch-protocol.ts";
+import type { CurrentSchematicWireEncoderFixedDispatch } from "./current-schematic-wire-encoder-dispatch-protocol.ts";
 import { CURRENT_SCHEMATIC_WIRE_ENCODER_NATIVE_BUDGET as CODEBOOK } from "./current-schematic-wire-encoder-native.ts";
 import { currentSchematicWireEncoderScriptId as handle } from "./current-schematic-wire-encoder-source.ts";
 
@@ -121,7 +119,8 @@ export class CurrentSchematicWireEncoderDispatch {
       this.#current();
       this.#original.assertOriginalEvent(event);
       need(this.#active.forwarded && this.#original.status().pendingRequestId === helper.id &&
-        params["hasSourceURL"] !== true && params["isLiveEdit"] !== true, "ORIGINAL_HELPER_EVENT");
+        (params["hasSourceURL"] === undefined || params["hasSourceURL"] === false) &&
+        (params["isLiveEdit"] === undefined || params["isLiveEdit"] === false), "ORIGINAL_HELPER_EVENT");
       const scriptId = handle.parse(params["scriptId"]);
       need(helper.scriptId === null && scriptId !== this.#original.scriptId && !this.#scripts.has(scriptId) &&
         this.#scripts.size < CURRENT_SCHEMATIC_WIRE_ENCODER_DISPATCH_BUDGET.helperEvents, "HELPER_ID");
@@ -134,12 +133,12 @@ export class CurrentSchematicWireEncoderDispatch {
     }
   }
 
-  async #send(command: CurrentSchematicWireEncoderDispatchCommand, id: number): Promise<unknown> {
+  async #send(fixed: CurrentSchematicWireEncoderFixedDispatch): Promise<unknown> {
     this.#current();
+    const { id, phase } = fixed.wire;
     const prior = this.#original.status();
     need(this.#active === null && prior.pendingRequestId === null && id === prior.requestCount + 1 &&
       (this.#lastId === null || id === this.#lastId + 1), "ORIGINAL_REQUEST_SLOT");
-    const fixed = currentSchematicWireEncoderFixedDispatch(command, id, this.#original.sessionId);
     const frame = Buffer.from(`${JSON.stringify(fixed.wire)}\0`);
     need(frame.length <= 16_384, "FRAME_BOUND");
     const active = { fixed, frame, forwarded: false };
@@ -154,7 +153,7 @@ export class CurrentSchematicWireEncoderDispatch {
       await task.written;
       this.#current();
       need(active.forwarded && this.#original.status().requestCount === id, "ORIGINAL_WRITE");
-      const polls = command.phase === "wire-encoder-source" ? SOURCE_POLLS : NORMAL_POLLS;
+      const polls = phase === "wire-encoder-source" ? SOURCE_POLLS : NORMAL_POLLS;
       for (let remaining = polls; this.#original.status().pendingRequestId !== null; remaining -= 1) {
         const status = this.#original.status();
         need(remaining > 0 && performance.now() < deadline &&
@@ -174,18 +173,20 @@ export class CurrentSchematicWireEncoderDispatch {
   async #request(command: CurrentSchematicWireEncoderBeforeGraphCommand): Promise<unknown> {
     try {
       this.#current();
-      need(this.#helper === null && this.#active === null && command.phase === ROWS[this.#issued] &&
-        (command.phase !== "wire-encoder-source" || command.params.scriptId === this.#original.scriptId), "ORDER");
-      if (command.phase === "wire-encoder-before-graph") {
-        need(command.params.objectId === this.#original.holder &&
-          command.params.arguments[0].objectId === this.#original.native, "ORIGINAL_GRAPH");
-      }
       const id = this.#original.status().requestCount + 1;
+      const fixed = currentSchematicWireEncoderFixedDispatch(command, id, this.#original.sessionId);
+      const { wire } = fixed;
+      need(this.#helper === null && this.#active === null && wire.phase === ROWS[this.#issued] &&
+        (wire.phase !== "wire-encoder-source" || wire.params.scriptId === this.#original.scriptId), "ORDER");
+      if (wire.phase === "wire-encoder-before-graph") {
+        need(wire.params.objectId === this.#original.holder &&
+          wire.params.arguments[0].objectId === this.#original.native, "ORIGINAL_GRAPH");
+      }
       this.#issued += 1;
-      const helper = command.method === "Runtime.callFunctionOn" ?
-        { command, id, program: `(${command.params.functionDeclaration})`, scriptId: null, reply: null } : null;
+      const helper = wire.method === "Runtime.callFunctionOn" ?
+        { command, id, program: `(${wire.params.functionDeclaration})`, scriptId: null, reply: null } : null;
       this.#helper = helper;
-      const raw = await this.#send(command, id);
+      const raw = await this.#send(fixed);
       if (helper !== null) {
         need(this.#helper === helper && helper.scriptId !== null, "HELPER_EVENT_MISSING");
         this.#helper.reply = raw;
@@ -203,9 +204,10 @@ export class CurrentSchematicWireEncoderDispatch {
       const helper = this.#helper;
       need(this.#active === null && helper !== null && helper.command === command &&
         helper.reply === reply && helper.scriptId !== null, "ORIGINAL_HELPER_REPLY");
-      const raw = captureCurrentPcbStringClockReply(await this.#send({
+      const fixed = currentSchematicWireEncoderFixedDispatch({
         phase: "wire-encoder-helper-source", method: "Debugger.getScriptSource", params: { scriptId: helper.scriptId },
-      }, helper.id + 1)).value;
+      }, helper.id + 1, this.#original.sessionId);
+      const raw = captureCurrentPcbStringClockReply(await this.#send(fixed)).value;
       need(this.#helper === helper && raw !== null && typeof raw === "object" &&
         Reflect.ownKeys(raw).length === 1 && Object.getOwnPropertyDescriptor(raw, "scriptSource")?.value === helper.program, "HELPER_SOURCE");
       this.#helper = null;
