@@ -87,5 +87,14 @@ void test("no-resource admission proof ends before the maintained native spawn b
   const retained = source.indexOf("footprintSavedAllocations.set(savedWriter, owner)", spawn);
   assert.ok(factory > 0 && guard > factory && boundary > guard && spawn > boundary && retained > spawn);
   assert.ok(source.slice(guard, spawn).includes('else { footprintSavedAllocationStates.set(savedWriter, "unresolved"); }'));
-  assert.equal(/\bawait\b/u.test(source.slice(boundary, retained)), false);
+  // Cold UI reproof is a separate lane and cannot receive a saved writer.
+  assert.match(source.slice(factory, guard), /^ *if\(nativeDeleteColdUi!==null&&\([^\n]+\|\|savedWriter!==undefined\|\|[^\n]+\)\)\{throw error\("INVERSE_NATIVE_DELETE_COLD_UI_ALLOCATION"\);\}$/mu);
+
+  const coldUi = source.lastIndexOf("  if(nativeDeleteColdUi!==null){", spawn);
+  const coldUiEnd = source.indexOf("\n  }\n", coldUi);
+  assert.ok(coldUi > boundary && coldUiEnd > coldUi && coldUiEnd < spawn);
+  assert.deepEqual(source.slice(coldUi, coldUiEnd).match(/\bawait\b[^;\n]+;/gu), [
+    'await origin.continuation.reproveNativeAdmission("birth-intent");',
+  ]);
+  assert.doesNotMatch(source.slice(boundary, coldUi) + source.slice(coldUiEnd, retained), /\bawait\b/u);
 });

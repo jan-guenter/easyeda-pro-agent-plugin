@@ -358,6 +358,11 @@ async function fixture(delta = 0, wrongStartup: "order" | "foreign" | "malformed
     "./current-selected-file-main-sql-fence-source.ts": { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_SOURCE: SOURCE,
       qualifyCurrentSelectedFileMainSqlFenceSource: (source: unknown): void => { assert.equal(source, "synthetic-complete-app-source"); } },
     "./current-selected-file-main-sql-fence-bootstrap.ts": {
+      isOriginalCurrentFootprintInverseV4MainSqlFenceBootstrap: (token: unknown, original: CurrentFootprintCopyMainBackendRunner): boolean => {
+        assert.equal(token, capability);
+        assert.equal(original, runner);
+        return false;
+      },
       enrollOriginalCurrentMainStartupLibrary: (token: unknown, original: CurrentFootprintCopyMainBackendRunner): typeof stockOrigin => { assert.equal(token, capability); assert.equal(original, runner); assert.ok(stockMode !== null); original.requireOriginalStartupLibraryEnrollment(capability); return stockOrigin; },
       sendOriginalCurrentMainStartupLibrary: (token: unknown, original: unknown, origin: unknown, command: CurrentMainStartupLibraryV2Command, id: number): Promise<void> => { assert.equal(token, capability); assert.equal(original, runner); assert.equal(origin, stockOrigin); return stockSend(command, id); },
       sendOriginalCurrentMainStartupLibraryReadonly:(token:unknown,original:unknown,origin:unknown,command:CurrentMainStartupLibraryReadonlyCommand,id:number):Promise<void>=>{

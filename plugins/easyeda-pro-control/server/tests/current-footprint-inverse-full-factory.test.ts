@@ -2,6 +2,7 @@
 /** Actual full-successor factory and private source-kind guard in an inert
  * realm. Only checkpoint/native-process custody is synthetic; these fixtures
  * create no helper, Job, process handle, application or execution authority. */
+import { currentFootprintInverseStartupDrainMaximumPauses, drainCurrentFootprintInverseStartup } from "../src/current-footprint-inverse-startup-drain.ts";
 import assert from "node:assert/strict";
 import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY, CurrentFootprintCopyHeldSavedResourceLedger, requireOriginalHeldSavedLedgerBinding } from "../src/current-footprint-copy-held-saved-capacity.ts";
 import {readFile} from "node:fs/promises";
@@ -403,4 +404,103 @@ void test("retained V4 GET result dispatch joins original completion and exact p
  ' else{assert.throws(()=>original.observeInverseNativeGetTaskResult({},"original"),/FOOTPRINT_INVERSE_NATIVE_GET_TASK_RESULT_PAIR/u);}',
  '}',
  ].join("\n");vm.runInContext(stripTypeScriptTypes(program),context);
+});
+
+void test("post-ready drain admits the full eight-cache-job allowance and refuses any larger roster", async () => {
+  const maximumPauses = currentFootprintInverseStartupDrainMaximumPauses(8);
+  assert.equal(maximumPauses, 37);
+  assert.equal(currentFootprintInverseStartupDrainMaximumPauses(7), 34);
+  assert.throws(() => currentFootprintInverseStartupDrainMaximumPauses(9), /INITIAL_CACHE_JOB_BOUND/u);
+  let polls = 0, serviced = 0;
+  const bindings = Object.freeze({
+    maximumPauses, assertCurrent: (): Promise<void> => Promise.resolve(),
+    settleOriginalPromises: (): Promise<void> => Promise.resolve(),
+    originalCompletionsPresent: (): boolean => serviced === maximumPauses,
+    nextOriginalEvent: (): Promise<number> => { polls += 1; return Promise.resolve(polls); },
+    serviceOriginalEvent: (event: number): Promise<boolean> => {
+      serviced += 1;
+      assert.equal(event, serviced);
+      return Promise.resolve(true);
+    },
+    retainUnsupported: (): void => { assert.fail("all original events were serviced"); },
+  });
+  await drainCurrentFootprintInverseStartup(bindings);
+  assert.equal(polls, maximumPauses);
+  await assert.rejects(drainCurrentFootprintInverseStartup(Object.freeze({ ...bindings, maximumPauses: maximumPauses + 1 })), /STARTUP_DRAIN/u);
+  assert.equal(polls, maximumPauses);
+});
+
+
+function originalClassMethod(source:string,begin:string,end:string):string{
+ const beginAt=source.indexOf(begin);const stop=source.indexOf(end,beginAt);assert.ok(beginAt!==-1&&stop>beginAt);return source.slice(beginAt,stop);
+}
+void test("original inverse execution resolves only a result recovered from the same durable complete publication",async()=>{
+ const source=await readFile(new URL("../src/current-footprint-inverse-full-workflow.ts",import.meta.url),"utf8");
+ const runMethod=originalClassMethod(source," public run():Promise<CurrentFootprintInverseFullWorkflowResult>","\n async #publishComplete(");
+ const publishMethod=originalClassMethod(source," async #publishComplete(","\n /** Reserve the original cutoff");
+ for(const recover of[true,false]){
+  const context=vm.createContext({assert,Promise,recover,publicationFailure:new Error("original complete acknowledgement failed")});
+  const program=[
+   "const events=[],checkpoint={},prepared={},source={},owner={},savedResult={saved:true},openingResult={},records=[],results=new WeakMap();",
+   "const saved={start(){events.push('saved');return Promise.resolve(savedResult)}};",
+   "const opening={start(){events.push('opening');return Promise.resolve(openingResult)}};",
+   "const admission={run(_owner,action){return action()}};",
+   "function prepareCurrentFootprintInverseFullPreparation(value){assert.equal(value,checkpoint);return Promise.resolve(prepared)}",
+   "function requireOriginalCurrentFootprintInverseFullPreparation(value){assert.equal(value,prepared)}",
+   "function claimCurrentFootprintInverseFullNativeGeneration(value){assert.equal(value,prepared);return opening}",
+   "function requireOriginalCurrentFootprintInverseFullNativeOpeningResult(value){assert.equal(value,openingResult);return{prepared,saved,source,owner}}",
+   "function requireOriginalCurrentFootprintInverseNativeDeleteSavedResult(value){assert.equal(value,savedResult);return{prepared,source,owner}}",
+   "function captureCurrentFootprintForwardExecutionReceiver(){return()=>{}}",
+   "const openingPrototype={},savedPrototype={},freezeDeep=Object.freeze,currentFootprintInverseFullWorkflowResultSchema={parse(value){return value}};",
+   "function need(value,code){assert.ok(value,code)}",
+   "class Workflow{",
+   "#run=null;#result=null;#terminal=false;#resourcesClosed=false;#failure;#source={operationId:'forward'};#sourceOriginal={checkpoint};#request={operationId:'inverse',sourceOperationId:'forward'};",
+   "#prepared;#preparation;#opening;#openingCurrent;#openingResult;#openingRun;#saved;#savedCurrent;#savedResult;#savedRun;",
+   "#journal={reserve(){return Promise.resolve()},retained(){return{records}}};",
+   "#current(){}#remember(error){this.#failure=error}#journalAction(action){return action()}#stageCall(_stage,action){return action()}",
+   "#append(kind){assert.equal(kind,'complete');events.push('append');if(recover)records.push({kind});return Promise.reject(publicationFailure)}",
+   "cleanup(){events.push('cleanup');return records.at(-1)?.kind==='complete'?this.#publishComplete():Promise.resolve()}",
+   "result(){return this.#result}failure(){return this.#failure}",
+   runMethod,publishMethod,"};const workflow=new Workflow();",
+   "globalThis.pending=workflow.run();assert.equal(workflow.run(),pending);",
+  ].join("\n");vm.runInContext(stripTypeScriptTypes(program),context);
+  await run(context,recover?"const value=await pending;assert.equal(value,workflow.result());assert.equal(results.get(value),workflow);":"await assert.rejects(pending,error=>error===publicationFailure);assert.equal(workflow.result(),null);");
+  await run(context,"assert.equal(workflow.failure(),publicationFailure);for(const name of['opening','saved','append','cleanup'])assert.equal(events.filter(value=>value===name).length,1);");
+ }
+});
+void test("saved cleanup clears only the rejected normal termination sample before the original after-abort observation",async()=>{
+ const source=await readFile(new URL("../src/current-footprint-inverse-native-delete-saved-generation.ts",import.meta.url),"utf8");
+ const method=originalClassMethod(source," async #observeExit(cleanup:boolean)","\n #endObservers()");
+ const context=vm.createContext({assert,Promise,originalFailure:new Error("original normal termination failed")});
+ const program=[
+  "let aborted=false;const events=[],source={},token={},precedingTerminationSamples=2;",
+  "const owner={observeTermination(){events.push('normal');return Promise.reject(originalFailure)},observeFootprintInverseNativeDeleteSavedTerminationAfterAbort(value){assert.equal(value,source);assert.equal(aborted,true);events.push('after-abort');return Promise.resolve(true)}};",
+  "function need(value,code){assert.ok(value,code)}function originalCurrentFootprintInverseTermination(value){assert.equal(value,owner);return token}function assertOriginalCurrentFootprintInverseTermination(value,result){assert.equal(value,owner);assert.equal(result,token)}",
+  "class Saved{#termination=null;#terminationCalls=0;#terminated=false;#owner=owner;#source=source;#failed=false;#failure;",
+  "#current(){}#remember(error){if(!this.#failed){this.#failed=true;this.#failure=error}}",
+  "#call(_cleanup,action){const pending=action();void(async()=>{try{await pending}catch(error){this.#remember(error)}})();return pending}",
+  "observe(cleanup){return this.#observeExit(cleanup)}abort(){aborted=true}state(){return{terminated:this.#terminated,calls:this.#terminationCalls,failure:this.#failure}}",
+  method,"};const generation=new Saved();",
+ ].join("\n");vm.runInContext(stripTypeScriptTypes(program),context);
+ await run(context,"await assert.rejects(generation.observe(false),error=>error===originalFailure);assert.equal(generation.state().failure,originalFailure);generation.abort();await generation.observe(true);assert.equal(generation.state().terminated,true);assert.equal(generation.state().calls,2);assert.equal(events.join(','),'normal,after-abort');assert.equal(generation.state().failure,originalFailure);");
+});
+void test("failed original termination rejects both cold helper arrival joins without claiming channel release",async()=>{
+ const source=await readFile(new URL("../src/current-pcb-worker-startup-channel.ts",import.meta.url),"utf8");
+ const method=originalClassMethod(source,"  public async releaseAfterTermination()","\n  #nativeDeleteColdUiOriginal");
+ const context=vm.createContext({assert,Promise,cause:new Error("original termination unavailable")});
+ const program=[
+  "const cold=Promise.withResolvers(),ui=Promise.withResolvers(),outcomes=[];",
+  "const observations=[cold.promise,ui.promise].map(async pending=>{try{await pending;outcomes.push('unexpected-success')}catch(error){outcomes.push(error)}});",
+  "function fail(code){return new Error(code)}async function observe(pending){try{await pending}catch{}}",
+  "class Channel{#started=true;#released=false;#releaseRequested=false;#pollTimer=null;#tail=Promise.resolve();#pending=new Map();#listener={};#polls=0;",
+  "#nativeDeleteColdHelper={arrival:cold,receipt:{pending:observations[0]}};#nativeDeleteColdUiHelper={arrival:ui};",
+  "#originalTermination(){return Promise.reject(cause)}#schedulePoll(value){assert.equal(value,0);this.#polls+=1}",
+  "state(){return{released:this.#released,requested:this.#releaseRequested,polls:this.#polls}}",
+  method,"};const channel=new Channel();",
+ ].join("\n");vm.runInContext(stripTypeScriptTypes(program),context);
+ try{
+  await run(context,"await assert.rejects(channel.releaseAfterTermination(),error=>error===cause);");
+  const turn=Promise.withResolvers<null>();setImmediate(()=>{turn.resolve(null);});await turn.promise;
+  await run(context,"assert.equal(outcomes.length,2);for(const error of outcomes)assert.equal(error,cause);assert.deepEqual(channel.state(),{released:false,requested:false,polls:1});");
+ }finally{await run(context,"cold.reject(cause);ui.reject(cause);await Promise.allSettled(observations);");}
 });

@@ -61,7 +61,7 @@ import { qualifyCurrentFootprintInverseClockWorkerHelper } from "./current-footp
 import type { CurrentFootprintInverseClockWorkerCommand } from "./current-footprint-inverse-clock-worker-protocol.ts";
 import { qualifyCurrentFootprintInverseDeleteBindingHelper } from "./current-footprint-inverse-delete-binding-protocol.ts";
 import type { CurrentFootprintInverseDeleteBindingCommand } from "./current-footprint-inverse-delete-binding-protocol.ts";
-import { drainCurrentFootprintInverseStartup } from "./current-footprint-inverse-startup-drain.ts";
+import { currentFootprintInverseStartupDrainMaximumPauses, drainCurrentFootprintInverseStartup } from "./current-footprint-inverse-startup-drain.ts";
 import { CURRENT_FOOTPRINT_INVERSE_INITIAL_CACHE_ROLES as CACHE_ROLES, CURRENT_FOOTPRINT_INVERSE_COLD_LOAD_SITES as COLD_SITES, CURRENT_FOOTPRINT_INVERSE_STARTUP_CALLBACK_ROLES as STARTUP_ROLES, CURRENT_FOOTPRINT_INVERSE_INITIAL_SYNC_ROLES as SYNC_ROLES, classifyCurrentFootprintInverseColdPause, currentFootprintInverseConditionBudget, currentFootprintInverseConditionText, currentFootprintInverseInitialCacheBudget, currentFootprintInverseStartupCallbackBudget, qualifyCurrentFootprintInverseConditionSource } from "./current-footprint-inverse-cold-load-protocol.ts";
 import type { CurrentFootprintInverseColdLoadCommand, CurrentFootprintInverseColdStepCommand, CurrentFootprintInverseConditionRole, CurrentFootprintInverseInitialCacheCommand, CurrentFootprintInverseInitialCacheRole, CurrentFootprintInverseInitialSyncNativeCommand, CurrentFootprintInverseModelStepCommand, CurrentFootprintInverseStartupCallbackCommand, CurrentFootprintInverseStartupCallbackRole, CurrentFootprintInverseStartupQueueCommand, CurrentFootprintInverseColdLoadRole as CurrentPcbViaSavedLoadRole } from "./current-footprint-inverse-cold-load-protocol.ts";
 /** Separate inverse event cursor. It shares only the fixed seven-source
@@ -148,6 +148,10 @@ function token(value: unknown): value is string { return typeof value === "strin
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value) && !types.isProxy(value); }
 type WorkerEvent = DiagnosticEvent & Readonly<{ sessionId: string }>;
 type Attachment = Readonly<{ targetId: string; sessionId: string; url: string; title: string }>;
+interface QueuedWork {
+  readonly run: () => Promise<void>;
+  readonly result: ReturnType<typeof Promise.withResolvers<boolean>>;
+}
 export class CurrentFootprintInverseWorkerController {
   readonly #bindings: CurrentFootprintInverseWorkerControllerBindings;
   readonly #completion = Promise.withResolvers<CurrentFootprintInverseWorkerHeld | null>();
@@ -167,9 +171,9 @@ export class CurrentFootprintInverseWorkerController {
   readonly #producerResolutions = new Map<string, string>();
   readonly #producerHelpers: { program: string; scriptId: string | null }[] = [];
   readonly #constructionHelpers: { program: string; scriptId: string | null }[] = [];
-  #constructionWork: Readonly<{ run: () => Promise<void>; result: ReturnType<typeof Promise.withResolvers<boolean>> }> | null = null;
-  #bootstrapSetupWork: Readonly<{ run: () => Promise<void>; result: ReturnType<typeof Promise.withResolvers<boolean>> }> | null = null;
-  #coldStartupWork:Readonly<{run:()=>Promise<void>;result:ReturnType<typeof Promise.withResolvers<boolean>>}>|null=null;
+  #constructionWork: QueuedWork | null = null;
+  #bootstrapSetupWork: QueuedWork | null = null;
+  #coldStartupWork:QueuedWork|null=null;
   #coldStartupAttempted=false;#coldStartupStarted=false;#coldStartupHeld:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>|null=null;
   #modelReadyReleased=false;#startupDrained=false;
   #coldStepPending:Readonly<{role:CurrentPcbViaSavedLoadRole;event:WorkerEvent}>|null=null;
@@ -815,7 +819,7 @@ export class CurrentFootprintInverseWorkerController {
   }
   public async drainOriginalStartup():Promise<void>{
     this.requireColdStartupCustody();need(this.#pumping&&this.#modelReadyReleased&&!this.#startupDrained&&this.#coldStartupHeld===null&&this.#coldStepPending===null);
-    await drainCurrentFootprintInverseStartup<WorkerEvent>(Object.freeze({maximumPauses:3*this.#initialCacheBound+9+2+2,assertCurrent:()=>this.#current(),settleOriginalPromises:()=>this.#bindings.settleStartupPromises(),originalCompletionsPresent:()=>this.#bindings.startupIdleReady(),nextOriginalEvent:()=>this.#next(),serviceOriginalEvent:(event:WorkerEvent)=>this.#serviceStartupEvent(event),retainUnsupported:(event:WorkerEvent):void=>{this.#unsupportedStartupHeld=event;}}));
+    await drainCurrentFootprintInverseStartup<WorkerEvent>(Object.freeze({maximumPauses:currentFootprintInverseStartupDrainMaximumPauses(this.#initialCacheBound),assertCurrent:()=>this.#current(),settleOriginalPromises:()=>this.#bindings.settleStartupPromises(),originalCompletionsPresent:()=>this.#bindings.startupIdleReady(),nextOriginalEvent:()=>this.#next(),serviceOriginalEvent:(event:WorkerEvent)=>this.#serviceStartupEvent(event),retainUnsupported:(event:WorkerEvent):void=>{this.#unsupportedStartupHeld=event;}}));
     this.#startupDrained=true;
   }
   public requireOriginalStartupDrained():void{this.requireColdStartupCustody();need(this.#startupDrained&&this.#modelReadyReleased&&this.#coldStartupHeld===null&&this.#coldStepPending===null&&this.#startupCallbackHeld===null&&this.#initialCacheHeld===null&&this.#initialSyncHeld===null&&this.#timerHeld===null&&this.#unsupportedStartupHeld===null&&this.#events.length===0&&this.#conditionScriptIds.length===0&&this.#coldHelpers.length===0&&this.#startupCallbackHelpers.length===0&&this.#startupQueueHelpers.length===0&&this.#initialCacheHelpers.length===0&&this.#initialSyncHelpers.length===0&&this.#timerHelpers.length===0&&this.#libraryHeld===null&&this.#libraryHelpers.length===0&&this.#libraryCompleted&&this.#deleteBindingCompleted&&this.#deleteBindingHelpers.length===0&&this.#deleteEncoderCompleted&&this.#deleteEncoderHelpers.length===0&&this.#clockWorkerCompleted&&this.#clockWorkerHelpers.length===0&&this.#bindings.startupIdleReady());}
@@ -867,9 +871,82 @@ export class CurrentFootprintInverseWorkerController {
     this.#pumping = true;
     try {
       if (this.#result === null) { await this.observeProjectSourceHeld(); }
-      else { const work = this.#constructionWork ?? this.#bootstrapSetupWork??this.#coldStartupWork??this.#deleteWork; need(work !== null); if (this.#constructionWork === work) { this.#constructionWork = null; } else if(this.#bootstrapSetupWork===work) { this.#bootstrapSetupWork = null; this.requireConstructionBootstrap(); }else if(this.#deleteWork===work){const deletion=this.#deleteWork;need(deletion!==null);this.#deleteWork=null;if(deletion.kind==="native-delete-accept"){this.requireNativeDeleteExecutionAcceptance();need(this.#nativeDeleteAcceptCursor===null&&this.#nativeDeleteAccepted===null);}else if(deletion.kind==="native-reference-prepare"){this.#requireNativeReferenceGet();need(this.#nativeReferenceCursor===null);}else if(deletion.kind==="native-reference-query"){this.#requireNativeReferenceGet();need(this.#nativeReferenceCursor!==null);this.#nativeReferenceCursor.requireCustody();}else if(deletion.kind==="native-get-task-completion"){need(this.#nativeGetTaskCompletionAttempted&&this.#nativeGetTaskAcceptedOriginal!==null&&!this.#nativeGetTaskAcceptedConsumed&&this.#nativeGetTaskCompletion===null);this.requireOriginalNativeGetTaskAcceptedEvent(this.#nativeGetTaskAcceptedOriginal);}else if(deletion.kind==="native-get-task-accept"){this.requireNativeGetTaskAcceptance();need(this.#nativeGetTaskAcceptCursor===null&&this.#nativeGetTaskAccepted===null);}else if(deletion.kind==="native-get-prepare"){this.requireOriginalStartupDrained();this.requireDeleteEntryAdmission();need(this.#nativeGetPreparationAttempted&&!this.#deleteEntryConsumed&&!this.#getPreparationAttempted&&this.#nativeGetCursor===null);}else if(deletion.kind==="reference-prepare"){this.requireGetWorkerRearmed();need(this.#referenceCursor===null);}else if(deletion.kind==="reference-query"){need(this.#referenceCursor!==null);this.#referenceCursor.requireCustody();}else if(deletion.kind==="prepare"){this.requireOriginalStartupDrained();}else if(deletion.kind==="get-completion"){need(this.#getCompletionAttempted&&this.#getEntryHeld!==null&&!this.#getCompletionStarted);}else if(deletion.kind==="get-native"){need(this.#getNativeAttempted&&this.#getWorkerConsumed&&this.#getEntryPoint!==null);}else if(deletion.kind==="get-prepare"){this.requireDeleteEntryCustody();need(this.#getPreparationAttempted&&this.#deleteEntryConsumed&&this.#deleteEntryHeld===null);}else if(deletion.kind==="job"||deletion.kind==="delivery"){need(this.#deleteEntryHeld!==null);this.requireOriginalDeleteEntryHeld(this.#deleteEntryHeld);}else{this.requireDeleteEntryAdmission();need(this.#deleteEntryConsumed);}}else{need(this.#coldStartupWork===work);this.#coldStartupWork=null;if(this.#coldStartupStarted){this.requireColdStartupCustody();}else{this.requireConstructionBootstrap();}}
-        try { await work.run(); work.result.resolve(true); } catch (error) { work.result.reject(error); throw error; } }
+      else {
+        const work = this.#constructionWork ?? this.#bootstrapSetupWork ?? this.#coldStartupWork ?? this.#deleteWork;
+        need(work !== null);
+        try {
+          this.#preflightQueuedWork(work);
+          await work.run();
+          need(!this.#failed);
+          work.result.resolve(true);
+        } catch (error) {
+          work.result.reject(error);
+          throw error;
+        }
+      }
     } catch (error) { this.fail(); throw error; } finally { this.#pumping = false; }
+  }
+  #preflightQueuedWork(work: QueuedWork): void {
+    if (this.#constructionWork === work) {
+      this.#constructionWork = null;
+      return;
+    }
+    if (this.#bootstrapSetupWork === work) {
+      this.#bootstrapSetupWork = null;
+      this.requireConstructionBootstrap();
+      return;
+    }
+    if (this.#deleteWork === work) {
+      const deletion = this.#deleteWork;
+      this.#deleteWork = null;
+      if (deletion.kind === "native-delete-accept") {
+        this.requireNativeDeleteExecutionAcceptance();
+        need(this.#nativeDeleteAcceptCursor === null && this.#nativeDeleteAccepted === null);
+      } else if (deletion.kind === "native-reference-prepare") {
+        this.#requireNativeReferenceGet();
+        need(this.#nativeReferenceCursor === null);
+      } else if (deletion.kind === "native-reference-query") {
+        this.#requireNativeReferenceGet();
+        need(this.#nativeReferenceCursor !== null);
+        this.#nativeReferenceCursor.requireCustody();
+      } else if (deletion.kind === "native-get-task-completion") {
+        need(this.#nativeGetTaskCompletionAttempted && this.#nativeGetTaskAcceptedOriginal !== null && !this.#nativeGetTaskAcceptedConsumed && this.#nativeGetTaskCompletion === null);
+        this.requireOriginalNativeGetTaskAcceptedEvent(this.#nativeGetTaskAcceptedOriginal);
+      } else if (deletion.kind === "native-get-task-accept") {
+        this.requireNativeGetTaskAcceptance();
+        need(this.#nativeGetTaskAcceptCursor === null && this.#nativeGetTaskAccepted === null);
+      } else if (deletion.kind === "native-get-prepare") {
+        this.requireOriginalStartupDrained();
+        this.requireDeleteEntryAdmission();
+        need(this.#nativeGetPreparationAttempted && !this.#deleteEntryConsumed && !this.#getPreparationAttempted && this.#nativeGetCursor === null);
+      } else if (deletion.kind === "reference-prepare") {
+        this.requireGetWorkerRearmed();
+        need(this.#referenceCursor === null);
+      } else if (deletion.kind === "reference-query") {
+        need(this.#referenceCursor !== null);
+        this.#referenceCursor.requireCustody();
+      } else if (deletion.kind === "prepare") {
+        this.requireOriginalStartupDrained();
+      } else if (deletion.kind === "get-completion") {
+        need(this.#getCompletionAttempted && this.#getEntryHeld !== null && !this.#getCompletionStarted);
+      } else if (deletion.kind === "get-native") {
+        need(this.#getNativeAttempted && this.#getWorkerConsumed && this.#getEntryPoint !== null);
+      } else if (deletion.kind === "get-prepare") {
+        this.requireDeleteEntryCustody();
+        need(this.#getPreparationAttempted && this.#deleteEntryConsumed && this.#deleteEntryHeld === null);
+      } else if (deletion.kind === "job" || deletion.kind === "delivery") {
+        need(this.#deleteEntryHeld !== null);
+        this.requireOriginalDeleteEntryHeld(this.#deleteEntryHeld);
+      } else {
+        this.requireDeleteEntryAdmission();
+        need(this.#deleteEntryConsumed);
+      }
+      return;
+    }
+    need(this.#coldStartupWork === work);
+    this.#coldStartupWork = null;
+    if (this.#coldStartupStarted) { this.requireColdStartupCustody(); }
+    else { this.requireConstructionBootstrap(); }
   }
   public status(): Readonly<{ pumping: boolean; failed: boolean; pairJoined: boolean; projectSourceHeld: boolean; sourceCallbackSettled: boolean; projectExecutionAuthorized: false }> {
     return Object.freeze({ pumping: this.#pumping, failed: this.#failed, pairJoined: this.#pair !== null, projectSourceHeld: this.#source !== null, sourceCallbackSettled: this.#result !== null, projectExecutionAuthorized: false });

@@ -121,7 +121,8 @@ export class CurrentFootprintInverseNativeDeleteSavedGeneration{
     need(this.#terminationCalls<precedingTerminationSamples,"TERMINATION_BOUND");this.#terminationCalls+=1;
     this.#termination=Object.freeze({pending:this.#call(true,()=>cleanup?this.#owner.observeFootprintInverseNativeDeleteSavedTerminationAfterAbort(this.#source):this.#owner.observeTermination()),ordinal:this.#terminationCalls});
    }
-   const original=this.#termination;const exited=await original.pending;this.#current(true);
+   const original=this.#termination;let exited:boolean;
+   try{exited=await original.pending;}catch(error){this.#remember(error);if(this.#termination===original){this.#termination=null;}throw error;}this.#current(true);
    need(this.#termination===original||this.#termination===null||this.#termination.ordinal>original.ordinal,"ORIGINAL_TERMINATION");
    if(exited){const token=originalCurrentFootprintInverseTermination(this.#owner);assertOriginalCurrentFootprintInverseTermination(this.#owner,token);this.#terminated=true;return;}
    if(this.#termination===original){this.#termination=null;}if(!cleanup){this.#current();}

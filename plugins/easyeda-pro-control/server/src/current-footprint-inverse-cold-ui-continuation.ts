@@ -105,5 +105,5 @@ Object.freeze(CurrentFootprintInverseColdUiContinuation.prototype);Object.freeze
 const continuationPrototype=captureCurrentFootprintForwardExecutionPrototypes(CurrentFootprintInverseColdUiContinuation.prototype);
 export function createCurrentFootprintInverseColdUiContinuation(source:CurrentFootprintInverseFullWorkflowResult,input:unknown):CurrentFootprintInverseColdUiContinuation{
  const request=currentFootprintInverseColdUiControlActionSchema.parse(captureCurrentPcbStringClockReply(input).value);need(request.action==="execute","EXECUTE_REQUIRED");requireOriginalCurrentFootprintInverseFullWorkflowResult(source);need(!claims.has(source),"SOURCE_CONSUMED");
- claims.add(source);return new CurrentFootprintInverseColdUiContinuation(INTERNAL,source,request);
+ const continuation=new CurrentFootprintInverseColdUiContinuation(INTERNAL,source,request);claims.add(source);return continuation;
 }

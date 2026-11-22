@@ -14,7 +14,7 @@ import { matchesCurrentProjectSaveStructureIntent, requireCurrentProjectPrehisto
 import type { CurrentProjectStructureBodyReservation, CurrentProjectStructureMainPublication } from "./current-project-save-structure-prehistory.ts";
 import type { CurrentFootprintInverseBootstrapArguments, CurrentFootprintInverseBootstrapHeld, CurrentFootprintInverseBootstrapPermit, CurrentFootprintInverseBootstrapPrepared, CurrentFootprintInverseStructureOrigin, CurrentGeneratedProjectSaveStructureBindings, CurrentProjectHistorySqlCompletion, CurrentProjectSaveStructureBindings, CurrentProjectSaveStructureEvent, CurrentProjectSaveStructureOrigin } from "./current-footprint-inverse-v4-structure-origin.ts";
 import { CURRENT_PROJECT_SAVE_STRUCTURE_CALLS as CALLS, CURRENT_PROJECT_SAVE_STRUCTURE_CALL_FLAGS as CALL_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTORS as CONSTRUCTORS, CURRENT_PROJECT_SAVE_STRUCTURE_FRAME_FLAGS as FRAME_FLAGS, CURRENT_PROJECT_SAVE_STRUCTURE_GROUP as GROUP,
-  CURRENT_SCHEMATIC_RELEVANCE_SAVE_STRUCTURE_REQUESTS as RELEVANCE_REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION, CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS as STARTUP_DRAIN,
+  CURRENT_PROJECT_SAVE_STRUCTURE_REQUESTS as REQUESTS, CURRENT_PROJECT_SAVE_STRUCTURE_CONSTRUCTION_SEQUENCE as SEQUENCE, CURRENT_PROJECT_SAVE_STRUCTURE_SITES as SITES, CURRENT_PROJECT_SAVE_STRUCTURE_STARTUP_CONDITION as STARTUP_CONDITION, CURRENT_SCHEMATIC_RELEVANCE_STARTUP_STRUCTURE_REQUESTS as STARTUP_DRAIN,
   qualifyCurrentProjectSaveStructureSource, validateCurrentProjectSaveStructureCommand } from "./current-project-save-structure-protocol.ts";
 import type { CurrentSchematicRelevanceStartupStructureDrained, CurrentProjectSaveStructureSite as Site } from "./current-project-save-structure-protocol.ts";
 import { captureCurrentSchematicRelevanceUiPublicationMetadata } from "./current-schematic-relevance-ui-publication-metadata.ts";
@@ -205,11 +205,9 @@ export class CurrentProjectSaveStructureObserver {
     this.#origin = origin; this.#owner = owner; this.#operation = operation;
     this.#lookup = lookupFunction.parse(Reflect.get(native, "requireOriginalCurrentProjectSaveStructureOrigin"));
     this.#binding = bindingsSchema.parse(this.#lookup(origin, owner, operation));
-    const relevance = origin.profile === "private.current-schematic-relevance-display-save-structure-origin.v1" || origin.profile === "private.current-schematic-wire-edit-save-structure-origin.v1";
-    need(relevance === (this.#binding.prepared.profile === "easyeda-pro-control.generated-schematic-relevance-fixture-open-checkpoint.v1"), "ORIGINAL_STARTUP_DATA_FAMILY");
-    let requests: Readonly<{ normal: number; cleanup: number; events: number }> = relevance ? RELEVANCE_REQUESTS : REQUESTS;
-    if (origin.profile === "private.current-schematic-relevance-display-save-structure-origin.v1") { requests = Object.freeze({ ...RELEVANCE_REQUESTS, normal: RELEVANCE_REQUESTS.normal + STARTUP_DRAIN.total }); }
-    this.#requests = requests; this.#startupRecordLimit = relevance ? 8 : 7; Object.freeze(this);
+    need(origin.profile === "private.current-footprint-inverse-structure-origin.v1" &&
+      inversePreparedProfile(this.#binding.prepared) && this.#binding.prepared === operation, "ORIGINAL_INVERSE_CONSTRUCTION");
+    this.#requests = REQUESTS; this.#startupRecordLimit = 7; Object.freeze(this);
   }
   async #current(): Promise<void> { need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "ORIGINAL");
     if (this.#startupMode) { this.#binding.assertStartupPending(); } await this.#binding.assertCurrent(); if (this.#startupMode) { this.#binding.assertStartupPending(); } need(!this.#failed && !this.#closed && this.#lookup(this.#origin, this.#owner, this.#operation) === this.#binding, "CHANGED"); }

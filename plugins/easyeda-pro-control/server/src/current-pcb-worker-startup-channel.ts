@@ -1871,7 +1871,11 @@ class CurrentPcbWorkerStartupChannelCore {
     if (!this.#started || this.#released || this.#releaseRequested) { throw fail("RELEASE_STATE"); }
     this.#releaseRequested = true;
     try { await this.#originalTermination(); }
-    catch (error) { this.#releaseRequested = false; this.#schedulePoll(0); throw error; }
+    catch (error) {
+      // Failed original termination ends local qualification waits, not ownership.
+      this.#nativeDeleteColdHelper?.arrival.reject(error);this.#nativeDeleteColdUiHelper?.arrival.reject(error);
+      this.#releaseRequested = false; this.#schedulePoll(0); throw error;
+    }
 
     this.#nativeDeleteColdHelper?.arrival.reject(fail("TERMINATED"));this.#nativeDeleteColdUiHelper?.arrival.reject(fail("TERMINATED"));
     this.#released = true;

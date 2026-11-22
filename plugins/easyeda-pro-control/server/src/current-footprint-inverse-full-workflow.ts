@@ -103,7 +103,7 @@ export class CurrentFootprintInverseFullWorkflow{
     this.#resourcesClosed=true;completion.resolve(await this.#publishComplete());
    }catch(error){
     this.#remember(error);
-    try{await this.cleanup();}catch(cleanupError){completion.reject(new AggregateError([error,cleanupError],"INVERSE_FULL_WORKFLOW_CLEANUP",{cause:error}));return;}
+    try{await this.cleanup();if(this.#result!==null){completion.resolve(this.#result);return;}}catch(cleanupError){completion.reject(new AggregateError([error,cleanupError],"INVERSE_FULL_WORKFLOW_CLEANUP",{cause:error}));return;}
     completion.reject(error);
    }
   });return completion.promise;

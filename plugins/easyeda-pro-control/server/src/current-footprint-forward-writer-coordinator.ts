@@ -206,10 +206,10 @@ export class CurrentFootprintForwardWriterCoordinator{
     this.#startCleanup();
     await Promise.allSettled([this.#cleanup]);
    }
-   await Promise.allSettled([...(this.#execution===null?[]:[this.#execution]),...(this.#executionObservation===null?[]:[this.#executionObservation]),...(this.#cleanupObservation===null?[]:[this.#cleanupObservation]),...(this.#settlement===null?[]:[this.#settlement]),joinedContinuations,...(this.#inverseRun===null?[]:[this.#inverseRun]),...(this.#inverseObservation===null?[]:[this.#inverseObservation]),...(this.#inverseCleanupObservation===null?[]:[this.#inverseCleanupObservation]),...(this.#inversePublicationObservation===null?[]:[this.#inversePublicationObservation])]);
    const [inverseOutcome,coldUiOutcome]=await joinedContinuations;
    if(inverseOutcome?.status==="rejected"){throw inverseOutcome.reason;}
    if(coldUiOutcome?.status==="rejected"){throw coldUiOutcome.reason;}
+   await Promise.allSettled([...(this.#execution===null?[]:[this.#execution]),...(this.#executionObservation===null?[]:[this.#executionObservation]),...(this.#cleanupObservation===null?[]:[this.#cleanupObservation]),...(this.#settlement===null?[]:[this.#settlement]),...(this.#inverseRun===null?[]:[this.#inverseRun]),...(this.#inverseObservation===null?[]:[this.#inverseObservation]),...(this.#inverseCleanupObservation===null?[]:[this.#inverseCleanupObservation]),...(this.#inversePublicationObservation===null?[]:[this.#inversePublicationObservation])]);
    await this.#settleOriginalRecords();this.#current();need(!this.hasActiveReservation(),"ORIGINAL_CLEANUP_PENDING");
   })();return this.#shutdown;
  }

@@ -136,7 +136,11 @@ void test("bridge, recovery and reporting share identical-byte projections witho
   assert.equal(restored["payload"], journal["payload"]); assert.equal(replacementParses, 4);
 });
 
-void test("combined admission keeps three separate fresh scans and preserves bridge-first isolation failures", async () => {
+/** The component, forward, inverse and cold-UI owner scans precede one
+ * generic evidence scan shared by both admission predicates. */
+const COMBINED_ADMISSION_SCAN_COUNT = 5;
+
+void test("combined admission keeps fresh owner and evidence scans and preserves bridge-first isolation failures", async () => {
   const { engine, id, journal } = await fixture({ state: "library-needs-review", orphanedCallPossible: false });
   const readDirectory = fsPromises.readdir;
   let scans = 0;
@@ -150,15 +154,14 @@ void test("combined admission keeps three separate fresh scans and preserves bri
   mock.method(engine, "assertBridgeDispatchAllowed", (): never => { throw new Error("Do not scan the bridge predicate separately."); });
   mock.method(engine, "assertRecoveryOperationIsolated", (): never => { throw new Error("Do not scan the recovery predicate separately."); });
   assert.equal(await engine.assertBridgeAndRecoveryAdmission(id), true);
-  // Fresh component and complete-workflow owner scans precede the shared generic evidence scan.
-  assert.equal(scans, 3);
+  assert.equal(scans, COMBINED_ADMISSION_SCAN_COUNT);
   await assert.rejects(engine.assertBridgeAndRecoveryAdmission("other"), /not isolated/u);
-  assert.equal(scans, 6);
+  assert.equal(scans, COMBINED_ADMISSION_SCAN_COUNT * 2);
   await artifacts.updateOperation({ ...journal, orphanedCallPossible: true });
   await assert.rejects(engine.assertBridgeAndRecoveryAdmission(id), /dispatch is quarantined/u);
-  assert.equal(scans, 9);
+  assert.equal(scans, COMBINED_ADMISSION_SCAN_COUNT * 3);
   await assert.rejects(engine.assertBridgeAndRecoveryAdmission("other"), /dispatch is quarantined/u);
-  assert.equal(scans, 12);
+  assert.equal(scans, COMBINED_ADMISSION_SCAN_COUNT * 4);
 });
 
 void test("combined bridge/native admission keeps separate owner exclusion and evidence scans with exact bridge-first refusals", async () => {
@@ -175,8 +178,7 @@ void test("combined bridge/native admission keeps separate owner exclusion and e
   mock.method(engine, "assertBridgeDispatchAllowed", (): never => { throw new Error("Do not scan the bridge predicate separately."); });
   mock.method(engine, "assertNativeUiEditingAllowed", (): never => { throw new Error("Do not scan the native-edit predicate separately."); });
   assert.equal(await engine.assertBridgeAndNativeUiEditingAdmission(), true);
-  // Fresh component and complete-workflow owner scans precede the shared generic evidence scan.
-  assert.equal(scans, 3);
+  assert.equal(scans, COMBINED_ADMISSION_SCAN_COUNT);
   for (const orphanedCallPossible of [false, true]) {
     await artifacts.updateOperation({ ...journal, state: "library-needs-review", orphanedCallPossible });
     const originalGuard = orphanedCallPossible
@@ -192,7 +194,7 @@ void test("combined bridge/native admission keeps separate owner exclusion and e
       assert.deepEqual(error.blockingOperations, original.blockingOperations);
       return true;
     });
-    assert.equal(scans, scansBefore + 3);
+    assert.equal(scans, scansBefore + COMBINED_ADMISSION_SCAN_COUNT);
   }
 });
 

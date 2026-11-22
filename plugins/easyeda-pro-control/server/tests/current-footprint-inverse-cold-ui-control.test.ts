@@ -74,3 +74,13 @@ void test("actual continuation consumes failed factory and closes only its retai
 void test("actual continuation retains unknown original journal after resource-free cleanup until exact publication repair",async()=>{
  const context=await fixture("journal-unknown");await run(context,`${start}for(let i=0;i<32&&!owner.inspect().execution.settled;i++)await Promise.resolve();const cleanup=owner.cleanup();assert.equal(events.at(-1),'cutoff');assert.equal(owner.cleanup(),cleanup);await assert.rejects(cleanup,/JOURNAL_UNREADABLE/);for(let i=0;i<32&&!owner.inspect().cleanup.settled;i++)await Promise.resolve();const held=owner.inspect();assert.equal(held.cleanup.originalResourcesClosed,true);assert.equal(held.cleanup.publicationPending,false);assert.equal(held.cleanup.journalUnsettled,true);assert.equal(held.state,'needs-cleanup');assert.equal(owner.hasActiveReservation(),true);await assert.rejects(owner.settleRecords(),/UNKNOWN_REPAIR/);assert.equal(owner.hasActiveReservation(),true);permitRepair();await owner.settleRecords();assert.equal(owner.inspect().cleanup.journalUnsettled,false);assert.equal(owner.hasActiveReservation(),false);await owner.shutdownOriginal();assert.equal(events.filter(x=>x==='start').length,1);assert.equal(events.filter(x=>x==='cutoff').length,1);`);
 });
+
+void test("cold UI factory consumes an original source only after valid paired construction",async()=>{
+ const context=await fixture("success");await run(context,[
+  "const other={...input,operationId:'footprint-inverse-cold-ui-flow-foreign',sourceOperationId:'footprint-inverse-flow-foreign'};",
+  "assert.throws(()=>api.createCurrentFootprintInverseColdUiContinuation(source,other),/ORIGINAL_SOURCE_OPERATION/);",
+  "const continuation=api.createCurrentFootprintInverseColdUiContinuation(source,input);",
+  "assert.throws(()=>api.createCurrentFootprintInverseColdUiContinuation(source,input),/SOURCE_CONSUMED/);",
+  "assert.equal(events.length,0);await continuation.shutdownOriginal();assert.equal(continuation.hasActiveReservation(),false);",
+ ].join("\n"));
+});

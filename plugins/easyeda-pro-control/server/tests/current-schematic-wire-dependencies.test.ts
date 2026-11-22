@@ -65,7 +65,11 @@ function properties(values: readonly object[]): object {
 }
 function metadata(name: string, length: number, constructor: boolean): object {
   return { result: [property("length", { type: "number", value: length }, false, false), property("name", { type: "string", value: name }, false, false),
-    ...(constructor ? [property("prototype", remote("object", "map_prototype", { className: "Map", description: "Map" }), false, false, false)] : [])],
+    ...(constructor ? [
+      property("prototype", remote("object", "map_prototype", { className: "Map", description: "Map" }), false, false, false),
+      { ...property("Symbol(Symbol.species)", remote("function", "map_species_constructor", { className: "Function", description: "function Map() { [native code] }" }), false, false),
+        symbol: remote("symbol", "map_species_symbol", { description: "Symbol(Symbol.species)" }) },
+    ] : [])],
     internalProperties: [{ name: "[[Prototype]]", value: remote("function", "function_prototype", { className: "Function", description: "function () { [native code] }" }) },
       { name: "[[Scopes]]", value: remote("object", "native_scopes", { className: "Array", subtype: "internal#scopeList", description: "Scopes[0]" }) }] };
 }

@@ -580,6 +580,25 @@ interface Pending {
   sourceFrameBytes?: number;
 }
 
+interface InverseNativeDeleteFlowUpload {
+  request: Promise<Reply> | null;
+  slot: Pending | null;
+  readonly written: PromiseWithResolvers<undefined>;
+}
+
+/** A request can refuse before installing a write callback. Only that
+ * callback can resolve the acknowledgement, while refusal rejects it. */
+function retainOriginalWriteRejection(request: Promise<Reply>, written: PromiseWithResolvers<undefined>): void {
+  void (async (): Promise<void> => {
+    try { await written.promise; } catch {
+      // The caller and original-exit join can still observe this rejection.
+    }
+  })();
+  void (async (): Promise<void> => {
+    try { await request; } catch (caughtError) { written.reject(caughtError); }
+  })();
+}
+
 interface WireV5Navigation {
   readonly slot: Pending;
   readonly pending: Promise<Reply>;
@@ -2396,11 +2415,9 @@ class CurrentPcbFixedPipeCore {
     else if (this.#inverseNativeLifecycle && phase === "inverse-native-reference-pcb-sender" && "inverseNativeReferencePcbSender" in command && command.phase === "inverse-native-reference-pcb-sender-invoke") { this.#inverseNativeReferencePcbPending = pending; this.#inverseNativeReferencePcbOriginalSlot = pending; }
     else if (viaRetained) { this.#viaRetainedPending = pending; } else { this.#pending = pending; }
     if(this.#inverseNativeLifecycle&&phase==="inverse-native-delete-flow"&&"inverseNativeDeleteFlow"in command&&"flowKind"in command&&command.flowKind==="local"&&command.phase==="inverse-native-delete-local-resume"&&command.role==="localIngress"){
-      if(this.#inverseNativeDeleteFlowUpload!==null){this.#fail("output");return deferred.promise;}
-      const written=Promise.withResolvers<undefined>();void(async():Promise<void>=>{try{await written.promise;}catch{
-        // The retained original write is still joined during original cleanup.
-      }})();
-      this.#inverseNativeDeleteFlowUpload=Object.freeze({request:deferred.promise,slot:pending,written});
+      const upload = this.#inverseNativeDeleteFlowUpload;
+      if (upload === null || upload.slot !== null || upload.request !== null) { this.#fail("output"); return deferred.promise; }
+      upload.slot = pending;
     }
     // Reserve before write, including synchronous throw and synchronous peer
     if (wireV5Navigation) {
@@ -2681,7 +2698,7 @@ class CurrentPcbFixedPipeCore {
 
   #inverseNativeDeleteExecutionWrite:PromiseWithResolvers<undefined>|null=null;
 
-  #inverseNativeDeleteFlowUpload:Readonly<{request:Promise<Reply>;slot:Pending;written:PromiseWithResolvers<undefined>}>|null=null;
+  #inverseNativeDeleteFlowUpload: InverseNativeDeleteFlowUpload | null = null;
 
   #inverseNativeReferenceNextPending:Pending|null=null;
 
@@ -2733,15 +2750,17 @@ class CurrentPcbFixedPipeCore {
   public observeInverseNativeDeleteExecution(input:CurrentFootprintInverseNativeDeleteExecutionCommand,previous:Promise<Reply>):Promise<Reply>{
     this.#requireNativeDeletePredecessor(previous);const packet=validateCurrentFootprintInverseNativeDeleteExecutionCommand(input);
     if(this.#sessionId===null||!this.#inverseProjectOpening||this.#viaRetainedPending!==null){throw new Error("FOOTPRINT_INVERSE_NATIVE_DELETE_EXECUTION_PURPOSE");}
-    if(packet.stage==="sender"&&packet.command.phase==="inverse-native-delete-sender-invoke"){
-      if(this.#inverseNativeDeleteExecutionOriginal!==null||this.#inverseNativeDeleteExecutionPending!==null){throw new Error("FOOTPRINT_INVERSE_NATIVE_DELETE_EXECUTION_ONCE");}
-      const written=Promise.withResolvers<undefined>();this.#inverseNativeDeleteExecutionWrite=written;
-      void(async():Promise<void>=>{try{await written.promise;}catch{
-        // Preserve this original write rejection for original-exit settlement.
-      }})();
+    const invoke = packet.stage === "sender" && packet.command.phase === "inverse-native-delete-sender-invoke";
+    if (invoke && (this.#inverseNativeDeleteExecutionOriginal !== null || this.#inverseNativeDeleteExecutionPending !== null)) {
+      throw new Error("FOOTPRINT_INVERSE_NATIVE_DELETE_EXECUTION_ONCE");
     }
-    const original=this.#request(currentFootprintInverseNativeDeleteExecutionWire(packet,this.#nextId,this.#sessionId),"inverse-native-delete-execution");
-    if(packet.stage==="sender"&&packet.command.phase==="inverse-native-delete-sender-invoke"){this.#inverseNativeDeleteExecutionOriginal=original;}
+    const wire = currentFootprintInverseNativeDeleteExecutionWire(packet, this.#nextId, this.#sessionId);
+    if (!invoke) { return this.#request(wire, "inverse-native-delete-execution"); }
+    const written = Promise.withResolvers<undefined>();
+    this.#inverseNativeDeleteExecutionWrite = written;
+    const original = this.#request(wire, "inverse-native-delete-execution");
+    this.#inverseNativeDeleteExecutionOriginal = original;
+    retainOriginalWriteRejection(original, written);
     return original;
   }
 
@@ -2775,16 +2794,27 @@ class CurrentPcbFixedPipeCore {
     this.requireInverseNativeDeleteExecutionInvocationCustody(original);const pair=this.#inverseWorkerPair;
     if(!this.#inverseNativeLifecycle||pair===null||!this.#inverseWorkerSlots.has("saved-load-source-project")){throw new Error("FOOTPRINT_INVERSE_NATIVE_DELETE_FLOW_PURPOSE");}
     const command=validateCurrentFootprintInverseNativeDeleteFlowCommand(input);
-    if(command.phase==="inverse-native-delete-flow"&&command.kind==="local"&&command.command.phase==="inverse-native-delete-local-resume"&&command.command.role==="localIngress"&&this.#inverseNativeDeleteFlowUpload!==null){throw new Error("FOOTPRINT_INVERSE_NATIVE_DELETE_UPLOAD_ONCE");}
-    return this.#request(currentFootprintInverseNativeDeleteFlowWire(command,this.#nextId,pair.pageSessionId),"inverse-native-delete-flow");
+    const upload = command.phase === "inverse-native-delete-flow" && command.kind === "local" &&
+      command.command.phase === "inverse-native-delete-local-resume" && command.command.role === "localIngress";
+    if (upload && this.#inverseNativeDeleteFlowUpload !== null) { throw new Error("FOOTPRINT_INVERSE_NATIVE_DELETE_UPLOAD_ONCE"); }
+    const wire = currentFootprintInverseNativeDeleteFlowWire(command, this.#nextId, pair.pageSessionId);
+    if (!upload) { return this.#request(wire, "inverse-native-delete-flow"); }
+    const written = Promise.withResolvers<undefined>();
+    const retained: InverseNativeDeleteFlowUpload = { request: null, slot: null, written };
+    this.#inverseNativeDeleteFlowUpload = retained;
+    const request = this.#request(wire, "inverse-native-delete-flow");
+    retained.request = request;
+    Object.freeze(retained);
+    retainOriginalWriteRejection(request, written);
+    return request;
   }
 
   public originalInverseNativeDeleteFlowUploadWrite(request:Promise<Reply>):Promise<void>{
-    const original=this.#inverseNativeDeleteFlowUpload;if(!this.#inverseNativeLifecycle||original===null||original.request!==request){throw new Error("FOOTPRINT_INVERSE_NATIVE_DELETE_UPLOAD_ORIGINAL_WRITE");}return original.written.promise;
+    const original=this.#inverseNativeDeleteFlowUpload;if(!this.#inverseNativeLifecycle||original===null||original.request===null||original.request!==request){throw new Error("FOOTPRINT_INVERSE_NATIVE_DELETE_UPLOAD_ORIGINAL_WRITE");}return original.written.promise;
   }
 
   public inverseNativeDeleteFlowUploadWritten(request:Promise<Reply>):boolean{
-    const original=this.#inverseNativeDeleteFlowUpload;if(!this.#inverseNativeLifecycle||original===null||original.request!==request||this.#failure!==null){throw new Error("FOOTPRINT_INVERSE_NATIVE_DELETE_UPLOAD_WRITE_CUSTODY");}return original.slot.written;
+    const original=this.#inverseNativeDeleteFlowUpload;if(!this.#inverseNativeLifecycle||original===null||original.request===null||original.request!==request||this.#failure!==null){throw new Error("FOOTPRINT_INVERSE_NATIVE_DELETE_UPLOAD_WRITE_CUSTODY");}return original.slot?.written === true;
   }
 
   public observeInverseNativeDeleteUpload(input:CurrentFootprintInverseNativeDeleteUploadCommand,original:Promise<Reply>):Promise<Reply>{
@@ -2862,15 +2892,18 @@ class CurrentPcbFixedPipeCore {
     if(kind==="schematic"){this.originalInverseNativeReferencePcbInvocationReply(previous);}
     else{const prior=kind==="footprint-derived"?"schematic":"footprint-derived";this.originalInverseNativeReferenceNextInvocationReply(prior,previous);if(this.#inverseNativeReferenceNextResults.get(prior)!==previous){throw new Error("FOOTPRINT_INVERSE_NATIVE_REFERENCE_NEXT_PREVIOUS_RESULT");}}
     if(!this.#inverseNativeLifecycle||this.#sessionId===null||!this.#inverseProjectOpening||this.#viaRetainedPending!==null||this.#inversePublicDeletePending!==null||this.#inverseNativeGetLookupPending!==null||this.#inverseNativeGetTaskPending!==null||this.#inverseNativeReferencePcbPending!==null){throw new Error("FOOTPRINT_INVERSE_NATIVE_REFERENCE_NEXT_PURPOSE");}
-    if(command.command.phase==="inverse-native-reference-pcb-sender-invoke"){
-      if(this.#inverseNativeReferenceNextOriginals.has(kind)||this.#inverseNativeReferenceNextPending!==null){throw new Error("FOOTPRINT_INVERSE_NATIVE_REFERENCE_NEXT_ONCE");}
-      const written=Promise.withResolvers<undefined>();this.#inverseNativeReferenceNextWrites.set(kind,written);
-      void(async():Promise<void>=>{try{await written.promise;}catch{
-        // Retain original write rejection until actual original-exit settlement.
-      }})();
+    const invoke = command.command.phase === "inverse-native-reference-pcb-sender-invoke";
+    if (invoke && (this.#inverseNativeReferenceNextOriginals.has(kind) || this.#inverseNativeReferenceNextPending !== null)) {
+      throw new Error("FOOTPRINT_INVERSE_NATIVE_REFERENCE_NEXT_ONCE");
     }
-    const original=this.#request(currentFootprintInverseNativeReferenceNextSenderWire(command,this.#nextId,this.#sessionId),"inverse-native-reference-next-sender");
-    if(command.command.phase==="inverse-native-reference-pcb-sender-invoke"){this.#inverseNativeReferenceNextOriginals.set(kind,original);}return original;
+    const wire = currentFootprintInverseNativeReferenceNextSenderWire(command, this.#nextId, this.#sessionId);
+    if (!invoke) { return this.#request(wire, "inverse-native-reference-next-sender"); }
+    const written = Promise.withResolvers<undefined>();
+    this.#inverseNativeReferenceNextWrites.set(kind, written);
+    const original = this.#request(wire, "inverse-native-reference-next-sender");
+    this.#inverseNativeReferenceNextOriginals.set(kind, original);
+    retainOriginalWriteRejection(original, written);
+    return original;
   }
 
   public observeInverseNativeReferenceNextRead(input:CurrentFootprintInverseNativeReferenceNextRead,original:Promise<Reply>):Promise<Reply>{
@@ -2906,15 +2939,15 @@ class CurrentPcbFixedPipeCore {
   public observeInverseNativeReferencePcbSender(command: CurrentFootprintInverseNativeReferencePcbSenderCommand, getInvocation:Promise<Reply>): Promise<Reply> {
     this.originalInverseNativeGetTaskInvocationReply(getInvocation);
     if (!this.#inverseNativeLifecycle || this.#sessionId === null || !this.#inverseProjectOpening || this.#inverseNativeGetTaskPending!==null || this.#viaRetainedPending !== null || this.#inversePublicDeletePending !== null || this.#inverseNativeGetLookupPending !== null || this.#inverseNativeGetLookupOriginal !== null) { throw new Error("FOOTPRINT_INVERSE_NATIVE_REFERENCE_PCB_PURPOSE"); }
-    if (command.phase === "inverse-native-reference-pcb-sender-invoke") {
-      if (this.#inverseNativeReferencePcbOriginal !== null) { throw new Error("FOOTPRINT_INVERSE_NATIVE_REFERENCE_PCB_ONCE"); }
-      this.#inverseNativeReferencePcbWritten = Promise.withResolvers<undefined>();
-      void (async (): Promise<void> => { try { await this.#inverseNativeReferencePcbWritten?.promise; } catch {
-        // Original request and exit settlement retain the failure.
-      } })();
-    }
-    const original = this.#request(currentFootprintInverseNativeReferencePcbSenderWire(command, this.#nextId, this.#sessionId), "inverse-native-reference-pcb-sender");
-    if (command.phase === "inverse-native-reference-pcb-sender-invoke") { this.#inverseNativeReferencePcbOriginal = original; }
+    const invoke = command.phase === "inverse-native-reference-pcb-sender-invoke";
+    if (invoke && this.#inverseNativeReferencePcbOriginal !== null) { throw new Error("FOOTPRINT_INVERSE_NATIVE_REFERENCE_PCB_ONCE"); }
+    const wire = currentFootprintInverseNativeReferencePcbSenderWire(command, this.#nextId, this.#sessionId);
+    if (!invoke) { return this.#request(wire, "inverse-native-reference-pcb-sender"); }
+    const written = Promise.withResolvers<undefined>();
+    this.#inverseNativeReferencePcbWritten = written;
+    const original = this.#request(wire, "inverse-native-reference-pcb-sender");
+    this.#inverseNativeReferencePcbOriginal = original;
+    retainOriginalWriteRejection(original, written);
     return original;
   }
 

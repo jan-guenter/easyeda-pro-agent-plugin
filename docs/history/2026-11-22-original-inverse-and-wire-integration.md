@@ -278,6 +278,14 @@ disposable database again matched the full initial bytes without SQLite
 sidecars or an explicit Save. The complete writer's connected copy and
 saved inverse remain pending.
 
+The next check can sample whether the same root-owned browser window
+processes one bounded `WM_NULL` message before cleanup. The existing
+window observation proves presence and ownership. A message response would
+show that the window thread is responsive while CDP is stalled. A timeout
+with the same window identity would show that the thread also failed to
+respond to the message.
+[Win32 window responsiveness check](https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-null)
+
 ## Compile-only Wire V6 composition
 
 The optional generator composed the early and late bounded native
@@ -310,3 +318,33 @@ The tail accepts another pause only after it validates that receipt.
 The owned upload's expected GET follows its successful history POST.
 The prefix stops if an unexpected original GET or HEAD appears before
 that boundary, where the later read continuation has no reservation.
+
+## Release candidate review corrections
+
+The Main runner now shares the initial-history custody code while keeping
+the legacy and V4 registration and baseline proofs tied to their own
+issuers. The delete runner tolerates unrelated DevTools frames with no
+function location and still requires the original expected caller's location.
+Exit cleanup joins the poll it observed at entry, even if that poll settles
+before the controller's other cleanup steps.
+
+The full inverse now returns a durable completion recovered by cleanup.
+A cold-UI request must match its source before it consumes that source.
+Inverse shutdown reports a failed publication settlement before joining
+work that depends on it. The owner settles its cold-helper arrival waits
+on a termination refusal, and native delete cleanup can observe exit after
+an earlier normal observation rejects.
+
+The V4 startup drain derives its ceiling from the eight-job cache budget.
+Selected work receives the preflight or invalidation failure on its original
+promise. The V4 structure observer requires the original inverse construction
+binding. The pipe associates inverse write acknowledgments with the exposed
+original request and settles pre-dispatch refusals without reporting a write.
+
+CI exposed a stale manager bundle and older fixtures for Main's V4 check,
+the inverse workflow's admission scans, the Wire dependency reader's Map
+descriptors, and the saved writer's synchronous allocation check. The full
+build regenerates the manager. The fixtures preserve their original production
+checks. These changes qualify lifecycle handling
+and offline contracts. Connected writer and saved-readback proofs remain
+pending.
