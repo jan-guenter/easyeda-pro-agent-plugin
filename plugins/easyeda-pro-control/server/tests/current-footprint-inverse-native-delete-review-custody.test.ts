@@ -8,6 +8,11 @@ import {
 } from "../src/current-footprint-inverse-native-delete-drain-protocol.ts";
 import type { CurrentFootprintInverseNativeDeleteDrainCommand as DrainCommand } from "../src/current-footprint-inverse-native-delete-drain-protocol.ts";
 import { CurrentFootprintInverseNativeDeleteDrainRequestQueue } from "../src/current-footprint-inverse-native-delete-drain-request-queue.ts";
+import { CurrentFootprintInverseNativeDeleteMainBeginCustody } from "../src/current-footprint-inverse-native-delete-main-begin-custody.ts";
+import type { CurrentFootprintInverseNativeDeleteMainBeginPause } from "../src/current-footprint-inverse-native-delete-main-begin-custody.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_BEGIN_CALLS as BEGIN_CALLS } from "../src/current-footprint-inverse-native-delete-main-begin-programs.ts";
+import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_BEGIN_SITES as BEGIN_SITES, currentFootprintInverseNativeDeleteMainBeginNativeCases } from "../src/current-footprint-inverse-native-delete-main-begin-protocol.ts";
+import type { CurrentFootprintInverseNativeDeleteMainBeginCall as BeginCall } from "../src/current-footprint-inverse-native-delete-main-begin-protocol.ts";
 import { CurrentFootprintInverseNativeDeleteMainReadCustody } from "../src/current-footprint-inverse-native-delete-main-read-custody.ts";
 import { CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_READS as READS } from "../src/current-footprint-inverse-native-delete-main-read-protocol.ts";
 import { CurrentFootprintInverseNativeDeleteWorkerRequestQueue } from "../src/current-footprint-inverse-native-delete-worker-request-queue.ts";
@@ -100,4 +105,114 @@ void test("Main successor refuses its driver resume until the original predecess
     saveAuthorized: false }, "history.request");
   await assert.rejects(history.request({ kind: "history", phase: "inverse-native-delete-main-read-driver-step",
     method: "Debugger.resume", params: {} }, false), /COMPLETED_READ/u);
+});
+
+const beginCases = currentFootprintInverseNativeDeleteMainBeginNativeCases();
+const beginRoles = ["save", "transaction", "run", "callback", "returned"] as const;
+const beginScript = "via_script";
+const beginResult = {
+  schema: "private.current-footprint-inverse-native-delete-main-begin-result.v1", originalNativeCallbackSucceeded: true,
+  originalBeginAwaitCompleted: true, transactionDepth: 1, historySqlCompleted: false, furtherSelectedSqlAuthorized: false,
+  persistenceVerified: false,
+};
+function beginFrame(functionName: string, lineNumber: number, columnNumber: number, functionLine: number, functionColumn: number): object {
+  return { callFrameId: "via_frame", functionName, location: { scriptId: beginScript, lineNumber, columnNumber },
+    functionLocation: { scriptId: beginScript, lineNumber: functionLine, columnNumber: functionColumn } };
+}
+function beginPause(role: BeginCall, breakpointId = `${role}.point`): CurrentFootprintInverseNativeDeleteMainBeginPause {
+  const site = role === "run" ? null : BEGIN_SITES[role];
+  const callFrames = site === null ? [
+    beginFrame("", 1025, 875, 1025, 859), beginFrame("begin", 1025, 2186, 1025, 2040),
+    beginFrame("inTransaction", 1025, 2529, 1025, 2514),
+  ] : [beginFrame(site.name, site.lineNumber, site.columnNumber, site.functionLine, site.functionColumn)];
+  return { identity: {}, frameId: "via_frame", sqlSite: role === "run" ? "run" : null,
+    raw: { reason: "other", hitBreakpoints: [breakpointId], callFrames }, pendingEvents: 0, resumed: false, resumeAttempted: false };
+}
+function beginArray(objectId: string, length: number): object {
+  return { result: { type: "object", subtype: "array", className: "Array", description: `Array(${String(length)})`, objectId } };
+}
+
+async function retainedBeginReturn(): Promise<Readonly<{
+  custody: CurrentFootprintInverseNativeDeleteMainBeginCustody;
+  points: ReadonlySet<string>;
+  remove: (role: "callback" | "returned") => Promise<unknown>;
+  setReturnedPoint: (point: string) => void;
+}>> {
+  const origin = { profile: "private.current-footprint-inverse-native-delete-main-request-origin.v1" } as const;
+  const points = new Set<string>();
+  let held = beginPause("save"), next = 0;
+  const custody = new CurrentFootprintInverseNativeDeleteMainBeginCustody({
+    origin, scriptId: beginScript, captureObjectId: "begin.capture", assertCurrent: noOperation,
+    actorSql: (): Readonly<{ actorObjectId: string; sqlObjectId: string; dataStr: string }> =>
+      ({ actorObjectId: "actor.object", sqlObjectId: "sql.object", dataStr: "fixture" }),
+    pause: (): CurrentFootprintInverseNativeDeleteMainBeginPause => held,
+    pendingRequestId: (): number => 7, busy: (): boolean => true,
+    registerPoint: (id): void => { points.add(id); },
+    pointCurrent: (id): boolean => points.has(id),
+    removePoint: (id): void => { assert.equal(points.delete(id), true); },
+    resume: (identity, command): Promise<unknown> => {
+      assert.equal(held.identity, identity);
+      held = { ...held, resumeAttempted: true };
+      assert.equal(custody.consume(command, 7).origin, origin);
+      const role = beginRoles[next];
+      assert.ok(role !== undefined);
+      next += 1;
+      held = beginPause(role);
+      return Promise.resolve({});
+    },
+    send: (command, cleanup): Promise<unknown> => {
+      if (command.phase === "inverse-native-delete-main-begin-arm") {
+        return Promise.resolve({ breakpointId: `${command.role}.point`, actualLocation: command.params.location });
+      }
+      if (command.phase === "inverse-native-delete-main-begin-frame") {
+        return Promise.resolve(beginArray(`frame.${command.role}`, { save: 4, transaction: 2, run: 7, callback: 8, returned: 2 }[command.role]));
+      }
+      if (command.phase === "inverse-native-delete-main-begin-join") {
+        return Promise.resolve(command.role === "returned" ? { result: { type: "object", value: beginResult } } :
+          beginArray(`packet.${command.role}`, BEGIN_CALLS[command.role].length));
+      }
+      assert.equal(command.phase, "inverse-native-delete-main-begin-remove");
+      assert.equal(cleanup, true);
+      return Promise.resolve({});
+    },
+  });
+  for (const command of beginCases) {
+    if (command.phase === "inverse-native-delete-main-begin-arm") { await custody.request(command, false); }
+  }
+  const steps = beginCases.filter(command => command.phase === "inverse-native-delete-main-begin-step");
+  const args = {
+    save: ["actor.object", "sql.object"], transaction: ["packet.save"], run: ["begin.capture", "packet.transaction"],
+    callback: ["packet.run"], returned: ["packet.callback"],
+  };
+  for (const [index, role] of beginRoles.entries()) {
+    const step = steps[index];
+    const frame = beginCases.find(command => command.phase === "inverse-native-delete-main-begin-frame" && command.role === role);
+    const join = beginCases.find(command => command.phase === "inverse-native-delete-main-begin-join" && command.role === role);
+    assert.ok(step !== undefined && frame !== undefined && join?.phase === "inverse-native-delete-main-begin-join");
+    await custody.request(step, false);
+    await custody.request(frame, false);
+    await custody.request({ ...join, params: { ...join.params, objectId: `frame.${role}`, arguments: args[role].map(objectId => ({ objectId })) } }, false);
+  }
+  return { custody, points, remove: (role): Promise<unknown> => custody.request({
+    phase: "inverse-native-delete-main-begin-remove", role, method: "Debugger.removeBreakpoint", params: { breakpointId: `${role}.point` },
+  }, true), setReturnedPoint: (point): void => { held = { ...held, raw: beginPause("returned", point).raw }; } };
+}
+
+void test("BEGIN reads and hands off its original held return after removing the returned breakpoint", async () => {
+  const original = await retainedBeginReturn();
+  const result = original.custody.result();
+  await original.remove("returned");
+  assert.equal(original.points.has("returned.point"), false);
+  original.setReturnedPoint("different.point");
+  assert.throws(() => original.custody.result(), /ORIGINAL_SOURCE_PAUSE/u);
+  original.setReturnedPoint("returned.point");
+  assert.equal(original.custody.result(), result);
+  assert.equal(original.custody.consumeHistoryHandoff().callbackBreakpointId, "callback.point");
+
+  const removedCallback = await retainedBeginReturn();
+  await removedCallback.remove("returned");
+  await removedCallback.remove("callback");
+  assert.equal(removedCallback.points.has("callback.point"), false);
+  assert.deepEqual(removedCallback.custody.result(), beginResult);
+  assert.throws(() => removedCallback.custody.consumeHistoryHandoff(), /ORIGINAL_CALLBACK_POINT/u);
 });

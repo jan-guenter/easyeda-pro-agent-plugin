@@ -2973,7 +2973,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #handleFootprintInverseNativeDeleteMainTail(pending:Promise<unknown>):Promise<void>{try{await pending;}catch(error){this.#fail(error);}}
   async #prepareFootprintInverseNativeDeleteMainTail(source:CurrentFootprintInverseNativeDeleteMainSource,original:CurrentFootprintInverseNativeDeleteMainSourceOriginal):Promise<void>{
     this.requireFootprintInverseNativeDeleteMainRequestArmed(source);need(this.#selectedRequestReader instanceof CurrentFootprintInverseV4SelectedMainRequestReader,"INVERSE_DELETE_MAIN_TAIL_WARM_READER");this.#selectedRequestReader.requireOriginalWarmFetchBinding();const preflight=this.preflightFootprintInverseNativeDeleteMainTail(source);
-    const script=this.#appScriptId,sql=this.#sqlCapture,origin=this.#deleteMainOrigin;const driver=[...this.#sqlBreakpoints].find(([,site])=>site==="driver")?.[0];
+    const origin=this.#deleteMainOrigin,script=this.#appScriptId,sql=this.#sqlCapture;const driver=[...this.#sqlBreakpoints].find(([,site])=>site==="driver")?.[0];
     need(script!==null&&sql!==null&&origin!==null&&driver!==undefined&&this.#deleteMain!==null,"INVERSE_DELETE_MAIN_TAIL_ORIGINAL_DEPENDENCIES");
     const same=():void=>{need(this.#deleteMainSource===source&&this.#deleteMainOriginal===original&&this.#deleteMainOrigin===origin&&!this.#deleteMainEnded&&!this.#deleteMainTailEnded&&this.#appScriptId===script&&this.#sqlCapture===sql&&this.#sqlBreakpoints.get(driver)==="driver","INVERSE_DELETE_MAIN_TAIL_CHANGED");original.assertCurrent();this.#same(false);};
     const send=async(command:CurrentFootprintInverseNativeDeleteMainReadCommand,cleanup:boolean):Promise<unknown>=>{

@@ -36,6 +36,7 @@ export class CurrentFootprintInverseNativeDeleteMainBeginCustody {
   readonly #points = new Map<Role, string>(); readonly #frames = new Map<Call, string>(); readonly #packets = new Map<Call, string>();
   readonly #rawFrames = new Set<Call>(); readonly #frameAttempts = new Set<Call>(); readonly #joinAttempts = new Set<Call>();
   #transferred = false; #callbackLoan: CurrentFootprintInverseNativeDeleteMainCallbackLoan | null = null; #callbackLoanConsumed = false;
+  #returnedBreakpointId: string | null = null;
   #normal = 0; #cleanup = 0; #step = 0; #failed = false;
   #actor: ReturnType<CurrentFootprintInverseNativeDeleteMainBeginHost["actorSql"]> | null = null;
   #pending: Readonly<{ pause: object; role: typeof STEPS[number]; dataStr: string }> | null = null;
@@ -48,7 +49,7 @@ export class CurrentFootprintInverseNativeDeleteMainBeginCustody {
     const held = this.#host.pause(); const raw = pauseValue.parse(captureCurrentPcbStringClockReply(held.raw).value); const first = raw.callFrames[0];
     need(first !== undefined && held.pendingEvents === 0 && !held.resumed && !held.resumeAttempted && first.callFrameId === held.frameId && first.location.scriptId === this.#host.scriptId, "LIVE_DELIVERED_PAUSE");
     if (role === "run") { need(held.sqlSite === "run" && first.functionName === "" && raw.callFrames.some(item => item.functionName === "begin" && item.functionLocation.scriptId === this.#host.scriptId && item.functionLocation.lineNumber === 1025 && item.functionLocation.columnNumber === 2040) && raw.callFrames.some(item => item.functionName === "inTransaction" && item.functionLocation.scriptId === this.#host.scriptId && item.functionLocation.lineNumber === 1025 && item.functionLocation.columnNumber === 2514) && first.location.lineNumber === 1025 && first.location.columnNumber === 875 && first.functionLocation.scriptId === this.#host.scriptId && first.functionLocation.lineNumber === 1025 && first.functionLocation.columnNumber === 859, "ORIGINAL_RAW_RUN"); }
-    else { const site = SITES[role]; need(held.sqlSite === null && raw.hitBreakpoints[0] === this.#points.get(role) && first.functionName === site.name && first.location.lineNumber === site.lineNumber && first.location.columnNumber === site.columnNumber && first.functionLocation.scriptId === this.#host.scriptId && first.functionLocation.lineNumber === site.functionLine && first.functionLocation.columnNumber === site.functionColumn, "ORIGINAL_SOURCE_PAUSE"); }
+    else { const site = SITES[role]; const breakpointId = role === "returned" ? this.#returnedBreakpointId : this.#points.get(role); need(held.sqlSite === null && raw.hitBreakpoints[0] === breakpointId && first.functionName === site.name && first.location.lineNumber === site.lineNumber && first.location.columnNumber === site.columnNumber && first.functionLocation.scriptId === this.#host.scriptId && first.functionLocation.lineNumber === site.functionLine && first.functionLocation.columnNumber === site.functionColumn, "ORIGINAL_SOURCE_PAUSE"); }
     return held;
   }
   /** Consume each frame attempt before awaiting transport, retain its exact
@@ -73,7 +74,10 @@ export class CurrentFootprintInverseNativeDeleteMainBeginCustody {
         need(canonicalJson(command.params.arguments.map(item => item.objectId)) === canonicalJson(expected), "ORIGINAL_ARGUMENTS"); this.#joinAttempts.add(command.role);
       } else { need(this.#points.get(command.role) === command.params.breakpointId, "ORIGINAL_POINT"); }
       const reply = await this.#host.send(command, cleanup); this.#same();
-      if (command.phase === "inverse-native-delete-main-begin-arm") { const result = z.strictObject({ breakpointId: handle, actualLocation: point }).parse(reply); need(![...this.#points.values()].includes(result.breakpointId) && canonicalJson(result.actualLocation) === canonicalJson(command.params.location), "ARM_REPLY"); this.#host.registerPoint(result.breakpointId, result.actualLocation); this.#points.set(command.role, result.breakpointId); }
+      if (command.phase === "inverse-native-delete-main-begin-arm") { const result = z.strictObject({ breakpointId: handle, actualLocation: point }).parse(reply); need(![...this.#points.values()].includes(result.breakpointId) && canonicalJson(result.actualLocation) === canonicalJson(command.params.location), "ARM_REPLY"); this.#host.registerPoint(result.breakpointId, result.actualLocation); this.#points.set(command.role, result.breakpointId);
+        // A delivered return pause retains its hit ID even after the installed point is removed.
+        if (command.role === "returned") { this.#returnedBreakpointId = result.breakpointId; }
+      }
       else if (command.phase === "inverse-native-delete-main-begin-frame" || command.phase === "inverse-native-delete-main-begin-raw-frame") { const length = { save: 4, transaction: 2, run: 7, callback: 8, returned: 2 }[command.role] - (command.phase === "inverse-native-delete-main-begin-raw-frame" ? 1 : 0); this.#frames.set(command.role, decodeArray(reply, length)); }
       else if (command.phase === "inverse-native-delete-main-begin-join" || command.phase === "inverse-native-delete-main-begin-rebase" || command.phase === "inverse-native-delete-main-begin-bookkeeping") { if (command.role === "returned") { this.#result = Object.freeze(resultReply.parse(reply).result.value); } else { this.#packets.set(command.role, decodeArray(reply, CALLS[command.role].length)); } }
       else if (command.phase === "inverse-native-delete-main-begin-remove") { z.strictObject({}).parse(reply); this.#host.removePoint(command.params.breakpointId); this.#points.delete(command.role); }

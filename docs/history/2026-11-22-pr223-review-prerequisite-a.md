@@ -48,10 +48,38 @@ native owner, marketplace publication or installation occurred.
 
 ## Review repairs
 
-The inverse TypeScript changes make the final drain settlement fail once
-the original allowance is consumed, snapshot local cursor bindings,
-preserve original errors, and retain helper and Main cleanup custody.
-The author tested 13 focused inverse cases under the pinned toolchain.
+On 2026-11-22, the inverse DELETE TypeScript repairs were tested at
+`e3fa2fac4d9f4112f66b074372af375d3815ca35`. The published cherry-pick has the
+same source tree. The repairs fail final drain settlement when the original
+allowance is consumed, snapshot local cursor bindings, preserve original
+errors, and retain helper and Main cleanup custody.
+[Published inverse repair](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/11cef08c1f3a0691d22ee1aafdd9c7078350f535).
+
+The focused run passed 13 cases with zero skips on Linux x86-64 and Node
+24.18.0. It exercised the new cursor and custody regressions alongside the
+existing support and Main baseline cases. Scoped TypeScript and type-aware
+lint checks passed.
+[Cursor regressions](../../plugins/easyeda-pro-control/server/tests/current-footprint-inverse-native-delete-review-cursors.test.ts),
+[custody regressions](../../plugins/easyeda-pro-control/server/tests/current-footprint-inverse-native-delete-review-custody.test.ts).
+
+Reproduce the focused run from `plugins/easyeda-pro-control` with the pinned
+toolchain.
+
+```bash
+ulimit -c 0
+node --import ./scripts/test-isolation.ts --test --test-reporter=tap \
+  server/tests/current-footprint-inverse-native-delete-review-{cursors,custody}.test.ts \
+  server/tests/current-footprint-support-review.test.ts \
+  server/tests/current-footprint-inverse-native-delete-main-baseline.test.ts
+```
+
+The second review exposed a cleanup-order regression in the BEGIN return
+pause. The repair retains the original hit ID after removal so result reads
+and history handoff can still prove the same paused frame. The focused
+custody case exercised successful cleanup, a different hit ID, and a removed
+callback point. It passed with the pinned Node runtime, strict TypeScript,
+and type-aware lint.
+[Returned pause repair](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/273439f2e364d8c20c78818487521ed749d32e60).
 
 The Wire follow-up checks the original Map descriptor roster, retains
 acknowledged callback breakpoint IDs, and replaces title placeholders in
@@ -59,6 +87,8 @@ one pass. It also fixes cleanup sequencing and makes the negative
 assertions isolate their intended input. Focused Wire checks and the
 independent managed title-encoder smoke passed. The longer action and tick
 runs on this follow-up reached their local time limits.
+[Wire repair](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/64b0dddd45f69fd453fd3f0b19e848be3d87fa54),
+[breakpoint roster follow-up](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/10ddebdef16ede4016247dcfae2b7e73af20cbff).
 
 The initial CodeRabbit review marked three V4 artifacts too large to
 process. An independent audit compared the authored receive-bound change

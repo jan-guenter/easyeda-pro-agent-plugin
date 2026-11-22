@@ -171,3 +171,95 @@ original baseline with no SQLite sidecars. The two tests place the
 remaining connected blocker at the attached renderer round trip. The
 forward copy, saved inverse and independent cold UI receipts require a
 later connected result through that exact boundary.
+
+## Complete-writer transport and terminal cleanup amendment — 2026-11-22
+
+A separate donor based on c4d48c14 ports the reviewed canonical transport
+corrections into only the unshipped seven-role complete-writer output. The
+pinned shared owner and all six historical writer roles remain byte-exact.
+No persisted result, public recovery policy, request budget or source cap changes.
+
+Exact complete-only transformations retain the original socket-write exception
+and sticky first failure, bound TCP-table fetches to three size-checked attempts,
+and retain successful original Main release before later handle closes. The
+same private positive terminal fact lets the original RetainUntilClosed loop
+finish remaining closes after root handles have closed. It grants no second
+public release and accepts no serialized retry/owner receipt.
+
+The complete driver rejects remaining unbound arguments and drains an oversized
+frame with a bounded 32,768-unit buffer inside the request catch. It refuses the
+whole frame and continues original identity/cleanup service. Its intentionally
+removed visual classification stays removed; no missing-action window branch
+is added. The fixed no-app cancellation smoke may close only its own read end,
+then joins its original foreground writer before closing the write end.
+Production write-pipe custody is unchanged.
+
+The maintained complete generator and exact check passed. Three focused
+graph/capture/transport cases passed with zero skips, including every original
+six-role file comparison and complete generated-file equality. Scoped strict
+lint passed. An exact Windows PowerShell5.1/C#5 in-memory compile used warning
+level4 and warnings as errors, with zero diagnostics and no owner initialization.
+
+Final compiler: 1,449,542 bytes, SHA-256 `9a031c0e89e4faab10588a33f59d3181ec0be12402c3aa86ffa3272f9c30bb42`.
+Generated role pins retain these current changed outputs:
+
+- driver: 106,297 bytes, SHA-256 `84e042faf77a335f483fcdaf0bb78d0dfc121fce02141cc087abec40682556d5`.
+- core: 1,012,437 bytes, SHA-256 `38d2b51f4b10f26811ad8b0b6329e01131f24567ce5c3b8af43941d1a2e76e05`.
+
+Actual extracted socket/TCP/release methods ran against inert managed doubles;
+the original terminal loop completed a later-close failure with exactly one
+Main release. The actual anonymous-pipe smoke and a deliberately failed native
+cancellation joined the original writer before disposal. PS5 StrictMode fixtures
+ran the complete driver's real entry/loop against an inert owner: unbound args
+refused; oversized and malformed frames retained fixed errors; the following
+identity command completed on the same loop. The first framing fixture lacked
+its fake admission method; that setup failure and original errors are preserved
+privately, then the corrected framing fixture passed. No production owner,
+application launch, SDK effect, user setting or connected proof was involved.
+
+The compiler temporary directory was removed after its original process exited.
+The parent integration must rebuild its runtime bundles and refresh only allowed
+compatibility projections from the combined source before release. Existing
+connected frame-round-trip and full saved-result omissions above remain open.
+
+## Renderer-only comparison
+
+The Visual209 Start Page diagnostic ran against the same installed EasyEDA Pro build from
+`1bb60703d8f0b1cab319a337d93b53852127f683`. The original browser returned
+Chrome 146.0.7680.188, one unattached editor page and three worker
+targets. Attaching to the editor returned a frame tree with the Start
+Page root and its `about:blank` child. The same installation's complete
+writer had acknowledged the first attached renderer request without a
+renderer reply. The comparison narrows the next investigation to the
+combined launch, Main startup and renderer attachment sequence. The
+frame result grants no project mutation or saved-state claim.
+
+Both profiles encode the same flattened attachment, Page request and
+renderer pipe read. The complete helper writes the whole request through
+its bounded Windows worker and waits for that worker to exit. It also
+starts the Main inspector, installs the selected SQL fence and services
+that original Main transport between renderer polls. Main registration
+observed the original resumed event before browser discovery. The next
+connected check can distinguish a later shared transport stall from an
+attached renderer that has yet to service requests by observing one
+browser-level reply after attachment and before the first Page request.
+
+The Visual209 owner acknowledged normal close, proved the original root
+had exited and its Job was empty, and released its retained helper. The
+facade acknowledged lease release and exited with code zero. The
+disposable project stayed unopened and matched its full original
+database bytes with no SQLite sidecars.
+
+Diagnostic target summaries omit query strings and fragments from local
+file URLs. The same owner continues to use the original target values
+internally when checking identity.
+
+## Compile-only Wire V6 composition
+
+The optional generator composed the early and late bounded native
+dispatchers against the V5 helper corrected in the prerequisite review.
+V5 still reproduced byte-for-byte. V6 generated and reproduced a
+1,736,023-byte PowerShell helper and its identity. The early and late
+dispatchers passed inert compiler and framing checks. Selecting V6,
+joining the original owner and worker, and proving Save and cold
+readback remain separate implementation and connected validation work.

@@ -4,8 +4,8 @@ Set-StrictMode -Version Latest
 [Console]::OutputEncoding=New-Object Text.UTF8Encoding($false)
 if ($args.Count -ne 0 -or [Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT -or [IntPtr]::Size -ne 8 -or $PSVersionTable.PSVersion.Major -ne 5 -or $PSVersionTable.PSVersion.Minor -ne 1) {throw 'forward-writer-smoke-platform'}
 $specs=@(
-  @{role='driver';path='scripts/footprint-forward-writer-complete/owner.ps1';bytes=106154;maximum=131072;sha256='33376331245d26d10b6f1613bb3d6c382915799f7ba0ca26230043846490db7a'},
-  @{role='core';path='scripts/footprint-forward-writer-complete/native-core.cs';bytes=1011496;maximum=1048576;sha256='a4d5bfba64dbe072bec6f8ffcea6c669cefda320847a637623ac01b36ceea3b2'},
+  @{role='driver';path='scripts/footprint-forward-writer-complete/owner.ps1';bytes=106297;maximum=131072;sha256='84e042faf77a335f483fcdaf0bb78d0dfc121fce02141cc087abec40682556d5'},
+  @{role='core';path='scripts/footprint-forward-writer-complete/native-core.cs';bytes=1012437;maximum=1048576;sha256='38d2b51f4b10f26811ad8b0b6329e01131f24567ce5c3b8af43941d1a2e76e05'},
   @{role='phase';path='scripts/footprint-forward-writer-complete/native-phase.cs';bytes=63658;maximum=65536;sha256='25334438f10d785eb01757c09ee90a87af11d505462244177a3f23e1e0020203'},
   @{role='producer';path='scripts/footprint-forward-writer-complete/native-producer.cs';bytes=61898;maximum=65536;sha256='ddacf516e2faa1eea21ce7492998ad3516a418279ef3b016a0a93a4fb9a6657e'},
   @{role='startup';path='scripts/footprint-forward-writer-complete/native-startup.cs';bytes=128506;maximum=131072;sha256='250d49cda01de2ed2be5efdfcc86c2d84e1bc7ab187b5bb589cb4e6c0aca737a'},
@@ -30,7 +30,7 @@ try {
     if ($digest -cne $spec.sha256) {throw 'forward-writer-smoke-hash'}
     $buffers.Add($bytes);$aggregate+=$bytes.Length
   }
-  if ($aggregate -ne 1554750 -or $aggregate -gt 1572864) {throw 'forward-writer-smoke-aggregate'}
+  if ($aggregate -ne 1555834 -or $aggregate -gt 1572864) {throw 'forward-writer-smoke-aggregate'}
   $forwardWriterCoreBytes=$buffers[1];$forwardWriterPhaseBytes=$buffers[2]
   $forwardWriterProducerBytes=$buffers[3];$forwardWriterStartupBytes=$buffers[4];$forwardWriterSyncBytes=$buffers[5];$forwardWriterTailBytes=$buffers[6]
   $decoder=New-Object Text.UTF8Encoding($false,$true)

@@ -40,3 +40,32 @@ void test("complete graph captures all original files and rejects malformed nati
   }else{await assert.rejects(captureCurrentFootprintForwardWriterCompleteNativeGraph(distribution,"a".repeat(32)));}
  }
 });
+
+void test("complete-only transport repairs retain first failure and original terminal cleanup",async()=>{
+ const source=await readFile(new URL(`../../${CURRENT_NATIVE_BASELINE.relativePath}`,import.meta.url),"utf8");assertCurrentNativeBaseline(source);
+ const complete=currentFootprintForwardWriterCompleteNativeOutputs(source),legacy=currentFootprintForwardWriterNativeOutputs(source);
+ const core=complete.find(row=>row.role==="core")?.source,driver=complete.find(row=>row.role==="driver")?.source;
+ assert.ok(core!==undefined&&driver!==undefined);
+ const write=core.slice(core.indexOf("void WriteAll("),core.indexOf("void WriteFrame("));
+ assert.match(write,/catch\{Fail\("socket-write"\);throw;\}/u);
+ const tcp=core.slice(core.indexOf("static TcpRow[] TcpRows()"),core.indexOf("internal static void CompareRows("));
+ assert.match(tcp,/attempt<3/u);assert.match(tcp,/size>capacity&&size<=4\+65536U\*24&&attempt<2/u);
+ assert.match(tcp,/finally\{System.Runtime.InteropServices.Marshal.FreeHGlobal\(memory\);\}/u);
+ const release=core.slice(core.indexOf("  public void ReleaseClosed()"),core.indexOf("// BEGIN FORWARD WRITER BOUNDED PIPE"));
+ assert.match(release,/originalMain.Release\(\);originalMainReleaseObserved=true;/u);
+ assert.match(release,/if\(originalMainReleaseObserved&&launchAttempted&&creationPhase==CreationPhase.RootRetained\|\|Terminated\(\)\)/u);
+ const smoke=core.slice(core.indexOf("}finally{if(pending!=null)pending.CancelAtDeadline()"));
+ assert.ok(smoke.indexOf("smoke-unblock-read")<smoke.indexOf("while(pending!=null&&!pending.TryDisposeExited())"));
+ assert.ok(smoke.indexOf("while(pending!=null&&!pending.TryDisposeExited())")<smoke.indexOf("bool writeClosed=CloseHandle(write)"));
+ const loop=driver.slice(driver.indexOf("  while (-not $release)"));
+ assert.ok(loop.indexOf("$request=$null")<loop.indexOf("try {"));
+ assert.ok(loop.indexOf("try {")<loop.indexOf("$line=New-Object Text.StringBuilder"));
+ assert.ok(loop.indexOf("if ($oversized) {throw 'pcb-diagnostic-request-size'}")<loop.indexOf("ConvertFrom-Json"));
+ assert.match(loop,/if \(\$line.Length -ge 32768\) \{\$oversized=\$true\}/u);
+ assert.match(driver.split("\n")[1]??"",/@\(\$args\).Count -ne 0/u);
+ const oldCore=legacy.find(row=>row.role==="core")?.source,oldDriver=legacy.find(row=>row.role==="driver")?.source;
+ assert.ok(oldCore!==undefined&&oldDriver!==undefined);
+ assert.equal(oldCore.includes('catch{Fail("socket-write");throw;}'),false);
+ assert.equal(oldCore.includes("originalMainReleaseObserved"),false);
+ assert.equal(oldDriver.includes("$oversized=$false"),false);
+});

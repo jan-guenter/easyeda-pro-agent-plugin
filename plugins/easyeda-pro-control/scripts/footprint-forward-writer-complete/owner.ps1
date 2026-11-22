@@ -1,5 +1,5 @@
 param([switch]$CompileOnly,[switch]$WorkerStartupFootprintForwardWriterComplete209,[string]$CombinedReadyChallenge)
-if (-not $WorkerStartupFootprintForwardWriterComplete209) {throw 'forward-graph-purpose-required'}
+if (@($args).Count -ne 0 -or -not $WorkerStartupFootprintForwardWriterComplete209) {throw 'forward-graph-purpose-required'}
 $StringPrecreate=[System.Management.Automation.SwitchParameter]$false
 $WorkerStartup=[System.Management.Automation.SwitchParameter]$false
 $Layers209=[System.Management.Automation.SwitchParameter]$false
@@ -47,7 +47,7 @@ $startupPurpose=$footprintMainPurpose -or $WorkerStartup -or $WorkerStartup209 -
 # Electron requests Browser::Quit on pipe disconnect. Never dispose live pipes,
 # including after malformed requests, stdin EOF or an abandoned facade.
 $footprintCopyWorkerHandleFields=@('scriptId','objectId','arg0ObjectId','arg1ObjectId','arg2ObjectId','arg3ObjectId','arg4ObjectId','arg5ObjectId','arg6ObjectId','arg7ObjectId')
-if($forwardWriterCoreBytes -isnot [byte[]] -or $forwardWriterCoreBytes.Length -ne 1011496){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterCoreBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne 'a4d5bfba64dbe072bec6f8ffcea6c669cefda320847a637623ac01b36ceea3b2'){throw 'forward-complete-role-hash'};
+if($forwardWriterCoreBytes -isnot [byte[]] -or $forwardWriterCoreBytes.Length -ne 1012437){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterCoreBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '38d2b51f4b10f26811ad8b0b6329e01131f24567ce5c3b8af43941d1a2e76e05'){throw 'forward-complete-role-hash'};
 if($forwardWriterPhaseBytes -isnot [byte[]] -or $forwardWriterPhaseBytes.Length -ne 63658){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterPhaseBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '25334438f10d785eb01757c09ee90a87af11d505462244177a3f23e1e0020203'){throw 'forward-complete-role-hash'};
 if($forwardWriterProducerBytes -isnot [byte[]] -or $forwardWriterProducerBytes.Length -ne 61898){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterProducerBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne 'ddacf516e2faa1eea21ce7492998ad3516a418279ef3b016a0a93a4fb9a6657e'){throw 'forward-complete-role-hash'};
 if($forwardWriterStartupBytes -isnot [byte[]] -or $forwardWriterStartupBytes.Length -ne 128506){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterStartupBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '250d49cda01de2ed2be5efdfcc86c2d84e1bc7ab187b5bb589cb4e6c0aca737a'){throw 'forward-complete-role-hash'};
@@ -55,7 +55,7 @@ if($forwardWriterSyncBytes -isnot [byte[]] -or $forwardWriterSyncBytes.Length -n
 if($forwardWriterTailBytes -isnot [byte[]] -or $forwardWriterTailBytes.Length -ne 124416){throw 'forward-complete-role-size'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($forwardWriterTailBytes))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne 'd3cde0d504d14f7f0d5e46ecb2902c5310077b586a82c50852f31861103988d2'){throw 'forward-complete-role-hash'};
 $graphDecoder=[Text.Encoding]::GetEncoding(20127,[Text.EncoderFallback]::ExceptionFallback,[Text.DecoderFallback]::ExceptionFallback)
 $graphNative=$graphDecoder.GetString($forwardWriterCoreBytes)+"`n"+$graphDecoder.GetString($forwardWriterPhaseBytes)+"`n"+$graphDecoder.GetString($forwardWriterProducerBytes)+"`n"+$graphDecoder.GetString($forwardWriterStartupBytes)+"`n"+$graphDecoder.GetString($forwardWriterSyncBytes)+"`n"+$graphDecoder.GetString($forwardWriterTailBytes)
-if([Text.Encoding]::UTF8.GetByteCount($graphNative) -ne 1448601 -or [Text.Encoding]::UTF8.GetByteCount($graphNative) -gt 1507328){throw 'forward-complete-compiled-size'}
+if([Text.Encoding]::UTF8.GetByteCount($graphNative) -ne 1449542 -or [Text.Encoding]::UTF8.GetByteCount($graphNative) -gt 1507328){throw 'forward-complete-compiled-size'}
 Add-Type -TypeDefinition $graphNative
 $owner=[EasyedaDiagnosticOwner]::CreateFootprintForwardWriterComplete209()
 $startupRequestLimit=[EasyedaFootprintForwardExecutionLimits]::Requests
@@ -92,17 +92,20 @@ try {
   $launched=$false
   $release=$false
   while (-not $release) {
-    # Bound before JSON parsing or unbounded ReadLine allocation.
-    $line=New-Object Text.StringBuilder
-    while ($true) {
-      $character=[Console]::Read()
-      if ($character -lt 0) {return}
-      if ($character -eq 10) {break}
-      if ($line.Length -ge 32768) {throw 'pcb-diagnostic-request-size'}
-      [void]$line.Append([char]$character)
-    }
     $id=$null
+    $request=$null
     try {
+      # Drain a refused frame with a bounded buffer; never parse its prefix.
+      $line=New-Object Text.StringBuilder
+      $oversized=$false
+      while ($true) {
+        $character=[Console]::Read()
+        if ($character -lt 0) {return}
+        if ($character -eq 10) {break}
+        if ($line.Length -ge 32768) {$oversized=$true}
+        else {[void]$line.Append([char]$character)}
+      }
+      if ($oversized) {throw 'pcb-diagnostic-request-size'}
       $request=$line.ToString() | ConvertFrom-Json
       $largeV2Request=@('footprint-copy-clock-registration-v2','footprint-clock-rpc-v2-send','footprint-forward-cold-send') -ccontains $request.action
       $largeForwardBody=(@('footprint-forward-initial-cache-send','footprint-forward-initial-sync-send') -ccontains $request.action) -and (@($request.PSObject.Properties.Name) -ccontains 'body') -and $request.body -is [string]
