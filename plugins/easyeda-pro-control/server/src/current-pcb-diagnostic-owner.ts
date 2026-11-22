@@ -1590,6 +1590,7 @@ import {currentSchematicWireWriterV5NativeRequest,decodeCurrentSchematicWireWrit
 import {CurrentSchematicWireParserServiceCoordinator} from "./current-schematic-wire-parser-service-coordinator.ts";
 import type {CurrentSchematicWireParserServiceData} from "./current-schematic-wire-parser-service-coordinator.ts";
 import { CurrentSchematicWireEncoderBeforeGraphCursor } from "./current-schematic-wire-encoder-before-graph.ts";
+import type { CurrentSchematicWireEncoderBeforeGraphTransport } from "./current-schematic-wire-encoder-before-graph.ts";
 import { requireOriginalCurrentSchematicWireEditPlan } from "./current-schematic-wire-edit-plan.ts";
 import type { CurrentSchematicWireEditPlan } from "./current-schematic-wire-edit-plan.ts";
 import { qualifyCurrentSchematicWireEncoderSource } from "./current-schematic-wire-encoder-source.ts";
@@ -2142,7 +2143,19 @@ const wireV5EncoderBeforeGraphs = new WeakMap<object, Readonly<{
   plan: CurrentSchematicWireEditPlan;
   cursor: CurrentSchematicWireEncoderBeforeGraphCursor;
   current: () => void;
+  prepareTransport: () => CurrentSchematicWireEncoderBeforeGraphTransport;
 }>>();
+/** Enroll only the original late binder in its original pipe. The packaged
+ * V5 writer has no encoder action and cannot forward this reservation. */
+export function requireOriginalCurrentSchematicWireV5EncoderBeforeGraphTransport(
+  owner: CurrentSchematicWireWriterV5Owner, plan: CurrentSchematicWireEditPlan, cursor: CurrentSchematicWireEncoderBeforeGraphCursor,
+): CurrentSchematicWireEncoderBeforeGraphTransport {
+  assertOriginalCurrentSchematicWireWriterV5Owner(owner);
+  const original = wireV5EncoderBeforeGraphs.get(owner);
+  if (original === undefined || original.plan !== plan || original.cursor !== cursor) { throw error("WIRE_V5_ENCODER_ORIGINAL_CURSOR"); }
+  original.current();
+  return original.prepareTransport();
+}
 /** Join the existing title source read to the encoder checkpoint without
  * issuing any request or claiming the encoder's native peer lane. */
 export function requireOriginalCurrentSchematicWireV5EncoderSource(
@@ -5554,7 +5567,28 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
         }
       },
     });
-    wireV5EncoderBeforeGraphs.set(this, Object.freeze({ plan, cursor, current }));
+    let transport: CurrentSchematicWireEncoderBeforeGraphTransport | null = null;
+    const prepareTransport = (): CurrentSchematicWireEncoderBeforeGraphTransport => {
+      current();
+      if (transport !== null) { return transport; }
+      const encoderSource = title.encoderSource;
+      if (encoderSource === null || this.#busy || title.inflight) { throw error("WIRE_V5_ENCODER_ORIGINAL_TRANSPORT"); }
+      const realm = selected.context.schematicWireGlobalsContext();
+      const same = (): void => {
+        current();
+        const actual = selected.context.schematicWireGlobalsContext();
+        if (actual.sessionId !== realm.sessionId || actual.contextId !== realm.contextId ||
+            actual.uniqueContextId !== realm.uniqueContextId || title.encoderSource !== encoderSource) {
+          throw error("WIRE_V5_ENCODER_ORIGINAL_REALM");
+        }
+      };
+      transport = pipe.prepareSchematicWireV5EncoderTransport({
+        originalBundleReply: encoderSource.raw, holder, native: globals.tuple, scriptId: source.source.scriptId,
+        contextId: realm.contextId, assertCurrent: same, poll: (): Promise<void> => this.#pollRenderer(),
+      });
+      return transport;
+    };
+    wireV5EncoderBeforeGraphs.set(this, Object.freeze({ plan, cursor, current, prepareTransport }));
     return cursor;
   }
   public armSchematicWireV5Titles(args:GeneratedSchematicWireEditNativeArguments):Promise<void>{

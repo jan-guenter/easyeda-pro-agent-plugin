@@ -26,3 +26,25 @@ The existing V5 helper and dispatcher still lack an encoder lane. Live use
 requires exact graph and peer action routing, bounded polling and
 original helper event/source custody. Geometry's earlier startup
 `_init` and watch registration remain separate.
+
+## Retained renderer pipe transport
+
+Core can now reserve the encoder pipe for its exact previously issued plan
+and cursor. The pipe rechecks the original title bundle reply, holder,
+reflection tuple and selected renderer realm. Its closed request roster
+contains the two binder commands, the [fourteen checkpoint frames](2026-11-22-wire-encoder-fourteen-frame-proof.md)
+and two generated-helper source reads.
+
+The pipe consumes each exact outgoing frame once, waits for the original
+write acknowledgement and polls one retained pending request at a time.
+The original 32 MiB source frame limit stays in place. A binder or membership
+script event comes from the selected pipe and realm while its own call
+is awaiting a reply. The helper-source read must return the entire exact
+program for that event's script ID.
+
+A synthetic renderer stream passed the binder and helper-source round trip,
+including rejection of a copied source reply, altered outbound frame and
+replayed helper qualification. Live dispatch awaits the separate combined
+early-init and encoder helper, its native action and budgets, and the Core
+bridge which forwards those exact reserved frames. The legacy V5 helper
+bytes and existing Core write cutoff remain pinned.

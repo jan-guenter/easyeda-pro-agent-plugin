@@ -11,6 +11,8 @@ import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts"
 import {
   CurrentSchematicWireWriterV5Pipe, requireCurrentSchematicWireV5BundleSourceReceive,
 } from "../src/current-pcb-diagnostic-pipe.ts";
+import { CURRENT_SCHEMATIC_WIRE_ENCODER_BEFORE_GRAPH_PROGRAM as GRAPH } from "../src/current-schematic-wire-encoder-programs.ts";
+import { CURRENT_SCHEMATIC_WIRE_WRITER_FLAGS as FLAGS } from "../src/current-schematic-wire-writer-protocol.ts";
 import { currentSchematicWireWriterV5NativeCommand } from "../src/current-schematic-wire-writer-v5-native-command.ts";
 import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE } from "../src/generated-schematic-display-accessor-source.ts";
 
@@ -206,4 +208,63 @@ void test("V5 opening joins the canonical raw script event to its acknowledged o
   broken.acknowledge(new Error("inert native write refusal"));
   await rejected;
   assert.throws(() => { broken.pipe.requireOriginalSchematicWireV5NavigationPending(failedOriginal, session, binding, target); }, /NOT_ORIGINAL_PENDING/u);
+});
+
+void test("encoder binder proves the original written frame and its same-session generated helper through the retained pipe", async context => {
+  const forwarded: Readonly<Record<string, string | number>>[] = [];
+  let forward: ((bytes: Buffer) => void) | null = null;
+  const { pipe, input, acknowledge } = await attached(context, bytes => { forward?.(bytes); });
+  const source = pipe.observeSchematicWireV5Title(command);
+  input.write(wire({ id: 2, result: { scriptSource: "inert original source" }, sessionId: session }));
+  acknowledge();
+  const originalBundleReply = await source;
+  let polls = 0;
+  const helperSource = `(${GRAPH})`;
+  const bindings = {
+    originalBundleReply, scriptId: script, contextId: 17, holder: "original.holder", native: "original.native",
+    assertCurrent: (): void => { assert.equal(pipe.status().failure, null); },
+    poll: (): Promise<void> => {
+      polls += 1;
+      if (polls === 1) {
+        const event = { method: "Debugger.scriptParsed", params: { scriptId: "generated.helper", executionContextId: 17,
+          url: "", length: helperSource.length }, sessionId: session };
+        input.write(Buffer.concat([wire(event), wire({ id: 3, result: { originalGraph: "retained" }, sessionId: session })]));
+      } else {
+        assert.equal(polls, 2);
+        input.write(wire({ id: 4, result: { scriptSource: helperSource }, sessionId: session }));
+      }
+      return Promise.resolve();
+    },
+  };
+  assert.throws(() => pipe.prepareSchematicWireV5EncoderTransport({ ...bindings, originalBundleReply: { ...originalBundleReply } }),
+    /WIRE_V5_BUNDLE_SOURCE_ORIGINAL_REPLY/u);
+  const transport = pipe.prepareSchematicWireV5EncoderTransport(bindings);
+  forward = (bytes): void => {
+    assert.throws(() => pipe.forwardSchematicWireV5EncoderFrame(Buffer.from(bytes.subarray(0, -1))), /ORIGINAL_FRAME/u);
+    forwarded.push(pipe.forwardSchematicWireV5EncoderFrame(bytes));
+    assert.throws(() => pipe.forwardSchematicWireV5EncoderFrame(bytes), /ORIGINAL_FRAME/u);
+  };
+  const graph = {
+    phase: "wire-encoder-before-graph", method: "Runtime.callFunctionOn", params: {
+      ...FLAGS, objectId: bindings.holder, functionDeclaration: GRAPH, arguments: [{ objectId: bindings.native }],
+      returnByValue: false, awaitPromise: false, userGesture: false,
+    },
+  } as const;
+  const pendingGraph = transport.request(graph);
+  assert.equal(pipe.status().pendingRequestId, 3);
+  assert.equal(polls, 0);
+  acknowledge();
+  const result = await pendingGraph;
+  const pendingHelper = transport.qualifyHelper(graph, result);
+  assert.equal(pipe.status().pendingRequestId, 4);
+  acknowledge();
+  await pendingHelper;
+  assert.deepEqual(forwarded, [
+    { action: "schematic-wire-v5-encoder", requestId: 3, phase: "wire-encoder-before-graph", method: "Runtime.callFunctionOn",
+      objectId: bindings.holder, arg0ObjectId: bindings.native },
+    { action: "schematic-wire-v5-encoder", requestId: 4, phase: "wire-encoder-helper-source", method: "Debugger.getScriptSource",
+      scriptId: "generated.helper" },
+  ]);
+  await assert.rejects(transport.qualifyHelper(graph, result), /ORIGINAL_HELPER_REPLY/u);
+  assert.equal(polls, 2);
 });

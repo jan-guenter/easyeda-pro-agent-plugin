@@ -63,14 +63,15 @@ function propertiesCommand(raw: unknown): PropertiesCommand {
 
 type SourceCommand = Extract<CurrentSchematicWireEncoderCommand, { phase: "wire-encoder-source" }>;
 type PeerCommand = Extract<CurrentSchematicWireEncoderCommand, { phase: "wire-encoder-metadata" | "wire-encoder-compare" }>;
-type HelperCommand = CaptureCommand | Extract<PeerCommand, { method: "Runtime.callFunctionOn" }>;
+export type CurrentSchematicWireEncoderBeforeGraphCommand = CaptureCommand | PropertiesCommand | SourceCommand | PeerCommand;
+export type CurrentSchematicWireEncoderBeforeGraphHelper = CaptureCommand | Extract<PeerCommand, { method: "Runtime.callFunctionOn" }>;
 
 export interface CurrentSchematicWireEncoderBeforeGraphTransport {
   readonly pipe: object;
-  readonly request: (command: CaptureCommand | PropertiesCommand | SourceCommand | PeerCommand) => Promise<unknown>;
+  readonly request: (command: CurrentSchematicWireEncoderBeforeGraphCommand) => Promise<unknown>;
   /** Join the generated script event and full exact helper source on this
    * original pending command before exposing its reply. */
-  readonly qualifyHelper: (command: HelperCommand, reply: unknown) => Promise<void>;
+  readonly qualifyHelper: (command: CurrentSchematicWireEncoderBeforeGraphHelper, reply: unknown) => Promise<void>;
 }
 
 interface OriginalBeforeGraph {
@@ -144,7 +145,7 @@ export class CurrentSchematicWireEncoderBeforeGraphCursor {
       requireOriginalCurrentSchematicWireEditPlan(plan);
       requireCurrentSchematicWireEncoderSourceCheckpoint(source);
     };
-    const send = async (command: CaptureCommand | PropertiesCommand | SourceCommand | PeerCommand): Promise<unknown> => {
+    const send = async (command: CurrentSchematicWireEncoderBeforeGraphCommand): Promise<unknown> => {
       current();
       const raw = await request.call(transport, command);
       current();
