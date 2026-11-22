@@ -262,6 +262,22 @@ is cached. Two adjacent diagnostic traversals could share one
 descriptor-checked result. The separate safety checks across
 installation and allocation still require fresh evidence.
 
+The combined candidate at `7bbaf97c8f63f6daeeacb360916f00e2de7e4f9d`
+returned the initial browser version, found the editor and observed its
+original attachment event. The helper acknowledged request 5,
+`Browser.getVersion`, after attachment. Seventeen renderer polls
+returned no bytes. The deadline expired before any Page request. The
+window was present, and no Main pause was recorded. The failure therefore
+precedes the first renderer Page command. The remaining issue concerns
+post-attachment progress on the combined transport or Main startup
+path.
+
+The workflow proved the original writer Job terminated and the helper
+released. The facade released its lease and exited normally. The
+disposable database again matched the full initial bytes without SQLite
+sidecars or an explicit Save. The complete writer's connected copy and
+saved inverse remain pending.
+
 ## Compile-only Wire V6 composition
 
 The optional generator composed the early and late bounded native
