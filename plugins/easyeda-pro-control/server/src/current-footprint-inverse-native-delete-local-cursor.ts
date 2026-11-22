@@ -20,7 +20,7 @@ function need(value: boolean): asserts value { if (!value) { throw new Error("IN
 export class CurrentFootprintInverseNativeDeleteLocalCursor {
   readonly #binding: CurrentFootprintInverseNativeDeleteLocalBindings; readonly #attempts = new WeakSet<object>(); readonly #frames = new Map<CurrentFootprintInverseNativeDeleteLocalRole,string>();
   #step = 0; #requests = 0; #busy = false; #failed = false; #completed = false; #cache: string | null = null; #putPromise: string | null = null; #bufferPromise: string | null = null; #completedReference: CurrentFootprintInverseNativeDeleteLocalCompleted | null = null;
-  public constructor(bindings: CurrentFootprintInverseNativeDeleteLocalBindings) { this.#binding = bindings; Object.freeze(this); }
+  public constructor(bindings: CurrentFootprintInverseNativeDeleteLocalBindings) { this.#binding = Object.freeze({ ...bindings }); Object.freeze(this); }
   async #current(): Promise<void> { need(!this.#failed); await this.#binding.assertCurrent(); need(!this.#failed); }
   async #send(command: CurrentFootprintInverseNativeDeleteLocalCommand): Promise<unknown> { const fixed = validateCurrentFootprintInverseNativeDeleteLocalCommand(command); await this.#current(); this.#requests += 1; need(this.#requests <= REQUESTS.cdpRequests - REQUESTS.capture); const value = captureCurrentPcbStringClockReply(await this.#binding.request(fixed)).value; await this.#current(); if(fixed.method==="Runtime.callFunctionOn"||fixed.method==="Debugger.evaluateOnCallFrame"){await this.#binding.qualifyHelper(fixed);await this.#current();} return value; }
   #frame(role: CurrentFootprintInverseNativeDeleteLocalRole): string { const value = this.#frames.get(role); need(value !== undefined); return value; }
@@ -40,7 +40,15 @@ export class CurrentFootprintInverseNativeDeleteLocalCursor {
       await this.#binding.resume(held,validateCurrentFootprintInverseNativeDeleteLocalCommand({ phase:"inverse-native-delete-local-resume",role,method:"Debugger.resume",params:{} })); await this.#current(); this.#step += 1;
       if (this.#step === ROLES.length) { need(this.#putPromise !== null && this.#bufferPromise !== null);
         for (const [kind,promise,state] of [["cache",this.#putPromise,"fulfilled"],["buffer",this.#bufferPromise,"pending"]] as const) { need(decodeCurrentProjectSaveProducerCachePromise(await this.#send({ phase:"inverse-native-delete-local-properties",role:kind,method:"Runtime.getProperties",params:{objectId:promise,ownProperties:true,accessorPropertiesOnly:false,generatePreview:false} })) === state); } this.#completed = true; }
-    } catch (error) { if (!this.#failed) { this.#failed = true; this.#binding.fail(); } throw error; } finally { this.#busy = false; }
+    } catch (error) {
+      if (!this.#failed) {
+        this.#failed = true;
+        try { this.#binding.fail(); } catch {
+          // Preserve the original continuation failure even if notification fails.
+        }
+      }
+      throw error;
+    } finally { this.#busy = false; }
   }
   public originalCompleted(): CurrentFootprintInverseNativeDeleteLocalCompleted { this.requireCompleted();need(this.#cache!==null&&this.#putPromise!==null&&this.#bufferPromise!==null);this.#completedReference??=Object.freeze({scheduledFrame:this.#frame("bufferScheduled"),bodyFrame:this.#binding.bodyObject,cacheFrame:this.#cache,putPromise:this.#putPromise,bufferPromise:this.#bufferPromise});return this.#completedReference; }
   public requireCompleted(): void { need(!this.#busy && !this.#failed && this.#completed); }

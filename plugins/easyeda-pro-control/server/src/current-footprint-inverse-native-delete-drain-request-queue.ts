@@ -27,7 +27,9 @@ export class CurrentFootprintInverseNativeDeleteDrainRequestQueue{
   const result=Promise.withResolvers<unknown>();
   if(this.#failed){result.reject(this.#failure);return result.promise;}
   if(this.#ended){result.reject(new Error("INVERSE_NATIVE_DELETE_DRAIN_QUEUE_ORIGINAL_EXIT"));return result.promise;}
-  try{current();}catch(error){this.#fail(error);result.reject(error);return result.promise;}if(group.helperFor!==null){need(this.#helper!==null&&same(this.#helper,group));}
+  if(group.helperFor===null){need(this.#helper?.family!==group.family);}
+  else{need(this.#helper!==null&&same(this.#helper,group));}
+  try{current();}catch(error){this.#fail(error);result.reject(error);return result.promise;}
   this.#waiting.push(Object.freeze({group:Object.freeze({...group}),current,send,result}));this.#pump();return result.promise;
  }
  #pump():void{
@@ -49,7 +51,7 @@ export class CurrentFootprintInverseNativeDeleteDrainRequestQueue{
   }})();
  }
  public async settleAfterOriginalExit(assertOriginalExit:()=>void):Promise<void>{
-  assertOriginalExit();this.#ended=true;for(const work of this.#waiting.splice(0)){work.result.reject(new Error("INVERSE_NATIVE_DELETE_DRAIN_QUEUE_ORIGINAL_EXIT"));}
+  assertOriginalExit();this.#ended=true;this.#helper=null;for(const work of this.#waiting.splice(0)){work.result.reject(new Error("INVERSE_NATIVE_DELETE_DRAIN_QUEUE_ORIGINAL_EXIT"));}
   const pending=this.#pending;if(pending!==null){await pending;}assertOriginalExit();
  }
  public retained():Readonly<{waiting:number;active:boolean;helperPending:boolean;failed:boolean;ended:boolean}>{return Object.freeze({waiting:this.#waiting.length,active:this.#active!==null,helperPending:this.#helper!==null,failed:this.#failed,ended:this.#ended});}

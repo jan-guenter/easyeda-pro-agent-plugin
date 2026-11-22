@@ -76,7 +76,7 @@ export class CurrentFootprintInverseNativeDeleteMainBeginCustody {
       if (command.phase === "inverse-native-delete-main-begin-arm") { const result = z.strictObject({ breakpointId: handle, actualLocation: point }).parse(reply); need(![...this.#points.values()].includes(result.breakpointId) && canonicalJson(result.actualLocation) === canonicalJson(command.params.location), "ARM_REPLY"); this.#host.registerPoint(result.breakpointId, result.actualLocation); this.#points.set(command.role, result.breakpointId); }
       else if (command.phase === "inverse-native-delete-main-begin-frame" || command.phase === "inverse-native-delete-main-begin-raw-frame") { const length = { save: 4, transaction: 2, run: 7, callback: 8, returned: 2 }[command.role] - (command.phase === "inverse-native-delete-main-begin-raw-frame" ? 1 : 0); this.#frames.set(command.role, decodeArray(reply, length)); }
       else if (command.phase === "inverse-native-delete-main-begin-join" || command.phase === "inverse-native-delete-main-begin-rebase" || command.phase === "inverse-native-delete-main-begin-bookkeeping") { if (command.role === "returned") { this.#result = Object.freeze(resultReply.parse(reply).result.value); } else { this.#packets.set(command.role, decodeArray(reply, CALLS[command.role].length)); } }
-      else if (command.phase === "inverse-native-delete-main-begin-remove") { z.strictObject({}).parse(reply); this.#host.removePoint(command.params.breakpointId); }
+      else if (command.phase === "inverse-native-delete-main-begin-remove") { z.strictObject({}).parse(reply); this.#host.removePoint(command.params.breakpointId); this.#points.delete(command.role); }
       return reply;
     } catch (error) { this.#failed = true; throw error; }
   }
@@ -105,7 +105,7 @@ export class CurrentFootprintInverseNativeDeleteMainBeginCustody {
   /** Synchronous one-use transfer while the original begin return is still
    * held. Only this backend's successor ledger receives these retained IDs. */
   public consumeHistoryHandoff(): Readonly<{ origin: CurrentFootprintInverseNativeDeleteMainRequestOrigin; actorObjectId: string; sqlObjectId: string; saveObjectId: string; transactionObjectId: string; callbackBreakpointId: string; dataStr: string }> {
-    need(this.#result !== null && this.#actor !== null && !this.#transferred, "HISTORY_TRANSFER_CONSUMED"); this.requireResult(this.#result); const callbackBreakpointId = this.#points.get("callback"); need(callbackBreakpointId !== undefined, "ORIGINAL_CALLBACK_POINT"); this.#transferred = true; this.#points.delete("callback");
+    need(this.#result !== null && this.#actor !== null && !this.#transferred, "HISTORY_TRANSFER_CONSUMED"); this.requireResult(this.#result); const callbackBreakpointId = this.#points.get("callback"); need(callbackBreakpointId !== undefined && this.#host.pointCurrent(callbackBreakpointId), "ORIGINAL_CALLBACK_POINT"); this.#transferred = true; this.#points.delete("callback");
     return Object.freeze({ origin: this.#host.origin, actorObjectId: this.#actor.actorObjectId, sqlObjectId: this.#actor.sqlObjectId, saveObjectId: this.#packet("save"), transactionObjectId: this.#packet("transaction"), callbackBreakpointId, dataStr: this.#actor.dataStr });
   }
   public result(): CurrentFootprintInverseNativeDeleteMainBeginResult { need(this.#result !== null, "RESULT_REQUIRED"); this.requireResult(this.#result); return this.#result; }

@@ -113,7 +113,7 @@ export function currentFootprintInverseNativeDeleteDrainWire(input:CurrentFootpr
  if(!Number.isSafeInteger(id)||id<1||id>2_147_483_647){throw new Error("INVERSE_NATIVE_DELETE_DRAIN_ID");}handle.parse(sessionId);return freezeDeep({...validateCurrentFootprintInverseNativeDeleteDrainCommand(input),id,sessionId,inverseNativeDeleteDrain:true});
 }
 export function currentFootprintInverseNativeDeleteDrainNativeFrame(bytes:Buffer,input:CurrentFootprintInverseNativeDeleteDrainCommand,sessionId:string):Readonly<Record<string,string|number>>{
- if(bytes.length>65_536||bytes.at(-1)!==0){throw new Error("INVERSE_NATIVE_DELETE_DRAIN_FRAME");}const raw:unknown=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes.subarray(0,-1)));const id=z.looseObject({id:z.number().int().positive().max(2_147_483_647)}).parse(capture(raw)).id;
+ if(bytes.length>65_536||bytes.at(-1)!==0){throw new Error("INVERSE_NATIVE_DELETE_DRAIN_FRAME");}const raw:unknown=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes.subarray(0,-1)));const id=z.looseObject({id:z.number().int().positive().max(2_147_483_647)}).parse(raw).id;
  const c=validateCurrentFootprintInverseNativeDeleteDrainCommand(input);if(bytes.toString("utf8")!==`${JSON.stringify(currentFootprintInverseNativeDeleteDrainWire(c,id,sessionId))}\0`){throw new Error("INVERSE_NATIVE_DELETE_DRAIN_FRAME");}
  return freezeDeep({action:"footprint-inverse-native-delete-drain",requestId:id,phase:currentFootprintInverseNativeDeleteDrainKey(c),method:c.method,...currentFootprintInverseNativeDeleteDrainTemplate(c).values});
 }
