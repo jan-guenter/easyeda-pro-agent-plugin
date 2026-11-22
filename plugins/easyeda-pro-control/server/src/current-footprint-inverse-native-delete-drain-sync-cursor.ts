@@ -62,12 +62,13 @@ export class CurrentFootprintInverseNativeDeleteDrainSyncCursor{
    }
    await this.#current();need(this.#b.requireHeld(packet)===held&&(this.#normal+=1)<=22,"ORIGINAL_RESUME");await this.#b.resume(held,validate({phase:"inverse-native-delete-drain-resume",role:held.role,slot:0,method:"Debugger.resume",params:{}}));await this.#current();this.#step+=1;this.#resumes+=1;if(this.#step===7){await this.#settle();}
   }catch(error){this.#fail(error);throw error;}finally{this.#busy=false;}}
- async #settle():Promise<void>{need(this.#step===7&&this.#task!==null&&this.#outer!==null&&this.#passes<2,"SETTLEMENT_FRONTIER");this.#passes+=1;let fulfilled=true;
+ async #settle():Promise<void>{need(this.#step===7&&this.#task!==null&&this.#outer!==null&&this.#passes<CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_DRAIN_SYNC_REQUESTS.settlementPasses,"SETTLEMENT_FRONTIER");this.#passes+=1;let fulfilled=true;
   for(const[slot,objectId]of[[9,this.#task],[10,this.#outer]]as const){const metadata=await this.#properties("settled",objectId,slot,this.#passes);fulfilled=promiseState(metadata)==="fulfilled"&&fulfilled;}
   if(fulfilled){await this.#b.complete();await this.#current();this.#completed=true;}
+  need(this.#completed || this.#passes < CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_DRAIN_SYNC_REQUESTS.settlementPasses, "SETTLEMENT_EXHAUSTED");
  }
  public async settle():Promise<void>{need(!this.#busy&&!this.#failed&&!this.#completed,"SETTLE_ONCE");this.#busy=true;try{await this.#settle();}catch(error){this.#fail(error);throw error;}finally{this.#busy=false;}}
- public progress():Readonly<{replayResumed:boolean;completed:boolean;canSettle:boolean;acknowledgedResumes:number;failed:boolean}>{return Object.freeze({replayResumed:!this.#failed&&this.#resumes>=5,completed:this.#completed,canSettle:!this.#busy&&!this.#failed&&!this.#completed&&this.#step===7&&this.#passes<2,acknowledgedResumes:this.#resumes,failed:this.#failed});}
+ public progress():Readonly<{replayResumed:boolean;completed:boolean;canSettle:boolean;acknowledgedResumes:number;failed:boolean}>{return Object.freeze({replayResumed:!this.#failed&&this.#resumes>=5,completed:this.#completed,canSettle:!this.#busy&&!this.#failed&&!this.#completed&&this.#step===7&&this.#passes<CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_DRAIN_SYNC_REQUESTS.settlementPasses,acknowledgedResumes:this.#resumes,failed:this.#failed});}
  public requireCompleted():void{need(this.#completed&&!this.#failed,"COMPLETE");}
 }
 Object.freeze(CurrentFootprintInverseNativeDeleteDrainSyncCursor.prototype);Object.freeze(CurrentFootprintInverseNativeDeleteDrainSyncCursor);
