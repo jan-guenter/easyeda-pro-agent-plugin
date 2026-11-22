@@ -79,3 +79,30 @@ checks and review on the eventual complete public commit.
    limits, build and freeze the final package, run required checks and exact-head
    CI, resolve review findings, then publish and verify one batched installation.
    Generated source and installed runtime remain separate until that process.
+
+## Native DELETE Main prefix HTTP schedule — 2026-11-22
+
+The pinned worker upload's one retained buffer body first awaits
+projectHistory.set. Its natural syncCloud() is reached only after a successful
+history response; that successor performs the branch/history reads. The pinned
+Main request and completion schedules handle the history POST, actor/database
+lookup, BEGIN, history/branch/project SQL and the original controller return.
+Their source pins remain the existing request/completion profiles; the reviewed
+whole Main hash is 52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c.
+
+This ordering does not prove that unrelated original GET/HEAD traffic cannot
+arrive at the persistent driver while the prefix is active. Its 142 normal and
+19 cleanup reservations contain nine selected SQL reads, not an HTTP read
+allowance. The later Main read successor depends on completed history effects
+and cannot authorize a request before that boundary. No safe prefix HTTP
+continuation or global absence proof is established here.
+
+An unexpected GET/HEAD therefore rechecks its exact original retained request,
+synchronously consumes the prefix through its sticky first-failure path, and
+hands cleanup to the original owner. It sends no resume, cannot be retried on the
+same controller, and retains the original failure even if that handoff throws.
+The same controller is used by final composition; no Core/native sender or
+budget expansion is appropriate. Whole inverse and first-upload completion
+gates remain unchanged. Focused inert checks exercise the exact pinned upload
+method's response boundary and the actual private refusal/failure methods for
+both GET and HEAD. They establish no live traffic exclusion or native effect.
