@@ -227,7 +227,12 @@ export class CurrentFootprintInverseNativeDeleteColdUiJournal {
     const actual = await loadOperation(this.#request.operationId); need(this.#pending === null, "PUBLICATION_PENDING"); parse(actual); need(core(actual) === core(this.#operation), "ORIGINAL_CHANGED");
   }
   public async assertStage(stage:"checkpoint-intent"|"birth-intent"|"read-intent"):Promise<void>{
-    await this.#assertPublished();need(parse(this.#operation).at(-1)?.kind===stage,"STAGE_CUTOFF");for(const descriptor of this.#operation.artifacts??[]){await verifyExactManagedArtifact(descriptor);}await this.#assertPublished();need(parse(this.#operation).at(-1)?.kind===stage,"STAGE_CUTOFF");
+    await this.#assertPublished();
+    need(parse(this.#operation).at(-1)?.kind===stage,"STAGE_CUTOFF");
+    for(const descriptor of this.#operation.artifacts??[]){await verifyExactManagedArtifact(descriptor);}
+    await this.#assertPublished();
+    need(!this.#writing&&this.#pending===null,"PUBLICATION_BUSY");
+    need(parse(this.#operation).at(-1)?.kind===stage,"STAGE_CUTOFF");
   }
   public async assertReadAdmission():Promise<void>{
     need(!this.#writing,"PUBLICATION_BUSY");await this.#assertPublished();

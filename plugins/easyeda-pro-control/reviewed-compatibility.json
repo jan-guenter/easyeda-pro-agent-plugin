@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "483a9cccf20f7cc63f383c9e77eabcfb5a9ab290b10b6b9115b508240e2fe1b8",
+      "sha256": "404131870e72ba4fca15c3bb015f9894aecad6ab37a7f33b76afe443f666c056",
       "fileCount": 3302,
       "files": [
         {
@@ -2788,8 +2788,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-control-contract.ts",
-          "bytes": 4015,
-          "sha256": "f36f3deef13ad780edc53e1aed68af3e950ab1c32325a79153599bb87de80405"
+          "bytes": 4057,
+          "sha256": "5de09764a310d6dc12e148c9438c28d8112b09a757009fd4ecbd153f284f793d"
         },
         {
           "relativePath": "current-footprint-inverse-control-validation.ts",
@@ -4003,8 +4003,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-ui-journal.ts",
-          "bytes": 27301,
-          "sha256": "d6427022210f2f6a72a6425b58df9a057d2a46989a233dff5743b2577a77a66e"
+          "bytes": 27388,
+          "sha256": "848be033919785ee13b6df42f0cd0175e9132d3dddc979dd17afe84be61422c2"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-ui-native-budget.ts",
@@ -16543,7 +16543,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-22T19:26:48.225Z",
+  "reviewedAt": "2026-11-22T19:43:20.924Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {
