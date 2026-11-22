@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "f1be147d79be082a12260e2b00c053b0ea327c82aba0a11c3d1b62e53820de3a",
+      "sha256": "134d1ee4539be80d627330fc2cc4e10541a9d85dabe25936f7878ab887edea8c",
       "fileCount": 3377,
       "files": [
         {
@@ -2793,8 +2793,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-control-contract.ts",
-          "bytes": 3963,
-          "sha256": "6219513fa6c92bb513130919ed1d807fbdf37434b02c742a48483949310249d1"
+          "bytes": 4015,
+          "sha256": "f36f3deef13ad780edc53e1aed68af3e950ab1c32325a79153599bb87de80405"
         },
         {
           "relativePath": "current-footprint-inverse-control-validation.ts",
@@ -4008,8 +4008,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-successor-helper.ts",
-          "bytes": 4799,
-          "sha256": "097832adb22b7bbfba229b9c4e57297f10eeea299cd32c453492d3930885827b"
+          "bytes": 4907,
+          "sha256": "dd4d5436e7c2c2b57cc9a49083bbc9d9f84b1088c67d74af98ab835b7a8a7261"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-successor-identity.ts",
@@ -4063,8 +4063,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-ui-journal.ts",
-          "bytes": 27183,
-          "sha256": "bc5c0d1f40d6cd475277151eebf4979406e5088dcfbfa3f1dc1dfbf6742d3610"
+          "bytes": 27301,
+          "sha256": "d6427022210f2f6a72a6425b58df9a057d2a46989a233dff5743b2577a77a66e"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-cold-ui-native-budget.ts",
@@ -4878,8 +4878,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-serialization-protocol.ts",
-          "bytes": 16994,
-          "sha256": "92952673533b0d714998a73a7ae4c93f19846beeac33d94e70d67cb860469098"
+          "bytes": 18851,
+          "sha256": "f3a7a4acb637a2fff3e94db523ab5064380e31fe2f1cf37ba8f8a64344526ad6"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-serialization-replies.ts",
@@ -5453,8 +5453,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-worker-forward-controller.ts",
-          "bytes": 13005,
-          "sha256": "ef680d0df2c53a7e7ec75e89bbddf218be83812af5ec363781400293cd5415ea"
+          "bytes": 13137,
+          "sha256": "fdfce1b7192b2126bb079078d8f442446c89057e0011d3a08675ac08efd5e3f6"
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-worker-forward-observer.ts",
@@ -5498,8 +5498,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-worker-result-controller.ts",
-          "bytes": 14194,
-          "sha256": "4247d2598db8e4372190b92a41863c7e9abba12b1e6cc38187acb55b1d1a110a"
+          "bytes": 14234,
+          "sha256": "f1d3ad06b9f4fbaa3acb08a896f50af58720f04d73201c1c6eb868ce7b9cec95"
         },
         {
           "relativePath": "current-footprint-inverse-native-reference-next-worker-result-observer.ts",
@@ -6583,13 +6583,13 @@
         },
         {
           "relativePath": "current-footprint-inverse-v4-native-delete-serialization-controller.ts",
-          "bytes": 11718,
-          "sha256": "5810ac90117c0aaa4b4a7513248d597452c312967b28aa2acfb8eba105ad2732"
+          "bytes": 11524,
+          "sha256": "b5d45e9b4b24e872cf7e04326989f78f746cce43145f461a94cb20f9d8d8f912"
         },
         {
           "relativePath": "current-footprint-inverse-v4-native-delete-serialization-observer.ts",
-          "bytes": 10816,
-          "sha256": "927a92db570644ad7faf2a7a0dab4ec1d9b729662211151cf370a035fc53199b"
+          "bytes": 10827,
+          "sha256": "0258d68d2c7d438908243da1164d2497c41ac82672c32b42b32680af06168850"
         },
         {
           "relativePath": "current-footprint-inverse-v4-native-delete-serialization-programs.ts",
@@ -6608,8 +6608,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-v4-native-get-task-result-controller.ts",
-          "bytes": 13805,
-          "sha256": "d3790a139194710de8f1262f3ce2584dfe739fe94a4d64eb4f2e8d273e51810d"
+          "bytes": 13845,
+          "sha256": "91ef305e3437e7de94359c9987e413940a1353e327651be8f32d7f72f03e2c29"
         },
         {
           "relativePath": "current-footprint-inverse-v4-native-get-task-result-observer.ts",
@@ -8063,8 +8063,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-owner.ts",
-          "bytes": 4026611,
-          "sha256": "3c1e70413878723fe7d92d8beaf3e77ce4943cc70ed1e7acbb1d8149088605ad"
+          "bytes": 4026337,
+          "sha256": "376b614ee124ccc97f0bd2fae64027f34a31a4fd3e49c8c8a5ed5fb705169452"
         },
         {
           "relativePath": "current-pcb-diagnostic-pcb-opening.ts",
@@ -8078,8 +8078,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-pipe.ts",
-          "bytes": 430936,
-          "sha256": "5f1f83d36cab743e9594135625602a497e362e3f76bee292b773c148bbd090fb"
+          "bytes": 430834,
+          "sha256": "d89174e09d79e2a7762cdab5af341019b89d8f4b7070a3755ed711ab78e8e634"
         },
         {
           "relativePath": "current-pcb-diagnostic-profile.ts",
@@ -14373,8 +14373,8 @@
         },
         {
           "relativePath": "current-schematic-wire-v5-early-init.ts",
-          "bytes": 10128,
-          "sha256": "c6062b2a6737cba04a4a3d4a74df28e4278fd3957cf602044de8af27402d96f0"
+          "bytes": 10587,
+          "sha256": "6f2f14cd57537375e89ba115ef32acb8bc10e8a6182190cb38044f4942a1d766"
         },
         {
           "relativePath": "current-schematic-wire-v5-net-native.ts",
@@ -14509,7 +14509,7 @@
         {
           "relativePath": "current-schematic-wire-writer-v5-native-identity.ts",
           "bytes": 875,
-          "sha256": "42f62da63e30f8a1ed779440a4d325136e3ea8264ceaff417a7b0ac955eb9d9c"
+          "sha256": "419ea89b5ec55ec30fdfd6591001007a37a117edd880bc02d97d2157e0b14ccd"
         },
         {
           "relativePath": "current-schematic-wire-writer-v5-native-profile.ts",
@@ -16896,7 +16896,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "5d5564eb2cd84a349094070c9b50c82dcb1dfbd18c1e4738685a13f9d96a6eb9",
+      "sha256": "2a4e27223e56a27a2d7254cbbfc6f5857634ff958487324712f604e82de2f525",
       "fileCount": 3,
       "files": [
         {
@@ -16906,19 +16906,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 20112997,
-          "sha256": "5b85c39bac112882dc337add8e4f0c2d9be45b3a9c818b1a44800306b818e265"
+          "bytes": 20113483,
+          "sha256": "9df55e80ca85da0fcf272832298cf6edcafe571e811ac2a7a22e5aeffeb85351"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 642490,
-          "sha256": "8c4c598be10d94056ba387f5d8b64723529532f1b98d063729beadd2c95b80c3"
+          "sha256": "fdbfe1dd6647ea7fb7295a2e6c318f03e44f29bcb74d8825045dbcf2276e91a5"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-22T19:11:02.684Z",
+  "reviewedAt": "2026-11-22T19:29:25.161Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

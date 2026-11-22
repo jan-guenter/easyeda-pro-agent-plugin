@@ -71,6 +71,7 @@ export class CurrentFootprintInverseNativeGetTaskResultController {
      this.#current();
      need(performance.now() < deadline);
    }
+   this.#current();
    const event = this.#queued;
    this.#queued = null;
    this.#held = event;
@@ -91,6 +92,7 @@ export class CurrentFootprintInverseNativeGetTaskResultController {
      this.#current();
      need(performance.now() < deadline);
    }
+   this.#current();
    await this.#b.control("resumed");
    this.#current();
  }

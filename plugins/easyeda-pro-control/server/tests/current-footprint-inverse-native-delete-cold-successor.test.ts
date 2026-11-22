@@ -1,5 +1,5 @@
-import {randomBytes} from "node:crypto";
-import {promises as fsPromises} from "node:fs";
+import {createHash,randomBytes} from "node:crypto";
+import {constants,promises as fsPromises} from "node:fs";
 import {readFile,readlink,rmdir,unlink} from "node:fs/promises";
 import {stripTypeScriptTypes,syncBuiltinESMExports} from "node:module";
 import {basename,dirname,join} from "node:path";
@@ -63,6 +63,10 @@ void test("actual path selector validates distribution only on deterministic UNC
  await vm.runInContext(["captureCurrentFootprintInverseNativeDeleteColdSuccessor(",invalid,").then(async value=>{await value.verify();assert.ok(value.bootstrap.includes(",expected,"));})"].join(""),drive);
 });
 
+async function admissionBarrier(entered:Promise<null>,pending:Promise<unknown>):Promise<void>{
+ const ended=(async():Promise<never>=>{try{await pending;}catch(error){throw new Error("Cold admission rejected before its original barrier.",{cause:error});}throw new Error("Cold admission completed before its original barrier.");})();
+ await Promise.race([entered,ended]);
+}
 function coldRequest():ColdUiStageRequest{return{operationId:`footprint-inverse-cold-ui-${randomBytes(16).toString("hex")}`,parentOperationId:"footprint-inverse-flow-passive-test",sourceSha256:"a".repeat(64),documentUuid:"1".repeat(16),readonlyContinuation:true,saveRequests:0};}
 function missing(error:unknown):boolean{return error instanceof Error&&"code"in error&&error.code==="ENOENT";}
 async function finishColdJournal(journal:ColdJournal,stage:"checkpoint"|"read"="checkpoint"):Promise<void>{
@@ -108,7 +112,7 @@ void test("cold journal rechecks its exact read prefix after concurrent artifact
  const pending=journal.assertReadAdmission();
  // oxlint-disable-next-line promise/prefer-await-to-then -- Retain the original rejection before racing a distinct publisher operation, then assert that same Promise.
  const joined=pending.then(()=>null,()=>null);
- try{await entered.promise;await journal.append("failure",{stage:"read",originalErrorRetained:true});resume.resolve(null);await assert.rejects(pending,/READ_PREFIX/u);}
+ try{await admissionBarrier(entered.promise,pending);await journal.append("failure",{stage:"read",originalErrorRetained:true});resume.resolve(null);await assert.rejects(pending,/READ_PREFIX/u);}
  finally{resume.resolve(null);await joined;context.mock.restoreAll();syncBuiltinESMExports();}
  await finishColdJournal(journal,"read");
 });
@@ -150,11 +154,17 @@ void test("cold initial retry refuses an operations directory replacement before
  const fault=initialFault(context,manifest);await assert.rejects(journal.reserve(),error=>error===fault.injected);fault.blocked=false;
  context.mock.restoreAll();syncBuiltinESMExports();
  const directory=dirname(manifest);const backup=`${dirname(manifest)}-original-${randomBytes(8).toString("hex")}`;
- await fsPromises.rename(directory,backup);await fsPromises.mkdir(directory,{mode:0o700});
- let writes=0;const originalLink=fsPromises.link;
- context.mock.method(fsPromises,"link",async(...args:Parameters<typeof originalLink>)=>{writes+=1;await originalLink(...args);});syncBuiltinESMExports();
- try{await assert.rejects(journal.settle(),/INITIAL_DIRECTORY_CHANGED/u);assert.equal(writes,0);assert.equal(journal.retained().reserved,false);}
- finally{context.mock.restoreAll();syncBuiltinESMExports();await fsPromises.rmdir(directory);await fsPromises.rename(backup,directory);}
+ let links=0,moved=false,replaced=false,writableTemporaryOpens=0;const originalLink=fsPromises.link,originalOpen=fsPromises.open;
+ try{
+  await fsPromises.rename(directory,backup);moved=true;await fsPromises.mkdir(directory,{mode:0o700});replaced=true;
+  context.mock.method(fsPromises,"link",async(...args:Parameters<typeof originalLink>)=>{links+=1;await originalLink(...args);});
+  context.mock.method(fsPromises,"open",(...args:Parameters<typeof originalOpen>)=>{
+   // oxlint-disable-next-line no-bitwise -- Count only attempts to open this exact managed temporary with write/create flags, before the original syscall can publish bytes.
+   if(basename(String(args[0])).startsWith(`${basename(manifest)}.tmp-cold-ui-`)&&typeof args[1]==="number"&&(args[1]&(constants.O_WRONLY|constants.O_RDWR|constants.O_CREAT))!==0){writableTemporaryOpens+=1;}
+   return originalOpen(...args);
+  });syncBuiltinESMExports();
+  await assert.rejects(journal.settle(),/INITIAL_DIRECTORY_CHANGED/u);assert.equal(links,0);assert.equal(writableTemporaryOpens,0);assert.equal(journal.retained().reserved,false);
+ }finally{context.mock.restoreAll();syncBuiltinESMExports();if(replaced){await fsPromises.rmdir(directory);}if(moved){await fsPromises.rename(backup,directory);}}
 });
 void test("cold initial retry requires the owned temporary cleanup directory sync",async context=>{
  const request=coldRequest();const journal=new ColdJournal(request);const manifest=operationPath(request.operationId);const directory=dirname(manifest);
@@ -182,4 +192,69 @@ void test("cold settlement repairs only original serialized bytes after a visibl
  await fsPromises.writeFile(manifest,`${JSON.stringify(reordered,null,2)}\n`);
  await assert.rejects(journal.settle());assert.equal(journal.retained().reserved,false);assert.equal(attempts,1);
  await fsPromises.writeFile(manifest,bytes);await journal.settle();await journal.assertCurrent();assert.equal(journal.retained().records.length,1);await finishColdJournal(journal);
+});
+
+
+void test("cold helper retains 64-bit descriptor identity and nanosecond changes",async()=>{
+ const source=await readFile(new URL("../src/current-footprint-inverse-native-delete-cold-successor-helper.ts",import.meta.url),"utf8");
+ const start=source.indexOf("function same(");const end=source.indexOf("\nexport interface ",start);assert.ok(start!==-1&&end>start);
+ const bytes=Buffer.from("inert pinned helper fixture\n"),path="/fixed/helper.ps1";
+ const first={dev:9_007_199_254_740_992n,ino:9_007_199_254_740_992n,size:BigInt(bytes.length),mode:0o600n,mtimeNs:1_000_000_000_000_000_000n,ctimeNs:1_000_000_000_000_000_000n,nlink:1n};
+ for(const field of["dev","ino","mtimeNs","ctimeNs"]as const){
+  let changed=false;
+  const information=(options?:{bigint?:boolean}):object=>{
+   const current={...first,[field]:first[field]+(changed?1n:0n)};
+   const values=options?.bigint===true?current:Object.fromEntries(Object.entries(current).map(([key,value])=>[key,Number(value)]));
+   return{...values,mtimeMs:Number(current.mtimeNs)/1e6,ctimeMs:Number(current.ctimeNs)/1e6,isFile:():boolean=>true,isSymbolicLink:():boolean=>false};
+  };
+  const context=vm.createContext({Buffer,constants,createHash,MAXIMUM,original:null,path,
+   IDENTITY:{helper:{bytes:bytes.length,sha256:createHash("sha256").update(bytes).digest("hex")}},
+   need:(value:boolean):void=>{assert.ok(value,"INVERSE_NATIVE_DELETE_COLD_HELPER_SOURCE");},
+   realpath:(value:string):Promise<string>=>Promise.resolve(value),
+   lstat:(_value:string,options?:{bigint?:boolean}):Promise<object>=>Promise.resolve(information(options)),
+   open:():Promise<object>=>{let position=0;return Promise.resolve({
+    stat:(options?:{bigint?:boolean}):Promise<object>=>Promise.resolve(information(options)),
+    close:():Promise<void>=>Promise.resolve(),
+    read:(buffer:Buffer,offset:number,length:number):Promise<{bytesRead:number}>=>{const count=Math.min(length,bytes.length-position);bytes.copy(buffer,offset,position,position+count);position+=count;return Promise.resolve({bytesRead:count});},
+   });},
+  });
+  vm.runInContext(stripTypeScriptTypes(source.slice(start,end)),context);
+  const original:unknown=await vm.runInContext("readPinnedSource(path)",context);context["original"]=original;changed=true;
+  await assert.rejects(async()=>{await vm.runInContext("readPinnedSource(path,original)",context);},/INVERSE_NATIVE_DELETE_COLD_HELPER_SOURCE/u);
+ }
+ assert.equal(Number(first.ino),Number(first.ino+1n));
+});
+
+void test("cold stage admission rechecks its requested tail after artifact verification",async context=>{
+ const journal=new ColdJournal(coldRequest());await journal.reserve();await journal.append("checkpoint-intent",{});await journal.assertStage("checkpoint-intent");
+ const id=journal.retained().records[0]?.operationId;assert.ok(id!==undefined);
+ const target=join(dirname(operationPath(id)),id,"01-checkpoint-intent.json");
+ const entered=Promise.withResolvers<null>(),resume=Promise.withResolvers<null>();let opens=0;const originalOpen=fsPromises.open;
+ context.mock.method(fsPromises,"open",async(...args:Parameters<typeof originalOpen>)=>{
+  const file=await originalOpen(...args);if(await readlink(`/proc/self/fd/${String(file.fd)}`)===target){opens+=1;if(opens===2){entered.resolve(null);await resume.promise;}}return file;
+ });syncBuiltinESMExports();
+ const pending=journal.assertStage("checkpoint-intent");
+ // oxlint-disable-next-line promise/prefer-await-to-then -- Retain rejection before the barrier and concurrent original publication.
+ const joined=pending.then(()=>null,()=>null);
+ try{await admissionBarrier(entered.promise,pending);await journal.append("checkpoint-result",{originalCompleted:true});resume.resolve(null);await assert.rejects(pending,/STAGE_CUTOFF/u);}
+ finally{resume.resolve(null);await joined;context.mock.restoreAll();syncBuiltinESMExports();await finishColdJournal(journal);}
+});
+
+void test("cold read admission rejects a failure publication queued during its original manifest load",async context=>{
+ const request=coldRequest();const journal=new ColdJournal(request);await journal.reserve();
+ for(const kind of["checkpoint-intent","checkpoint-result","birth-intent","birth-result","read-intent"]as const){await journal.append(kind,kind.endsWith("-result")?{originalCompleted:true}:{});}
+ await journal.assertReadAdmission();
+ const entered=Promise.withResolvers<null>(),resume=Promise.withResolvers<null>();const manifest=operationPath(request.operationId);
+ const originalLink=fsPromises.link,originalOpen=fsPromises.open;let loads=0;const injected=new Error("injected failure record publication");
+ context.mock.method(fsPromises,"open",async(...args:Parameters<typeof originalOpen>)=>{
+  const file=await originalOpen(...args);if(await readlink(`/proc/self/fd/${String(file.fd)}`)===manifest){loads+=1;if(loads===2){const close=file.close.bind(file);context.mock.method(file,"close",async()=>{await close();entered.resolve(null);await resume.promise;});}}return file;
+ });
+ context.mock.method(fsPromises,"link",async(...args:Parameters<typeof originalLink>)=>{if(basename(String(args[1]))==="06-failure.json"){throw injected;}await originalLink(...args);});syncBuiltinESMExports();
+ const pending=journal.assertReadAdmission();
+ // oxlint-disable-next-line promise/prefer-await-to-then -- Retain the original admission rejection before publishing the competing failure record.
+ const joined=pending.then(()=>null,()=>null);
+ try{
+  await admissionBarrier(entered.promise,pending);await assert.rejects(journal.append("failure",{stage:"read",originalErrorRetained:true}),error=>error===injected);
+  assert.equal(journal.retained().publicationPending,true);resume.resolve(null);await assert.rejects(pending,/PUBLICATION_PENDING/u);
+ }finally{resume.resolve(null);await joined;context.mock.restoreAll();syncBuiltinESMExports();await journal.settle();await finishColdJournal(journal,"read");}
 });

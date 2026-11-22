@@ -287,3 +287,13 @@ V5 still reproduced byte-for-byte. V6 generated and reproduced a
 dispatchers passed inert compiler and framing checks. Selecting V6,
 joining the original owner and worker, and proving Save and cold
 readback remain separate implementation and connected validation work.
+
+## Version-specific serialization binding
+
+The V4 serializer uses its own pinned program table through the observer,
+Core and pipe. The reviewer decoded the canonical V4 native table and
+matched 69 serialized request frames to the separate V4 encoder.
+Crossing a legacy and V4 program refused, and the original legacy native
+serialization source retained its exact digest. These checks qualify the
+source and frame encoding. Connected copy and inverse proof still depend
+on the original post-attachment transport.
