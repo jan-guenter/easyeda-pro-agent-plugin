@@ -3,8 +3,8 @@
 export const CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_COLD_UI_HELPER_IDENTITY=Object.freeze({
   "schema": "private.current-footprint-inverse-native-delete-cold-ui-helper-identity.v1",
   "layout": "native-delete-cold-ui.v1",
-  "sourceBytes": 691685,
-  "sourceSha256": "1a061bfe3c64ffeafbd64a0f52bb6d382c3978a08fdd34b3c3191bfda36768d5",
+  "sourceBytes": 692081,
+  "sourceSha256": "968c4101ca2066f4c295a8ecee3dacca851fcefb593ef2ae71619cf0587b783c",
   "reviewBytes": 1048790,
   "reviewSha256": "4934bf7fc4128d3db28996fc63be7bcde0c04acaa3b5ef5199489c085144ae87",
   "compilerBytes": 1010039,

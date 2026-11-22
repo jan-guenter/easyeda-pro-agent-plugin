@@ -2205,10 +2205,17 @@ try {
         if ($exception.Message -cmatch '^pcb-diagnostic-[a-z-]{1,80}$') {$code=$exception.Message;break}
         $exception=$exception.InnerException
       }
+      # Classify only a present string action from this parsed request.
+      # A malformed/oversized envelope has no action and must keep cleanup live.
+      $requestAction=$null
+      if ($null -ne $request) {
+        $actionProperty=$request.PSObject.Properties['action']
+        if ($null -ne $actionProperty -and $actionProperty.Value -is [string]) {$requestAction=$actionProperty.Value}
+      }
       # BEGIN GENERATED WINDOW FAILURE
       $windowFailure=$null
-      $windowRelease=$request.action -ceq 'release' -and @('pcb-diagnostic-window-capture-release-before-exit','pcb-diagnostic-window-capture-gdi-release','pcb-diagnostic-window-capture-child-release') -ccontains $code
-      if ($Visual209 -and (@('restore-window-for-capture','capture-window','resize-window-for-capture','window-capture-readiness') -ccontains $request.action -or $windowRelease)) {
+      $windowRelease=$requestAction -ceq 'release' -and @('pcb-diagnostic-window-capture-release-before-exit','pcb-diagnostic-window-capture-gdi-release','pcb-diagnostic-window-capture-child-release') -ccontains $code
+      if ($Visual209 -and (@('restore-window-for-capture','capture-window','resize-window-for-capture','window-capture-readiness') -ccontains $requestAction -or $windowRelease)) {
         try {
           $stage=$owner.WindowFaultStage;$bounds=$owner.WindowFaultBounds;$children=$owner.WindowFaultChildren;$discovery=$owner.WindowDiscovery
           $label=$code.Substring(15)
@@ -2228,10 +2235,10 @@ try {
           if ($label.EndsWith('-fields')) {$stage='request';$bounds=$null}
           if ($windowRelease) {$stage='cleanup';$bounds=$null}
           if (@('request','owner','identity','bounds','children','allocation','before-paint','paint','after-paint','encoding','after-encoding','before-restore','restore-submission','after-restore','before-resize','resize-submission','after-resize','readiness','cleanup','unclassified') -cnotcontains $stage) {$stage='unclassified';$bounds=$null}
-          if ($request.action -cne 'capture-window' -or $label -cne 'window-capture-child-ownership') {$children=$null}
-          if ($request.action -ceq 'release' -or @('window-enumeration','window-restore-window','window-restore-window-changed','window-resize-window','window-resize-window-changed','window-capture-window','window-capture-window-changed','window-readiness-changed') -cnotcontains $label -or @('request','owner','cleanup') -ccontains $stage) {$discovery=$null}
+          if ($requestAction -cne 'capture-window' -or $label -cne 'window-capture-child-ownership') {$children=$null}
+          if ($requestAction -ceq 'release' -or @('window-enumeration','window-restore-window','window-restore-window-changed','window-resize-window','window-resize-window-changed','window-capture-window','window-capture-window-changed','window-readiness-changed') -cnotcontains $label -or @('request','owner','cleanup') -ccontains $stage) {$discovery=$null}
           $paint=if ($owner.WindowCapturePaintDispatched) {'possibly-dispatched'} else {'not-dispatched'}
-          $windowFailure=@{schema='easyeda-pro-control.window-failure.v1';action=$request.action;stage=$stage;code=$label;paintPhase=$paint;nativeResourcesRetained=$owner.WindowCaptureResourcesRetained;bounds=$bounds;childOwnership=$children;windowDiscovery=$discovery;snapshotOnly=$true;executionAuthorized=$false}
+          $windowFailure=@{schema='easyeda-pro-control.window-failure.v1';action=$requestAction;stage=$stage;code=$label;paintPhase=$paint;nativeResourcesRetained=$owner.WindowCaptureResourcesRetained;bounds=$bounds;childOwnership=$children;windowDiscovery=$discovery;snapshotOnly=$true;executionAuthorized=$false}
         } catch {$windowFailure=$null}
       }
       # END GENERATED WINDOW FAILURE

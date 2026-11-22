@@ -96,6 +96,11 @@ void test("canonical request framing refuses an entire oversized frame inside th
   assert.match(loop,/if \(\$line.Length -ge 32768\) \{\$oversized=\$true\}/u);
   assert.ok(loop.indexOf("if ($oversized) {throw 'pcb-diagnostic-request-size'}")<loop.indexOf("ConvertFrom-Json"));
   assert.match(loop,/else \{\[void\]\$line.Append\(\[char\]\$character\)\}/u);
+  const classification=loop.slice(loop.indexOf("$requestAction=$null"),loop.indexOf("# END GENERATED WINDOW FAILURE"));
+  assert.match(classification,/if \(\$null -ne \$request\)/u);
+  assert.match(classification,/\$actionProperty=\$request.PSObject.Properties\['action'\]/u);
+  assert.match(classification,/\$actionProperty.Value -is \[string\]/u);
+  assert.equal(classification.includes("$request.action"),false);
  }
  const {driverSource:driver,ownerSource:owner}=await readCurrentInverseNativeCanonicalInputs("inverse-native-delete-cold-ui.v1");
  for(const code of ["control","field","purpose","send"]){assert.ok(driver.includes(`'inverse-native-delete-cold-ui-${code}'`));}

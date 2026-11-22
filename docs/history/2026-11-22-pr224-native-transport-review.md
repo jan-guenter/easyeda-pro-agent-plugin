@@ -114,3 +114,25 @@ runtime bundles reproduced the prerequisite bytes exactly; only the two
 changed native identity modules and allowed source projection/review time
 changed in compatibility metadata. No version, runtime route or external pin
 changed. Exact-commit CI remains responsible for the full suites.
+
+## Malformed-envelope classification follow-up
+
+The review of the retained StrictMode fixture led to an additional hardening:
+window-failure classification now captures only a present string action from
+the current request property collection. Null, oversized or parsed missing-action
+envelopes cannot throw another property error from that catch. Normal dispatch
+and its exact field/purpose guards are unchanged.
+
+Both full driver loops passed a PS5 StrictMode Latest fixture with an oversized
+frame, a parsed request missing action, and a following valid identity request.
+The inert owner and all real purpose flags were initialized explicitly; earlier
+fixture setup failures remain in private logs. The fixed errors remain bounded,
+with no caller payload or OS text included. The canonical-input regression also
+checks the null/type/own-property classification and absence of direct action
+dereferences in that error block.
+
+Only driver/helper identities changed in this follow-up; the two C# compiler
+and review hashes above are unchanged. Current helper pins are:
+
+- inverse-native-continuation.v4: 1,859,703 bytes, SHA-256 `9bdc4cd17a1e8f80c3e1269c2049d42a8f0c898a4fa670263ed35a13f32f24f5`.
+- inverse-native-delete-cold-ui.v1: 692,081 bytes, SHA-256 `968c4101ca2066f4c295a8ecee3dacca851fcefb593ef2ae71619cf0587b783c`.

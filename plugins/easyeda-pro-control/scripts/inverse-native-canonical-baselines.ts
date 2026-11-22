@@ -20,8 +20,8 @@ export const CURRENT_INVERSE_NATIVE_CANONICAL_BASELINES=Object.freeze({
     } as const),
     "outputHelper": Object.freeze({
       "path": "scripts/footprint-inverse-native-continuation-v4.ps1",
-      "bytes": 1_859_307,
-      "sha256": "470881b1b8921a6cd654e48a8e293b0597c3681d16a16e0fb83924bf7d7f4358"
+      "bytes": 1_859_703,
+      "sha256": "9bdc4cd17a1e8f80c3e1269c2049d42a8f0c898a4fa670263ed35a13f32f24f5"
     } as const),
     "outputReview": Object.freeze({
       "path": "scripts/footprint-inverse-native-continuation-v4.cs",
@@ -35,8 +35,8 @@ export const CURRENT_INVERSE_NATIVE_CANONICAL_BASELINES=Object.freeze({
     } as const),
     "driver": Object.freeze({
       "relativePath": "scripts/native-baseline/inverse-native-v4-v1/driver.ps1.txt",
-      "bytes": 298_942,
-      "sha256": "ac38f710ce86e27c1a2862ed27628fadd660ddb7b0f565ce92a60713730b6b1f"
+      "bytes": 299_338,
+      "sha256": "2718183b0614557d69a7ef39244e7a432d6338e2612b95f06e6b23a3ed3361f6"
     } as const),
     "marker": "# INSERT EXACT FIXED INVERSE NATIVE OWNER V1\n"
   } as const),
@@ -55,8 +55,8 @@ export const CURRENT_INVERSE_NATIVE_CANONICAL_BASELINES=Object.freeze({
     } as const),
     "outputHelper": Object.freeze({
       "path": "scripts/footprint-inverse-native-delete-cold-ui.ps1",
-      "bytes": 691_685,
-      "sha256": "1a061bfe3c64ffeafbd64a0f52bb6d382c3978a08fdd34b3c3191bfda36768d5"
+      "bytes": 692_081,
+      "sha256": "968c4101ca2066f4c295a8ecee3dacca851fcefb593ef2ae71619cf0587b783c"
     } as const),
     "outputReview": Object.freeze({
       "path": "scripts/footprint-inverse-native-delete-cold-ui.cs",
@@ -70,8 +70,8 @@ export const CURRENT_INVERSE_NATIVE_CANONICAL_BASELINES=Object.freeze({
     } as const),
     "driver": Object.freeze({
       "relativePath": "scripts/native-baseline/inverse-native-cold-ui-v1/driver.ps1.txt",
-      "bytes": 92_812,
-      "sha256": "04029913670f70dc6a4bee3de7fbd3370b41b0e991b6e20b7b429da9b3e59ce6"
+      "bytes": 93_208,
+      "sha256": "42a4e38ef4f361bf4d8097fcb60062ab8b9973d01e38d4782606ddde720654a0"
     } as const),
     "marker": "# INSERT EXACT FIXED INVERSE NATIVE OWNER V1\n"
   } as const)
