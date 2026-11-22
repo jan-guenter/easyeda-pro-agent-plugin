@@ -184,3 +184,13 @@ corrections found no remaining issue, including the final clarification that
 only the ancestor seed remains unchanged while output identities advance.
 Current-head CI and CodeRabbit review remain required before merge. Installation
 continues to be deferred until the genuine runtime integration is ready.
+
+## Packaged compiler smoke, 22 November
+
+Both actual generated PowerShell helpers passed their fixed `-CompileOnly`
+paths under Windows PowerShell 5.1. Each emitted its own strict receipt after
+compiling the packaged input, checking its internal codecs and pipes, and
+releasing an empty Job. Both reported `processLaunched: false`. Windows CI
+now runs these two paths after compiling the readable canonical inputs. This
+covers the code PowerShell actually compiles, including the V4 type aliases and
+both storage codecs. The packaged payload and all native pins are unchanged.
