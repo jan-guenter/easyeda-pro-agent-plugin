@@ -1,9 +1,17 @@
+/* oxlint-disable import/max-dependencies -- The cold-only publisher joins existing rooted descriptors, managed readers and journal grammar without changing released active storage. */
+import {constants} from "node:fs";
+import type {BigIntStats} from "node:fs";
+import {link,lstat,open,unlink} from "node:fs/promises";
+import type {FileHandle} from "node:fs/promises";
+import process from "node:process";
+import {openControlRootCapability} from "./control-root.ts";
+import type {ControlRootDirectory} from "./control-root.ts";
 /** One original cold UI continuation publication. Strict chain, exact retained
  * bytes and fresh artifact reproof issue no native owner or resume authority. */
-import {dirname,join} from "node:path";
-import {randomBytes} from "node:crypto";
+import {basename,dirname,join} from "node:path";
+import {randomBytes,randomUUID} from "node:crypto";
 import {z} from "zod";
-import {assertOperationIdUnused,createOperation,createOperationScanner,ensureOperationStorage,loadOperation,operationPath,repairExactManagedArtifactDurability,repairOperationPublicationDurability,updateOperation,verifyExactManagedArtifact,writePhaseArtifact} from "./artifacts.ts";
+import {assertOperationIdUnused,controlDataDirectory,createOperationScanner,ensureOperationStorage,loadOperation,operationPath,repairExactManagedArtifactDurability,repairOperationPublicationDurability,updateOperation,verifyExactManagedArtifact,writePhaseArtifact} from "./artifacts.ts";
 import type {ArtifactDescriptor,OperationJournal} from "./artifacts.ts";
 import {OPERATION_SCHEMA,buildPlanHash,canonicalJson,isRecord,sha256Json,sha256Text} from "./core.ts";
 import type {UnknownRecord} from "./core.ts";
@@ -59,6 +67,7 @@ function parse(input: Readonly<UnknownRecord>): readonly Entry[] {
   need(request.operationId === operation.operationId, "MANIFEST");
   const entries = operation.records;
   assertCurrentFootprintInverseNativeDeleteColdUiChain(entries);
+  if(entries.length>0){need(canonicalJson(z.strictObject({request:coldUiStageRequestSchema}).parse(entries[0]?.evidence).request)===canonicalJson(request),"MANIFEST_REQUEST");}
   need(entries.every(entry => entry.operationId === operation.operationId) && operation.artifacts.length === entries.length, "ARTIFACT_ROSTER");
   for (const [index, entry] of entries.entries()) {
     const text = `${JSON.stringify(entry)}\n`; const descriptor = operation.artifacts[index];
@@ -71,6 +80,60 @@ function artifact(operationId: string, entry: Entry): ArtifactDescriptor {
   const text = `${JSON.stringify(entry)}\n`;
   return { path: join(dirname(operationPath(operationId)), operationId, `${String(entry.sequence).padStart(2, "0")}-${entry.kind}.json`), bytes: Buffer.byteLength(text), sha256: sha256Text(text) };
 }
+function sameInitialFile(left:Readonly<{dev:bigint;ino:bigint}>,right:Readonly<{dev:bigint;ino:bigint}>):boolean{return left.dev===right.dev&&left.ino===right.ino;}
+interface InitialPublicationAttempt {confirmedPrepublication:boolean;destinationConflict:boolean;directory:Readonly<{dev:bigint;ino:bigint}>|null}
+/** A cold-only initial publication keeps the released generic publisher intact.
+ * Only an owned temporary whose cleanup and directory sync completed before any
+ * link invocation can establish that this original manifest never published. */
+async function publishInitialColdUiOperation(operation:OperationJournal,attempt:InitialPublicationAttempt):Promise<void>{
+ const operationId=coldUiIdSchema.parse(operation.operationId);need(parse(operation).length===0,"INITIAL_ONLY");
+ const journalCore={...operation};delete journalCore["journalSha256"];
+ journalCore["integrityModel"]="The unkeyed SHA-256 value detects accidental corruption. It does not authenticate the journal against a writer with access to the control-data directory.";
+ const sealed={...journalCore,journalSha256:sha256Text(canonicalJson(journalCore))};
+ const bytes=Buffer.from(`${JSON.stringify(sealed,null,2)}\n`);need(bytes.length<=BUDGET.manifestBytes,"INITIAL_BYTES");
+ const path=operationPath(operationId),root=await openControlRootCapability(controlDataDirectory(),false);
+ let directory:ControlRootDirectory|undefined,file:FileHandle|undefined,identity:BigIntStats|undefined;
+ let failed=false,linkInvoked=false,temporary="";let failure:unknown;const cleanupErrors:unknown[]=[];
+ const currentDirectory=async():Promise<void>=>{
+  need(directory!==undefined,"INITIAL_DIRECTORY");const current=await root.openDirectory(dirname(path),false);
+  try{need(sameInitialFile(directory.info,current.info),"INITIAL_DIRECTORY_CHANGED");await root.assertCurrent();}finally{await current.handle.close();}
+ };
+ try{
+  directory=await root.openDirectory(dirname(path),false);
+  if(attempt.directory===null){attempt.directory=Object.freeze({dev:directory.info.dev,ino:directory.info.ino});}else{need(sameInitialFile(directory.info,attempt.directory),"INITIAL_DIRECTORY_CHANGED");}
+  const prefix=`/proc/self/fd/${String(directory.handle.fd)}/${basename(path)}`;
+  temporary=`${prefix}.tmp-cold-ui-${randomUUID()}`;
+  // oxlint-disable-next-line no-bitwise -- This fixed managed child can neither follow a symlink nor replace an existing temporary.
+  file=await open(temporary,constants.O_RDWR|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW|constants.O_NONBLOCK,0o600);
+  identity=await file.stat({bigint:true});
+  need(identity.isFile()&&identity.nlink===1n&&Number(identity.mode%512n)===0o600&&typeof process.getuid==="function"&&identity.uid===BigInt(process.getuid()),"INITIAL_TEMPORARY");
+  await file.writeFile(bytes);await file.sync();
+  const written=await file.stat({bigint:true});need(sameInitialFile(identity,written)&&written.size===BigInt(bytes.length)&&written.nlink===1n&&written.uid===identity.uid&&Number(written.mode%512n)===0o600,"INITIAL_WRITTEN");
+  await currentDirectory();
+  const named=await lstat(temporary,{bigint:true});need(sameInitialFile(written,named)&&named.isFile()&&named.size===written.size&&named.nlink===1n&&named.uid===written.uid&&named.mode===written.mode&&named.mtimeNs===written.mtimeNs&&named.ctimeNs===written.ctimeNs,"INITIAL_TEMPORARY_CHANGED");
+  linkInvoked=true;
+  try{await link(temporary,prefix);}catch(error){attempt.destinationConflict=error instanceof Error&&"code"in error&&error.code==="EEXIST";throw error;}
+  const published=await lstat(prefix,{bigint:true});need(sameInitialFile(identity,published)&&published.isFile()&&published.nlink===2n&&published.uid===identity.uid&&Number(published.mode%512n)===0o600,"INITIAL_PUBLISHED");await directory.handle.sync();
+ }catch(error){failed=true;failure=error;}
+ if(file!==undefined){await file.close().catch((error:unknown)=>{cleanupErrors.push(error);});}
+ if(identity!==undefined&&directory!==undefined){
+  try{
+   const current=await lstat(temporary,{bigint:true});need(sameInitialFile(identity,current)&&current.isFile()&&current.uid===identity.uid&&Number(current.mode%512n)===0o600,"INITIAL_TEMPORARY_CHANGED");
+   await unlink(temporary);await directory.handle.sync();await currentDirectory();
+  }catch(error){cleanupErrors.push(error);}
+ }
+ if(directory!==undefined){await directory.handle.close().catch((error:unknown)=>{cleanupErrors.push(error);});}
+ await root.close().catch((error:unknown)=>{cleanupErrors.push(error);});
+ if(failed||cleanupErrors.length>0){
+  attempt.confirmedPrepublication=failed&&identity!==undefined&&!linkInvoked&&cleanupErrors.length===0;
+  if(cleanupErrors.length===0){throw failure;}
+  throw new AggregateError(failed?[failure,...cleanupErrors]:cleanupErrors,"COLD_UI_JOURNAL_INITIAL_CLEANUP",{cause:failure});
+ }
+ const actual=await loadOperation(operationId);need(core(actual)===core(operation),"RESERVATION_CHANGED");
+ await repairOperationPublicationDurability(operation);const durable=await loadOperation(operationId);need(core(durable)===core(operation),"RESERVATION_CHANGED");
+ Object.assign(operation,sealed);
+}
+
 /** Read the maintained full chain and freshly verified artifacts without
  * constructing a publisher, native owner or resumable opening lifecycle. */
 export async function readCurrentFootprintInverseNativeDeleteColdUiHistory(operationId: string): Promise<Readonly<{
@@ -119,6 +182,8 @@ export class CurrentFootprintInverseNativeDeleteColdUiJournal {
   #reserveAttempted = false;
   #reservationEntered = false;
   #reservationConflict = false;
+  #initialNeverPublished=false;
+  #initialDirectory:Readonly<{dev:bigint;ino:bigint}>|null=null;
   #writing = false;
   #publicationIdle: Promise<null> = Promise.resolve(null);
   #pending: Readonly<{ entry: Entry; descriptor: ArtifactDescriptor; next: OperationJournal }> | null = null;
@@ -134,14 +199,16 @@ export class CurrentFootprintInverseNativeDeleteColdUiJournal {
     need(!this.#reserveAttempted, "RESERVATION_CONSUMED"); this.#reserveAttempted = true;
     await this.#exclusive(async () => {
       await ensureOperationStorage(); await assertOperationIdUnused(this.#request.operationId); this.#reservationEntered = true;
-      try { await createOperation(this.#operation); }
-      catch (error) {
-        if (error instanceof Error && "code" in error && error.code === "EEXIST") { this.#reservationConflict = true; }
-        throw error;
-      }
+      await this.#createInitial();
       this.#reserved = true;
       this.#queue("operation-intent", { request: this.#request }); await this.#settlePending();
     });
+  }
+  async #createInitial():Promise<void>{
+    const attempt:InitialPublicationAttempt={confirmedPrepublication:false,destinationConflict:false,directory:this.#initialDirectory};this.#initialNeverPublished=false;
+    try{await publishInitialColdUiOperation(this.#operation,attempt);}
+    catch(error){this.#initialNeverPublished=attempt.confirmedPrepublication;this.#reservationConflict=attempt.destinationConflict;throw error;}
+    finally{this.#initialDirectory=attempt.directory;}
   }
   /** Describe only this instance's original reservation attempt. A known
    * pre-create refusal or EEXIST conflict owns no managed journal. An unknown
@@ -167,6 +234,7 @@ export class CurrentFootprintInverseNativeDeleteColdUiJournal {
     const records=parse(this.#operation);need(records.length===6&&records.at(-1)?.kind==="read-intent","READ_PREFIX");
     for(const descriptor of this.#operation.artifacts??[]){await verifyExactManagedArtifact(descriptor);}
     await this.#assertPublished();need(!this.#writing,"PUBLICATION_BUSY");
+    const admitted=parse(this.#operation);need(admitted.length===6&&admitted.at(-1)?.kind==="read-intent","READ_PREFIX");
   }
   public async append(kind: Phase, evidence: Readonly<Record<string, unknown>>): Promise<void> {
     await this.#exclusive(async () => { await this.#assertPublished(); this.#queue(kind, evidence); await this.#settlePending(); });
@@ -227,8 +295,15 @@ export class CurrentFootprintInverseNativeDeleteColdUiJournal {
   }
   async #settlePending(): Promise<void> {
     need(this.#reserveAttempted && this.#reservationEntered && !this.#reservationConflict, "ORIGINAL_RESERVATION_REQUIRED");
-    let actual = await loadOperation(this.#request.operationId);
-    if (!this.#reserved) { need(core(actual) === core(this.#operation), "RESERVATION_CHANGED"); this.#reserved = true; }
+    let actual:OperationJournal;
+    try{actual=await loadOperation(this.#request.operationId);}
+    catch(error){
+      if(this.#reserved||!this.#initialNeverPublished||!(error instanceof Error&&"code"in error&&error.code==="ENOENT")){throw error;}
+      need(this.#pending===null&&parse(this.#operation).length===0,"INITIAL_ONLY");
+      await assertOperationIdUnused(this.#request.operationId);await this.#createInitial();
+      actual=await loadOperation(this.#request.operationId);
+    }
+    if (!this.#reserved) { need(core(actual) === core(this.#operation), "RESERVATION_CHANGED"); await repairOperationPublicationDurability(this.#operation);actual=await loadOperation(this.#request.operationId);need(core(actual)===core(this.#operation),"RESERVATION_CHANGED");this.#reserved = true; }
     let pending = this.#pending;
     if (pending === null) {
       need(core(actual) === core(this.#operation), "ORIGINAL_CHANGED");

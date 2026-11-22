@@ -13,7 +13,12 @@ export function queryCurrentFootprintInverseColdUiControl(includeSchemas=false):
    "The new readonly generation owns its checkpoint, helper, single UI task, normal close, root and whole-Job exit, original helper release and complete closed SQL comparison. Opening can persist existing-profile data.",
    "Inspect, cleanup and publication settlement retain that original generation. Lost replies never recreate it. Existing inverse V1 UI-absence false fields remain unchanged.",
    "A separately issued cold-UI absence proves native task behavior only. Public SDK parity, continuous replay exclusion, whole inverse verification and connected acceptance remain unproved.",
-  ],...(includeSchemas?{inputSchema:z.toJSONSchema(currentFootprintInverseColdUiControlActionSchema),outputSchema:z.toJSONSchema(currentFootprintInverseColdUiControlResultSchema)}:{})};
+  ],...(includeSchemas?{
+   inputSchema:{...z.toJSONSchema(currentFootprintInverseColdUiControlActionSchema),
+    description:"Structural schema only. Execute also requires the operation ID suffix to match the source inverse workflow ID suffix."},
+   outputSchema:{...z.toJSONSchema(currentFootprintInverseColdUiControlResultSchema),
+    description:"Structural schema only. Runtime validation also binds the operation to the original inverse and matches the UI absence proof to its target. Completion requires successful execution, verified absence, closed resources, terminal journal, and settled publication."},
+  }:{})};
 }
 export function validateCurrentFootprintInverseColdUiControlArguments(input:unknown):Record<string,unknown>{
  const parsed=currentFootprintInverseColdUiControlActionSchema.safeParse(input);

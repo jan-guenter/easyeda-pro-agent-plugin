@@ -88,35 +88,82 @@ function projectOwner(inventory: NativeSqlInventory, projectUuid: string): Reado
   const joined = users[0]; const value = (key: string): string | number | null => { if (joined === undefined) { return null; } const found = joined[key]; need(found !== undefined); return found; };
   return Object.freeze({ uuid: owner, username: value("username"), nickname: value("nickname"), avatar: value("avatar") });
 }
-export function deriveCurrentFootprintInversePublicRowData(input: unknown, footprintUuid: string, inventory: NativeSqlInventory): CurrentFootprintInversePublicRowData {
-  const completion = readerCompletion(inventory), source = captureCurrentFootprintSavedFlowCacheInput(input); deriveCurrentFootprintSavedFlowCacheData(source);
-  need(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u.test(footprintUuid)); const owner = projectOwner(inventory, source.projectUuid);
+interface ProjectionInput {
+  readonly inventory: NativeSqlInventory;
+  readonly completion: ReturnType<typeof readerCompletion>;
+  readonly source: ReturnType<typeof captureCurrentFootprintSavedFlowCacheInput>;
+  readonly footprintUuid: string;
+  readonly payload: string;
+}
+
+function captureProjectionInput(input: unknown, footprintUuid: string, inventory: NativeSqlInventory): ProjectionInput {
+  const completion = readerCompletion(inventory);
+  const source = captureCurrentFootprintSavedFlowCacheInput(input);
+  deriveCurrentFootprintSavedFlowCacheData(source);
+  need(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u.test(footprintUuid));
+  const owner = projectOwner(inventory, source.projectUuid);
+  const payload = JSON.stringify({ projectUuid: source.projectUuid, footprintUuid, owner, chunks: source.chunks });
+  return { inventory, completion, source, footprintUuid, payload };
+}
+
+function runProjection(script: Script, input: ProjectionInput, errorCode: string): unknown {
   let raw: unknown;
-  try { raw = projection.runInNewContext({ payload: JSON.stringify({ projectUuid: source.projectUuid, footprintUuid, owner, chunks: source.chunks }) }, { timeout: 1000, microtaskMode: "afterEvaluate", contextCodeGeneration: { strings: false, wasm: false } }) as unknown; }
-  catch { throw new Error("INVERSE_PUBLIC_ROW_PROJECTION"); }
-  need(typeof raw === "string" && Buffer.byteLength(raw) <= 65_536); const parsed: unknown = JSON.parse(raw);
-  const output = outputSchema.parse(captureCurrentPcbStringClockReply(parsed).value); need(output.workerRow.kind === "object" && output.uiRow.kind === "object" && readerCompletion(inventory) === completion);
+  try {
+    raw = script.runInNewContext({ payload: input.payload }, {
+      timeout: 1000, microtaskMode: "afterEvaluate", contextCodeGeneration: { strings: false, wasm: false },
+    }) as unknown;
+  } catch {
+    throw new Error(errorCode);
+  }
+  need(typeof raw === "string" && Buffer.byteLength(raw) <= 65_536);
+  const parsed: unknown = JSON.parse(raw);
+  return captureCurrentPcbStringClockReply(parsed).value;
+}
+
+function projectPublicRow(input: ProjectionInput): CurrentFootprintInversePublicRowData {
+  const { inventory, completion, source, footprintUuid } = input;
+  const output = outputSchema.parse(runProjection(projection, input, "INVERSE_PUBLIC_ROW_PROJECTION"));
+  need(output.workerRow.kind === "object" && output.uiRow.kind === "object" && readerCompletion(inventory) === completion);
   const data = freezeDeep({ schema: "private.current-footprint-inverse-public-row-data.v1" as const, projectUuid: source.projectUuid, branchUuid: source.branchUuid, footprintUuid,
     headHistoryUuid: source.headHistoryUuid, sourceSha256: inventory.checkpointSha256, logicalSha256: inventory.logicalSha256, completeDecodedChunksSha256: sha256Text(canonicalJson(source.chunks)),
     projectionSourceSha256: CURRENT_FOOTPRINT_INVERSE_PUBLIC_ROW_PROJECTION_SHA256, ...output, suppliedObservationsOnly: true as const, nativeRowVerified: false as const, deletionAuthorized: false as const });
-  need(canonicalJson(data).length <= 131_072); return data;
+  need(canonicalJson(data).length <= 131_072);
+  return data;
+}
+
+export function deriveCurrentFootprintInversePublicRowData(input: unknown, footprintUuid: string, inventory: NativeSqlInventory): CurrentFootprintInversePublicRowData {
+  return projectPublicRow(captureProjectionInput(input, footprintUuid, inventory));
 }
 
 /** Separate read-input projection. The historical row program, hash, v1 shape
  * and expected row values remain unchanged. This pure data is no runtime grant. */
-export function deriveCurrentFootprintInverseGetModelInputData(input:unknown,footprintUuid:string,inventory:NativeSqlInventory,expected:CurrentFootprintInversePublicRowData):CurrentFootprintInverseGetModelInputData{
- const row=deriveCurrentFootprintInversePublicRowData(input,footprintUuid,inventory);need(canonicalJson(row)===canonicalJson(expected));const completion=readerCompletion(inventory);const source=captureCurrentFootprintSavedFlowCacheInput(input);const owner=projectOwner(inventory,source.projectUuid);let raw:unknown;
- try{raw=inputProjection.runInNewContext({payload:JSON.stringify({projectUuid:source.projectUuid,footprintUuid,owner,chunks:source.chunks})},{timeout:1000,microtaskMode:"afterEvaluate",contextCodeGeneration:{strings:false,wasm:false}})as unknown;}catch{throw new Error("INVERSE_GET_MODEL_PROJECTION");}
- need(typeof raw==="string"&&Buffer.byteLength(raw)<=65_536);const parsed:unknown=JSON.parse(raw);const data=inputOutputSchema.parse(captureCurrentPcbStringClockReply(parsed).value);need(data.model.kind==="object"&&data.model.entries.length===CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS.length&&data.model.entries.every(([key],index)=>key===CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS[index])&&readerCompletion(inventory)===completion);
- return freezeDeep({schema:"private.current-footprint-inverse-get-model-input.v1",projectUuid:row.projectUuid,branchUuid:row.branchUuid,footprintUuid:row.footprintUuid,sourceSha256:row.sourceSha256,logicalSha256:row.logicalSha256,completeDecodedChunksSha256:row.completeDecodedChunksSha256,projectionSourceSha256:sha256Text(INPUT_PROGRAM),...data,suppliedObservationsOnly:true,nativeInputVerified:false});
+function projectGetModelInput(input: ProjectionInput, row: CurrentFootprintInversePublicRowData): CurrentFootprintInverseGetModelInputData {
+  const data = inputOutputSchema.parse(runProjection(inputProjection, input, "INVERSE_GET_MODEL_PROJECTION"));
+  need(data.model.kind === "object" && data.model.entries.length === CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS.length &&
+    data.model.entries.every(([key], index) => key === CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS[index]) &&
+    readerCompletion(input.inventory) === input.completion);
+  return freezeDeep({ schema: "private.current-footprint-inverse-get-model-input.v1", projectUuid: row.projectUuid, branchUuid: row.branchUuid,
+    footprintUuid: row.footprintUuid, sourceSha256: row.sourceSha256, logicalSha256: row.logicalSha256,
+    completeDecodedChunksSha256: row.completeDecodedChunksSha256, projectionSourceSha256: sha256Text(INPUT_PROGRAM),
+    ...data, suppliedObservationsOnly: true, nativeInputVerified: false });
+}
+
+export function deriveCurrentFootprintInverseGetModelInputData(input: unknown, footprintUuid: string, inventory: NativeSqlInventory,
+  expected: CurrentFootprintInversePublicRowData,
+): CurrentFootprintInverseGetModelInputData {
+  const captured = captureProjectionInput(input, footprintUuid, inventory);
+  const row = projectPublicRow(captured);
+  need(canonicalJson(row) === canonicalJson(expected));
+  return projectGetModelInput(captured, row);
 }
 
 /** New readonly projection only; the historical row/get-input programs and
  * their schemas/hashes above remain byte-exact. */
 const REFERENCE_HEAD="if(head.uuid===input.footprintUuid){if(head.docType!=='FOOTPRINT')throw Error('INVERSE_PUBLIC_ROW_DOCTYPE');project.onHeadChange(head,edit);}";
 const REFERENCE_LINE="if(uuid===input.footprintUuid){if(docType!=='FOOTPRINT')throw Error('INVERSE_PUBLIC_ROW_DOCTYPE');change.call(project,uuid,id,body,type,client,ticket,undefined,firstTicket,pend,false,undefined,undefined,undefined);}";
-for(const anchor of[REFERENCE_HEAD,REFERENCE_LINE,INPUT_ANCHOR]){if(PROGRAM.split(anchor).length!==2){throw new Error("INVERSE_REFERENCE_PROJECTION_ANCHOR");}}
-const REFERENCE_PROGRAM=PROGRAM.replace(REFERENCE_HEAD,"if(head.docType==='FOOTPRINT'){project.onHeadChange(head,edit);}").replace(REFERENCE_LINE,"if(docType==='FOOTPRINT'){change.call(project,uuid,id,body,type,client,ticket,undefined,firstTicket,pend,false,undefined,undefined,undefined);}").replace(INPUT_ANCHOR,`const reference={data:footprint.data,projectManager:project,get:footprint.get,verifySource(value){if(value!==input.footprintUuid)throw Error('INVERSE_REFERENCE_SELECTED_SOURCE');},${REFERENCE_SOURCE.getAll.source},${REFERENCE_SOURCE.getKeysBySource.source}};const derived=reference.getKeysBySource(input.footprintUuid);if(derived.success!==true)throw Error('INVERSE_REFERENCE_FILTER_RESULT');const models=Object.values(footprint.data).map(value=>{const model={};for(const key of ${JSON.stringify(CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS)})model[key]=value[key];return{uuid:value.uuid,model:encode(model)};});return JSON.stringify({derivedFootprintUuids:derived.result,models});`);
+const REFERENCE_TITLE_WARNING = "warn(){throw Error('INVERSE_PUBLIC_ROW_TITLE');}";
+for(const anchor of[REFERENCE_HEAD,REFERENCE_LINE,REFERENCE_TITLE_WARNING,INPUT_ANCHOR]){if(PROGRAM.split(anchor).length!==2){throw new Error("INVERSE_REFERENCE_PROJECTION_ANCHOR");}}
+const REFERENCE_PROGRAM=PROGRAM.replace(REFERENCE_TITLE_WARNING,"warn(){}").replace(REFERENCE_HEAD,"if(head.docType==='FOOTPRINT'){project.onHeadChange(head,edit);}").replace(REFERENCE_LINE,"if(docType!==metadata.docHead[uuid]?.docType)throw Error('INVERSE_REFERENCE_RETAINED_FAMILY');if(docType==='FOOTPRINT'){change.call(project,uuid,id,body,type,client,ticket,undefined,firstTicket,pend,false,undefined,undefined,undefined);}").replace(INPUT_ANCHOR,`const reference={data:footprint.data,projectManager:project,get:footprint.get,verifySource(value){if(value!==input.footprintUuid)throw Error('INVERSE_REFERENCE_SELECTED_SOURCE');},${REFERENCE_SOURCE.getAll.source},${REFERENCE_SOURCE.getKeysBySource.source}};const derived=reference.getKeysBySource(input.footprintUuid);if(derived.success!==true)throw Error('INVERSE_REFERENCE_FILTER_RESULT');const models=Object.values(footprint.data).map(value=>{const model={};for(const key of ${JSON.stringify(CURRENT_FOOTPRINT_INVERSE_GET_MODEL_READ_FIELDS)})model[key]=value[key];return{uuid:value.uuid,model:encode(model)};});return JSON.stringify({derivedFootprintUuids:derived.result,models});`);
 const referenceProjection=new Script(REFERENCE_PROGRAM,{filename:"current-footprint-inverse-reference-projection.js"});
 export interface CurrentFootprintInverseReferenceData{
  readonly schema:"private.current-footprint-inverse-reference-data.v1";readonly projectUuid:string;readonly branchUuid:string;readonly footprintUuid:string;
@@ -124,10 +171,39 @@ export interface CurrentFootprintInverseReferenceData{
  readonly documentFamilies:ReturnType<typeof deriveCurrentFootprintInverseStartupData>["documentFamilies"];
  readonly models:readonly Readonly<{uuid:string;model:CurrentFootprintInversePublicRowValue}>[];readonly derivedFootprintUuids:readonly string[];readonly suppliedObservationsOnly:true;readonly actualReferenceResultsVerified:false;readonly deletionAuthorized:false;
 }
-export function deriveCurrentFootprintInverseReferenceData(input:unknown,footprintUuid:string,inventory:NativeSqlInventory,expected:CurrentFootprintInversePublicRowData):CurrentFootprintInverseReferenceData{
- const row=deriveCurrentFootprintInversePublicRowData(input,footprintUuid,inventory);need(canonicalJson(row)===canonicalJson(expected));const completion=readerCompletion(inventory);const source=captureCurrentFootprintSavedFlowCacheInput(input);const startup=deriveCurrentFootprintInverseStartupData(source);const owner=projectOwner(inventory,source.projectUuid);
- const allowed=new Set(["FOOTPRINT","SYMBOL","BOARD","CONFIG"]);need(startup.documentFamilies.every(doc=>doc.families.every(family=>allowed.has(family.docType))));let raw:unknown;
- try{raw=referenceProjection.runInNewContext({payload:JSON.stringify({projectUuid:source.projectUuid,footprintUuid,owner,chunks:source.chunks})},{timeout:1000,microtaskMode:"afterEvaluate",contextCodeGeneration:{strings:false,wasm:false}})as unknown;}catch{throw new Error("INVERSE_REFERENCE_PROJECTION");}
- need(typeof raw==="string"&&Buffer.byteLength(raw)<=65_536);const parsed:unknown=JSON.parse(raw);const uuid=z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u);const model=z.strictObject({uuid,model:valueSchema});const models=z.array(model).min(1).max(8);const referenceOutputSchema=z.strictObject({derivedFootprintUuids:z.array(uuid).max(32),models});const output=referenceOutputSchema.parse(captureCurrentPcbStringClockReply(parsed).value);need(output.derivedFootprintUuids.length===0&&readerCompletion(inventory)===completion);
- return freezeDeep({schema:"private.current-footprint-inverse-reference-data.v1",projectUuid:row.projectUuid,branchUuid:row.branchUuid,footprintUuid:row.footprintUuid,sourceSha256:row.sourceSha256,logicalSha256:row.logicalSha256,completeDecodedChunksSha256:row.completeDecodedChunksSha256,projectionSourceSha256:sha256Text(REFERENCE_PROGRAM),documentFamilies:startup.documentFamilies,models:output.models,derivedFootprintUuids:output.derivedFootprintUuids,suppliedObservationsOnly:true,actualReferenceResultsVerified:false,deletionAuthorized:false});
+const referenceUuid = z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u);
+const referenceModel = z.strictObject({ uuid: referenceUuid, model: valueSchema });
+const referenceOutputSchema = z.strictObject({ derivedFootprintUuids: z.array(referenceUuid).max(32), models: z.array(referenceModel).min(1).max(8) });
+const referenceFamilies = new Set(["FOOTPRINT", "SYMBOL", "BOARD", "CONFIG"]);
+
+function projectReferenceData(input: ProjectionInput, row: CurrentFootprintInversePublicRowData): CurrentFootprintInverseReferenceData {
+  const startup = deriveCurrentFootprintInverseStartupData(input.source);
+  need(startup.documentFamilies.every(doc => doc.families.every(family => referenceFamilies.has(family.docType))));
+  const output = referenceOutputSchema.parse(runProjection(referenceProjection, input, "INVERSE_REFERENCE_PROJECTION"));
+  need(output.derivedFootprintUuids.length === 0 && readerCompletion(input.inventory) === input.completion);
+  return freezeDeep({ schema: "private.current-footprint-inverse-reference-data.v1", projectUuid: row.projectUuid, branchUuid: row.branchUuid,
+    footprintUuid: row.footprintUuid, sourceSha256: row.sourceSha256, logicalSha256: row.logicalSha256,
+    completeDecodedChunksSha256: row.completeDecodedChunksSha256, projectionSourceSha256: sha256Text(REFERENCE_PROGRAM),
+    documentFamilies: startup.documentFamilies, models: output.models, derivedFootprintUuids: output.derivedFootprintUuids,
+    suppliedObservationsOnly: true, actualReferenceResultsVerified: false, deletionAuthorized: false });
+}
+
+export function deriveCurrentFootprintInverseReferenceData(input: unknown, footprintUuid: string, inventory: NativeSqlInventory,
+  expected: CurrentFootprintInversePublicRowData,
+): CurrentFootprintInverseReferenceData {
+  const captured = captureProjectionInput(input, footprintUuid, inventory);
+  const row = projectPublicRow(captured);
+  need(canonicalJson(row) === canonicalJson(expected));
+  return projectReferenceData(captured, row);
+}
+
+/** Derive the three projections from the same validated saved input and SQL owner's row. */
+export function deriveCurrentFootprintInverseFullProjectionData(input: unknown, footprintUuid: string, inventory: NativeSqlInventory): Readonly<{
+  row: CurrentFootprintInversePublicRowData;
+  model: CurrentFootprintInverseGetModelInputData;
+  reference: CurrentFootprintInverseReferenceData;
+}> {
+  const captured = captureProjectionInput(input, footprintUuid, inventory);
+  const row = projectPublicRow(captured);
+  return Object.freeze({ row, model: projectGetModelInput(captured, row), reference: projectReferenceData(captured, row) });
 }

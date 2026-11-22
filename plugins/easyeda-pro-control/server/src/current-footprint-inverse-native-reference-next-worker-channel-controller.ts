@@ -70,7 +70,20 @@ export class CurrentFootprintInverseNativeReferenceNextWorkerChannelController {
    * until metadata and the fixed equality join have qualified them. */
   async #frame(role: keyof typeof ALL_EXPRESSIONS[Kind], callFrameId: string): Promise<Readonly<{ id: string; values: ReturnType<typeof array> }>> { const size = role === "inner" ? 17 : 5; const id = result(await this.#read(validate({queryKind:this.#b.kind, phase: "inverse-native-reference-next-worker-channel-frame", role, method: "Debugger.evaluateOnCallFrame", params: { callFrameId, expression: ALL_EXPRESSIONS[this.#b.kind][role], objectGroup: FLAGS.objectGroup, silent: true, generatePreview: false, throwOnSideEffect: true, returnByValue: false, includeCommandLineAPI: false } })), size); return Object.freeze({ id, values: array(await this.#props(id), size) }); }
   /** Pump the same original stream with a fixed deadline and sticky custody. */
-  async #wait(): Promise<DiagnosticEvent> { const started = performance.now(); while (this.#queued === null) { this.#current(); need(performance.now() - started < 30_000); await this.#b.poll(); this.#current(); } const event = this.#queued; this.#queued = null; this.#held = event; return event; }
+  async #wait(): Promise<DiagnosticEvent> {
+    const deadline = performance.now() + 30_000;
+    while (this.#queued === null) {
+      this.#current();
+      need(performance.now() < deadline);
+      await this.#b.poll();
+      this.#current();
+      need(performance.now() < deadline);
+    }
+    const event = this.#queued;
+    this.#queued = null;
+    this.#held = event;
+    return event;
+  }
   /** Qualify original channel classes/native BC before any body transfer,
    * then prove all live inner operands and stop before the RPC body executes. */
   async #run(): Promise<CurrentFootprintInverseNativeReferenceNextWorkerChannelHold> { try { this.#current(); const b = this.#b; const g = b.dependencies; const m = { ...b.registration.manager, project: b.manager.project, footprint: b.manager.service, getData: b.manager.method, getDataId: b.manager.methodId }; const first = await this.#frame("getData", b.manager.frame); const route = await this.#tuple("route", [first.id, b.manager.lexicals, b.manager.topics, b.manager.topicGroup, b.native.roots], 2);

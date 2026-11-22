@@ -28,7 +28,7 @@ void test("new native result book and ordered smoke restore every own packet wit
  assert.equal(LEGACY.length,21);assert.equal(own.length,rows.filter(row=>row[0]!=="program").length);assert.ok(text.includes(`if(index!=${String(own.length)})`));const transcript=Buffer.concat(own);const hash=sha(transcript);assert.ok(text.includes(`!=@"${hash}"`));const reversed=Buffer.concat(own.toReversed());assert.notEqual(sha(reversed),hash);assert.equal(PROFILE.renderer.total,27_705);assert.equal(PROFILE.controls,182_736);assert.equal(PROFILE.main.reproofs,103_376);assert.equal(PROFILE.executionAuthorized,false);
 });
 
-void test("UI result dispatch is confined to the retained V4 GET completion", async () => {
+void test("passive UI result book remains confined to the dedicated native inverse driver", async () => {
  const legacyPaths = [
   "../src/current-footprint-inverse-native-fragment.ts",
   "../src/current-footprint-inverse-native-profile.ts",
@@ -44,23 +44,10 @@ void test("UI result dispatch is confined to the retained V4 GET completion", as
   assert.equal(resultRoute.test(text), false, name);
  }
 
- const [owner, pipe, driver, {ownerSource: native}] = await Promise.all([
-  readFile(new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url), "utf8"),
-  readFile(new URL("../src/current-pcb-diagnostic-pipe.ts", import.meta.url), "utf8"),
-  readFile(new URL("../../scripts/footprint-inverse-native-continuation-v4.ps1", import.meta.url), "utf8"),
+ const [driver,{ownerSource:native}]=await Promise.all([
+  readFile(new URL("../../scripts/footprint-inverse-native-continuation-v4.ps1",import.meta.url),"utf8"),
   readCurrentInverseNativeCanonicalInputs("inverse-native-continuation.v4"),
  ]);
- const completion = /^ {2}public completeFootprintInverseNativeGetTaskResult\([^\n]+\n([\s\S]+?)^ {2}\}$/mu.exec(owner)?.[1];
- assert.ok(completion !== undefined);
- assert.ok(completion.trimStart().startsWith("assertOriginalCurrentFootprintInverseV4NativeOwner(this);"));
- assert.match(completion, /requireOriginalCurrentFootprintInverseV4NativeGetTaskWorkerCompletion\(completion,this,prepared\)/u);
- assert.match(completion, /original\.assertOriginalUiHeld\(\)/u);
-
- const dispatch = /^ {2}public observeInverseNativeGetTaskResult\([^\n]+/mu.exec(pipe)?.[0];
- assert.ok(dispatch !== undefined);
- assert.match(dispatch, /this\.originalInverseNativeGetTaskInvocationReply\(original\);/u);
- assert.match(dispatch, /!this\.#inverseNativeContinuationV4/u);
- assert.match(dispatch, /this\.#inverseNativeGetTaskPending!==null/u);
  assert.ok(/'footprint-inverse-native-get-task-result' \{\s+if\(-not \$FootprintInverse209 -or -not \$launched\)/u.test(driver),
   "the dedicated driver requires an original launched inverse owner");
  assert.ok(driver.includes("[EasyedaDiagnosticOwner]::VerifyFootprintInverseNativeGetTaskResultSmoke()"),

@@ -58,10 +58,35 @@ export class CurrentFootprintInverseNativeReferenceNextWorkerForwardController {
     if (command.method === "Debugger.removeBreakpoint") { z.strictObject({}).parse(capture(raw)); this.#points.delete(command.params.breakpointId); } return raw;
   } catch (caughtError) { this.#failed = true; throw caughtError; } finally { this.#requesting = false; } }
   /** Wait only on this original event stream with a finite deadline. */
-  async #wait(): Promise<Held> { const started = performance.now(); while (this.#queued === null) { this.#current(); need(performance.now() - started < 30_000); await this.#b.poll(); this.#current(); } const event = this.#queued; this.#queued = null; this.#held = event; this.#b.assertOriginalEvent(event); return pause(event, this.#b.sessionId, this.#b.scripts, this.#points); }
+  async #wait(): Promise<Held> {
+    const deadline = performance.now() + 30_000;
+    while (this.#queued === null) {
+      this.#current();
+      need(performance.now() < deadline);
+      await this.#b.poll();
+      this.#current();
+      need(performance.now() < deadline);
+    }
+    const event = this.#queued;
+    this.#queued = null;
+    this.#held = event;
+    this.#b.assertOriginalEvent(event);
+    return pause(event, this.#b.sessionId, this.#b.scripts, this.#points);
+  }
   /** Join the actual resumed notification rather than accepting an empty ACK
    * as proof that the original paused source continuation ran. */
-  async #waitResumed(): Promise<void> { const started = performance.now(); while (!this.#resumed) { this.#current(); need(performance.now() - started < 30_000); await this.#b.poll(); this.#current(); } await this.#b.control("resumed"); this.#current(); }
+  async #waitResumed(): Promise<void> {
+    const deadline = performance.now() + 30_000;
+    while (!this.#resumed) {
+      this.#current();
+      need(performance.now() < deadline);
+      await this.#b.poll();
+      this.#current();
+      need(performance.now() < deadline);
+    }
+    await this.#b.control("resumed");
+    this.#current();
+  }
   /** Require this same final return pause and receipt. Matching JSON cannot
    * replace its native source, invocation Promise or original UI event. */
   public requireOriginalHold(token: CurrentFootprintInverseNativeReferenceNextWorkerForwardHold): CurrentFootprintInverseNativeReferenceNextWorkerForwardOriginal { this.#current(); need(!this.#consumed && token === this.#token && this.#original !== null && this.#original.event === this.#held && !this.#awaitingResume && this.#queued === null); this.#b.assertOriginalEvent(this.#original.event); const selected = pause(this.#original.event, this.#b.sessionId, this.#b.scripts, this.#points); need(selected.role === "postReturned" && selected.frame === this.#original.receipt.heldReturn.frame); return this.#original; }

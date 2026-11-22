@@ -150,7 +150,14 @@ export class CurrentSchematicWireEncoderDispatch {
       const outcome = (async (): Promise<{ value: unknown } | { cause: unknown }> => {
         try { return { value: await task.reply }; } catch (caughtError) { return { cause: caughtError }; }
       })();
-      await task.written;
+      const expired = Promise.withResolvers<never>();
+      const timeLeft = Math.ceil(deadline - performance.now());
+      const timer = setTimeout(() => { expired.reject(new Error("WIRE_ENCODER_DISPATCH_ORIGINAL_WRITE_DEADLINE")); },
+        Math.max(0, timeLeft));
+      try {
+        await Promise.race([task.written, expired.promise]);
+        need(performance.now() < deadline, "ORIGINAL_WRITE_DEADLINE");
+      } finally { clearTimeout(timer); }
       this.#current();
       need(active.forwarded && this.#original.status().requestCount === id, "ORIGINAL_WRITE");
       const polls = phase === "wire-encoder-source" ? SOURCE_POLLS : NORMAL_POLLS;

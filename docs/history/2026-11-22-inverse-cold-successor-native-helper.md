@@ -40,3 +40,50 @@ owner starts after persistence. A declined proof prevents the current
 effect write, and cancellation during a proof keeps that write closed.
 An inert Core regression exercises each effect boundary and the pending
 cancellation path.
+
+## Passive review corrections — 2026-11-22
+
+The passive review now tests invalid distribution names through the actual
+helper path-selector function with a deterministic UNC fixture and a separate
+drive-path success. Both birth-smoke and initialization calls must exist before
+their order is compared. The two cold owner/accounting/cancellation fixtures and
+the GET Core/pipe routing assertions belong to the final original-owner batch;
+they are preserved for that batch instead of adding unmounted runtime code or
+skipping failures here. The restored GET fixture exercises all four original
+continuation/pending combinations: only an active original V4 continuation
+without another pending task may dispatch.
+
+The native cold-UI budget now reads the same exported controller cleanup count
+used by the profile, preserving its existing numeric value and profile shape.
+These corrections create no native owner or connected proof.
+
+## Original cold-UI publication review corrections — 2026-11-22
+
+The history parser now binds the complete original operation-intent request to
+the manifest plan, while preserving an empty prepared initial manifest. Read
+admission repeats the exact six-record/read-intent check after artifact and
+publication verification, so a concurrent failure append cannot retain admission.
+
+The unmounted cold journal has its own descriptor-bound initial publisher;
+released active storage code remains unchanged. Its private attempt retains the
+first operations-directory device/inode, exact initial plan/nonce and whether
+link was invoked. A retry requires the same directory before writing, both
+unused operation names, an owned temporary whose identity/facts still match
+before link, and successful original temporary unlink, directory fsync and
+handle closure. Any link invocation consumes that classification permanently.
+It never deletes or recreates a possibly published destination. A destination
+collision stays distinct from an unowned temporary-name conflict.
+
+Settlement repairs the originally retained serialized bytes, rather than
+adopting a canonically equivalent disk object. Unknown creates remain
+create-unknown until their original publication settles. After a link or cleanup
+ambiguity, missing/invalid original bytes remain pending; no native call, owner,
+resume, cleanup completion or execution grant follows from this local retry.
+
+Eleven focused helper/journal cases passed, including original plan/request
+binding, the concurrent read-prefix cutoff, pre-link ENOSPC recovery with the
+same nonce, absent post-link refusal, competing publication, directory
+replacement, cleanup fsync failure and reordered-but-canonically-equal manifest
+refusal. These use isolated real managed storage and explicit fault hooks, with
+no native owner or application. The moved original-owner fixtures are preserved
+for the final owner batch and are not hidden behind skips.

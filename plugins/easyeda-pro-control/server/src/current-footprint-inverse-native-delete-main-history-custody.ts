@@ -53,6 +53,7 @@ function isSiteRole(value: FrameRole): value is Role { return Object.hasOwn(SITE
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`INVERSE_NATIVE_DELETE_HISTORY_CUSTODY_${code}`); } }
 export class CurrentFootprintInverseNativeDeleteMainHistoryCustody {
   readonly #rawFrames = new Set<string>(); readonly #frameAttempts = new Set<string>();
+  readonly #pendingArms = new Set<Role>();
   readonly #host: CurrentFootprintInverseNativeDeleteMainHistoryHost; readonly #points = new Map<Role, string>(); readonly #frames = new Map<string, string>(); readonly #packets = new Map<ProgramRole, string>();
   readonly #values = new Set<string>(); readonly #slots = new Map<Slot, SqlSlot>();
   #normal = 0; #cleanup = 0; #step = 0; #failed = false; #started = false;
@@ -123,6 +124,11 @@ export class CurrentFootprintInverseNativeDeleteMainHistoryCustody {
    * Existing source, step, callback, clock and native-grant checks still apply. */
   public async request(input: Command, cleanup: boolean): Promise<unknown> {
     this.#same(); const command = validateCurrentFootprintInverseNativeDeleteMainHistoryCommand(input);
+    let armRole: Role | null = null;
+    if (command.phase === "inverse-native-delete-main-history-arm") { armRole = command.role; }
+    else if (command.phase === "inverse-native-delete-main-history-callback-arm") { armRole = "callback"; }
+    // A duplicate must not invalidate the first physical arm's in-flight reply.
+    if (armRole !== null) { need(!this.#pendingArms.has(armRole), "ARM_PENDING"); this.#pendingArms.add(armRole); }
     try { if (cleanup) { this.#cleanup += 1; need(command.phase === "inverse-native-delete-main-history-remove" && this.#cleanup <= LIMITS.cleanup && this.#result !== null, "CLEANUP"); }
       else { this.#normal += 1; need(command.phase !== "inverse-native-delete-main-history-remove" && this.#normal <= LIMITS.normal, "NORMAL_BOUND"); }
       if (command.phase === "inverse-native-delete-main-history-step") { return await this.#advance(command); }
@@ -134,14 +140,15 @@ export class CurrentFootprintInverseNativeDeleteMainHistoryCustody {
       else if (command.phase === "inverse-native-delete-main-history-join" || command.phase === "inverse-native-delete-main-history-rebase" || command.phase === "inverse-native-delete-main-history-bookkeeping") { const expected = this.#joinExpected(command.role), key = `${String(this.#step)}:${command.role}`; let sqlFrame: "sqlCallback" | "sqlRun" | null = null; if (command.role === "sqlCallback") { sqlFrame = "sqlCallback"; } else if (command.role.startsWith("run")) { sqlFrame = "sqlRun"; } if (sqlFrame !== null) { need((command.phase === "inverse-native-delete-main-history-rebase") === this.#rawFrames.has(this.#frameKey(sqlFrame)), "FRAME_VERSION"); } const args = command.phase === "inverse-native-delete-main-history-rebase" && command.role === "sqlCallback" ? [this.#host.captureObjectId, ...expected.arguments] : expected.arguments; need(!this.#values.has(key) && command.params.objectId === expected.receiver && canonicalJson(command.params.arguments.map(argument => argument.objectId)) === canonicalJson(args), "ORIGINAL_JOIN_ARGUMENTS"); this.#values.add(key); }
       else { need(this.#points.get(command.role) === command.params.breakpointId, "ORIGINAL_POINT"); }
       const reply = captureCurrentPcbStringClockReply(await this.#host.send(command, cleanup)).value; this.#same();
-      if (command.phase === "inverse-native-delete-main-history-arm") { const allocated = z.strictObject({ breakpointId: handle, actualLocation: point }).parse(reply); need(canonicalJson(allocated.actualLocation) === canonicalJson(command.params.location) && ![...this.#points.values()].includes(allocated.breakpointId), "ARM_REPLY"); this.#host.registerPoint(allocated.breakpointId, allocated.actualLocation); this.#points.set(command.role, allocated.breakpointId); }
+      if (command.phase === "inverse-native-delete-main-history-arm") { const allocated = z.strictObject({ breakpointId: handle, actualLocation: point }).parse(reply); need(this.#pendingArms.has(command.role) && !this.#points.has(command.role) && canonicalJson(allocated.actualLocation) === canonicalJson(command.params.location) && ![...this.#points.values()].includes(allocated.breakpointId), "ARM_REPLY"); this.#host.registerPoint(allocated.breakpointId, allocated.actualLocation); this.#points.set(command.role, allocated.breakpointId); }
       else if (command.phase === "inverse-native-delete-main-history-properties") { if (command.role === "transaction") { this.#callbackFunction = decodeCallback(reply); } else { decodeCallbackMetadata(reply, this.#host.scriptId); this.#callbackQualified = true; } }
-      else if (command.phase === "inverse-native-delete-main-history-callback-arm") { const allocated = z.strictObject({ breakpointId: handle }).parse(reply); need(![...this.#points.values()].includes(allocated.breakpointId), "CALLBACK_POINT_ALIAS"); this.#host.registerPoint(allocated.breakpointId, { scriptId: this.#host.scriptId, lineNumber: SITES.callback.lineNumber, columnNumber: SITES.callback.columnNumber }); this.#points.set("callback", allocated.breakpointId); }
+      else if (command.phase === "inverse-native-delete-main-history-callback-arm") { const allocated = z.strictObject({ breakpointId: handle }).parse(reply); need(this.#pendingArms.has("callback") && !this.#points.has("callback") && ![...this.#points.values()].includes(allocated.breakpointId), "CALLBACK_POINT_ALIAS"); this.#host.registerPoint(allocated.breakpointId, { scriptId: this.#host.scriptId, lineNumber: SITES.callback.lineNumber, columnNumber: SITES.callback.columnNumber }); this.#points.set("callback", allocated.breakpointId); }
       else if (command.phase === "inverse-native-delete-main-history-frame" || command.phase === "inverse-native-delete-main-history-raw-frame") { this.#frames.set(this.#frameKey(command.role), decodeArray(reply, currentFootprintInverseNativeDeleteMainHistoryFrame(command.role).length - (command.phase === "inverse-native-delete-main-history-raw-frame" ? 1 : 0))); }
       else if (command.phase === "inverse-native-delete-main-history-join" || command.phase === "inverse-native-delete-main-history-rebase" || command.phase === "inverse-native-delete-main-history-bookkeeping") { await this.#retainJoin(command.role, reply); }
       else { z.strictObject({}).parse(reply); this.#host.removePoint(command.params.breakpointId); }
       return reply;
     } catch (error) { this.#failed = true; throw error; }
+    finally { if (armRole !== null) { this.#pendingArms.delete(armRole); } }
   }
   async #retainJoin(role: ProgramRole, reply: unknown): Promise<void> {
     const fixed = PROGRAMS[role];
