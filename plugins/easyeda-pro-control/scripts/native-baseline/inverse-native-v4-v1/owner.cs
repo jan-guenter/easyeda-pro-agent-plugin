@@ -1550,11 +1550,17 @@ port=int.Parse(match.Groups[1].Value,System.Globalization.CultureInfo.InvariantC
 static int Port(uint value){return (int)(((value&255)<<8)|((value>>8)&255));}
 static TcpRow[] TcpRows(){
 uint size=0;uint result=GetExtendedTcpTable(System.IntPtr.Zero,ref size,true,2,5,0);Need(result==122&&size>=4&&size<=4+65536U*24,"tcp-size");
-System.IntPtr memory=System.Runtime.InteropServices.Marshal.AllocHGlobal(checked((int)size));try{
-uint capacity=size;result=GetExtendedTcpTable(memory,ref size,true,2,5,0);Need(result==0&&size<=capacity&&size>=4,"tcp-read");
+for(int attempt=0;attempt<3;attempt++){
+Need(size>=4&&size<=4+65536U*24,"tcp-size");uint capacity=size;
+System.IntPtr memory=System.Runtime.InteropServices.Marshal.AllocHGlobal(checked((int)capacity));try{
+result=GetExtendedTcpTable(memory,ref size,true,2,5,0);
+if(result==122){Need(size>capacity&&size<=4+65536U*24&&attempt<2,"tcp-resize");continue;}
+Need(result==0&&size<=capacity&&size>=4,"tcp-read");
 uint count=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory));Need(count<=65536U&&4L+count*24L<=size,"tcp-count");var rows=new TcpRow[count];
 for(int i=0;i<rows.Length;i++){int offset=4+i*24;rows[i]=new TcpRow{state=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset)),localAddress=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+4)),localPort=Port(unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+8))),remoteAddress=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+12)),remotePort=Port(unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+16))),pid=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+20))};}return rows;
 }finally{System.Runtime.InteropServices.Marshal.FreeHGlobal(memory);}
+}
+Need(false,"tcp-resize-bound");return null;
 }
 internal static void CompareRows(TcpRow[] rows,uint rootPid,uint helperPid,int serverPort,int clientPort,bool connected){
 Need(rows!=null&&rows.Length<=65536&&rootPid>0&&helperPid>0&&rootPid!=helperPid&&serverPort>0&&serverPort<=65535&&(!connected||clientPort>0&&clientPort<=65535&&clientPort!=serverPort),"tcp-input");
@@ -1593,7 +1599,7 @@ var fields=new System.Collections.Generic.Dictionary<string,string>(System.Strin
 string upgrade=null,connection=null,accept=null;Need(fields.TryGetValue("Upgrade",out upgrade)&&upgrade.Equals("websocket",System.StringComparison.OrdinalIgnoreCase)&&fields.TryGetValue("Connection",out connection)&&connection.Equals("Upgrade",System.StringComparison.OrdinalIgnoreCase)&&fields.TryGetValue("Sec-WebSocket-Accept",out accept),"handshake-upgrade");
 using(var sha=System.Security.Cryptography.SHA1.Create()){string expected=System.Convert.ToBase64String(sha.ComputeHash(System.Text.Encoding.ASCII.GetBytes(key+"258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));Need(accept==expected,"handshake-accept");}
 }
-void WriteAll(byte[] bytes){int offset=0;while(offset<bytes.Length){int written=socket.Send(bytes,offset,bytes.Length-offset,System.Net.Sockets.SocketFlags.None);Need(written>0,"socket-write");offset+=written;}}
+void WriteAll(byte[] bytes){int offset=0;try{while(offset<bytes.Length){int written=socket.Send(bytes,offset,bytes.Length-offset,System.Net.Sockets.SocketFlags.None);Need(written>0,"socket-write");offset+=written;}}catch{Fail("socket-write");throw;}}
 void WriteFrame(byte opcode,byte[] bytes){
 Need(bytes.Length<=4194304,"outgoing-bound");int header=bytes.Length<126?2:bytes.Length<=65535?4:10;byte[] frame=new byte[header+4+bytes.Length];frame[0]=(byte)(128|opcode);
 if(header==2)frame[1]=(byte)(128|bytes.Length);else if(header==4){frame[1]=254;frame[2]=(byte)(bytes.Length>>8);frame[3]=(byte)bytes.Length;}else{frame[1]=255;for(int i=0;i<8;i++)frame[2+i]=(byte)((ulong)bytes.Length>>(56-8*i));}
@@ -1872,7 +1878,7 @@ public sealed partial class EasyedaDiagnosticOwner {
   readonly bool workerStartupFootprintMain209,workerStartupFootprintCombined209,workerStartupFootprintForward209;
   bool footprintCombinedAbortAttempted;
   int forwardNormalRequests,forwardCleanupRequests;
-  EasyedaOriginalMainTransport originalMain;int mainRequest,mainPolls,mainBufferOffset;byte[] mainBuffer;
+  EasyedaOriginalMainTransport originalMain;bool originalMainReleaseObserved;int mainRequest,mainPolls,mainBufferOffset;byte[] mainBuffer;
   bool mainCloseReleaseWritten,mainCloseDetachAttempted,mainCloseDetached;
   int savedCacheProbeStep;bool savedCacheProbeReleased,savedCacheDiscoveryEnded;string savedCacheProbeSession;
   int savedCacheAccessorProbeStep;bool savedCacheAccessorProbeReleased;string savedCacheAccessorProbeSession;
@@ -2083,7 +2089,7 @@ public sealed partial class EasyedaDiagnosticOwner {
   public void SendSpatial209(int id,string method,string session,string phase,System.Collections.IDictionary fields) {
     if(!spatial209)throw Error("spatial209-purpose");
     string message=Spatial209ProtocolMessage(id,method,session,phase,fields);
-    SpatialSequence(id,session,phase,fields);SendMessage(id,message);
+    SendMessage(id,message,false,RendererWriteRole.Existing,()=>SpatialSequence(id,session,phase,fields));
   }
   public static void VerifySpatial209Smoke() {
     EasyedaDiagnosticOwner owner=CreateSpatial209();
@@ -5261,7 +5267,7 @@ public sealed partial class EasyedaDiagnosticOwner {
     if(cleanup?forwardCleanupRequests>=EasyedaFootprintForwardLimits.CleanupClass:forwardNormalRequests>=EasyedaFootprintForwardLimits.NormalClass)throw Error("forward-renderer-class");
     if(cleanup)forwardCleanupRequests++;else forwardNormalRequests++;
   }
-  void SendMessage(int id,string message,bool ratlineCleanup=false,RendererWriteRole role=RendererWriteRole.Existing) {
+  void SendMessage(int id,string message,bool ratlineCleanup=false,RendererWriteRole role=RendererWriteRole.Existing,System.Action consume=null) {
     if(mainCompletionActive)throw Error("main-completion-exclusive");
     bool scoped=role!=RendererWriteRole.Existing;
     if((footprintClockRpcActive||footprintCreateClockActive)!=scoped || footprintClockRpcActive&&(footprintClockRpcFailed||role!=RendererWriteRole.ClockRpc) ||
@@ -5273,6 +5279,7 @@ public sealed partial class EasyedaDiagnosticOwner {
     ChargeForwardRenderer(id,message);
     ChargeHeldSavedRenderer(id,message);
     byte[] bytes=Encoding.UTF8.GetBytes(message);
+    if(consume!=null)consume();
     nextRequest++; // A failed write consumes its ID and the entire diagnostic channel.
     try { WriteForwardWriterPipe(bytes); AssertLive(); }
     catch { protocolFailed=true; throw; }
@@ -5810,16 +5817,19 @@ const int WindowCaptureMaximumDimension=4096,WindowCaptureMaximumPixels=4194304,
   public void ReleaseClosed() {
     RequireForwardWriterPipeExited();
     if(released) throw Error("release-consumed");
-    if(!Terminated()) throw Error("retain-live-owner");
-    ReleaseWindowCaptureAfterTermination();
-    if(workerStartupFootprintMain209){if(root!=IntPtr.Zero&&!originalMain.ObserveTermination())throw Error("main-retain-live-owner");originalMain.Release();}
+    // A successful Main release follows the original root/empty-Job proof.
+    // A retained root's once-consumed launch cannot become live again while
+    // later handle closes are retried inside this original cleanup.
+    if(!(originalMainReleaseObserved&&launchAttempted&&creationPhase==CreationPhase.RootRetained)&&!Terminated()) throw Error("retain-live-owner");
+    if(!originalMainReleaseObserved)ReleaseWindowCaptureAfterTermination();
+    if(workerStartupFootprintMain209&&!originalMainReleaseObserved){if(root!=IntPtr.Zero&&!originalMain.ObserveTermination())throw Error("main-retain-live-owner");originalMain.Release();originalMainReleaseObserved=true;}
     Close(ref browserRead); Close(ref browserWrite); Close(ref parentRead); Close(ref parentWrite); Close(ref rootThread); Close(ref root); Close(ref job); installation.Release(); released=true;
   }
   public void RetainUntilClosed() {
     if(released) return;
     // EOF/protocol failure is not a request to disconnect or close EasyEDA.
     // Keep native handles until the original process AND complete Job exit.
-    for(;;) { try { if(Terminated()) { ReleaseClosed(); return; } } catch { } Thread.Sleep(1000); }
+    for(;;) { try { if(originalMainReleaseObserved&&launchAttempted&&creationPhase==CreationPhase.RootRetained||Terminated()) { ReleaseClosed(); return; } } catch { } Thread.Sleep(1000); }
   }
 }
 // BEGIN GENERATED PROJECT STRUCTURE OBSERVER PROTOCOL
@@ -8591,10 +8601,10 @@ pending=new EasyedaForwardWriterPipeWrite(write,new byte[1]);settled=false;pendi
 // Force the exact checked-before-P/Invoke race. The first cancellation has
 // no pending call; cleanup must cancel the later original blocked WriteFile.
 raceAtWrite=new System.Threading.ManualResetEvent(false);raceContinue=new System.Threading.ManualResetEvent(false);pending=new EasyedaForwardWriterPipeWrite(write,new byte[131072],raceAtWrite,raceContinue);settled=false;pending.Start();Need(raceAtWrite.WaitOne(1000),"smoke-late-enter-barrier");pending.CancelAtDeadline();Need(pending.cancelAttempted&&!pending.cancelSucceeded&&pending.cancelError==1168,"smoke-first-cancel-not-found");raceContinue.Set();clock.Restart();while(!(settled=pending.TryDisposeExited())&&clock.ElapsedMilliseconds<5000)System.Threading.Thread.Sleep(1);Need(settled&&pending.cancellationAttempts>1&&pending.anyCancellationSucceeded,"smoke-late-original-cancel-and-exit");
-}finally{if(pending!=null)pending.CancelAtDeadline();if(raceContinue!=null)raceContinue.Set();while(pending!=null&&!pending.TryDisposeExited())System.Threading.Thread.Sleep(1);if(raceAtWrite!=null)raceAtWrite.Dispose();if(raceContinue!=null)raceContinue.Dispose();bool writeClosed=CloseHandle(write),readClosed=CloseHandle(read);Need(writeClosed&&readClosed,"smoke-pipe-close");}
+}finally{if(pending!=null)pending.CancelAtDeadline();if(raceContinue!=null)raceContinue.Set();if(pending!=null&&!settled&&read!=System.IntPtr.Zero){Need(CloseHandle(read),"smoke-unblock-read");read=System.IntPtr.Zero;}while(pending!=null&&!pending.TryDisposeExited())System.Threading.Thread.Sleep(1);if(raceAtWrite!=null)raceAtWrite.Dispose();if(raceContinue!=null)raceContinue.Dispose();bool writeClosed=CloseHandle(write),readClosed=read==System.IntPtr.Zero||CloseHandle(read);Need(writeClosed&&readClosed,"smoke-pipe-close");}
 }
-// Failed cancellation keeps the original foreground writer and pipe custody;
-// even component-smoke cleanup waits for actual exit instead of closing a live pipe.
+// Production cleanup retains the original writer and write pipe until exit.
+// Only this no-app smoke may close its own read end to unblock a failed fixture.
 }
 public sealed partial class EasyedaDiagnosticOwner {
 EasyedaForwardWriterPipeWrite forwardWriterPipeWrite;

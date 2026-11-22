@@ -24,7 +24,7 @@ for(const layout of ["inverse-native-continuation.v4","inverse-native-delete-col
   let driverReads=0,ownerReads=0;const changing={get ownerSource():string{ownerReads+=1;return ownerReads===1?input.ownerSource:"changed-after-validation";},get driverSource():string{driverReads+=1;return driverReads===1?input.driverSource:"changed-after-validation";}};
   assert.equal(hash(composeCurrentInverseNativeCanonicalSource(layout,changing)),hash(composeCurrentInverseNativeCanonicalSource(layout,input)));assert.equal(ownerReads,1);assert.equal(driverReads,1);
   const data=layout==="inverse-native-continuation.v4"?generateFootprintInverseNativeContinuationV4Source(input):generateFootprintInverseNativeDeleteColdUiSource(input);
-  assert.equal(hash(data.helper),pin.outputHelper.sha256);assert.equal(data.review,input.ownerSource);assert.equal(hash(data.compiler),layout==="inverse-native-continuation.v4"?"633d87dbef954718cec0911a2837788d56d3c1dd2d014da2d3e613b899235fef":"2d8d79ec33e2f05975fb866fec1c3e4d7096670250a6ef8551042d161c299085");
+  assert.equal(hash(data.helper),pin.outputHelper.sha256);assert.equal(data.review,input.ownerSource);assert.equal(hash(data.compiler),layout==="inverse-native-continuation.v4"?"f51c3498a7fbe56f9011eccaf20bb1a49bfdac489da429cb83e15fb5d4e3c37e":"29fde472f265627539ab97fd5cb5266dc16e0070ffc41a65d0cfa0ae833a3f6f");
   for(const key of ["ownerSource","driverSource"]as const){assert.throws(()=>requireCurrentInverseNativeCanonicalInputs(layout,{...input,[key]:`${input[key]} `}),/INVERSE_NATIVE_CANONICAL_SOURCE/u);}
   const foreign=layout==="inverse-native-continuation.v4"?"inverse-native-delete-cold-ui.v1":"inverse-native-continuation.v4";assert.throws(()=>requireCurrentInverseNativeCanonicalInputs(foreign,input),/INVERSE_NATIVE_CANONICAL_SOURCE/u);
   assert.throws(()=>Reflect.apply(requireCurrentInverseNativeCanonicalInputs,undefined,[layout,{...input,targetPath:"not-a-build-input"}]),/INVERSE_NATIVE_CANONICAL_SOURCE/u);
@@ -61,4 +61,47 @@ void test("isolated inverse source fork admits only exact fixed Main catalogues 
   }
  }
  assert.ok(longPrograms>0,"the exact fixed-source exception must be exercised");
+});
+
+
+void test("canonical transport failures retain consumed writes and original terminal cleanup",async()=>{
+ for(const layout of ["inverse-native-continuation.v4","inverse-native-delete-cold-ui.v1"]as const){
+  const {ownerSource:owner}=await readCurrentInverseNativeCanonicalInputs(layout);
+  const write=owner.slice(owner.indexOf("void WriteAll("),owner.indexOf("void WriteFrame("));
+  assert.match(write,/catch\{Fail\("socket-write"\);throw;\}/u);
+  const send=owner.slice(owner.indexOf("  void SendMessage("),owner.indexOf("  public string Poll()"));
+  assert.ok(send.indexOf("id!=nextRequest")<send.indexOf("if(consume!=null)consume();"));
+  assert.ok(send.indexOf("Encoding.UTF8.GetBytes(message)")<send.indexOf("if(consume!=null)consume();"));
+  assert.ok(send.indexOf("if(consume!=null)consume();")<send.indexOf("nextRequest++"));
+  assert.match(send,/catch \{ protocolFailed=true; throw; \}/u);
+  const tcp=owner.slice(owner.indexOf("static TcpRow[] TcpRows()"),owner.indexOf("internal static void CompareRows("));
+  assert.match(tcp,/attempt<3/u);assert.match(tcp,/result==122/u);assert.match(tcp,/size>capacity&&size<=4\+65536U\*24&&attempt<2/u);assert.match(tcp,/finally\{System.Runtime.InteropServices.Marshal.FreeHGlobal\(memory\);\}/u);
+  const release=owner.slice(owner.indexOf("  public void ReleaseClosed()"),owner.indexOf("  public void RetainUntilClosed()"));
+  assert.match(release,/originalMainReleaseObserved&&launchAttempted&&creationPhase==CreationPhase.RootRetained/u);
+  assert.match(owner,/if\(originalMainReleaseObserved&&launchAttempted&&creationPhase==CreationPhase.RootRetained\|\|Terminated\(\)\)/u);
+  assert.match(release,/originalMain.Release\(\);originalMainReleaseObserved=true;/u);
+  const cleanup=owner.slice(owner.indexOf("}finally{if(pending!=null)pending.CancelAtDeadline()"));
+  assert.ok(cleanup.indexOf("smoke-unblock-read")<cleanup.indexOf("while(pending!=null&&!pending.TryDisposeExited())"));
+  assert.ok(cleanup.indexOf("while(pending!=null&&!pending.TryDisposeExited())")<cleanup.indexOf("bool writeClosed=CloseHandle(write)"));
+ }
+});
+
+void test("canonical request framing refuses an entire oversized frame inside the cleanup-capable catch",async()=>{
+ for(const layout of ["inverse-native-continuation.v4","inverse-native-delete-cold-ui.v1"]as const){
+  const {driverSource:driver}=await readCurrentInverseNativeCanonicalInputs(layout);
+  assert.match(driver.slice(0,driver.indexOf("Add-Type")),/@\(\$args\).Count -ne 0/u);
+  const loop=driver.slice(driver.indexOf("while (-not $release)"));
+  assert.ok(loop.indexOf("$request=$null")<loop.indexOf("try {"));
+  assert.ok(loop.indexOf("try {")<loop.indexOf("$line=New-Object Text.StringBuilder"));
+  assert.match(loop,/if \(\$line.Length -ge 32768\) \{\$oversized=\$true\}/u);
+  assert.ok(loop.indexOf("if ($oversized) {throw 'pcb-diagnostic-request-size'}")<loop.indexOf("ConvertFrom-Json"));
+  assert.match(loop,/else \{\[void\]\$line.Append\(\[char\]\$character\)\}/u);
+ }
+ const {driverSource:driver,ownerSource:owner}=await readCurrentInverseNativeCanonicalInputs("inverse-native-delete-cold-ui.v1");
+ for(const code of ["control","field","purpose","send"]){assert.ok(driver.includes(`'inverse-native-delete-cold-ui-${code}'`));}
+ const book=owner.slice(owner.indexOf("static class NativeDeleteColdUiBook"),owner.indexOf("// END NATIVE DELETE COLD UI READONLY V1"));
+ assert.match(book,/static NativeDeleteColdUiBook\(\)\{/u);
+ const encode=book.slice(book.indexOf("internal static string Encode("));
+ assert.equal(encode.includes("foreach(string[][] table in Programs)"),false);
+ assert.ok(book.includes("9a20e52c51efc35dcbf8a0755a2690a31277a211673a655c05f18798fad43c61"));
 });

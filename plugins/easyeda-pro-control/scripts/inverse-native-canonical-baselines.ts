@@ -1,13 +1,13 @@
 /** Independent readable canonical build inputs forked from exact source commit
  * 9db9d91e2116b5c6cbc9475d7dd79b680ea8af88. Targets are comparison/output only.
  * Original helper/review hashes retain that immutable provenance. Separate
- * output pins include the PR223 bounded socket-reader correction; current owner
+ * output pins include the PR223 socket-reader and PR224 transport corrections; current owner
  * hashes identify the reviewed amendment, not unchanged ancestor bytes.
  * Build metadata is never a native-owner receipt. */
 export const CURRENT_INVERSE_NATIVE_CANONICAL_BASELINES=Object.freeze({
   "inverse-native-continuation.v4": Object.freeze({
     "commit": "9db9d91e2116b5c6cbc9475d7dd79b680ea8af88",
-    "sourceRevision": "bounded-websocket-receive.v2",
+    "sourceRevision": "reviewed-native-transport-custody.v3",
     "originalHelper": Object.freeze({
       "path": "scripts/footprint-inverse-native-continuation-v4.ps1",
       "bytes": 1_858_644,
@@ -20,29 +20,29 @@ export const CURRENT_INVERSE_NATIVE_CANONICAL_BASELINES=Object.freeze({
     } as const),
     "outputHelper": Object.freeze({
       "path": "scripts/footprint-inverse-native-continuation-v4.ps1",
-      "bytes": 1_858_684,
-      "sha256": "95817ad53d2e90573e91f6497da4e102fc1b08e96c6bb562391ee146c6813635"
+      "bytes": 1_859_307,
+      "sha256": "470881b1b8921a6cd654e48a8e293b0597c3681d16a16e0fb83924bf7d7f4358"
     } as const),
     "outputReview": Object.freeze({
       "path": "scripts/footprint-inverse-native-continuation-v4.cs",
-      "bytes": 2_543_777,
-      "sha256": "e7c6352c566b4c82b46c664f3697befa0a1dfec13ec2d8137b5b6f34d21d9d88"
+      "bytes": 2_544_814,
+      "sha256": "5e4c73862115208e2163431ed73c3a439e9c4b4fc3b5b671ccc62e6dadebfd17"
     } as const),
     "owner": Object.freeze({
       "relativePath": "scripts/native-baseline/inverse-native-v4-v1/owner.cs",
-      "bytes": 2_543_777,
-      "sha256": "e7c6352c566b4c82b46c664f3697befa0a1dfec13ec2d8137b5b6f34d21d9d88"
+      "bytes": 2_544_814,
+      "sha256": "5e4c73862115208e2163431ed73c3a439e9c4b4fc3b5b671ccc62e6dadebfd17"
     } as const),
     "driver": Object.freeze({
       "relativePath": "scripts/native-baseline/inverse-native-v4-v1/driver.ps1.txt",
-      "bytes": 298_727,
-      "sha256": "497ce83e8614824e04a05f70960008b10343889185c5eddcb3332661b2ab1b89"
+      "bytes": 298_942,
+      "sha256": "ac38f710ce86e27c1a2862ed27628fadd660ddb7b0f565ce92a60713730b6b1f"
     } as const),
     "marker": "# INSERT EXACT FIXED INVERSE NATIVE OWNER V1\n"
   } as const),
   "inverse-native-delete-cold-ui.v1": Object.freeze({
     "commit": "9db9d91e2116b5c6cbc9475d7dd79b680ea8af88",
-    "sourceRevision": "bounded-websocket-receive.v2",
+    "sourceRevision": "reviewed-native-transport-custody.v3",
     "originalHelper": Object.freeze({
       "path": "scripts/footprint-inverse-native-delete-cold-ui.ps1",
       "bytes": 690_834,
@@ -55,23 +55,23 @@ export const CURRENT_INVERSE_NATIVE_CANONICAL_BASELINES=Object.freeze({
     } as const),
     "outputHelper": Object.freeze({
       "path": "scripts/footprint-inverse-native-delete-cold-ui.ps1",
-      "bytes": 690_866,
-      "sha256": "0a8137291d45a71acc9199218aef4728c4b50235f5db4762b52c3b29e4438cb2"
+      "bytes": 691_685,
+      "sha256": "1a061bfe3c64ffeafbd64a0f52bb6d382c3978a08fdd34b3c3191bfda36768d5"
     } as const),
     "outputReview": Object.freeze({
       "path": "scripts/footprint-inverse-native-delete-cold-ui.cs",
-      "bytes": 1_047_654,
-      "sha256": "d894b17969f5bf6ec56520a42c457303e48c55a6a4dc5242915bd85829ea56c8"
+      "bytes": 1_048_790,
+      "sha256": "4934bf7fc4128d3db28996fc63be7bcde0c04acaa3b5ef5199489c085144ae87"
     } as const),
     "owner": Object.freeze({
       "relativePath": "scripts/native-baseline/inverse-native-cold-ui-v1/owner.cs",
-      "bytes": 1_047_654,
-      "sha256": "d894b17969f5bf6ec56520a42c457303e48c55a6a4dc5242915bd85829ea56c8"
+      "bytes": 1_048_790,
+      "sha256": "4934bf7fc4128d3db28996fc63be7bcde0c04acaa3b5ef5199489c085144ae87"
     } as const),
     "driver": Object.freeze({
       "relativePath": "scripts/native-baseline/inverse-native-cold-ui-v1/driver.ps1.txt",
-      "bytes": 92_405,
-      "sha256": "b19f552a403941c02e0c743a3b0322b6188a1b860b0b41dde759278ea1317d97"
+      "bytes": 92_812,
+      "sha256": "04029913670f70dc6a4bee3de7fbd3370b41b0e991b6e20b7b429da9b3e59ce6"
     } as const),
     "marker": "# INSERT EXACT FIXED INVERSE NATIVE OWNER V1\n"
   } as const)

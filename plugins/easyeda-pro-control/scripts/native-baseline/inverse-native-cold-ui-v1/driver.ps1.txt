@@ -1,6 +1,6 @@
 param([switch]$FootprintInverseNativeDeleteColdUi209,[switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$Visual209,[switch]$Spatial209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintHeldSaved209,[switch]$FootprintHeldCache209,[switch]$FootprintHeadAge209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209,[switch]$WorkerStartupFootprintForward209,[string]$CombinedReadyChallenge)
 $ErrorActionPreference = 'Stop'
-if(-not $FootprintInverseNativeDeleteColdUi209 -or @($PSBoundParameters.Keys|Where-Object{$_ -cnotin @('CompileOnly','FootprintInverseNativeDeleteColdUi209')}).Count -ne 0){throw 'inverse-native-delete-cold-ui-exact-purpose-required'}
+if(@($args).Count -ne 0 -or -not $FootprintInverseNativeDeleteColdUi209 -or @($PSBoundParameters.Keys|Where-Object{$_ -cnotin @('CompileOnly','FootprintInverseNativeDeleteColdUi209')}).Count -ne 0){throw 'inverse-native-delete-cold-ui-exact-purpose-required'}
 $WorkerStartupFootprintHeldSaved209=[System.Management.Automation.SwitchParameter]$true
 if ($Spatial209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $Visual209 -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $WorkerStartupFootprintHeldSaved209 -or $FootprintHeldCache209 -or $FootprintHeadAge209 -or $WorkerStartupFootprintMain209 -or $WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209)) {throw 'pcb-diagnostic-conflicting-spatial-purpose'}
 if ($FootprintHeadAge209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $Visual209 -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $WorkerStartupFootprintHeldSaved209 -or $FootprintHeldCache209 -or $WorkerStartupFootprintMain209 -or $WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209)) {throw 'pcb-diagnostic-conflicting-head-age-purpose'}
@@ -57,17 +57,21 @@ try {
   $launched=$false
   $release=$false
   while (-not $release) {
-    # Bound before JSON parsing or unbounded ReadLine allocation.
-    $line=New-Object Text.StringBuilder
-    while ($true) {
-      $character=[Console]::Read()
-      if ($character -lt 0) {return}
-      if ($character -eq 10) {break}
-      if ($line.Length -ge 32768) {throw 'pcb-diagnostic-request-size'}
-      [void]$line.Append([char]$character)
-    }
     $id=$null
+    $request=$null
     try {
+      # Keep the buffer bounded while draining the complete refused frame.
+      # No prefix is parsed and EOF retains the original owner's custody.
+      $line=New-Object Text.StringBuilder
+      $oversized=$false
+      while ($true) {
+        $character=[Console]::Read()
+        if ($character -lt 0) {return}
+        if ($character -eq 10) {break}
+        if ($line.Length -ge 32768) {$oversized=$true}
+        else {[void]$line.Append([char]$character)}
+      }
+      if ($oversized) {throw 'pcb-diagnostic-request-size'}
       $request=$line.ToString() | ConvertFrom-Json
       $largeOpening=$request.action -ceq 'worker-startup-parent' -and $request.method -ceq 'Runtime.callFunctionOn' -and @('preflight','open-project','pcb-preflight','pcb-open-document','pcb-observe') -ccontains $request.parentPhase
       $largeMainRequest=$WorkerStartupFootprintCombined209 -and @('main-request-send','main-completion-send') -ccontains $request.action
@@ -816,7 +820,7 @@ try {
       # never arbitrary OS text, paths or a stack trace from those wrappers.
       $exception=$_.Exception
       for ($depth=0;$depth -lt 4 -and $null -ne $exception;$depth++) {
-        if ($exception.Message -cmatch '^pcb-diagnostic-[a-z-]{1,80}$') {$code=$exception.Message;break}
+        if ($exception.Message -cmatch '^pcb-diagnostic-[a-z-]{1,80}$' -or @('inverse-native-delete-cold-ui-control','inverse-native-delete-cold-ui-field','inverse-native-delete-cold-ui-purpose','inverse-native-delete-cold-ui-send') -ccontains $exception.Message) {$code=$exception.Message;break}
         $exception=$exception.InnerException
       }
       # BEGIN GENERATED WINDOW FAILURE

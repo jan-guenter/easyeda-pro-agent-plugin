@@ -1,5 +1,5 @@
 param([switch]$CompileOnly,[switch]$FootprintInverseNativeContinuationV4,[string]$InverseReadyChallenge)
-if(-not $FootprintInverseNativeContinuationV4){throw 'inverse-native-lifecycle-exact-purpose-required'}
+if(@($args).Count -ne 0 -or -not $FootprintInverseNativeContinuationV4){throw 'inverse-native-lifecycle-exact-purpose-required'}
 $FootprintInverse209=[System.Management.Automation.SwitchParameter]$true
 $FootprintInverseNativeLifecycle209=[System.Management.Automation.SwitchParameter]$true
 $CombinedReadyChallenge=$null
@@ -141,17 +141,21 @@ try {
   $launched=$false
   $release=$false
   while (-not $release) {
-    # Bound before JSON parsing or unbounded ReadLine allocation.
-    $line=New-Object Text.StringBuilder
-    while ($true) {
-      $character=[Console]::Read()
-      if ($character -lt 0) {return}
-      if ($character -eq 10) {break}
-      if ($line.Length -ge 32768) {throw 'pcb-diagnostic-request-size'}
-      [void]$line.Append([char]$character)
-    }
     $id=$null
+    $request=$null
     try {
+      # Keep the buffer bounded while draining the complete refused frame.
+      # No prefix is parsed and EOF retains the original owner's custody.
+      $line=New-Object Text.StringBuilder
+      $oversized=$false
+      while ($true) {
+        $character=[Console]::Read()
+        if ($character -lt 0) {return}
+        if ($character -eq 10) {break}
+        if ($line.Length -ge 32768) {$oversized=$true}
+        else {[void]$line.Append([char]$character)}
+      }
+      if ($oversized) {throw 'pcb-diagnostic-request-size'}
       $request=$line.ToString() | ConvertFrom-Json
       $initialCacheOpening=($PcbViaWrite209 -and $request.action -ceq 'pcb-via-initial-cache' -or $SchematicDisplayWrite209 -and $request.action -ceq 'schematic-display-initial-cache') -and $request.method -ceq 'Runtime.callFunctionOn' -and $request.phase -cmatch '^initial-cache-entry-(?:document|head)-[012]$'
       $periodicSyncOpening=($PcbViaWrite209 -and $request.action -ceq 'pcb-via-periodic-sync' -or $SchematicDisplayWrite209 -and $request.action -ceq 'schematic-display-periodic-sync') -and $request.method -ceq 'Runtime.callFunctionOn' -and $request.phase -ceq 'periodic-sync-branch'

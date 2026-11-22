@@ -21,6 +21,9 @@ saved `features.plugins = false`, marketplace and plugin lists can be empty even
 after an explicit marketplace upgrade copied the intended snapshot. Inspect the
 effective feature flag before treating an empty list or `plugin not found` as
 payload corruption. The command override does not change the saved setting.
+The host reads the saved `features.plugins` setting, which must be `true` to
+load installed plugins and their MCP servers. The CLI override does not enable
+plugin loading in the host.
 
 For an existing registration, refresh only this marketplace and inspect the
 resulting version before considering another install:
