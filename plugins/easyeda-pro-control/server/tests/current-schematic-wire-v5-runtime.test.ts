@@ -9,6 +9,9 @@ import {currentSchematicWireV5TitleCases,currentSchematicWireV5TitleWire,validat
 import {currentSchematicWireV5TitleNativeSource} from "../src/current-schematic-wire-v5-title-native.ts";
 import {currentSchematicWireWriterV5NativeRequest} from "../src/current-schematic-wire-writer-v5-protocol.ts";
 import {currentSchematicWireWriterV4NativeRequest} from "../src/current-schematic-wire-writer-v4-protocol.ts";
+// oxlint-disable-next-line import/max-dependencies -- Compare the fixed V5 stage against its original V4 encoder profile.
+import { CURRENT_SCHEMATIC_WIRE_WRITER_V4_NATIVE_PROFILE as V4 } from "../src/current-schematic-wire-writer-v4-native-profile.ts";
+import { currentSchematicWireWriterV5NativeCommand } from "../src/current-schematic-wire-writer-v5-native-command.ts";
 
 async function hash(bytes: Uint8Array): Promise<string> {
  const digest=await globalThis.crypto.subtle.digest("SHA-256",new Uint8Array(bytes));
@@ -34,4 +37,25 @@ void test("new V5 compiler envelope cannot enlarge historical storage or accept 
 
 void test("the current V5 native path refuses the historical ambient conditional ft arm",()=>{
  assert.throws(()=>currentSchematicWireV5TitleWire({phase:"wire-title-ft-arm",variant:0,method:"Debugger.setBreakpoint",params:{location:{scriptId:"original27",lineNumber:6,columnNumber:4891},condition:"!Array.isArray(i)"}},79,"session29"),/CONDITIONAL_FT_NOT_ADMITTED/u);
+});
+
+function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
+
+void test("V5 copied stages stop at the V4 encoder bound while title and shared reads retain V5 IDs", () => {
+  const sessionId = "session29";
+  const uniqueContextId = "context27";
+  const { total: stageLimit } = V4.renderer;
+  const command = currentSchematicWireWriterV5NativeCommand("start", uniqueContextId);
+  assert.deepEqual(currentSchematicWireWriterV5NativeRequest(wire({ id: stageLimit, ...command, sessionId })),
+    { action: "schematic-wire-writer-v5-native", requestId: stageLimit, sessionId, phase: "start", uniqueContextId });
+  const aboveStage = stageLimit + 1;
+  assert.throws(() => currentSchematicWireWriterV5NativeRequest(wire({ id: aboveStage, ...command, sessionId })),
+    /WIRE_V5_STAGE_REQUEST_LIMIT/u);
+
+  const [title] = currentSchematicWireV5TitleCases();
+  assert.ok(title !== undefined);
+  const fixed = currentSchematicWireV5TitleWire(title, aboveStage, sessionId);
+  assert.deepEqual(currentSchematicWireWriterV5NativeRequest(wire(fixed.wire)), fixed.request);
+  assert.deepEqual(currentSchematicWireWriterV5NativeRequest(wire({ id: aboveStage, method: "Browser.getVersion" })),
+    { action: "send", requestId: aboveStage, method: "Browser.getVersion" });
 });
