@@ -1,5 +1,7 @@
 # Project history
 
+- [Wire encoder fourteen-frame proof](2026-11-22-wire-encoder-fourteen-frame-proof.md). Exact per-frame and aggregate byte checks for both pinned bundle variants, with native graph and event binding still pending.
+
 - [Original Wire page before-watch hold](2026-11-22-wire-original-page-birth-hold.md). Exact held page initializer and original caller supply the fixed watch root input before registration.
 
 - [Original Wire encoder source receipt](2026-11-22-wire-encoder-original-source-receipt.md). Reuses the settled V5 title source frame under the same Core owner and renderer session.
