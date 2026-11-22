@@ -43,6 +43,8 @@ export interface CurrentSchematicWireV5EarlyInitTransport {
   /** Reprove the original pending navigation and the same still-held pause.
    * A prior script event requires custody from the original debugger enable. */
   readonly requireOriginalHeld: () => CurrentSchematicWireV5EarlyInitHeld;
+  /** Return the reply correlated to this request on the original allocation.
+   * A missing or invalid arm acknowledgement leaves its installation unknown. */
   readonly request: (command: Request) => Promise<unknown>;
   readonly waitForOriginalResumed: (held: CurrentSchematicWireV5EarlyInitHeld) => Promise<void>;
 }
@@ -56,7 +58,7 @@ const empty = z.strictObject({});
 const variants = [0, 1] as const;
 interface Arm {
   readonly variant: Variant;
-  readonly breakpointId: string;
+  breakpointId: string | null;
   scriptId: string | null;
   removalAttempted: boolean;
   removed: boolean;
@@ -94,12 +96,14 @@ export class CurrentSchematicWireV5EarlyInit {
       for (const variant of variants) {
         const site = siteFor(variant);
         this.#transport.assertBeforeNavigation();
-        const raw = capture(await this.#transport.request(Object.freeze({ phase: "arm", variant }))).value;
-        const installed = z.looseObject({ breakpointId: z.literal(site.breakpointId) }).parse(raw);
-        const arm: Arm = { variant, breakpointId: installed.breakpointId, scriptId: null, removalAttempted: false, removed: false };
+        const arm: Arm = { variant, breakpointId: null, scriptId: null, removalAttempted: false, removed: false };
         this.#arms.set(variant, arm);
+        const raw = capture(await this.#transport.request(Object.freeze({ phase: "arm", variant }))).value;
+        const installed = acknowledgement.parse(raw);
+        need(installed.breakpointId === site.breakpointId);
+        arm.breakpointId = installed.breakpointId;
         this.#transport.assertBeforeNavigation();
-        const [reported] = acknowledgement.parse(raw).locations;
+        const [reported] = installed.locations;
         if (reported !== undefined) {
           need(reported.lineNumber === site.lineNumber && reported.columnNumber === site.columnNumber);
           arm.scriptId = reported.scriptId;
@@ -117,7 +121,7 @@ export class CurrentSchematicWireV5EarlyInit {
   #script(held: CurrentSchematicWireV5EarlyInitHeld): Readonly<{ scriptId: string; length: number }> {
     const { script, variant, pause, resolution } = held;
     const arm = this.#arms.get(variant);
-    need(arm !== undefined && script.transportBytesRetained && pause.transportBytesRetained &&
+    need(arm !== undefined && arm.breakpointId !== null && script.transportBytesRetained && pause.transportBytesRetained &&
       script.event.method === "Debugger.scriptParsed" && script.event.sessionId === this.#session);
     const parsed = scriptParsed.parse(capture(script.event.params).value);
     const site = siteFor(variant);
@@ -179,7 +183,8 @@ export class CurrentSchematicWireV5EarlyInit {
     } finally { this.#releasing = false; }
   }
 
-  /** Failure/early cleanup removes acknowledged arms once with no resume. */
+  /** Remove each acknowledged arm once while retaining unresolved attempts
+   * for the enclosing allocation's original owner closure. */
   public retireArms(): Promise<void> {
     if (this.#retirement !== null) { return this.#retirement; }
     need(!this.#arming && !this.#reading && !this.#releasing);
@@ -189,12 +194,13 @@ export class CurrentSchematicWireV5EarlyInit {
 
   async #remove(current: () => void): Promise<void> {
     for (const arm of this.#arms.values()) {
-      if (!arm.removalAttempted) {
+      const { breakpointId } = arm;
+      if (breakpointId !== null && !arm.removalAttempted) {
         current();
         arm.removalAttempted = true;
         try {
           const raw = await this.#transport.request(Object.freeze({
-            phase: "remove", variant: arm.variant, breakpointId: arm.breakpointId,
+            phase: "remove", variant: arm.variant, breakpointId,
           }));
           empty.parse(capture(raw).value);
           arm.removed = true;
@@ -203,6 +209,8 @@ export class CurrentSchematicWireV5EarlyInit {
       }
     }
     if (this.#removalFailure !== null) { throw this.#removalFailure.cause; }
-    need([...this.#arms.values()].every(arm => arm.removed));
+    const arms = [...this.#arms.values()];
+    if (arms.some(arm => arm.breakpointId === null)) { throw new Error("WIRE_V5_EARLY_INIT_ARM_ACK_UNRESOLVED"); }
+    need(arms.every(arm => arm.removed));
   }
 }

@@ -59,10 +59,51 @@ void test("the early initializer retires a relocated arm without reading source"
   await assert.rejects(scope.arm(), /CUSTODY/u);
 });
 
+void test("the early initializer retains unknown arm custody after removing the acknowledged arm", async () => {
+  for (const mode of ["lost", "malformed", "foreign"] as const) {
+    const failure = new Error("fixture arm acknowledgement lost");
+    const ledger: Request[] = [];
+    const scope = new CurrentSchematicWireV5EarlyInit(session, {
+      assertCurrent: (): void => { assert.ok(ledger.length <= 3); },
+      assertBeforeNavigation: (): void => { assert.ok(ledger.length <= 2); },
+      requireOriginalHeld: (): never => assert.fail("No pause was acquired"),
+      request: (command): Promise<unknown> => {
+        ledger.push(command);
+        if (command.phase === "arm") {
+          const { breakpointId } = siteFor(command.variant);
+          if (command.variant === 0) { return Promise.resolve({ breakpointId, locations: [] }); }
+          if (mode === "lost") { return Promise.reject(failure); }
+          if (mode === "malformed") { return Promise.resolve({ breakpointId }); }
+          return Promise.resolve({ breakpointId: "foreign-point", locations: [] });
+        }
+        assert.deepEqual(command, { phase: "remove", variant: 0, breakpointId: siteFor(0).breakpointId });
+        return Promise.resolve({});
+      },
+      waitForOriginalResumed: (): never => assert.fail("No resume is authorized"),
+    });
+    await assert.rejects(scope.arm(), (error: unknown): boolean => {
+      if (mode === "lost") { return error === failure; }
+      return error instanceof Error && (mode === "foreign" ? error.message === "WIRE_V5_EARLY_INIT_CUSTODY" : error.name === "ZodError");
+    });
+    const retirement = scope.retireArms();
+    await assert.rejects(retirement, /WIRE_V5_EARLY_INIT_ARM_ACK_UNRESOLVED/u);
+    assert.equal(scope.retireArms(), retirement);
+    await assert.rejects(scope.arm(), /CUSTODY/u);
+    await assert.rejects(scope.readOriginalHold(), /CUSTODY/u);
+    assert.deepEqual(ledger.map(row => [row.phase, row.variant]), [["arm", 0], ["arm", 1], ["remove", 0]]);
+  }
+});
+
 void test("the early initializer releases only its original arms and a whole-source-qualified owned pause", async context => {
   const source = await readConfiguredEasyedaAsset(SOURCE[0].relativePath);
   if (source === null) { context.skip(INSTALLED_EASYEDA_SOURCE_SKIP_REASON); return; }
 
+  // The fixed bundle's initial ASCII token precedes every pinned function.
+  assert.match(source, /^\(/u);
+  const changedSource = `[${source.slice(1)}`;
+  assert.notEqual(changedSource, source);
+  assert.equal(changedSource.length, source.length);
+  assert.equal(Buffer.byteLength(changedSource), Buffer.byteLength(source));
   for (const mode of ["original", "changed-source", "lost-pause"] as const) {
     const original = held(0, source.length);
     let currentHold = original;
@@ -85,7 +126,7 @@ void test("the early initializer releases only its original arms and a whole-sou
         }
         if (command.phase === "source") {
           assert.equal(command.scriptId, scriptId);
-          return Promise.resolve({ scriptSource: mode === "changed-source" ? source.replace(/^./u, " ") : source });
+          return Promise.resolve({ scriptSource: mode === "changed-source" ? changedSource : source });
         }
         if (command.phase === "remove") {
           assert.equal(command.breakpointId, site.breakpointId);
@@ -101,7 +142,7 @@ void test("the early initializer releases only its original arms and a whole-sou
     await scope.arm();
     navigated = true;
     if (mode === "changed-source") {
-      await assert.rejects(scope.readOriginalHold());
+      await assert.rejects(scope.readOriginalHold(), /SCHEMATIC_WIRE_ACCESSOR_COMPLETE_SOURCE_IDENTITY/u);
       await scope.retireArms();
       assert.deepEqual(ledger.map(row => row.phase), ["arm", "arm", "source", "remove", "remove"]);
       assert.equal(resumed, false);

@@ -3,6 +3,7 @@
  * older schematic compiler continues to publish its original bytes. */
 import {CURRENT_SCHEMATIC_WIRE_WRITER_V5_CSHARP_COMPILER_MAX_BYTES,packCurrentSchematicWireWriterV5CSharpStorage} from "../server/src/current-schematic-wire-writer-v5-csharp-storage.ts";
 import {createHash} from "node:crypto";
+import { CURRENT_SCHEMATIC_WIRE_WRITER_V4_NATIVE_PROFILE as V4 } from "../server/src/current-schematic-wire-writer-v4-native-profile.ts";
 import {CURRENT_SCHEMATIC_WIRE_WRITER_V5_NATIVE_PROFILE as PROFILE} from "../server/src/current-schematic-wire-writer-v5-native-profile.ts";
 import {currentSchematicWireV5TitleNativeSource} from "../server/src/current-schematic-wire-v5-title-native.ts";
 import {currentSchematicWireGlobalsNativeSource} from "../server/src/current-schematic-wire-globals-native.ts";
@@ -71,7 +72,10 @@ public static void VerifySchematicWireWriterV5Smoke(){
  const stage=source.slice(source.indexOf("        'schematic-wire-writer-v4-native' {"),source.indexOf("        'schematic-wire-edit-native' {"));
  if(!stage.startsWith("        'schematic-wire-writer-v4-native' {")||!stage.endsWith("\n")){throw new Error("WIRE_V5_STAGE_PREIMAGE");}
  const ownStage=stage.replaceAll("schematic-wire-writer-v4-native","schematic-wire-writer-v5-native").replaceAll("$SchematicWireWriterV4","$SchematicWireWriterV5");
- source=installOwnedNativeDispatch(source,ownStage,"        'schematic-wire-writer-v4-native' {");
+ const copiedStageSend = "          $owner.SendWireWriterV4Native(";
+ const stageGuard = `          if ($request.requestId -lt 1 -or $request.requestId -gt ${String(V4.renderer.total)}) {throw 'wire-v5-stage-request-limit'}
+`;
+ source=installOwnedNativeDispatch(source,once(ownStage,copiedStageSend,stageGuard+copiedStageSend),"        'schematic-wire-writer-v4-native' {");
  const dispatch=`        'schematic-wire-v5-title' {
           if (-not $SchematicWireWriterV5 -or -not $launched -or $request.method -isnot [string] -or ($request.selector -isnot [int] -and $request.selector -isnot [long]) -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])) {throw 'wire-v5-title-fields'}
           $baseFields=@('action','helperInstance','id','jobId','rootCreated','rootPid','requestId','selector','method');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
