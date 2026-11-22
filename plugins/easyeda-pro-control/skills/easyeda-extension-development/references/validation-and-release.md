@@ -233,9 +233,10 @@ an empty Job prove neither an application launch nor a writer lifecycle.
 
 The separate new inverse-native-continuation.v4 build envelope fixes its
 compiler maximum at 2,490,368 bytes, expanded-input envelope at 2,654,208 bytes
-and review maximum at 2,621,440 bytes. Its exact canonical compiler input is
-2,436,697 bytes, above 2 MiB; its 1,858,644-byte emitted PowerShell helper retains
-the unchanged 2 MiB source-file guard. This exception is confined to the new V4
+and review maximum at 2,621,440 bytes. The generated V4 identity in
+`server/src/current-footprint-inverse-native-continuation-v4-identity.ts` pins
+2,436,796 compiler bytes and a 1,858,684-byte PowerShell helper. The emitted
+helper remains within the 2 MiB source-file guard. This exception is confined to the new V4
 layout and its exact decoder/identity chain. It changes no released shared or
 historical compiler limit. The readonly cold-UI helper/compiler/review ceilings
 remain 2 MiB. Canonical readable owner/driver inputs have independent fixed-path,
