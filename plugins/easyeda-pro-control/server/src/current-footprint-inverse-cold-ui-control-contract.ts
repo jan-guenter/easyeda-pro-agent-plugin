@@ -6,12 +6,18 @@ import { COLD_UI_STAGES, coldUiAbsenceResultSchema } from "./current-footprint-i
 export const CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_TOOL = "easyeda_control_current_footprint_inverse_cold_ui";
 export const CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_SCHEMA = "easyeda-pro-control.footprint-inverse-cold-ui-control.v1";
 export const CURRENT_FOOTPRINT_INVERSE_COLD_UI_CLEANUP_ACTIONS = ["inspect", "cleanup", "settle-publication"] as const;
-export const currentFootprintInverseColdUiControlIdSchema = z.string().max(96).regex(/^footprint-inverse-cold-ui-flow-[a-z0-9][a-z0-9-]*$(?![\s\S])/u);
+const COLD_UI_CONTROL_ID_PREFIX = "footprint-inverse-cold-ui-flow-";
+const SOURCE_WORKFLOW_ID_PREFIX = "footprint-inverse-flow-";
+const sourceWorkflowIdMaxLength = currentFootprintInverseFullWorkflowIdSchema.maxLength;
+if (sourceWorkflowIdMaxLength === null) { throw new Error("INVERSE_COLD_UI_SOURCE_ID_BOUND"); }
+export const currentFootprintInverseColdUiControlIdSchema = z.string()
+ .max(sourceWorkflowIdMaxLength - SOURCE_WORKFLOW_ID_PREFIX.length + COLD_UI_CONTROL_ID_PREFIX.length)
+ .regex(/^footprint-inverse-cold-ui-flow-[a-z0-9][a-z0-9-]*$(?![\s\S])/u);
 export const currentFootprintInverseColdUiControlActionSchema = z.discriminatedUnion("action", [
  z.strictObject({schema:z.literal(CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_SCHEMA),action:z.literal("execute"),operationId:currentFootprintInverseColdUiControlIdSchema,sourceOperationId:currentFootprintInverseFullWorkflowIdSchema,
   confirmValidationOnly:z.literal(true),confirmDisposableProject:z.literal(true),confirmIndependentColdUiGeneration:z.literal(true),
   acceptExistingProfileOpeningAndCacheEffects:z.literal(true),acceptDebuggerPauseEffects:z.literal(true),confirmNormalCloseWithoutExplicitSave:z.literal(true),acceptNoPublicSdkParity:z.literal(true),
- }).refine(value=>value.operationId.slice("footprint-inverse-cold-ui-flow-".length)===value.sourceOperationId.slice("footprint-inverse-flow-".length)),
+ }).refine(value=>value.operationId.slice(COLD_UI_CONTROL_ID_PREFIX.length)===value.sourceOperationId.slice(SOURCE_WORKFLOW_ID_PREFIX.length)),
  z.strictObject({schema:z.literal(CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_SCHEMA),action:z.literal("cleanup"),operationId:currentFootprintInverseColdUiControlIdSchema,confirmOriginalJobsOnly:z.literal(true)}),
  z.strictObject({schema:z.literal(CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_SCHEMA),action:z.enum(["inspect","settle-publication"]),operationId:currentFootprintInverseColdUiControlIdSchema}),
 ]);
@@ -28,7 +34,7 @@ export const currentFootprintInverseColdUiControlResultSchema = z.strictObject({
  originalInverse:currentFootprintInverseFullWorkflowResultSchema,coldUiAbsence:coldUiAbsenceResultSchema.nullable(),nativeUiTaskAbsenceVerified:z.boolean(),
  validationOnly:z.literal(true),connectedValidation:z.literal(false),ordinaryProjectsSupported:z.literal(false),generalSdkWriter:z.literal(false),
  publicSdkParity:z.literal(false),wholeInverseVerified:z.literal(false),executionAuthorized:z.literal(false),saveAuthorized:z.literal(false),explicitSaveAttempts:z.literal(0),
-}).refine(value=>value.operationId.slice("footprint-inverse-cold-ui-flow-".length)===value.sourceOperationId.slice("footprint-inverse-flow-".length)&&value.originalInverse.operationId===value.sourceOperationId&&
+}).refine(value=>value.operationId.slice(COLD_UI_CONTROL_ID_PREFIX.length)===value.sourceOperationId.slice(SOURCE_WORKFLOW_ID_PREFIX.length)&&value.originalInverse.operationId===value.sourceOperationId&&
  value.nativeUiTaskAbsenceVerified===(value.coldUiAbsence!==null)&&
  (value.coldUiAbsence===null||value.coldUiAbsence.targetUuid===value.originalInverse.targetUuid)&&
  (value.state!=="completed"||value.coldUiAbsence!==null&&value.execution.settled&&!value.execution.failed&&value.cleanup.originalResourcesClosed&&!value.cleanup.publicationPending&&value.cleanup.journalTerminal&&!value.cleanup.journalUnsettled&&value.publication.settled&&!value.publication.failed));

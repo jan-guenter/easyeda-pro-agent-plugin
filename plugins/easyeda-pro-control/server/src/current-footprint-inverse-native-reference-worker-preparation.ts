@@ -53,14 +53,24 @@ function ownData(input: unknown, key: string): z.infer<typeof remote> {
 // oxlint-disable-next-line unicorn/prefer-code-point -- The fixed wire preserves UTF-16 code units, including supplementary-character pairs.
 export function currentFootprintInverseReferenceAscii(value: unknown): string { const encoded = JSON.stringify(value); let text = ""; for (let index = 0; index < encoded.length; index += 1) { const code = encoded.charCodeAt(index); text += code >= 127 ? `\\u${code.toString(16).padStart(4, "0")}` : encoded[index]; } return text; }
 function nodes(value: Value, depth = 0): number { need(depth <= 8 && (value.kind === "array" || value.kind === "object")); const children = value.kind === "array" ? value.values : value.entries.map(row => row[1]); need(children.length <= 63); let total = 1; for (const child of children) { if (child.kind === "array" || child.kind === "object") { total += nodes(child, depth + 1); } } need(total <= 63); return total; }
+function graphNodeText(value: Value): string {
+  const encoded = currentFootprintInverseReferenceAscii(value);
+  // The fixed graph-node text argument is limited to 32,768 ASCII characters.
+  if (encoded.length > 32_768) { throw new Error("FOOTPRINT_INVERSE_REFERENCE_GRAPH_TEXT_BOUND"); }
+  return encoded;
+}
 export function currentFootprintInverseReferenceModelValues(data: CurrentFootprintInverseReferenceData): readonly Value[] {
   need(data.models.length > 0 && data.models.length <= MODEL_LIMIT && data.models.some(row => row.uuid === data.footprintUuid) && new Set(data.models.map(row => row.uuid)).size === data.models.length && data.derivedFootprintUuids.length === 0);
-  return Object.freeze(data.models.map(row => { need(/^[a-f\d]{32}$/u.test(row.uuid) && row.model.kind === "object" && row.model.entries.length === 12); const value: Value = Object.freeze({ kind: "array", values: Object.freeze(row.model.entries.map(entry => entry[1])) }); nodes(value); return value; }));
+  return Object.freeze(data.models.map(row => { need(/^[a-f\d]{32}$/u.test(row.uuid) && row.model.kind === "object" && row.model.entries.length === 12); const value: Value = Object.freeze({ kind: "array", values: Object.freeze(row.model.entries.map(entry => entry[1])) }); nodes(value);
+    // A tagged model contains the exact serialized value of each nested node.
+    graphNodeText(value);
+    return value;
+  }));
 }
 export function currentFootprintInverseReferenceModelNodeCounts(data: CurrentFootprintInverseReferenceData): readonly number[] { return Object.freeze(currentFootprintInverseReferenceModelValues(data).map(value => nodes(value))); }
 /** Input observations return references and counts only, never a permit. */
 export async function collectCurrentFootprintInverseReferencePreparation(b: CurrentFootprintInverseReferencePreparationBindings): Promise<CurrentFootprintInverseReferencePreparedInputs> {
-  b.current(); qualifyCurrentFootprintInverseReferenceWorkerSource(b.source); const expectedModels = currentFootprintInverseReferenceModelValues(b.data); const budget = currentFootprintInverseNativeReferenceWorkerBudget(expectedModels.map(value => nodes(value))); let helpers = 0, normal = 0;
+  b.current(); const expectedModels = currentFootprintInverseReferenceModelValues(b.data); qualifyCurrentFootprintInverseReferenceWorkerSource(b.source); const budget = currentFootprintInverseNativeReferenceWorkerBudget(expectedModels.map(value => nodes(value))); let helpers = 0, normal = 0;
   const send = async (input: unknown): Promise<unknown> => { b.current(); const command = validateCurrentFootprintInverseNativeReferenceWorkerCommand(input); normal += 1; need(normal <= budget.setupNormal - 12); const raw = await b.request(command); b.current(); if (command.method === "Runtime.callFunctionOn") { helpers += 1; need(helpers <= budget.setupHelpers); await b.assertOriginalHelperReceipt(command); b.current(); } return raw; };
   const properties = (objectId: string): Promise<unknown> => send({ phase: "inverse-native-reference-worker-properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   const call = (role: string, objectId: string, args: readonly Readonly<{ objectId: string } | { value: string }>[], value = false): Promise<unknown> => { const program = PROGRAMS[role]; need(program !== undefined); return send({ phase: "inverse-native-reference-worker-call", role, method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId, functionDeclaration: program, arguments: args, returnByValue: value } }); };
@@ -80,7 +90,7 @@ export async function collectCurrentFootprintInverseReferencePreparation(b: Curr
   const graphs: CurrentFootprintInverseReferenceGraph[] = [];
   const graph = async (root: string, expected: Value): Promise<CurrentFootprintInverseReferenceGraph> => {
     const edges: number[][] = [], pending = [{ id: root, expected }], proofs: string[] = [];
-    for (let index = 0; index < pending.length; index += 1) { const item = pending[index]; need(item !== undefined && pending.length <= 63); const children = compareCurrentFootprintInverseRuntimeRowProperties(await properties(item.id), item.expected); const proof = await tuple(await call("graph-node", item.id, [{ objectId: b.intrinsics }, { objectId: graphMethods.id }, { value: currentFootprintInverseReferenceAscii(item.expected) }]), 4); proofs.push(proof.id); for (const [ordinal, child] of children.entries()) { const childIndex = pending.length; pending.push({ id: child.objectId, expected: child.expected }); edges.push([index, ordinal, childIndex]); } }
+    for (let index = 0; index < pending.length; index += 1) { const item = pending[index]; need(item !== undefined && pending.length <= 63); const text = graphNodeText(item.expected); const children = compareCurrentFootprintInverseRuntimeRowProperties(await properties(item.id), item.expected); const proof = await tuple(await call("graph-node", item.id, [{ objectId: b.intrinsics }, { objectId: graphMethods.id }, { value: text }]), 4); proofs.push(proof.id); for (const [ordinal, child] of children.entries()) { const childIndex = pending.length; pending.push({ id: child.objectId, expected: child.expected }); edges.push([index, ordinal, childIndex]); } }
     const combined = await tuple(await call("graph-collect", b.intrinsics, [{ objectId: b.intrinsics }, ...proofs.map(objectId => ({ objectId }))]), 2); const relations = currentFootprintInverseReferenceAscii({ edges }); currentFootprintInverseDeleteRpcTrue(await call("graph-reprove", combined.id, [{ objectId: graphMethods.id }, { value: relations }], true)); return Object.freeze({ tuple: combined.id, relations, nodes: pending.length });
   };
   const namespaces: CurrentFootprintInverseReferenceNamespace[] = [];

@@ -74,7 +74,14 @@ export class CurrentFootprintInverseNativeDeleteFlowController{
  readonly #counts={local:0,producer:0,callback:0,timer:0};#data:Readonly<CurrentFootprintInverseNativeDeleteFlowData>|null=null;
  public constructor(binding:CurrentFootprintInverseNativeDeleteFlowBindings){this.#b=Object.freeze({...binding});originals.add(this);Object.freeze(this);}
  #current():void{this.#b.current();need(!this.#failed&&!this.#closed,"CURRENT");}
- #fail(error:unknown):void{if(!this.#failed){this.#failed=true;this.#resuming?.barrier.reject(error);this.#b.fail(error);}}
+ #fail(error:unknown):void{
+  if(this.#failed){return;}
+  this.#failed=true;
+  this.#resuming?.barrier.reject(error);
+  try{this.#b.fail(error);}catch{
+   // Notification cannot replace the original rejection or strand its waiter.
+  }
+ }
  #outer(kind:Kind,command:Child):Normal{this.#current();const c=validate({phase:"inverse-native-delete-flow",kind,command});need(c.phase==="inverse-native-delete-flow","NORMAL");return c;}
  #actual(c:Normal):Readonly<{method:string;params:Readonly<Record<string,unknown>>;role?:string}>{this.#current();return c.kind==="callback"||c.kind==="producer"?c.command.command:c.command;}
  async #issue(c:Command,before:()=>void):Promise<unknown>{this.#current();const request=this.#b.send(c,():void=>{this.#current();before();});need(types.isPromise(request)&&this.#requests.length<MAX.cdpRequests,"ORIGINAL_REQUEST");this.#requests.push(request);const raw=capture(await request).value;this.#current();return raw;}
