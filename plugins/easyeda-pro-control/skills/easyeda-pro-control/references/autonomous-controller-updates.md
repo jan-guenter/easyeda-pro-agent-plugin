@@ -522,6 +522,16 @@ payload, new observation or native cleanup is admitted. Busy or missing pending
 evidence refuses; the original outcome remains unknown. Only the original
 facade's retirement preflight can authorize closure and a later generation.
 
+## Original footprint inverse continuations
+
+For an interrupted strict inverse or independent cold UI request, specify the
+original manager generation and request ID with `cleanup-original`. Its
+`request.action` selects `inspect`, `cleanup` or `settle-publication`.
+The manager reconstructs the command from its own retained request and
+reserves the corresponding cleanup attempt before dispatch. Each tool has
+its own original request family. See [the footprint inverse](current-footprint-inverse.md)
+for how to interpret completion, settlement and cleanup.
+
 ## Original spatial cleanup
 
 The exact frozen4500 terminated Pad report-chain failure has a separate

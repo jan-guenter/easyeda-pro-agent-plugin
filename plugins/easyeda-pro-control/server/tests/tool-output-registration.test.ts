@@ -1,4 +1,4 @@
-/* oxlint-disable import/max-dependencies -- Actual Via and schematic output properties need their independent immutable contracts and separate diagnostic schemas in the same registration check. */
+/* oxlint-disable import/max-dependencies -- Registration checks need the scoped tool constants and distinct Via and schematic output schemas. */
 /** Registration contracts must cover every named tool before facade startup.
  * These checks evaluate the actual schema property without importing the owner. */
 import assert from "node:assert/strict";
@@ -9,6 +9,8 @@ import { runInNewContext } from "node:vm";
 import { parse } from "acorn";
 import type { ObjectExpression } from "acorn";
 import { z } from "zod";
+import { CURRENT_FOOTPRINT_INVERSE_CONTROL_TOOL } from "../src/current-footprint-inverse-control-contract.ts";
+import { CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_TOOL } from "../src/current-footprint-inverse-cold-ui-control-contract.ts";
 import { CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL } from "../src/current-footprint-forward-writer-control-contract.ts";
 import {CURRENT_PCB_VIA_WRITE_TOOL,currentPcbViaWriteResultSchema} from "../src/current-pcb-via-write-contract.ts";
 import {currentPcbViaWriteDiagnosticSchema} from "../src/current-pcb-via-write-diagnostic.ts";
@@ -17,6 +19,8 @@ import { CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL, currentSchematicRelevan
 import { currentSchematicRelevanceDisplayWriteDiagnostic, currentSchematicRelevanceDisplayWriteDiagnosticSchema } from "../src/current-schematic-relevance-display-write-diagnostic.ts";
 
 const constants = new Map([
+  ["CURRENT_FOOTPRINT_INVERSE_CONTROL_TOOL", CURRENT_FOOTPRINT_INVERSE_CONTROL_TOOL],
+  ["CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_TOOL", CURRENT_FOOTPRINT_INVERSE_COLD_UI_CONTROL_TOOL],
   ["CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL", CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL],
   ["CURRENT_PCB_VIA_WRITE_TOOL", CURRENT_PCB_VIA_WRITE_TOOL],
   ["CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL", CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_WRITE_TOOL],

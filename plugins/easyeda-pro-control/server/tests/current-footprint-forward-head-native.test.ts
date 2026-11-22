@@ -8,6 +8,7 @@ import { CURRENT_FOOTPRINT_FORWARD_NATIVE_MAIN_LIMITS as LIMITS } from "../src/c
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_REQUESTS as CONSTRUCTION } from "../src/current-footprint-copy-main-backend-budget.ts";
 import { CURRENT_SELECTED_FILE_MAIN_SQL_FENCE_EARLY_ID as EARLY } from "../src/current-selected-file-main-sql-fence-protocol.ts";
 import { CurrentFootprintCopyMainBackendRunner } from "../src/current-footprint-copy-main-backend-runner.ts";
+import { requireCurrentFootprintForwardWriterMainBootstraps } from "../src/current-footprint-forward-head-origin.ts";
 
 void test("every native head case is fixed and the original import breakpoint remains representable", () => {
   const cases = currentFootprintForwardHeadNativeCases(); assert.equal(cases.length, 19);
@@ -34,7 +35,11 @@ void test("a copied forward bootstrap refuses before any actual transport callba
   let callbacks = 0;
   const transport = Object.freeze({ assertCurrent: (): Promise<void> => { callbacks += 1; return Promise.resolve(); },
     send: (): Promise<void> => { callbacks += 1; return Promise.resolve(); }, poll: (): Promise<string> => { callbacks += 1; return Promise.resolve(""); } });
-  assert.throws(() => new CurrentFootprintCopyMainBackendRunner(transport, undefined, undefined,
-    { profile: "private.current-footprint-forward-head-bootstrap.v1", executionAuthorized: false }), /FORWARD_HEAD_BOOTSTRAP/u);
+  const forward = { profile: "private.current-footprint-forward-head-bootstrap.v1", executionAuthorized: false } as const;
+  assert.throws(() => new CurrentFootprintCopyMainBackendRunner(transport, undefined, undefined, forward), /FORWARD_HEAD_BOOTSTRAP/u);
+  assert.throws(() => {
+    requireCurrentFootprintForwardWriterMainBootstraps(forward,
+      { profile: "private.selected-file-main-sql-fence-bootstrap.v1", executionAuthorized: false }, transport);
+  }, /FORWARD_WRITER_MAIN_BOOTSTRAP_PAIR/u);
   assert.equal(callbacks, 0);
 });

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
-import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "../src/current-pcb-diagnostic-context.ts";
+import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTargetSummary, validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "../src/current-pcb-diagnostic-context.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 import { GENERATED_SCHEMATIC_DISPLAY_ACCESSOR_SOURCE as SCHEMATIC_SOURCE } from "../src/generated-schematic-display-accessor-source.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
@@ -26,6 +26,17 @@ function fixture(): CurrentPcbDiagnosticContext {
 function finish(context: CurrentPcbDiagnosticContext, source = SOURCE): Readonly<Record<string, unknown>> {
   return context.finish({ scriptSource: source }, { targetInfos: [{ ...TARGET, attached: true }] }, { frameTree: { frame: FRAME } });
 }
+void test("diagnostic target records redact local URL parameters and keep the Start Page identity", () => {
+  const local = "file:///C:/Example/resources/app/assets/view/index.html";
+  const privateUrl = `${local}?account=sample#sample`;
+  const target = { targetId: "ordinary-view", type: "page", url: privateUrl, attached: false };
+  assert.deepEqual(diagnosticTargetSummary(target), { ...target, url: local });
+  assert.equal(target.url, privateUrl);
+
+  const editor = { targetId: "editor", type: "page", url: "https://client/editor?cll=warn#", attached: false };
+  assert.deepEqual(diagnosticTargetSummary(editor), editor);
+});
+
 void test("fixed context binds target session frame loader default context uniqueId and exact source independently of URL", () => {
   const context = fixture(); assert.equal(context.script().scriptId, "script-1"); const result = finish(context);
   assert.equal(result["sourceVerified"], true); assert.equal(result["projectWorkerAssociationVerified"], false);

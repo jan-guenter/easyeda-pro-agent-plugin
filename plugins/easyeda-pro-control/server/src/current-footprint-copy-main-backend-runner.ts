@@ -1,18 +1,21 @@
-
-
-
-
-
-
-
+import{CURRENT_FOOTPRINT_INVERSE_V4_MAIN_JOINT as DELETE_V4_JOINT}from"./current-footprint-inverse-v4-main-joint-data.ts";
+import{CurrentFootprintInverseV4SelectedMainRequestReader}from"./current-footprint-inverse-v4-selected-main-request-reader.ts";
+import{CurrentFootprintInverseNativeDeleteMainTailController,requireCurrentFootprintInverseNativeDeleteMainTailPrerequisite}from"./current-footprint-inverse-native-delete-main-tail-controller.ts";
+import type{CurrentFootprintInverseNativeDeleteMainTailObservation,CurrentFootprintInverseNativeDeleteMainTailResumeReceipt}from"./current-footprint-inverse-native-delete-main-tail-controller.ts";
+import type{CurrentFootprintInverseNativeDeleteMainReadCommand}from"./current-footprint-inverse-native-delete-main-read-protocol.ts";
+import{currentFootprintInverseNativeDeleteMainTailReadonlyRoster}from"./current-footprint-inverse-native-delete-main-tail-source.ts";
+import {deriveCurrentFootprintInverseNativeDeleteMainTailPreflight} from "./current-footprint-inverse-native-delete-main-tail-data.ts";
+import type {CurrentFootprintInverseNativeDeleteMainTailPreflight} from "./current-footprint-inverse-native-delete-main-tail-data.ts";
 /* oxlint-disable import/max-dependencies -- The sole main scheduler directly joins its fixed grammars, source issuers and genuine native-owner capability; separating them would obscure the original lease boundary. */
 
-
-
-
-
-
-
+import { CurrentFootprintInverseNativeDeleteMainController, CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_MAIN_PREFIX_REQUESTS as DELETE_MAIN } from "./current-footprint-inverse-native-delete-main-controller.ts";
+import type { CurrentFootprintInverseNativeDeleteMainBeginPause } from "./current-footprint-inverse-native-delete-main-begin-custody.ts";
+import type { CurrentFootprintInverseNativeDeleteMainCommandInput } from "./current-footprint-inverse-native-delete-main-controller.ts";
+// oxlint-disable-next-line import/no-cycle -- The late Core getter reads its initialized original registry and exposes no token registration.
+import { requireOriginalCurrentFootprintInverseNativeDeleteMainSource,requireOriginalCurrentFootprintInverseNativeDeleteMainSourceAfterOriginalExit } from "./current-footprint-inverse-native-delete-main-source.ts";
+import type { CurrentFootprintInverseNativeDeleteMainSource, CurrentFootprintInverseNativeDeleteMainSourceOriginal } from "./current-footprint-inverse-native-delete-main-source.ts";
+import type { CurrentFootprintInverseNativeDeleteMainEvent, CurrentFootprintInverseNativeDeleteMainRequestOrigin } from "./current-footprint-inverse-native-delete-main-origin.ts";
+import type { CurrentFootprintInverseRegistrationBindings as CurrentFootprintInverseV4RegistrationBindings, CurrentFootprintInverseRegistrationIntent as CurrentFootprintInverseV4RegistrationIntent } from "./current-footprint-inverse-v4-registration-origin.ts";
 import { CurrentFootprintForwardWriterLiveHistoryCustody } from "./current-footprint-forward-writer-live-history-custody.ts";
 import { CurrentFootprintForwardWriterLiveHistoryCollector } from "./current-footprint-forward-writer-live-history-collector.ts";
 import { compareCurrentFootprintForwardWriterChangedHistory, currentFootprintForwardWriterCopyDocumentUuid, deriveCurrentFootprintForwardWriterLiveHistoryCacheData } from "./current-footprint-forward-writer-live-history-cache-data.ts";
@@ -96,7 +99,7 @@ import type { CurrentSchematicRelevanceSavedRegistrationBindings, CurrentSchemat
 import type { CurrentSchematicRelevanceDisplayRegistrationBindings, CurrentSchematicRelevanceDisplayRegistrationIntent } from "./current-schematic-relevance-display-registration-intent.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner constructs this runner; its original private-factory guards are invoked only after that construction, never at module initialization. A callback registration seam would weaken this authority check.
 import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootprintCombinedMainCompletion, currentFootprintCombinedMainGenerationExited, failCurrentFootprintCombinedMainCompletion, requireCurrentFootprintCombinedMainCapability, requireCurrentFootprintCombinedMainCleanup, requireCurrentFootprintCombinedPairedSchedule, requireCurrentFootprintHeadAgeBootstrapCapability, retireCurrentFootprintCombinedMainCompletion, sendCurrentFootprintCombinedMainCommand, sendCurrentFootprintCombinedMainCompletion, sendOriginalCurrentSchematicRelevanceDisplayMainLiveHistory } from './current-pcb-diagnostic-owner.ts';
-import type { CurrentFootprintCombinedMainCapability,CurrentFootprintForwardWriterNativeOwner,requireOriginalCurrentFootprintInverseRegistrationIntentForRunner as RequireInverseRegistration,requireOriginalCurrentSavedProjectRegistrationIntent as RequireSavedRegistration,requireOriginalCurrentSchematicRelevanceDisplayRegistrationIntent as RequireSchematicDisplayRegistration,requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent as RequireSchematicSavedRegistration } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintCombinedMainCapability,CurrentFootprintForwardWriterNativeOwner,requireOriginalCurrentFootprintInverseRegistrationIntentForRunner as RequireInverseRegistration,requireOriginalCurrentFootprintInverseV4RegistrationIntentForRunner as RequireInverseV4Registration,requireOriginalCurrentSavedProjectRegistrationIntent as RequireSavedRegistration,requireOriginalCurrentSchematicRelevanceDisplayRegistrationIntent as RequireSchematicDisplayRegistration,requireOriginalCurrentSchematicRelevanceSavedRegistrationIntent as RequireSchematicSavedRegistration } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintInverseRegistrationBindings, CurrentFootprintInverseRegistrationIntent } from "./current-footprint-inverse-registration-origin.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -137,7 +140,7 @@ import type { CurrentFootprintForwardHeadMainHost } from "./current-footprint-fo
 import { isCurrentFootprintForwardHeadMainCommand } from "./current-footprint-forward-head-protocol.ts";
 import type { CurrentFootprintForwardHeadMainCommand } from "./current-footprint-forward-head-protocol.ts";
 // oxlint-disable-next-line import/no-cycle -- Only the original native owner issues this bootstrap beside the Main constructor; resolution occurs after that owner exists.
-import { requireCurrentFootprintForwardHeadBootstrap, sendCurrentFootprintForwardHeadAgeMainCommand, sendCurrentFootprintForwardHeadMainCommand } from "./current-footprint-forward-head-origin.ts";
+import { requireCurrentFootprintForwardHeadBootstrap, requireCurrentFootprintForwardWriterMainBootstraps, sendCurrentFootprintForwardHeadAgeMainCommand, sendCurrentFootprintForwardHeadMainCommand } from "./current-footprint-forward-head-origin.ts";
 import type { CurrentFootprintForwardHeadBootstrap } from "./current-footprint-forward-head-origin.ts";
 import type { CurrentFootprintForwardHeadRead } from "./current-footprint-forward-head-controller.ts";
 
@@ -149,7 +152,7 @@ import { currentProjectStructureMainGenerationExited, isCurrentProjectStructureM
 import type { CurrentProjectStructureMainCapability } from "./current-project-structure-main-capability.ts";
 
 // oxlint-disable-next-line import/no-cycle -- The actual selected-file native factory creates this runner; no capability issues during module initialization.
-import { enrollOriginalCurrentMainStartupLibrary, originalCurrentFootprintInverseMainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentMainStartupLibrary, sendOriginalCurrentMainStartupLibraryReadonly, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentSchematicRelevanceDisplayMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
+import { enrollOriginalCurrentMainStartupLibrary, isOriginalCurrentFootprintInverseV4MainSqlFenceBootstrap, originalCurrentFootprintInverseMainHistoryBaseline, originalCurrentFootprintInverseV4MainHistoryBaseline, prepareOriginalCurrentSelectedFileStartupActors, requireCurrentSelectedFileMainSqlFenceBootstrap, sendCurrentSelectedFileMainSqlFenceCommand, sendOriginalCurrentFootprintInverseMainHistory, sendOriginalCurrentFootprintInverseV4MainHistory, sendOriginalCurrentMainStartupLibrary, sendOriginalCurrentMainStartupLibraryReadonly, sendOriginalCurrentPcbViaMainBegin, sendOriginalCurrentPcbViaMainCommand, sendOriginalCurrentPcbViaMainHistory, sendOriginalCurrentPcbViaMainLiveHistory, sendOriginalCurrentPcbViaMainStep, sendOriginalCurrentPcbViaMainStructure, sendOriginalCurrentSchematicRelevanceDisplayMain, sendOriginalCurrentSchematicRelevanceDisplayMainStructure } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 import type { CurrentSelectedFileMainSqlFenceBootstrap } from "./current-selected-file-main-sql-fence-bootstrap.ts";
 // oxlint-disable-next-line import/no-cycle -- Resolve genuine Core/Main custody only during later original history operations, after both classes exist.
 import { originalCurrentFootprintForwardWriterMainRequestLimit, requireCurrentFootprintForwardWriterMainHistoryOrigin } from "./current-footprint-forward-writer-main-history-origin.ts";
@@ -429,8 +432,8 @@ export function requireCurrentFootprintForwardMainCompletionOrigin(token: Curren
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const location = z.object({ scriptId: handle, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() }).strict();
 const frame = z.looseObject({ callFrameId: handle, location });
-
-
+const deleteMainReadFrame = z.looseObject({ functionName: z.string(), functionLocation: location.optional() });
+const deleteMainReadPause=z.looseObject({callFrames:z.array(deleteMainReadFrame)});
 const registrationId = z.literal(REGISTRATION_ID);
 const pauseSchema = z.looseObject({ reason: z.string().max(128), callFrames: z.array(frame).min(1).max(64), hitBreakpoints: z.array(z.string().min(1).max(512)).max(2).optional() });
 const empty = z.object({}).strict();
@@ -482,6 +485,12 @@ interface InverseProjectRegistrationEnrollment {
   readonly ownerModule: Readonly<{ requireOriginalCurrentFootprintInverseRegistrationIntentForRunner: typeof RequireInverseRegistration }>;
   readonly requireOriginal: typeof RequireInverseRegistration;
 }
+interface InverseV4ProjectRegistrationEnrollment {
+  readonly kind: "inverse-v4";
+  readonly intent: CurrentFootprintInverseV4RegistrationIntent; readonly bindings: CurrentFootprintInverseV4RegistrationBindings;
+  readonly ownerModule: Readonly<{ requireOriginalCurrentFootprintInverseV4RegistrationIntentForRunner: typeof RequireInverseV4Registration }>;
+  readonly requireOriginal: typeof RequireInverseV4Registration;
+}
 interface SchematicSavedProjectRegistrationEnrollment {
   readonly kind: "schematic-saved";
   readonly intent: CurrentSchematicRelevanceSavedRegistrationIntent; readonly bindings: CurrentSchematicRelevanceSavedRegistrationBindings;
@@ -494,7 +503,7 @@ interface SchematicDisplayProjectRegistrationEnrollment {
   readonly ownerModule: Readonly<{ requireOriginalCurrentSchematicRelevanceDisplayRegistrationIntent: typeof RequireSchematicDisplayRegistration }>;
   readonly requireOriginal: typeof RequireSchematicDisplayRegistration;
 }
-type ProjectRegistrationEnrollment = SavedProjectRegistrationEnrollment | InverseProjectRegistrationEnrollment | SchematicSavedProjectRegistrationEnrollment | SchematicDisplayProjectRegistrationEnrollment;
+type ProjectRegistrationEnrollment = SavedProjectRegistrationEnrollment | InverseProjectRegistrationEnrollment | InverseV4ProjectRegistrationEnrollment | SchematicSavedProjectRegistrationEnrollment | SchematicDisplayProjectRegistrationEnrollment;
 interface Resolved { readonly breakpointId: string; readonly location: z.infer<typeof location> }
 interface StructureAllocation { readonly id: number; readonly retain: (reply: unknown) => void; seen: boolean; stopped: boolean }
 interface ForwardPoll {
@@ -546,8 +555,25 @@ export function requireOriginalCurrentSelectedFileMainRequest(packet: CurrentSel
   const original = selectedRequestPackets.get(packet); need(original !== undefined && original.runner === runner, "SELECTED_REQUEST_ORIGINAL"); runner.requireOriginalSelectedMainRequest(packet);
 }
 export class CurrentFootprintCopyMainBackendRunner {
-
-
+  #deleteMain: CurrentFootprintInverseNativeDeleteMainController|null=null;
+  #deleteMainSource: CurrentFootprintInverseNativeDeleteMainSource|null=null;
+  #deleteMainOriginal: CurrentFootprintInverseNativeDeleteMainSourceOriginal|null=null;
+  #deleteMainOrigin: CurrentFootprintInverseNativeDeleteMainRequestOrigin|null=null;
+  #deleteMainAttempted=false;
+  #deleteMainTailPreflightAttempted=false;
+  #deleteMainTailPreflight:CurrentFootprintInverseNativeDeleteMainTailPreflight|null=null;
+  #deleteMainTail:CurrentFootprintInverseNativeDeleteMainTailController|null=null;
+  #deleteMainTailPreparation:Promise<void>|null=null;
+  #deleteMainTailExit:Promise<void>|null=null;
+  #deleteMainTailAttempted=false;#deleteMainTailEnded=false;#deleteMainTailReads=0;
+  #deleteMainReadArming:z.infer<typeof location>|null=null;
+  #deleteMainReadCommand:Readonly<{command:CurrentFootprintInverseNativeDeleteMainReadCommand;id:number|null;consumed:boolean}>|null=null;
+  #deleteMainPreparation:Promise<CurrentFootprintInverseNativeDeleteMainRequestOrigin>|null=null;
+  #deleteMainStartRequests=0; #deleteMainReads=0; #deleteMainEnded=false;
+  readonly #deleteMainPoints=new Map<string,z.infer<typeof location>>();
+  readonly #deleteMainEvents:CurrentFootprintInverseNativeDeleteMainEvent[]=[];
+  #deleteMainPoll:Promise<void>|null=null;
+  #deleteMainDelivered:Pause|null=null; #deleteMainDeliveredEvent:unknown=null;
   readonly #transport: CurrentFootprintCopyMainBackendTransport;
   readonly #methods: readonly unknown[];
   readonly #decoder = new TextDecoder("utf-8", { fatal: true });
@@ -590,7 +616,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   #stockSourceFrame: string | null = null;
   readonly #stockReturnFrames = new WeakMap<Pause, string>();
   readonly #stockPromiseResults = new WeakMap<Pause, Readonly<{ resultObjectId: string; raw: unknown }>>();
-  #selectedRequestReader: CurrentSelectedFileMainRequestReader | null = null;
+  #selectedRequestReader: CurrentSelectedFileMainRequestReader | CurrentFootprintInverseV4SelectedMainRequestReader | null = null;
   #selectedRequestPause: Pause | null = null;
   #selectedFetchScript: Readonly<{ scriptId: string; executionContextId: number }> | null = null;
   readonly #sqlApprovedReadRequests = new WeakSet<Pause>();
@@ -821,7 +847,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     this.#selectedSqlPath = selectedSqlBootstrap === undefined ? null : requireCurrentSelectedFileMainSqlFenceBootstrap(selectedSqlBootstrap, transport);
     this.#headAgeBootstrapCapture = headAgeBootstrap !== undefined || forwardHeadBootstrap !== undefined; this.#headAgeBootstrapCapability = headAgeBootstrap ?? null;
     this.#methods = methods(transport); this.#transport = transport;
-    need(forwardHeadBootstrap === undefined || headAgeBootstrap === undefined && selectedSqlBootstrap === undefined, "FORWARD_HEAD_EXCLUSIVE_BOOTSTRAP");
+    need(forwardHeadBootstrap === undefined || headAgeBootstrap === undefined, "FORWARD_HEAD_EXCLUSIVE_BOOTSTRAP");
+    if (forwardHeadBootstrap !== undefined && selectedSqlBootstrap !== undefined) {
+      requireCurrentFootprintForwardWriterMainBootstraps(forwardHeadBootstrap, selectedSqlBootstrap, transport);
+    }
     this.#forwardHeadBootstrap = forwardHeadBootstrap ?? null;
     this.#forwardHead = forwardHeadBootstrap === undefined ? null : new CurrentFootprintForwardHeadMain(Object.freeze<CurrentFootprintForwardHeadMainHost>({
       source: requireCurrentFootprintForwardHeadBootstrap(forwardHeadBootstrap, transport),
@@ -982,7 +1011,10 @@ export class CurrentFootprintCopyMainBackendRunner {
       this.#savedRegistrationLocation(savedSite, record.location); need(this.#savedRegistrationResolutions.length < 3, "SAVED_REGISTRATION_RESOLUTION_BOUND");
       this.#savedRegistrationResolutions.push(record); return;
     }
-
+    if(this.#deleteMain!==null&&!this.#sqlBreakpoints.has(record.breakpointId)){
+      const expected=this.#deleteMainPoints.get(record.breakpointId)??this.#deleteMainReadArming??this.#deleteMain.arming;
+      need(expected!==null&&expected!==undefined&&canonicalJson(expected)===canonicalJson(record.location),"INVERSE_DELETE_MAIN_RESOLUTION");return;
+    }
     if (this.#viaMainOrigin !== null && !this.#sqlBreakpoints.has(record.breakpointId)) {
       const expected = this.#viaMainPoints.get(record.breakpointId) ?? this.#viaMainArming;
       need(expected !== null && expected !== undefined && canonicalJson(expected) === canonicalJson(record.location), "VIA_MAIN_BREAKPOINT_RESOLUTION"); return;
@@ -1001,7 +1033,19 @@ export class CurrentFootprintCopyMainBackendRunner {
     let input=rawInput;
     if (this.#headAgeBootstrapCapability !== null) { requireCurrentFootprintHeadAgeBootstrapCapability(this.#headAgeBootstrapCapability, this.#transport); }
     this.#events += 1; need(this.#events <= 4096, "EVENT_BOUND");
-
+    if(this.#deleteMain!==null&&(method==="Debugger.paused"||method==="Debugger.resumed")){
+      need(!this.#deleteMainEnded&&this.#deleteMainEvents.length<64,"INVERSE_DELETE_MAIN_EVENT_BOUND");
+      if(method==="Debugger.paused"){
+        need(this.#pause===null||this.#pause.resumed,"INVERSE_DELETE_MAIN_PAUSE_OVERLAP");
+        const event=pauseSchema.parse(input),first=event.callFrames[0];need(first!==undefined&&event.reason==="other"&&event.hitBreakpoints?.length===1,"INVERSE_DELETE_MAIN_PAUSE");
+        const id=event.hitBreakpoints[0];need(id!==undefined,"INVERSE_DELETE_MAIN_POINT");const sqlSite=this.#sqlBreakpoints.get(id);
+        if(sqlSite===undefined){const expected=this.#deleteMainPoints.get(id);need(expected!==undefined&&canonicalJson(expected)===canonicalJson(first.location),"INVERSE_DELETE_MAIN_FOREIGN_POINT");}
+        else{this.#sqlLocation(sqlSite,first.location);}
+        this.#pause={frameId:first.callFrameId,location:first.location,registration:false,...(sqlSite===undefined?{}:{sqlSite}),resumeAttempted:false,resumed:false};
+        if(sqlSite!==undefined){this.#captureSqlStartupPauseLocations(this.#pause,event.callFrames);this.#sqlHeld=this.#pause;}
+      }else{empty.parse(input);need(this.#pause?.resumeAttempted===true&&!this.#pause.resumed,"INVERSE_DELETE_MAIN_UNRESERVED_RESUME");this.#pause.resumed=true;}
+      this.#deleteMainEvents.push(Object.freeze({method,params:freezeDeep(input)}));return;
+    }
     if (this.#viaMainOrigin !== null && (method === "Debugger.paused" || method === "Debugger.resumed")) {
       need(this.#viaMainEvents.length < 64, "VIA_MAIN_EVENT_BOUND");
       if (method === "Debugger.paused") {
@@ -1196,7 +1240,11 @@ export class CurrentFootprintCopyMainBackendRunner {
     const event = z.object({ method: z.string().max(128), params: z.unknown() }).strict().parse(value); this.#event(event.method, event.params);
   }
   async #pump(cleanup = false): Promise<void> {
-
+    if(this.#deleteMain!==null){
+      if(this.#deleteMainPoll!==null){await this.#deleteMainPoll;return;}
+      const pending=this.#pumpOriginal(cleanup);this.#deleteMainPoll=pending;
+      try{await pending;}finally{if(this.#deleteMainPoll===pending){this.#deleteMainPoll=null;}}return;
+    }
     if (this.#viaMainOrigin === null) { await this.#pumpOriginal(cleanup); return; }
     if (this.#viaMainPoll !== null) { await this.#viaMainPoll; return; }
     const pending = this.#pumpOriginal(cleanup); this.#viaMainPoll = pending;
@@ -1218,7 +1266,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     }
     const raw = isForwardAnyMainCapability(this.#originCapability) ?
       await pollForwardAnyMain(this.#originCapability, this, cleanup) : await this.#transport.poll(cleanup);
-    if (this.#viaMainOrigin !== null) { this.#chunk(raw); await this.#current(cleanup); if (raw === "") { await delay(10); } return; }
+    if (this.#deleteMain!==null||this.#viaMainOrigin !== null) { this.#chunk(raw); await this.#current(cleanup); if (raw === "") { await delay(10); } return; }
     await this.#current(cleanup); this.#chunk(raw); if (raw === "") { await delay(10); }
   }
   /** Register only this pending allocation's original byte receiver. A lost
@@ -1281,13 +1329,13 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Consume one fixed request number and retain its sole pending reply.
    * Head-age exceptions are captured before success decoding; cleanup keeps
    * its own counter and cannot repeat a consumed normal request. */
-  async #request(input: Command | CurrentFootprintForwardHeadMainCommand | CurrentMainStartupLibraryCommand | CurrentMainStartupLibraryReadonlyCommand | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand | CurrentFootprintInverseMainHistoryCommand | CurrentFootprintForwardWriterBranchCommand | CurrentFootprintForwardWriterMainMutationCommand,
+  async #request(input: Command | CurrentFootprintForwardHeadMainCommand | CurrentMainStartupLibraryCommand | CurrentMainStartupLibraryReadonlyCommand | CurrentSelectedFileMainSqlFenceCommand | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand | CurrentProjectStructureMainCommand | CurrentPcbViaMainCommand | CurrentPcbViaMainStepCommand | CurrentPcbViaMainBeginCommand | CurrentPcbViaMainHistoryCommand | CurrentPcbViaMainStructureCommand | CurrentPcbViaMainLiveHistoryCommand | CurrentFootprintInverseMainHistoryCommand | CurrentFootprintForwardWriterBranchCommand | CurrentFootprintForwardWriterMainMutationCommand | CurrentFootprintInverseNativeDeleteMainCommandInput | CurrentFootprintInverseNativeDeleteMainReadCommand,
     cleanup = false, retainAllocationReply?: (reply: unknown) => void): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
-
+    if(this.#deleteMainPoll!==null){await this.#deleteMainPoll;await this.#current(cleanup);}
     if (this.#viaMainOrigin !== null && this.#viaMainPoll !== null) { await this.#viaMainPoll; await this.#current(cleanup); }
-
-
+    const deleteMainRead=input.phase.startsWith("inverse-native-delete-main-read-");
+    const deleteMain=!deleteMainRead&&input.phase.startsWith("inverse-native-delete-main-");
     const writerSql = input.phase.startsWith("forward-writer-sql-");
     const branchRead = input.phase.startsWith("forward-writer-branch-");
     const inverseHistory = input.phase.startsWith("inverse-main-history-");
@@ -1303,7 +1351,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         completion && (input.phase === "completion-source-arm" || input.phase === "completion-callback-arm"));
     need(retainAllocationReply === undefined || !cleanup && (structure && input.phase === "structure-main-arm" || forwardAllocation), "STRUCTURE_ALLOCATION_CALLBACK");
     let cleanupCommand: boolean;
-    if (writerSql || branchRead || via || inverseHistory || isCurrentFootprintForwardHeadMainCommand(input)) { cleanupCommand = cleanup; }
+    if (deleteMainRead || deleteMain || writerSql || branchRead || via || inverseHistory || isCurrentFootprintForwardHeadMainCommand(input)) { cleanupCommand = cleanup; }
     else if (completion || structure) { cleanupCommand = "method" in input && ["Debugger.resume", "Debugger.removeBreakpoint", "Runtime.releaseObjectGroup"].includes(input.method); }
     else if (collection) { cleanupCommand = (CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CLEANUP_PHASES as readonly string[]).includes(input.phase); }
     else { cleanupCommand = !sqlFence && !stock && ["resume", "remove", "release"].includes(input.phase); }
@@ -1319,7 +1367,8 @@ export class CurrentFootprintCopyMainBackendRunner {
     const requestMaximum = fullBranchMaximum ?? fullLiveMaximum ?? fullHistoryMaximum ?? fullStartupMaximum ?? (cleanup && this.#selectedSqlBootstrap === null ? 72 : initialMaximum + (this.#inverseMainHistoryIntent === null ? 0 : INVERSE_HISTORY.repetitions * INVERSE_HISTORY.total));
     const ordinaryRequests = this.#requests - this.#stockRequests;
     let withinBound: boolean;
-    if (stock) { withinBound = !cleanup && this.#stockOrigin !== null && this.#stockRequests < STOCK.requests; }
+    if(this.#deleteMain!==null&&(deleteMain||deleteMainRead||sqlFence)){withinBound=ordinaryRequests<this.#deleteMainStartRequests+DELETE_MAIN.total+(this.#deleteMainTail===null?0:DELETE_V4_JOINT.extraTotal);}
+    else if (stock) { withinBound = !cleanup && this.#stockOrigin !== null && this.#stockRequests < STOCK.requests; }
     else if (branchRead) { withinBound = fullBranchMaximum !== null && ordinaryRequests < fullBranchMaximum; }
     else if (inverseHistory && fullLiveMaximum !== null) { withinBound = this.#selectedSqlBootstrap !== null && ordinaryRequests < fullLiveMaximum; }
     else if (inverseHistory && fullHistoryMaximum !== null) { withinBound = this.#selectedSqlBootstrap !== null && ordinaryRequests < fullHistoryMaximum; }
@@ -1334,7 +1383,19 @@ export class CurrentFootprintCopyMainBackendRunner {
     const allocation = retainAllocationReply === undefined ? null : { id, retain: retainAllocationReply, seen: false, stopped: false };
     if (allocation !== null) { need(this.#structureAllocation === null, "STRUCTURE_ALLOCATION_PENDING"); this.#structureAllocation = allocation; }
     try {
-    if (writerSql) {
+    if(deleteMainRead){
+      const source=this.#deleteMainSource;const original=this.#deleteMainOriginal;const active=this.#deleteMainReadCommand;
+      need(source!==null&&original!==null&&this.#deleteMainTail!==null&&active!==null&&active.command===input&&active.id===null&&!active.consumed,"INVERSE_DELETE_MAIN_READ_ORIGINAL_PENDING");
+      this.#deleteMainReadCommand={...active,id};
+      await original.owner.sendFootprintInverseNativeDeleteMainRead(source,this,active.command,id);
+      need(this.#deleteMainReadCommand.consumed,"INVERSE_DELETE_MAIN_READ_NATIVE_ACK");
+    }else if(deleteMain){
+      const source=this.#deleteMainSource;const original=this.#deleteMainOriginal;const component=this.#deleteMain;
+      need(source!==null&&original!==null&&component!==null,"INVERSE_DELETE_MAIN_ORIGINAL_SOURCE");
+      const selected=component.pendingCommand(input);
+      const window=await original.owner.sendFootprintInverseNativeDeleteMain(source,this,selected,id);
+      component.acknowledge(selected,id,window);
+    } else if (writerSql) {
       need(isCurrentFootprintForwardWriterMainCapability(this.#originCapability) && this.#forwardWriterSqlCommand === null, "FORWARD_WRITER_SQL_ORIGINAL_CAPABILITY");
       const command = validateCurrentFootprintForwardWriterMainMutationCommand(input); let consumed = false;
       this.#forwardWriterSqlCommand = { command, id, consume: (): void => { need(!consumed, "FORWARD_WRITER_SQL_COMMAND_CONSUMED"); consumed = true; } };
@@ -1364,6 +1425,9 @@ export class CurrentFootprintCopyMainBackendRunner {
     } else if (inverseHistory && this.#forwardWriterMainHistoryOrigin !== null) {
       const bindings = requireCurrentFootprintForwardWriterMainHistoryOrigin(this.#forwardWriterMainHistoryOrigin, this);
       await bindings.send(validateCurrentFootprintInverseMainHistoryCommand(input), id);
+    } else if (inverseHistory && this.#savedRegistrationEnrollment?.kind === "inverse-v4") {
+      need(this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null, "INVERSE_V4_HISTORY_ORIGINAL_BOOTSTRAP");
+      await sendOriginalCurrentFootprintInverseV4MainHistory(this.#selectedSqlBootstrap, this, validateCurrentFootprintInverseMainHistoryCommand(input), id);
     } else if (inverseHistory) {
       need(this.#selectedSqlBootstrap !== null && this.#inverseMainHistoryIntent !== null, "INVERSE_HISTORY_ORIGINAL_BOOTSTRAP");
       await sendOriginalCurrentFootprintInverseMainHistory(this.#selectedSqlBootstrap, this, validateCurrentFootprintInverseMainHistoryCommand(input), id);
@@ -1449,8 +1513,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     try {
       empty.parse(await this.#request({ phase: "runtime-enable", method: "Runtime.enable", params: {} }));
       z.object({ debuggerId: handle }).strict().parse(await this.#request({ phase: "debugger-enable", method: "Debugger.enable", params: { maxScriptsCacheSize: 33_554_432 } }));
-      if (this.#selectedSqlBootstrap !== null) { await this.#armSelectedSqlEarly(); }
-      if (this.#forwardHead !== null) { await this.#forwardHead.arm(); }
+      await (this.#selectedSqlBootstrap === null ? this.#forwardHead?.arm() : this.#armSelectedSqlEarly());
       const armed = z.object({ breakpointId: registrationId, locations: z.array(location).max(1) }).strict().parse(await this.#request({ phase: "registration-arm", method: "Debugger.setBreakpointByUrl", params: {
         urlRegex: URL_PATTERN, lineNumber: SOURCE.registration.https.lineNumber, columnNumber: SOURCE.registration.https.breakpointColumnNumber } }));
       this.#breakpoint = armed.breakpointId;
@@ -1463,7 +1526,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         this.#initialContinuationCount = 1; await this.#resume(first); await this.#wait(() => this.#pause !== first);
       }
       if (this.#selectedSqlBootstrap !== null) { await this.#startSelectedSqlFence(); }
-      if (this.#forwardHead !== null) { await this.#forwardHead.capture(); await this.#wait(() => this.#pause?.registration === true); }
+      else if (this.#forwardHead !== null) { await this.#forwardHead.capture(); await this.#wait(() => this.#pause?.registration === true); }
       const registration = this.#pause; need(registration !== null && registration.registration && !registration.resumeAttempted, "REGISTRATION_REQUIRED");
       await this.#qualify(registration.location.scriptId);
       need(this.#resolved.some(record => record.breakpointId === this.#breakpoint && record.location.scriptId === registration.location.scriptId &&
@@ -1605,7 +1668,9 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(this.#selectedSqlBootstrap!==null&&this.#sqlCapture!==null&&this.#appScriptId!==null&&this.#appSource!==null&&this.#selectedUsersReadonlyFence===null,"SELECTED_USERS_ORIGINAL_FENCE");
     this.#selectedUsersReadonlyFence=Object.freeze({bootstrap:this.#selectedSqlBootstrap,path:this.#selectedSqlPath,capture:this.#sqlCapture,
       scriptId:this.#appScriptId,appSource:this.#appSource,points:Object.freeze([...this.#sqlBreakpoints].map(([id,site])=>Object.freeze([id,site]as const)))});
-    this.#sqlReady = true; await this.#sqlResume(after);
+    this.#sqlReady = true;
+    await this.#forwardHead?.captureSelectedSql(this.#appScriptId, this.#sqlCapture);
+    await this.#sqlResume(after);
     await this.#wait(() => this.#pause !== after);
     while (this.#pause !== null && !this.#pause.registration) {
       const configuration = this.#pause;
@@ -1798,7 +1863,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   public enrollSchematicRelevanceDisplayRegistrationIntent(intent: CurrentSchematicRelevanceDisplayRegistrationIntent): Promise<void> {
     return this.#enrollProjectRegistration("schematic-relevance-display", intent);
   }
-  async #enrollProjectRegistration(...[kind, intent]: ["saved", CurrentSavedProjectRegistrationIntent] | ["inverse", CurrentFootprintInverseRegistrationIntent] | ["schematic-saved", CurrentSchematicRelevanceSavedRegistrationIntent] | ["schematic-relevance-display", CurrentSchematicRelevanceDisplayRegistrationIntent]): Promise<void> {
+  async #enrollProjectRegistration(...[kind, intent]: ["saved", CurrentSavedProjectRegistrationIntent] | ["inverse", CurrentFootprintInverseRegistrationIntent] | ["inverse-v4", CurrentFootprintInverseV4RegistrationIntent] | ["schematic-saved", CurrentSchematicRelevanceSavedRegistrationIntent] | ["schematic-relevance-display", CurrentSchematicRelevanceDisplayRegistrationIntent]): Promise<void> {
     this.#same(false);
     need(!this.#busy && !this.#savedRegistrationEnrollmentAttempted && this.#savedRegistrationEnrollment === null &&
       this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#sqlCapture !== null && this.#selectedSqlPath !== null &&
@@ -1826,6 +1891,10 @@ export class CurrentFootprintCopyMainBackendRunner {
         need(bindings.target.rawWindowsPath === this.#selectedSqlPath && bindings.target.documentUuid === bindings.pageUuid &&
           bindings.schematicUuid !== bindings.pageUuid && /^[a-f0-9]{32}$/u.test(bindings.schematicUuid) && /^[a-f0-9]{32}$/u.test(bindings.pageUuid), "SCHEMATIC_DISPLAY_REGISTRATION_SELECTED_TARGET");
         enrollment = Object.freeze({ kind: "schematic-relevance-display", intent, bindings, ownerModule, requireOriginal });
+      } else if (kind === "inverse-v4") {
+        const requireOriginal = ownerModule.requireOriginalCurrentFootprintInverseV4RegistrationIntentForRunner; const bindings = requireOriginal(intent, this);
+        need(bindings.target.rawWindowsPath === this.#selectedSqlPath, "INVERSE_V4_REGISTRATION_SELECTED_TARGET");
+        enrollment = Object.freeze({ kind: "inverse-v4", intent, bindings, ownerModule, requireOriginal });
       } else {
         const requireOriginal = ownerModule.requireOriginalCurrentFootprintInverseRegistrationIntentForRunner; const bindings = requireOriginal(intent, this);
         need(bindings.target.rawWindowsPath === this.#selectedSqlPath, "INVERSE_REGISTRATION_SELECTED_TARGET");
@@ -1874,6 +1943,9 @@ export class CurrentFootprintCopyMainBackendRunner {
         original.requireOriginal(original.intent, this) === original.bindings && original.bindings.target.documentUuid === original.bindings.pageUuid;
     } else if (original.kind === "saved") {
       current = original.ownerModule.requireOriginalCurrentSavedProjectRegistrationIntent === original.requireOriginal &&
+        original.requireOriginal(original.intent, this) === original.bindings;
+    } else if (original.kind === "inverse-v4") {
+      current = original.ownerModule.requireOriginalCurrentFootprintInverseV4RegistrationIntentForRunner === original.requireOriginal &&
         original.requireOriginal(original.intent, this) === original.bindings;
     } else {
       current = original.ownerModule.requireOriginalCurrentFootprintInverseRegistrationIntentForRunner === original.requireOriginal &&
@@ -2158,6 +2230,14 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** A failure is settled only after the source-held original throw's own
    * consumed resume and actual Debugger.resumed. It never becomes V2 success. */
   #stockPending(): boolean { return this.#stockOrigin !== null && !this.#stockCompleted && !this.#stockReadonlyResumed; }
+
+  /** The original runner has proved the caught rejection and observed its resumed event. */
+  public originalStartupLibraryReadonlyRejectionObserved(origin: CurrentMainStartupLibraryOrigin): boolean {
+    return this.#stockOrigin === origin && this.#stockRequests === 10 && !this.#stockCompleted &&
+      this.#stockReadonlyObserved !== null && this.#stockReadonlyResumed && this.#stockReadonlyDisarmed &&
+      this.#stockReadonlyPause?.resumed === true;
+  }
+
   public requireOriginalStartupLibraryReadonlyCommand(capability: CurrentSelectedFileMainSqlFenceBootstrap, origin: CurrentMainStartupLibraryOrigin, command: CurrentMainStartupLibraryReadonlyCommand): void {
     this.#same(false);
     need(this.#selectedSqlBootstrap === capability && this.#stockOrigin === origin && this.#stockReadonlyCommand !== null && canonicalJson(this.#stockReadonlyCommand) === canonicalJson(command) &&
@@ -2309,8 +2389,9 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(this.#selectedRequestPause === null, "SELECTED_REQUEST_REENTRANT"); this.#selectedRequestPause = pause;
     try {
       if (this.#selectedRequestReader === null) {
-        need(this.#appScriptId !== null && this.#sqlCapture !== null, "SELECTED_REQUEST_SOURCE_REQUIRED");
-        this.#selectedRequestReader = new CurrentSelectedFileMainRequestReader(Object.freeze({ appScriptId: this.#appScriptId, captureObjectId: this.#sqlCapture,
+        need(this.#appScriptId !== null && this.#sqlCapture !== null && this.#selectedSqlBootstrap !== null, "SELECTED_REQUEST_SOURCE_REQUIRED");
+        const Reader=isOriginalCurrentFootprintInverseV4MainSqlFenceBootstrap(this.#selectedSqlBootstrap,this)?CurrentFootprintInverseV4SelectedMainRequestReader:CurrentSelectedFileMainRequestReader;
+        this.#selectedRequestReader = new Reader(Object.freeze({ appScriptId: this.#appScriptId, captureObjectId: this.#sqlCapture,
           request: (command: CurrentSelectedFileMainSqlFenceCommand): Promise<unknown> => { const actual = this.#selectedRequestPause; need(actual !== null, "SELECTED_REQUEST_ORIGINAL_PAUSE"); this.#requireSelectedRequestPause(actual); return this.#request(command); },
         assertCurrent: async (): Promise<void> => { const actual = this.#selectedRequestPause; need(actual !== null, "SELECTED_REQUEST_ORIGINAL_PAUSE"); this.#requireSelectedRequestPause(actual); await this.#current(); this.#requireSelectedRequestPause(actual); },
           assertFetchScript: (scriptId: string): void => { need(this.#selectedFetchScript?.scriptId === scriptId && this.#appScriptId !== null && this.#scripts.get(this.#appScriptId) === this.#selectedFetchScript.executionContextId, "SELECTED_FETCH_ORIGINAL_SCRIPT"); } }));
@@ -2319,31 +2400,137 @@ export class CurrentFootprintCopyMainBackendRunner {
       selectedRequestPackets.set(packet, Object.freeze({ runner: this, pause, text: canonicalJson(packet) })); this.#selectedObservedRequests.set(pause, packet); return packet;
     } finally { this.#selectedRequestPause = null; }
   }
+  /** V4-only original registry. The runner enrolls once, so its physical history
+   * cursor cannot cross a legacy registration or a different original intent. */
+  public enrollFootprintInverseV4RegistrationIntent(intent: CurrentFootprintInverseV4RegistrationIntent): Promise<void> {
+    return this.#enrollProjectRegistration("inverse-v4", intent);
+  }
+  /** V4-only original registry. The runner enrolls once, so its physical history
+   * cursor cannot cross a legacy registration or a different original intent. */
+  public originalFootprintInverseV4RegistrationCommandIntent(): CurrentFootprintInverseV4RegistrationIntent {
+    this.#same(false); const original = this.#savedRegistrationEnrollment;
+    need(original?.kind === "inverse-v4", "INVERSE_V4_REGISTRATION_ISSUER_REQUIRED"); this.#reproveProjectRegistration(original); return original.intent;
+  }
+  /** V4-only original registry. The runner enrolls once, so its physical history
+   * cursor cannot cross a legacy registration or a different original intent. */
+  public requireOriginalFootprintInverseV4RegistrationAwaited(intent: CurrentFootprintInverseV4RegistrationIntent): void {
+    need(this.originalFootprintInverseV4RegistrationCommandIntent() === intent, "INVERSE_V4_REGISTRATION_ISSUER_REQUIRED"); this.#requireProjectRegistrationAwaited();
+  }
+  /** V4-only original registry. The runner enrolls once, so its physical history
+   * cursor cannot cross a legacy registration or a different original intent. */
+  public requireOriginalFootprintInverseV4RegistrationSkipped(intent: CurrentFootprintInverseV4RegistrationIntent): void {
+    need(this.originalFootprintInverseV4RegistrationCommandIntent() === intent, "INVERSE_V4_REGISTRATION_ISSUER_REQUIRED");
+    const original = this.#savedRegistrationEnrollment; need(original?.kind === "inverse-v4", "INVERSE_V4_REGISTRATION_ISSUER_REQUIRED");
+    original.bindings.assertOriginalNoDispatchResult();
+    need((this.#savedRegistrationStage === "unused" || this.#savedRegistrationStage === "registration-skipped") && this.#savedRegistrationTracker === null &&
+      this.#savedRegistrationOpenedPause === null && this.#savedRegistrationArming === null && this.#savedRegistrationBreakpoints.size === 3 && this.#sqlHeld === null,
+    "INVERSE_V4_REGISTRATION_UNUSED_SEQUENCE_REQUIRED"); this.#savedRegistrationStage = "registration-skipped";
+  }
+  /** V4-only original registry. The runner enrolls once, so its physical history
+   * cursor cannot cross a legacy registration or a different original intent. */
+  public armFootprintInverseV4InitialHistory(ordinal: number): Promise<void> {
+    return this.#armFootprintInverseInitialHistory(ordinal, "inverse-v4");
+  }
+  /** V4-only original registry. The runner enrolls once, so its physical history
+   * cursor cannot cross a legacy registration or a different original intent. */
+  public consumeFootprintInverseV4InitialHistory(command: CurrentFootprintInverseMainHistoryCommand, id: number): void {
+    this.#same(false); need(this.#inverseMainHistoryCustody !== null && this.#inverseMainHistoryIntent === this.originalFootprintInverseV4RegistrationCommandIntent(), "INVERSE_V4_HISTORY_ORIGINAL_CUSTODY"); this.#inverseMainHistoryCustody.consume(command, id);
+  }
+  /** V4-only original registry. The runner enrolls once, so its physical history
+   * cursor cannot cross a legacy registration or a different original intent. */
+  public originalFootprintInverseV4InitialHistoryCompletion(ordinal: number): Promise<CurrentFootprintInverseMainHistoryRows | null> {
+    this.#same(false); const signal = this.#inverseMainHistorySignals.get(ordinal); need(signal !== undefined && this.#inverseMainHistoryIntent === this.originalFootprintInverseV4RegistrationCommandIntent(), "INVERSE_V4_HISTORY_ORIGINAL_COMPLETION"); return signal.promise;
+  }
+  /** V4-only original registry. The runner enrolls once, so its physical history
+   * cursor cannot cross a legacy registration or a different original intent. */
+  public requireFootprintInverseV4InitialHistoryRows(ordinal: number): CurrentFootprintInverseMainHistoryRows {
+    this.#same(false); const rows = this.#inverseMainHistoryRows[ordinal - 1]; need(Number.isSafeInteger(ordinal) && ordinal >= 1 && ordinal <= INVERSE_HISTORY.repetitions && rows !== undefined && this.#inverseMainHistoryIntent === this.originalFootprintInverseV4RegistrationCommandIntent(), "INVERSE_V4_HISTORY_COMPLETION_REQUIRED"); return rows;
+  }
   /** Own inverse issuer only. Four original same-head requests are armed one
    * at a time before their worker response may continue. */
-  public async armFootprintInverseInitialHistory(ordinal: number): Promise<void> {
-    need(!this.#busy && this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#appScriptId !== null && this.#appSource !== null && this.#sqlCapture !== null && this.#viaMainOrigin === null && this.#sqlHeld === null && this.#inverseMainHistoryPoint === null && ordinal === this.#inverseMainHistoryRows.length + 1 && ordinal === this.#inverseMainHistoryOrdinal + 1 && ordinal <= INVERSE_HISTORY.repetitions, "INVERSE_HISTORY_ARM_ONCE");
-    const intent = this.originalFootprintInverseRegistrationCommandIntent();
-    const baseline = originalCurrentFootprintInverseMainHistoryBaseline(this.#selectedSqlBootstrap, this, intent);
-    if (this.#inverseMainHistoryBaseline === null) { this.#inverseMainHistoryIntent = intent; this.#inverseMainHistoryBaseline = baseline; }
-    need(this.#inverseMainHistoryIntent === intent && this.#inverseMainHistoryBaseline === baseline, "INVERSE_HISTORY_ORIGINAL_BASELINE");
-    qualifyCurrentPcbViaMainLiveHistorySource(this.#appSource); this.#busy = true; this.#inverseMainHistoryOrdinal = ordinal; this.#inverseMainHistorySignals.set(ordinal, Promise.withResolvers<CurrentFootprintInverseMainHistoryRows | null>());
-    const same = (): void => { this.#same(false); need(this.originalFootprintInverseRegistrationCommandIntent() === intent && this.#selectedSqlBootstrap !== null && originalCurrentFootprintInverseMainHistoryBaseline(this.#selectedSqlBootstrap, this, intent) === baseline, "INVERSE_HISTORY_OWNER_CHANGED"); };
-    const custody = new CurrentFootprintInverseMainHistoryCustody({ scriptId: this.#appScriptId, sqlCaptureObjectId: this.#sqlCapture, assertCurrent: same,
+  public armFootprintInverseInitialHistory(ordinal: number): Promise<void> {
+    return this.#armFootprintInverseInitialHistory(ordinal, "inverse");
+  }
+  async #armFootprintInverseInitialHistory(ordinal: number, kind: "inverse" | "inverse-v4"): Promise<void> {
+    const prefix = kind === "inverse-v4" ? "INVERSE_V4_HISTORY" : "INVERSE_HISTORY";
+    need(!this.#busy && this.#selectedSqlBootstrap !== null && this.#sqlReady && this.#appScriptId !== null && this.#appSource !== null &&
+      this.#sqlCapture !== null && this.#viaMainOrigin === null && this.#sqlHeld === null && this.#inverseMainHistoryPoint === null &&
+      ordinal === this.#inverseMainHistoryRows.length + 1 && ordinal === this.#inverseMainHistoryOrdinal + 1 && ordinal <= INVERSE_HISTORY.repetitions,
+    `${prefix}_ARM_ONCE`);
+    const readIntent = (): CurrentFootprintInverseRegistrationIntent => kind === "inverse-v4"
+      ? this.originalFootprintInverseV4RegistrationCommandIntent()
+      : this.originalFootprintInverseRegistrationCommandIntent();
+    const readBaseline = kind === "inverse-v4"
+      ? originalCurrentFootprintInverseV4MainHistoryBaseline
+      : originalCurrentFootprintInverseMainHistoryBaseline;
+    const intent = readIntent();
+    const baseline = readBaseline(this.#selectedSqlBootstrap, this, intent);
+    if (this.#inverseMainHistoryBaseline === null) {
+      this.#inverseMainHistoryIntent = intent;
+      this.#inverseMainHistoryBaseline = baseline;
+    }
+    need(this.#inverseMainHistoryIntent === intent && this.#inverseMainHistoryBaseline === baseline, `${prefix}_ORIGINAL_BASELINE`);
+    qualifyCurrentPcbViaMainLiveHistorySource(this.#appSource);
+    this.#busy = true;
+    this.#inverseMainHistoryOrdinal = ordinal;
+    this.#inverseMainHistorySignals.set(ordinal, Promise.withResolvers<CurrentFootprintInverseMainHistoryRows | null>());
+    const same = (): void => {
+      this.#same(false);
+      need(readIntent() === intent && this.#selectedSqlBootstrap !== null &&
+        readBaseline(this.#selectedSqlBootstrap, this, intent) === baseline, `${prefix}_OWNER_CHANGED`);
+    };
+    const custody = new CurrentFootprintInverseMainHistoryCustody({
+      scriptId: this.#appScriptId,
+      sqlCaptureObjectId: this.#sqlCapture,
+      assertCurrent: same,
       expected: (): CurrentFootprintInverseMainHistoryBaseline => { same(); return baseline; },
-      pause: (): CurrentPcbViaMainBeginPause => { same(); const held = this.#inverseMainHistoryPause; need(held !== null && held.identity === this.#pause, "INVERSE_HISTORY_HELD_REQUIRED");
-        return Object.freeze({ identity: held.identity, frameId: held.identity.frameId, raw: held.raw, sqlSite: null, pendingEvents: 0, resumed: held.identity.resumed, resumeAttempted: held.identity.resumeAttempted }); },
-      pendingRequestId: (): number | null => this.#pendingId, busy: (): boolean => this.#busy,
+      pause: (): CurrentPcbViaMainBeginPause => {
+        same();
+        const held = this.#inverseMainHistoryPause;
+        need(held !== null && held.identity === this.#pause, `${prefix}_HELD_REQUIRED`);
+        return Object.freeze({ identity: held.identity, frameId: held.identity.frameId, raw: held.raw, sqlSite: null,
+          pendingEvents: 0, resumed: held.identity.resumed, resumeAttempted: held.identity.resumeAttempted });
+      },
+      pendingRequestId: (): number | null => this.#pendingId,
+      busy: (): boolean => this.#busy,
       send: (command, cleanup): Promise<unknown> => this.#request(command, cleanup),
-      registerPoint: (id, actual): void => { need(this.#inverseMainHistoryPoint === null && (this.#inverseMainHistoryResolution === null || this.#inverseMainHistoryResolution.breakpointId === id) && !this.#sqlBreakpoints.has(id) && !this.#savedRegistrationBreakpoints.has(id), "INVERSE_HISTORY_POINT_ALIAS"); this.#inverseMainHistoryPoint = Object.freeze({ id, location: actual }); },
+      registerPoint: (id, actual): void => {
+        need(this.#inverseMainHistoryPoint === null && (this.#inverseMainHistoryResolution === null || this.#inverseMainHistoryResolution.breakpointId === id) &&
+          !this.#sqlBreakpoints.has(id) && !this.#savedRegistrationBreakpoints.has(id), `${prefix}_POINT_ALIAS`);
+        this.#inverseMainHistoryPoint = Object.freeze({ id, location: actual });
+      },
       pointCurrent: (id): boolean => this.#inverseMainHistoryPoint?.id === id,
-      removePoint: (id): void => { need(this.#inverseMainHistoryPoint?.id === id, "INVERSE_HISTORY_ORIGINAL_REMOVE"); this.#inverseMainHistoryPoint = null; },
-      resume: async (identity, command): Promise<unknown> => { same(); const held = this.#inverseMainHistoryPause; need(held !== null && held.identity === identity && this.#pause === identity && !held.identity.resumed && !held.identity.resumeAttempted, "INVERSE_HISTORY_RESUME_ONCE");
-        held.identity.resumeAttempted = true; const result = await this.#request(command); await this.#wait(() => held.identity.resumed); same(); return result; } });
-    this.#inverseMainHistoryCustody = custody; const collector = new CurrentFootprintInverseMainHistoryCollector(custody, this.#sqlCapture); this.#inverseMainHistoryCollector = collector;
-    this.#inverseMainHistoryResolution = null; this.#inverseMainHistoryArming = true;
-    try { await collector.arm(this.#appScriptId); same(); } catch (error) { this.#fail(error); throw error; }
-    finally { this.#inverseMainHistoryArming = false; this.#busy = false; }
+      removePoint: (id): void => {
+        need(this.#inverseMainHistoryPoint?.id === id, `${prefix}_ORIGINAL_REMOVE`);
+        this.#inverseMainHistoryPoint = null;
+      },
+      resume: async (identity, command): Promise<unknown> => {
+        same();
+        const held = this.#inverseMainHistoryPause;
+        need(held !== null && held.identity === identity && this.#pause === identity && !held.identity.resumed &&
+          !held.identity.resumeAttempted, `${prefix}_RESUME_ONCE`);
+        held.identity.resumeAttempted = true;
+        const result = await this.#request(command);
+        await this.#wait(() => held.identity.resumed);
+        same();
+        return result;
+      },
+    });
+    this.#inverseMainHistoryCustody = custody;
+    const collector = new CurrentFootprintInverseMainHistoryCollector(custody, this.#sqlCapture);
+    this.#inverseMainHistoryCollector = collector;
+    this.#inverseMainHistoryResolution = null;
+    this.#inverseMainHistoryArming = true;
+    try {
+      await collector.arm(this.#appScriptId);
+      same();
+    } catch (error) {
+      this.#fail(error);
+      throw error;
+    } finally {
+      this.#inverseMainHistoryArming = false;
+      this.#busy = false;
+    }
   }
   public consumeFootprintInverseInitialHistory(command: CurrentFootprintInverseMainHistoryCommand, id: number): void {
     this.#same(false); need(this.#inverseMainHistoryCustody !== null && this.#inverseMainHistoryIntent === this.originalFootprintInverseRegistrationCommandIntent(), "INVERSE_HISTORY_ORIGINAL_CUSTODY"); this.#inverseMainHistoryCustody.consume(command, id);
@@ -2615,7 +2802,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   /** Same original cursor, no second inspector. A held write remains paused;
    * this method never treats its data as permission to continue native SQL. */
   public async pumpSelectedSqlFence(): Promise<void> {
-
+    if(this.#deleteMain!==null){need(!this.#deleteMainEnded,"INVERSE_DELETE_MAIN_ENDED");if(!this.#busy){await this.#pump();}return;}
     if (this.#viaMainOrigin !== null) {
       if (!this.#busy) { await this.#pump();
         if (!this.#busy) { const service = (async (): Promise<void> => { this.#busy = true;
@@ -2702,6 +2889,15 @@ export class CurrentFootprintCopyMainBackendRunner {
       originalError: this.#stockReadonlyObserved, originalRethrowResumed: this.#stockReadonlyResumed,
       normalReturnProven: false, successfulInitializationProven: false, retryAllowed: false, selectedProjectWriteGrant: false, executionAuthorized: false }));
   }
+  /** The unresolved original Main pause, without frame identifiers or source text. */
+  public retainedForwardStartupPause(): "forward-head" | "selected-sql" | "registration" | "other" | null {
+    const pause = this.#pause;
+    if (pause === null || pause.resumed) { return null; }
+    if (pause.forwardHeadSite !== undefined) { return "forward-head"; }
+    if (pause.sqlSite !== undefined) { return "selected-sql"; }
+    return pause.registration ? "registration" : "other";
+  }
+
   public selectedSqlFenceState(): Readonly<Record<string, unknown>> {
     return Object.freeze({ profile: "private.selected-file-main-sql-fence.v1", originalBootstrapRetained: this.#selectedSqlBootstrap !== null,
       ready: this.#sqlReady, conditionalBreakpoints: Math.max(0, this.#sqlBreakpoints.size - 2), nativePrimitivesReplaced: false,
@@ -2726,29 +2922,219 @@ export class CurrentFootprintCopyMainBackendRunner {
   public beginViaMainObservation(): Promise<Readonly<{ origin: CurrentPcbViaMainOrigin; bindings: CurrentPcbViaMainBackendBindings }>> {
     return this.#beginSelectedMainObservation(Object.freeze({ profile: "private.current-pcb-via-main-origin.v1" }));
   }
-
-
+  public prepareFootprintInverseNativeDeleteMainRequest(source:CurrentFootprintInverseNativeDeleteMainSource):Promise<CurrentFootprintInverseNativeDeleteMainRequestOrigin>{
+    const original=requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this);
+    need(!this.#deleteMainAttempted&&this.#deleteMainPreparation===null,"INVERSE_DELETE_MAIN_PREPARATION_CONSUMED");
+    this.#deleteMainAttempted=true;this.#deleteMainSource=source;this.#deleteMainOriginal=original;
+    const pending=this.#prepareFootprintInverseNativeDeleteMainRequest(source,original);this.#deleteMainPreparation=pending;
+    void this.#handleFootprintInverseNativeDeleteMainPreparation(pending);return pending;
+  }
+  async #handleFootprintInverseNativeDeleteMainPreparation(pending:Promise<CurrentFootprintInverseNativeDeleteMainRequestOrigin>):Promise<void>{
+    try{await pending;}catch(error){this.#fail(error);}
+  }
+  async #prepareFootprintInverseNativeDeleteMainRequest(source:CurrentFootprintInverseNativeDeleteMainSource,original:CurrentFootprintInverseNativeDeleteMainSourceOriginal):Promise<CurrentFootprintInverseNativeDeleteMainRequestOrigin>{
+    original.assertBeforeOriginalUpload();
+    need(this.#deleteMain===null&&this.#selectedSqlBootstrap!==null&&this.#sqlReady&&this.#packet!==null&&issued.get(this.#packet)===this&&this.#selectedSqlPath===original.path&&
+      !this.#busy&&!this.#originAttempted&&!this.#structureAttempted&&this.#viaMainOrigin===null&&this.#sqlHeld===null&&this.#pause?.resumed===true&&
+      this.#appScriptId!==null&&this.#appSource!==null&&this.#sourceArray!==null&&this.#retainedArray!==null&&this.#sqlCapture!==null&&
+      this.#inverseMainHistoryOrdinal===INVERSE_HISTORY.repetitions&&this.#inverseMainHistoryRows.length===INVERSE_HISTORY.repetitions&&this.#inverseMainHistoryBaseline===original.historyBaseline,
+      "INVERSE_DELETE_MAIN_ORIGINAL_STARTUP");
+    need(this.#sqlBreakpoints.size===SQL_SITES.length+2&&SQL_SITES.every(site=>[...this.#sqlBreakpoints.values()].includes(site)),"INVERSE_DELETE_MAIN_FENCE_ROSTER");
+    const driver=[...this.#sqlBreakpoints].find(([,site])=>site==="driver")?.[0];need(driver!==undefined,"INVERSE_DELETE_MAIN_DRIVER");
+    const qualified=qualifyCurrentFootprintCopyMainRequestSource(this.#appSource);
+    const origin:CurrentFootprintInverseNativeDeleteMainRequestOrigin=Object.freeze({profile:"private.current-footprint-inverse-native-delete-main-request-origin.v1"});
+    this.#deleteMainOrigin=origin;this.#deleteMainStartRequests=this.#requests-this.#stockRequests;
+    const same=():void=>{need(this.#deleteMainSource===source&&this.#deleteMainOriginal===original&&this.#deleteMainOrigin===origin&&!this.#deleteMainEnded,"INVERSE_DELETE_MAIN_ORIGINAL");original.assertCurrent();this.#same(false);};
+    const component=new CurrentFootprintInverseNativeDeleteMainController(source,original,origin,{
+      scriptId:this.#appScriptId,sourceObjectId:this.#sourceArray,constructionObjectId:this.#retainedArray,captureObjectId:this.#sqlCapture,persistentDriverBreakpointId:driver,source:qualified,
+      assertCurrent:same,pendingRequestId:():number|null=>this.#pendingId,busy:():boolean=>this.#busy,
+      pause:():CurrentFootprintInverseNativeDeleteMainBeginPause=>{same();const pause=this.#pause;need(pause!==null&&pause===this.#deleteMainDelivered,"INVERSE_DELETE_MAIN_ORIGINAL_DELIVERED");return Object.freeze({identity:pause,frameId:pause.frameId,raw:this.#deleteMainDeliveredEvent,sqlSite:pause.sqlSite??null,pendingEvents:this.#deleteMainEvents.length,resumed:pause.resumed,resumeAttempted:pause.resumeAttempted});},
+      registerPoint:(id,point):void=>{need(!this.#deleteMainPoints.has(id)&&!this.#sqlBreakpoints.has(id),"INVERSE_DELETE_MAIN_POINT_ALIAS");this.#deleteMainPoints.set(id,point);},
+      pointCurrent:(id):boolean=>this.#deleteMainPoints.has(id),removePoint:(id):void=>{need(this.#deleteMainPoints.delete(id),"INVERSE_DELETE_MAIN_POINT_REMOVED");},
+      send:async(command,cleanup):Promise<unknown>=>{same();need(!this.#busy,"INVERSE_DELETE_MAIN_SEND_BUSY");this.#busy=true;try{return await this.#request(command,cleanup);}finally{this.#busy=false;}},
+      nextEvent:async():Promise<CurrentFootprintInverseNativeDeleteMainEvent>=>{same();need(!this.#busy,"INVERSE_DELETE_MAIN_EVENT_BUSY");this.#busy=true;const started=performance.now();try{
+        for(;;){while(this.#deleteMainEvents.length===0){need(performance.now()-started<20_000,"INVERSE_DELETE_MAIN_EVENT_DEADLINE");same();await this.#pump();}need(performance.now()-started<20_000,"INVERSE_DELETE_MAIN_EVENT_DEADLINE");same();
+          const pause=this.#pause;
+          if(this.#deleteMainEvents[0]?.method==="Debugger.paused"&&pause!==null&&pause.sqlSite==="queryOne"){
+            const expected=(["L3","j4","hB"]as const)[this.#deleteMainReads];const event=deleteMainReadPause.parse(this.#deleteMainEvents[0].params);
+            need(expected!==undefined&&event.callFrames.some(item=>item.functionName===expected&&item.functionLocation?.scriptId===this.#appScriptId),"INVERSE_DELETE_MAIN_READ_ROSTER");
+            need(await this.#classifyCapturedSqlPause(pause)==="guard-passed","INVERSE_DELETE_MAIN_READ_GUARD");this.#deleteMainEvents.shift();await this.#sqlResume(pause);
+            const resumed=this.#deleteMainEvents.shift();need(resumed?.method==="Debugger.resumed"&&pause.resumed,"INVERSE_DELETE_MAIN_READ_RESUMED");empty.parse(resumed.params);this.#deleteMainReads+=1;if(this.#sqlHeld===pause){this.#sqlHeld=null;}
+          }else{
+          const event=this.#deleteMainEvents.shift();need(event!==undefined&&event.method==="Debugger.paused"&&pause!==null&&!pause.resumed&&this.#deleteMainDelivered===null,"INVERSE_DELETE_MAIN_EVENT_DELIVERY");
+          this.#deleteMainDelivered=pause;this.#deleteMainDeliveredEvent=event.params;return event;
+          }
+        }
+      }finally{this.#busy=false;}},
+      observeRequest:async():Promise<CurrentSelectedFileMainRequestObservation>=>{same();need(!this.#busy&&this.#pause!==null&&this.#pause===this.#deleteMainDelivered&&this.#pause.sqlSite==="driver","INVERSE_DELETE_MAIN_DRIVER_DELIVERY");this.#busy=true;try{return await this.#observeSelectedMainRequest(this.#pause);}finally{this.#busy=false;}},
+      requireRequest:(packet):void=>{same();this.requireOriginalSelectedMainRequest(packet);need(selectedRequestPackets.get(packet)?.pause===this.#deleteMainDelivered,"INVERSE_DELETE_MAIN_ORIGINAL_REQUEST");},
+      resume:async(identity,command):Promise<unknown>=>{same();const pause=this.#pause;need(!this.#busy&&pause!==null&&pause===identity&&pause===this.#deleteMainDelivered&&!pause.resumeAttempted&&!pause.resumed&&this.#deleteMainEvents.length===0,"INVERSE_DELETE_MAIN_RESUME_ONCE");
+        this.#busy=true;pause.resumeAttempted=true;try{const reply=await this.#request(command);await this.#wait(()=>pause.resumed);same();const resumed=this.#deleteMainEvents.shift();need(resumed?.method==="Debugger.resumed","INVERSE_DELETE_MAIN_ORIGINAL_RESUMED");empty.parse(resumed.params);this.#deleteMainDelivered=null;if(this.#sqlHeld===pause){this.#sqlHeld=null;}return reply;}finally{this.#busy=false;}},
+      fail:(cause):void=>{ this.#fail(cause); },
+    });
+    this.#deleteMain=component;await component.prepare();same();component.requireArmed(source);return origin;
+  }
+  public requireFootprintInverseNativeDeleteMainRequestArmed(source:CurrentFootprintInverseNativeDeleteMainSource):void{
+    need(this.#deleteMainSource===source&&this.#deleteMain!==null&&!this.#busy&&this.#pause?.resumed===true&&this.#deleteMainEvents.length===0&&this.#deleteMainDelivered===null,"INVERSE_DELETE_MAIN_ORIGINAL_SOURCE");requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this);this.#deleteMain.requireArmed(source);
+  }
   /** Retain a complete before-upload capacity and runtime-prerequisite join.
    * This method dispatches no tail command. The V3 sender separately consumes
    * that same original Source; preflight alone issues no write authority. */
-
-
+  public preflightFootprintInverseNativeDeleteMainTail(source:CurrentFootprintInverseNativeDeleteMainSource):CurrentFootprintInverseNativeDeleteMainTailPreflight{
+    const original=requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this);
+    need(!this.#deleteMainTailPreflightAttempted&&this.#deleteMainOriginal===original&&this.#deleteMainSource===source,"INVERSE_DELETE_MAIN_TAIL_PREFLIGHT_CONSUMED");
+    this.#deleteMainTailPreflightAttempted=true;
+    try{
+      this.requireFootprintInverseNativeDeleteMainRequestArmed(source);
+      const prerequisite=requireCurrentFootprintInverseNativeDeleteMainTailPrerequisite(original);prerequisite.assertBeforeOriginalUpload();
+      const value=deriveCurrentFootprintInverseNativeDeleteMainTailPreflight(original);
+      original.assertBeforeOriginalUpload();prerequisite.assertCurrent();this.requireFootprintInverseNativeDeleteMainRequestArmed(source);
+      need(requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this)===original&&requireCurrentFootprintInverseNativeDeleteMainTailPrerequisite(original)===prerequisite,"INVERSE_DELETE_MAIN_TAIL_ORIGINAL_PREFLIGHT");
+      this.#deleteMainTailPreflight=value;return value;
+    }catch(error){this.#fail(error);throw error;}
+  }
+  public originalFootprintInverseNativeDeleteMainTailPreflight(source:CurrentFootprintInverseNativeDeleteMainSource):CurrentFootprintInverseNativeDeleteMainTailPreflight{
+    const original=requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this),value=this.#deleteMainTailPreflight;
+    need(this.#deleteMainSource===source&&this.#deleteMainOriginal===original&&value!==null,"INVERSE_DELETE_MAIN_TAIL_ORIGINAL_PREFLIGHT");
+    requireCurrentFootprintInverseNativeDeleteMainTailPrerequisite(original).assertCurrent();
+    need(canonicalJson(deriveCurrentFootprintInverseNativeDeleteMainTailPreflight(original))===canonicalJson(value),"INVERSE_DELETE_MAIN_TAIL_PREFLIGHT_DRIFT");
+    return value;
+  }
   /** Same original Source, real sixteen-reply prefix and passive renderer
    * receipt must precede the one natural branch-return arm. */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  public prepareFootprintInverseNativeDeleteMainTail(source:CurrentFootprintInverseNativeDeleteMainSource):Promise<void>{
+    const original=requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this);
+    need(!this.#deleteMainTailAttempted&&this.#deleteMainTailPreparation===null&&this.#deleteMainSource===source&&this.#deleteMainOriginal===original,"INVERSE_DELETE_MAIN_TAIL_PREPARE_CONSUMED");
+    this.#deleteMainTailAttempted=true;
+    const pending=this.#prepareFootprintInverseNativeDeleteMainTail(source,original);this.#deleteMainTailPreparation=pending;
+    void this.#handleFootprintInverseNativeDeleteMainTail(pending);return pending;
+  }
+  async #handleFootprintInverseNativeDeleteMainTail(pending:Promise<unknown>):Promise<void>{try{await pending;}catch(error){this.#fail(error);}}
+  async #prepareFootprintInverseNativeDeleteMainTail(source:CurrentFootprintInverseNativeDeleteMainSource,original:CurrentFootprintInverseNativeDeleteMainSourceOriginal):Promise<void>{
+    this.requireFootprintInverseNativeDeleteMainRequestArmed(source);need(this.#selectedRequestReader instanceof CurrentFootprintInverseV4SelectedMainRequestReader,"INVERSE_DELETE_MAIN_TAIL_WARM_READER");this.#selectedRequestReader.requireOriginalWarmFetchBinding();const preflight=this.preflightFootprintInverseNativeDeleteMainTail(source);
+    const origin=this.#deleteMainOrigin,script=this.#appScriptId,sql=this.#sqlCapture;const driver=[...this.#sqlBreakpoints].find(([,site])=>site==="driver")?.[0];
+    need(script!==null&&sql!==null&&origin!==null&&driver!==undefined&&this.#deleteMain!==null,"INVERSE_DELETE_MAIN_TAIL_ORIGINAL_DEPENDENCIES");
+    const same=():void=>{need(this.#deleteMainSource===source&&this.#deleteMainOriginal===original&&this.#deleteMainOrigin===origin&&!this.#deleteMainEnded&&!this.#deleteMainTailEnded&&this.#appScriptId===script&&this.#sqlCapture===sql&&this.#sqlBreakpoints.get(driver)==="driver","INVERSE_DELETE_MAIN_TAIL_CHANGED");original.assertCurrent();this.#same(false);};
+    const send=async(command:CurrentFootprintInverseNativeDeleteMainReadCommand,cleanup:boolean):Promise<unknown>=>{
+      same();need(!this.#busy&&this.#deleteMainReadCommand===null,"INVERSE_DELETE_MAIN_READ_BUSY");
+      this.#deleteMainReadCommand={command,id:null,consumed:false};this.#busy=true;
+      if(command.phase==="inverse-native-delete-main-read-arm"){this.#deleteMainReadArming=command.params.location;}
+      try{return await this.#request(command,cleanup);}finally{this.#deleteMainReadArming=null;this.#deleteMainReadCommand=null;this.#busy=false;}
+    };
+    const component=new CurrentFootprintInverseNativeDeleteMainTailController(source,original,{
+      origin,scriptId:script,sqlCaptureObjectId:sql,persistentDriverBreakpointId:driver,assertCurrent:same,
+      pendingRequestId:():number|null=>this.#pendingId,busy:():boolean=>this.#busy,
+      pause:():CurrentFootprintInverseNativeDeleteMainBeginPause=>{same();const pause=this.#pause;need(pause!==null&&pause===this.#deleteMainDelivered,"INVERSE_DELETE_MAIN_TAIL_DELIVERED");return Object.freeze({identity:pause,frameId:pause.frameId,raw:this.#deleteMainDeliveredEvent,sqlSite:pause.sqlSite??null,pendingEvents:this.#deleteMainEvents.length,resumed:pause.resumed,resumeAttempted:pause.resumeAttempted});},
+      registerPoint:(id,point):void=>{same();need(!this.#deleteMainPoints.has(id)&&!this.#sqlBreakpoints.has(id),"INVERSE_DELETE_MAIN_TAIL_POINT_ALIAS");this.#deleteMainPoints.set(id,point);},
+      pointCurrent:(id):boolean=>this.#deleteMainPoints.has(id),removePoint:(id):void=>{same();need(this.#deleteMainPoints.delete(id),"INVERSE_DELETE_MAIN_TAIL_POINT_REMOVED");},
+      send,
+      nextEvent:async():Promise<CurrentFootprintInverseNativeDeleteMainEvent>=>{
+        same();need(!this.#busy,"INVERSE_DELETE_MAIN_TAIL_EVENT_BUSY");this.#busy=true;const started=performance.now();
+        try{for(;;){
+          while(this.#deleteMainEvents.length===0){need(performance.now()-started<20_000,"INVERSE_DELETE_MAIN_TAIL_EVENT_DEADLINE");same();await this.#pump();}
+          same();need(performance.now()-started<20_000,"INVERSE_DELETE_MAIN_TAIL_EVENT_DEADLINE");const pause=this.#pause;const first=this.#deleteMainEvents[0];
+          if(first?.method==="Debugger.paused"&&pause!==null&&(pause.sqlSite==="queryOne"||pause.sqlSite==="queryAll")){
+            const roster=currentFootprintInverseNativeDeleteMainTailReadonlyRoster(preflight.selectedReadonlyQueries);const expected=roster[this.#deleteMainTailReads];const event=deleteMainReadPause.parse(first.params);
+            need(expected!==undefined&&pause.sqlSite===expected.site&&event.callFrames.some(sqlFrame=>sqlFrame.functionName===expected.caller.name&&sqlFrame.functionLocation?.scriptId===script&&sqlFrame.functionLocation.lineNumber===expected.caller.lineNumber&&sqlFrame.functionLocation.columnNumber===expected.caller.columnNumber),"INVERSE_DELETE_MAIN_TAIL_READ_ROSTER");
+            need(await this.#classifyCapturedSqlPause(pause)==="guard-passed","INVERSE_DELETE_MAIN_TAIL_READ_GUARD");this.#deleteMainEvents.shift();await this.#sqlResume(pause);
+            const resumed=this.#deleteMainEvents.shift();need(resumed?.method==="Debugger.resumed"&&pause.resumed,"INVERSE_DELETE_MAIN_TAIL_READ_RESUMED");empty.parse(resumed.params);this.#deleteMainTailReads+=1;if(this.#sqlHeld===pause){this.#sqlHeld=null;}
+          }else{
+            const event=this.#deleteMainEvents.shift();need(event!==undefined&&event.method==="Debugger.paused"&&pause!==null&&!pause.resumed&&this.#deleteMainDelivered===null,"INVERSE_DELETE_MAIN_TAIL_EVENT_DELIVERY");
+            this.#deleteMainDelivered=pause;this.#deleteMainDeliveredEvent=event.params;return event;
+          }
+        }}finally{this.#busy=false;}
+      },
+      observeRequest:async():Promise<CurrentSelectedFileMainRequestObservation>=>{same();need(!this.#busy&&this.#pause!==null&&this.#pause===this.#deleteMainDelivered&&this.#pause.sqlSite==="driver","INVERSE_DELETE_MAIN_TAIL_DRIVER");this.#busy=true;try{return await this.#observeSelectedMainRequest(this.#pause);}finally{this.#busy=false;}},
+      requireRequest:(packet):void=>{same();this.requireOriginalSelectedMainRequest(packet);need(selectedRequestPackets.get(packet)?.pause===this.#deleteMainDelivered,"INVERSE_DELETE_MAIN_TAIL_REQUEST");},
+      originalRequestObjectId:(packet):string=>{same();this.requireOriginalSelectedMainRequest(packet);const captured=selectedRequestPackets.get(packet);need(captured!==undefined&&captured.pause===this.#deleteMainDelivered,"INVERSE_DELETE_MAIN_TAIL_CAPTURE");need(this.#selectedRequestReader!==null,"INVERSE_DELETE_MAIN_TAIL_READER");return this.#selectedRequestReader.requireOriginalCapture(packet);},
+      resume:async(identity,command):Promise<CurrentFootprintInverseNativeDeleteMainTailResumeReceipt>=>{
+        same();const pause=this.#pause;need(pause!==null&&pause===identity&&pause===this.#deleteMainDelivered&&!pause.resumeAttempted&&!pause.resumed&&this.#deleteMainEvents.length===0,"INVERSE_DELETE_MAIN_TAIL_RESUME_ONCE");
+        pause.resumeAttempted=true;const reply=await send(command,false);same();await this.#wait(()=>pause.resumed);same();const resumed=this.#deleteMainEvents.shift();need(resumed?.method==="Debugger.resumed","INVERSE_DELETE_MAIN_TAIL_RESUMED");empty.parse(resumed.params);this.#deleteMainDelivered=null;if(this.#sqlHeld===pause){this.#sqlHeld=null;}return Object.freeze({identity:pause,command,reply,event:resumed});
+      },
+      effects:(packet):Promise<CurrentProjectHistorySqlEffects>=>{same();return this.originalFootprintInverseNativeDeleteMainEffects(source,packet);},fail:(cause):void=>{this.#fail(cause);},
+    });
+    this.#deleteMainTail=component;await component.prepare();same();component.requireArmed(source);
+  }
+  public requireFootprintInverseNativeDeleteMainTailArmed(source:CurrentFootprintInverseNativeDeleteMainSource):void{
+    this.requireFootprintInverseNativeDeleteMainRequestArmed(source);const component=this.#deleteMainTail;
+    need(component!==null&&this.#deleteMainReadCommand===null&&!this.#busy&&this.#deleteMainEvents.length===0&&this.#deleteMainDelivered===null,"INVERSE_DELETE_MAIN_TAIL_ARMED");
+    component.requireArmed(source);
+  }
+  public startFootprintInverseNativeDeleteMainTail(source:CurrentFootprintInverseNativeDeleteMainSource):void{
+    const original=requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this);const prefix=this.originalFootprintInverseNativeDeleteMainCompletion(source);const component=this.#deleteMainTail;
+    need(original===this.#deleteMainOriginal&&prefix!==null&&component!==null&&this.#deleteMainSource===source,"INVERSE_DELETE_MAIN_TAIL_PREFIX");component.start(source,prefix);
+  }
+  public consumeFootprintInverseNativeDeleteMainReadCommand(source:CurrentFootprintInverseNativeDeleteMainSource,command:CurrentFootprintInverseNativeDeleteMainReadCommand,id:number):void{
+    const active=this.#deleteMainReadCommand;need(this.#deleteMainSource===source&&this.#deleteMainTail!==null&&active!==null&&active.command===command&&active.id===id&&!active.consumed&&this.#pendingId===id&&this.#busy,"INVERSE_DELETE_MAIN_TAIL_PENDING");
+    this.#deleteMainTail.consume(source,command,id);this.#deleteMainReadCommand={...active,consumed:true};
+  }
+  public originalFootprintInverseNativeDeleteMainTailCompletion(source:CurrentFootprintInverseNativeDeleteMainSource):Promise<CurrentFootprintInverseNativeDeleteMainTailObservation>|null{
+    requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this);need(this.#deleteMainSource===source&&this.#deleteMainTail!==null,"INVERSE_DELETE_MAIN_TAIL_COMPLETION_SOURCE");return this.#deleteMainTail.completion();
+  }
+  public originalFootprintInverseNativeDeleteMainTailProjection(source:CurrentFootprintInverseNativeDeleteMainSource,packet:CurrentFootprintInverseNativeDeleteMainTailObservation):ReturnType<CurrentFootprintInverseNativeDeleteMainTailController["originalProjection"]>{
+    requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this);need(this.#deleteMainSource===source&&this.#deleteMainTail!==null,"INVERSE_DELETE_MAIN_TAIL_PROJECTION_SOURCE");return this.#deleteMainTail.originalProjection(packet);
+  }
+  public originalFootprintInverseNativeDeleteMainTailBranch(source:CurrentFootprintInverseNativeDeleteMainSource):ReturnType<CurrentFootprintInverseNativeDeleteMainTailController["originalBranch"]>{
+    requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this);need(this.#deleteMainSource===source&&this.#deleteMainTail!==null,"INVERSE_DELETE_MAIN_TAIL_BRANCH_SOURCE");return this.#deleteMainTail.originalBranch();
+  }
+  public originalFootprintInverseNativeDeleteMainTailHistory(source:CurrentFootprintInverseNativeDeleteMainSource):ReturnType<CurrentFootprintInverseNativeDeleteMainTailController["originalHistoryProjection"]>{
+    requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this);need(this.#deleteMainSource===source&&this.#deleteMainTail!==null,"INVERSE_DELETE_MAIN_TAIL_HISTORY_SOURCE");return this.#deleteMainTail.originalHistoryProjection();
+  }
+  public endFootprintInverseNativeDeleteMainTailAfterOriginalExit(source: CurrentFootprintInverseNativeDeleteMainSource): Promise<void> {
+    const original = this.#deleteMainOriginal ?? requireOriginalCurrentFootprintInverseNativeDeleteMainSourceAfterOriginalExit(source, this);
+    original.assertOriginalExit();
+    need(this.#deleteMainSource === null || this.#deleteMainSource === source, "INVERSE_DELETE_MAIN_TAIL_EXIT_SOURCE");
+    if (this.#deleteMainTailExit !== null) { return this.#deleteMainTailExit; }
+    this.#deleteMainTailEnded = true;
+    const poll = this.#deleteMainPoll;
+    const pending = (async (): Promise<void> => {
+      const component = this.#deleteMainTail;
+      const results = await Promise.allSettled([component?.endAfterOriginalExit(), this.#deleteMainTailPreparation, poll]);
+      original.assertOriginalExit();
+      const rejected = results.find(result => result.status === "rejected");
+      if (rejected?.status === "rejected") { throw rejected.reason; }
+    })();
+    this.#deleteMainTailExit = pending;
+    return pending;
+  }
+  public startFootprintInverseNativeDeleteMainRequest(source:CurrentFootprintInverseNativeDeleteMainSource):void{
+    need(this.#deleteMainSource===source&&this.#deleteMain!==null,"INVERSE_DELETE_MAIN_ORIGINAL_SOURCE");this.#deleteMain.start(source);
+  }
+  public consumeFootprintInverseNativeDeleteMainCommand(source:CurrentFootprintInverseNativeDeleteMainSource,command:CurrentFootprintInverseNativeDeleteMainCommandInput,id:number):Readonly<{origin:CurrentFootprintInverseNativeDeleteMainRequestOrigin;dataStr:string;nativeSql:boolean}>{
+    need(this.#deleteMainSource===source&&this.#deleteMain!==null,"INVERSE_DELETE_MAIN_ORIGINAL_SOURCE");return this.#deleteMain.consume(source,command,id);
+  }
+  public originalFootprintInverseNativeDeleteMainCompletion(source:CurrentFootprintInverseNativeDeleteMainSource):ReturnType<CurrentFootprintInverseNativeDeleteMainController["completion"]>{
+    need(this.#deleteMainSource===source&&this.#deleteMain!==null,"INVERSE_DELETE_MAIN_ORIGINAL_SOURCE");return this.#deleteMain.completion();
+  }
+  public originalFootprintInverseNativeDeleteMainEffects(source:CurrentFootprintInverseNativeDeleteMainSource,packet:Awaited<ReturnType<CurrentFootprintInverseNativeDeleteMainController["completion"]>>):ReturnType<CurrentFootprintInverseNativeDeleteMainController["originalCompletedEffects"]>{
+    need(this.#deleteMainSource===source&&this.#deleteMain!==null&&packet!==null,"INVERSE_DELETE_MAIN_ORIGINAL_COMPLETED_SOURCE");
+    requireOriginalCurrentFootprintInverseNativeDeleteMainSource(source,this);return this.#deleteMain.originalCompletedEffects(source,packet);
+  }
+  public async endFootprintInverseNativeDeleteMainAfterOriginalExit(source: CurrentFootprintInverseNativeDeleteMainSource): Promise<void> {
+    need(this.#deleteMainSource === null || this.#deleteMainSource === source, "INVERSE_DELETE_MAIN_ORIGINAL_SOURCE");
+    const original = this.#deleteMainOriginal ?? requireOriginalCurrentFootprintInverseNativeDeleteMainSourceAfterOriginalExit(source, this);
+    original.assertOriginalExit();
+    this.#deleteMainEnded = true;
+    // The pump clears its slot on settlement, even during the controller's exit join.
+    const poll = Promise.allSettled([this.#deleteMainPoll]);
+    let failed = false;
+    let failure: unknown;
+    if (this.#deleteMain !== null) {
+      try { await this.#deleteMain.endAfterOriginalExit(); } catch (error) { failed = true; failure = error; }
+    }
+    try { await this.endFootprintInverseNativeDeleteMainTailAfterOriginalExit(source); } catch (error) {
+      if (!failed) { failed = true; failure = error; }
+    }
+    if (this.#deleteMainPreparation !== null) {
+      try { await this.#deleteMainPreparation; } catch (error) {
+        if (!failed) { failed = true; failure = error; }
+      }
+    }
+    const [polled] = await poll;
+    if (!failed && polled.status === "rejected") { failed = true; failure = polled.reason; }
+    original.assertOriginalExit();
+    if (failed) { throw failure; }
+  }
   public async beginSchematicRelevanceDisplaySaveMainObservation(): Promise<Readonly<{ origin: CurrentSchematicRelevanceDisplaySaveMainOrigin; bindings: CurrentSchematicRelevanceDisplaySaveMainBackendBindings }>> {
     const captured = await this.#beginSelectedMainObservation(Object.freeze({ profile: "private.current-schematic-relevance-display-save-main-origin.v1" }));
     const actual = captured.bindings;

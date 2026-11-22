@@ -3067,10 +3067,20 @@ export class EasyedaControlEngine {
    */
   public async assertDiagnosticLaunchOtherOperationsSettled(): Promise<true> {
     const observed = await scanQualifiedAdmissionOperations();
-    const original=await import("./current-footprint-forward-writer-workflow.ts");
-    const operations:typeof observed=[];
-    for(const entry of observed){
-      if(entry.bridgeBlocking||!await original.isOriginalCurrentFootprintForwardWriterDiagnosticOperation(entry.summary.operationId)){operations.push(entry);}
+    const forward = await import("./current-footprint-forward-writer-workflow.ts");
+    const inverse = await import("./current-footprint-inverse-full-workflow.ts");
+    const coldUi = await import("./current-footprint-inverse-native-delete-cold-ui-generation.ts");
+    await inverse.assertNoUnresolvedCurrentFootprintInverseFullWorkflows();
+    await coldUi.assertNoUnresolvedCurrentFootprintInverseNativeDeleteColdUis();
+    const operations: typeof observed = [];
+    for (const entry of observed) {
+      const { operationId } = entry.summary;
+      if (entry.bridgeBlocking ||
+          !await forward.isOriginalCurrentFootprintForwardWriterDiagnosticOperation(operationId) &&
+          !await inverse.isOriginalCurrentFootprintInverseFullWorkflowDiagnosticOperation(operationId) &&
+          !await coldUi.isOriginalCurrentFootprintInverseNativeDeleteColdUiDiagnosticOperation(operationId)) {
+        operations.push(entry);
+      }
     }
     assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
     return assertNoNativeUiEditingOperations(operations.map((entry) => entry.summary));

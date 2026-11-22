@@ -79,6 +79,17 @@ public sealed class EasyedaStringClockObservation {
 // Independent native ancestry/file proof. Every component is retained without
 // write/delete sharing until the original Job exits. Ordinary child-file writes
 // remain possible; replacement or reparse changes of the leased objects do not.
+// BEGIN SELECTED SQL INSTALLATION
+public static class EasyedaSelectedSql209Installation {
+public const int FileCount=13;
+static readonly string[] Paths={@"..\..\..\easyeda-pro.exe",@"..\app.js",@"..\package.json",@"..\editor.ini",@"..\node_modules\sqlite3\package.json",@"..\node_modules\sqlite3\sqlite3.js",@"..\node_modules\sqlite3\lib\sqlite3.js",@"..\node_modules\sqlite3\lib\sqlite3-binding.js",@"..\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node",@"..\node_modules\sqlite3\src\database.cc",@"..\node_modules\sqlite3\src\statement.cc",@"pro-api\0.3.59.1ca9efb5\api.js"};
+static readonly long[] Sizes={222989936L,2657192L,248L,8031L,3619L,43L,6309L,449L,2742272L,21833L,29337L,1980754L};
+static readonly string[] Hashes={@"8770f2cea950d9483f230f961b486e5ceaeffd619e2c2816957cb6ff3fd0bb38",@"52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c",@"c63c12edae82c39c1fb2c0f0dd0e27678b83526c89ea174b3b79655711da8e51",@"ced74cf98aedf6b04d0f23871b945f4155978d7e35edbc1704b8cdaf566623f9",@"a7d2279dfd425ee3f2f368e5160955491333967f7207ff3690a747a11f049985",@"b6c7edef7b91e53f02d737e61148d4ec1b5e151806e339346248a2de227a6555",@"e453648b76b80be1334dc49bf3ba19672f7acbd11b5d8b1ebe0cab08e3c5edf3",@"946769d049dacf8a564ab0f7076e1762ebae7ee7aba43d8ac5d72103089b6ccf",@"a851d31983fd21ee3821b1a0ca148c013029f96c6e0d31afc400e6a62ea7b482",@"3778713244ecacaef7f6b75537d5c00e1cab28a79a7298d34729a9f5e115f979",@"7a12e9fd6efc9873025429cd9d86842ee01b4f0e730bda0402053900d30a94d0",@"e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1"};
+static void Need(bool ok){if(!ok)throw new InvalidOperationException("selected-sql-installation");}
+public static void Validate(string[] paths,long[] sizes,string[] hashes){Need(paths!=null&&sizes!=null&&hashes!=null&&paths.Length==FileCount&&sizes.Length==FileCount&&hashes.Length==FileCount);foreach(string path in paths)EasyedaDiagnosticInstallation.ValidatePath(path);string assets=Path.Combine(Path.GetDirectoryName(paths[0]),@"resources\app\assets");for(int i=0;i<Paths.Length;i++){int slot=i<4?i:i+1;Need(paths[slot]==Path.GetFullPath(Path.Combine(assets,Paths[i]))&&sizes[slot]==Sizes[i]&&hashes[slot]==Hashes[i]);}Need(paths[4]==@"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe");}
+}
+public sealed partial class EasyedaDiagnosticOwner {public bool SelectedSqlInstallation{get{return forwardWriterCompleteBirth;}}}
+// END SELECTED SQL INSTALLATION
 public sealed class EasyedaDiagnosticInstallation {
   [StructLayout(LayoutKind.Sequential)] struct INFO { public uint attributes,createdLow,createdHigh,accessLow,accessHigh,writeLow,writeHigh,volume,sizeHigh,sizeLow,links,idHigh,idLow; }
   [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr CreateFile(string path,uint access,uint share,IntPtr security,uint disposition,uint flags,IntPtr template);
@@ -192,6 +203,14 @@ public sealed class EasyedaDiagnosticInstallation {
     }
     Executable=paths[0]; ExecutableHash=hashes[0];
     BindNativePaths(Executable,root); admitted=true; AssertCurrent();
+  }
+  public void AdmitSelectedSql(string[] paths,long[] sizes,string[] hashes) {
+    EasyedaSelectedSql209Installation.Validate(paths,sizes,hashes);
+    string[] corePaths=new string[5],coreHashes=new string[5];long[] coreSizes=new long[5];
+    Array.Copy(paths,corePaths,5);Array.Copy(sizes,coreSizes,5);Array.Copy(hashes,coreHashes,5);
+    Admit(corePaths,coreSizes,coreHashes);
+    for(int i=5;i<paths.Length;i++)Pin(paths[i],sizes[i],hashes[i]);
+    AssertCurrent();
   }
   public void AdmitRatline(string[] paths,long[] sizes,string[] hashes) {
     EasyedaRatline209Installation.Validate(paths,sizes,hashes);
@@ -1510,11 +1529,17 @@ port=int.Parse(match.Groups[1].Value,System.Globalization.CultureInfo.InvariantC
 static int Port(uint value){return (int)(((value&255)<<8)|((value>>8)&255));}
 static TcpRow[] TcpRows(){
 uint size=0;uint result=GetExtendedTcpTable(System.IntPtr.Zero,ref size,true,2,5,0);Need(result==122&&size>=4&&size<=4+65536U*24,"tcp-size");
-System.IntPtr memory=System.Runtime.InteropServices.Marshal.AllocHGlobal(checked((int)size));try{
-uint capacity=size;result=GetExtendedTcpTable(memory,ref size,true,2,5,0);Need(result==0&&size<=capacity&&size>=4,"tcp-read");
+for(int attempt=0;attempt<3;attempt++){
+Need(size>=4&&size<=4+65536U*24,"tcp-size");uint capacity=size;
+System.IntPtr memory=System.Runtime.InteropServices.Marshal.AllocHGlobal(checked((int)capacity));try{
+result=GetExtendedTcpTable(memory,ref size,true,2,5,0);
+if(result==122){Need(size>capacity&&size<=4+65536U*24&&attempt<2,"tcp-resize");continue;}
+Need(result==0&&size<=capacity&&size>=4,"tcp-read");
 uint count=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory));Need(count<=65536U&&4L+count*24L<=size,"tcp-count");var rows=new TcpRow[count];
 for(int i=0;i<rows.Length;i++){int offset=4+i*24;rows[i]=new TcpRow{state=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset)),localAddress=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+4)),localPort=Port(unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+8))),remoteAddress=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+12)),remotePort=Port(unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+16))),pid=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+20))};}return rows;
 }finally{System.Runtime.InteropServices.Marshal.FreeHGlobal(memory);}
+}
+Need(false,"tcp-resize-bound");return null;
 }
 internal static void CompareRows(TcpRow[] rows,uint rootPid,uint helperPid,int serverPort,int clientPort,bool connected){
 Need(rows!=null&&rows.Length<=65536&&rootPid>0&&helperPid>0&&rootPid!=helperPid&&serverPort>0&&serverPort<=65535&&(!connected||clientPort>0&&clientPort<=65535&&clientPort!=serverPort),"tcp-input");
@@ -1553,7 +1578,7 @@ var fields=new System.Collections.Generic.Dictionary<string,string>(System.Strin
 string upgrade=null,connection=null,accept=null;Need(fields.TryGetValue("Upgrade",out upgrade)&&upgrade.Equals("websocket",System.StringComparison.OrdinalIgnoreCase)&&fields.TryGetValue("Connection",out connection)&&connection.Equals("Upgrade",System.StringComparison.OrdinalIgnoreCase)&&fields.TryGetValue("Sec-WebSocket-Accept",out accept),"handshake-upgrade");
 using(var sha=System.Security.Cryptography.SHA1.Create()){string expected=System.Convert.ToBase64String(sha.ComputeHash(System.Text.Encoding.ASCII.GetBytes(key+"258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));Need(accept==expected,"handshake-accept");}
 }
-void WriteAll(byte[] bytes){int offset=0;while(offset<bytes.Length){int written=socket.Send(bytes,offset,bytes.Length-offset,System.Net.Sockets.SocketFlags.None);Need(written>0,"socket-write");offset+=written;}}
+void WriteAll(byte[] bytes){int offset=0;try{while(offset<bytes.Length){int written=socket.Send(bytes,offset,bytes.Length-offset,System.Net.Sockets.SocketFlags.None);Need(written>0,"socket-write");offset+=written;}}catch{Fail("socket-write");throw;}}
 void WriteFrame(byte opcode,byte[] bytes){
 Need(bytes.Length<=4194304,"outgoing-bound");int header=bytes.Length<126?2:bytes.Length<=65535?4:10;byte[] frame=new byte[header+4+bytes.Length];frame[0]=(byte)(128|opcode);
 if(header==2)frame[1]=(byte)(128|bytes.Length);else if(header==4){frame[1]=254;frame[2]=(byte)(bytes.Length>>8);frame[3]=(byte)bytes.Length;}else{frame[1]=255;for(int i=0;i<8;i++)frame[2+i]=(byte)((ulong)bytes.Length>>(56-8*i));}
@@ -1829,7 +1854,7 @@ public sealed partial class EasyedaDiagnosticOwner {
   readonly bool workerStartupFootprintMain209,workerStartupFootprintCombined209,workerStartupFootprintForward209;
   bool footprintCombinedAbortAttempted;
   int forwardNormalRequests,forwardCleanupRequests;
-  EasyedaOriginalMainTransport originalMain;int mainRequest,mainPolls,mainBufferOffset;byte[] mainBuffer;
+  EasyedaOriginalMainTransport originalMain;bool originalMainReleaseObserved;int mainRequest,mainPolls,mainBufferOffset;byte[] mainBuffer;
   bool mainCloseReleaseWritten,mainCloseDetachAttempted,mainCloseDetached;
   int savedCacheProbeStep;bool savedCacheProbeReleased,savedCacheDiscoveryEnded;string savedCacheProbeSession;
   int savedCacheAccessorProbeStep;bool savedCacheAccessorProbeReleased;string savedCacheAccessorProbeSession;
@@ -2286,7 +2311,12 @@ public sealed partial class EasyedaDiagnosticOwner {
       if(id!=mainRequest+1||id-stockMainRequests>EasyedaFootprintForwardExecutionLimits.MainRequests-2002)throw Error("forward-writer-ordinary-main-id");
       if(phase!=null&&phase.StartsWith("sql-fence-",StringComparison.Ordinal)){
         if(footprintClockRpcActive||footprintCreateClockActive||mainCompletionBegun)throw Error("forward-writer-startup-closed");
-        MainPurpose();AssertLive();string startupText=EasyedaSelectedFileMainSqlFenceProtocol.Encode(id,phase,method,fields);mainRequest=id;originalMain.SendFixed(startupText,false);StockRegistrationMainComplete(phase);AssertLive();return;
+        MainPurpose();AssertLive();
+        bool completeHeadCapture=forwardWriterCompleteBirth&&phase=="sql-fence-capture";
+        if(completeHeadCapture&&forwardHeadSqlCaptured)throw Error("forward-complete-head-capture-once");
+        string startupText=EasyedaSelectedFileMainSqlFenceProtocol.Encode(id,phase,method,fields);mainRequest=id;originalMain.SendFixed(startupText,false);
+        if(completeHeadCapture)forwardHeadSqlCaptured=true;
+        StockRegistrationMainComplete(phase);AssertLive();return;
       }
     }
 
@@ -2510,7 +2540,7 @@ public sealed partial class EasyedaDiagnosticOwner {
       AssertLimits(); AssertPipes(); if(JobCount()!=0) throw Error("job-not-empty");
       if(executable==null || !System.Text.RegularExpressions.Regex.IsMatch(executable,@"\A[A-Za-z]:\\[^\x00-\x1f\""\r\n]+\.exe\z") || Path.GetFileName(executable)!="easyeda-pro.exe" ||
          !System.Text.RegularExpressions.Regex.IsMatch(expectedHash??"",@"\A[a-f0-9]{64}\z")) throw Error("executable-input");
-      if(workerStartupRatline209)installation.AdmitRatline(paths,sizes,hashes);else installation.Admit(paths,sizes,hashes);
+      if(SelectedSqlInstallation)installation.AdmitSelectedSql(paths,sizes,hashes);else if(workerStartupRatline209)installation.AdmitRatline(paths,sizes,hashes);else installation.Admit(paths,sizes,hashes);
       if(installation.Executable!=executable || installation.ExecutableHash!=expectedHash) throw Error("installation-binding");
       installation.AssertCurrent(); ExistingApplicationAbsent();
       CreateVerifiedRoot();
@@ -5618,16 +5648,19 @@ const int WindowCaptureMaximumDimension=4096,WindowCaptureMaximumPixels=4194304,
   public void ReleaseClosed() {
     RequireForwardWriterPipeExited();
     if(released) throw Error("release-consumed");
-    if(!Terminated()) throw Error("retain-live-owner");
-    ReleaseWindowCaptureAfterTermination();
-    if(workerStartupFootprintMain209){if(root!=IntPtr.Zero&&!originalMain.ObserveTermination())throw Error("main-retain-live-owner");originalMain.Release();}
+    // A successful Main release follows the original root/empty-Job proof.
+    // A retained root's once-consumed launch cannot become live again while
+    // later handle closes are retried inside this original cleanup.
+    if(!(originalMainReleaseObserved&&launchAttempted&&creationPhase==CreationPhase.RootRetained)&&!Terminated()) throw Error("retain-live-owner");
+    if(!originalMainReleaseObserved)ReleaseWindowCaptureAfterTermination();
+    if(workerStartupFootprintMain209&&!originalMainReleaseObserved){if(root!=IntPtr.Zero&&!originalMain.ObserveTermination())throw Error("main-retain-live-owner");originalMain.Release();originalMainReleaseObserved=true;}
     Close(ref browserRead); Close(ref browserWrite); Close(ref parentRead); Close(ref parentWrite); Close(ref rootThread); Close(ref root); Close(ref job); installation.Release(); released=true;
   }
   public void RetainUntilClosed() {
     if(released) return;
     // EOF/protocol failure is not a request to disconnect or close EasyEDA.
     // Keep native handles until the original process AND complete Job exit.
-    for(;;) { try { if(Terminated()) { ReleaseClosed(); return; } } catch { } Thread.Sleep(1000); }
+    for(;;) { try { if(originalMainReleaseObserved&&launchAttempted&&creationPhase==CreationPhase.RootRetained||Terminated()) { ReleaseClosed(); return; } } catch { } Thread.Sleep(1000); }
   }
 }
 // BEGIN FORWARD WRITER BOUNDED PIPE
@@ -5681,10 +5714,10 @@ pending=new EasyedaForwardWriterPipeWrite(write,new byte[1]);settled=false;pendi
 // Force the exact checked-before-P/Invoke race. The first cancellation has
 // no pending call; cleanup must cancel the later original blocked WriteFile.
 raceAtWrite=new System.Threading.ManualResetEvent(false);raceContinue=new System.Threading.ManualResetEvent(false);pending=new EasyedaForwardWriterPipeWrite(write,new byte[131072],raceAtWrite,raceContinue);settled=false;pending.Start();Need(raceAtWrite.WaitOne(1000),"smoke-late-enter-barrier");pending.CancelAtDeadline();Need(pending.cancelAttempted&&!pending.cancelSucceeded&&pending.cancelError==1168,"smoke-first-cancel-not-found");raceContinue.Set();clock.Restart();while(!(settled=pending.TryDisposeExited())&&clock.ElapsedMilliseconds<5000)System.Threading.Thread.Sleep(1);Need(settled&&pending.cancellationAttempts>1&&pending.anyCancellationSucceeded,"smoke-late-original-cancel-and-exit");
-}finally{if(pending!=null)pending.CancelAtDeadline();if(raceContinue!=null)raceContinue.Set();while(pending!=null&&!pending.TryDisposeExited())System.Threading.Thread.Sleep(1);if(raceAtWrite!=null)raceAtWrite.Dispose();if(raceContinue!=null)raceContinue.Dispose();bool writeClosed=CloseHandle(write),readClosed=CloseHandle(read);Need(writeClosed&&readClosed,"smoke-pipe-close");}
+}finally{if(pending!=null)pending.CancelAtDeadline();if(raceContinue!=null)raceContinue.Set();if(pending!=null&&!settled&&read!=System.IntPtr.Zero){Need(CloseHandle(read),"smoke-unblock-read");read=System.IntPtr.Zero;}while(pending!=null&&!pending.TryDisposeExited())System.Threading.Thread.Sleep(1);if(raceAtWrite!=null)raceAtWrite.Dispose();if(raceContinue!=null)raceContinue.Dispose();bool writeClosed=CloseHandle(write),readClosed=read==System.IntPtr.Zero||CloseHandle(read);Need(writeClosed&&readClosed,"smoke-pipe-close");}
 }
-// Failed cancellation keeps the original foreground writer and pipe custody;
-// even component-smoke cleanup waits for actual exit instead of closing a live pipe.
+// Production cleanup retains the original writer and write pipe until exit.
+// Only this no-app smoke may close its own read end to unblock a failed fixture.
 }
 public sealed partial class EasyedaDiagnosticOwner {
 EasyedaForwardWriterPipeWrite forwardWriterPipeWrite;

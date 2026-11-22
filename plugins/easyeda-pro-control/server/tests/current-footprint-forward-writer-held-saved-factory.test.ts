@@ -37,19 +37,26 @@ function text(input: FactorySource, row: { readonly start: number; readonly end:
 
 void test("actual factory classifiers keep each held-saved registry disjoint from legacy observation", async () => {
   const input = await factorySource();
-  const classification = ["fullHeldSaved", "forwardHeldSaved", "forwardSaved"].map(name => text(input, declaration(input, name))).join("\n");
+  const classification = ["nativeDeleteCold", "nativeDeleteColdUi", "fullHeldSaved", "forwardHeldSaved", "forwardSaved"]
+    .map(name => text(input, declaration(input, name))).join("\n");
   const legacy = input.statements.find(row => row.type === "IfStatement" && text(input, row).includes('forwardSavedAllocationStates.set(forwardSaved.writer, "unresolved")'));
   assert.ok(legacy?.type === "IfStatement");
-  for (const family of ["full", "held", "legacy", "foreign", "none"] as const) {
+  for (const family of ["cold", "cold-ui", "full", "held", "legacy", "foreign", "none"] as const) {
     const token = Object.freeze({});
     const original = Object.freeze({});
+    const cold = new WeakMap<object, object>(), coldUi = new WeakMap<object, object>();
     const full = new WeakMap<object, object>(), held = new WeakMap<object, object>();
+    if (family === "cold") { cold.set(token, original); }
+    if (family === "cold-ui") { coldUi.set(token, original); }
     if (family === "full") { full.set(token, original); }
     if (family === "held") { held.set(token, original); }
     const calls: string[] = [];
     const scope = createContext({
       forwardSavedHandoff: family === "none" ? null : token,
+      nativeDeleteColdHandoffs: cold, nativeDeleteColdUiHandoffs: coldUi,
       forwardWriterHeldSavedHandoffs: full, forwardExecutionHeldSavedHandoffs: held,
+      requireNativeDeleteColdHandoff: (value: object): object => { assert.equal(value, token); calls.push("cold"); return original; },
+      requireNativeDeleteColdUiHandoff: (value: object): object => { assert.equal(value, token); calls.push("cold-ui"); return original; },
       requireForwardWriterHeldSavedHandoff: (value: object): object => { assert.equal(value, token); calls.push("full"); return original; },
       requireForwardExecutionHeldSavedHandoff: (value: object): object => { assert.equal(value, token); calls.push("held"); return original; },
       requireForwardSavedObservationHandoff: (value: object): object => {
@@ -100,15 +107,22 @@ async function childFixture(context: TestContext): Promise<Readonly<{
     Object, Promise, setTimeout, clearTimeout, retainedOwners: retained,
     CURRENT_FOOTPRINT_COMBINED_READY: { eofCleanupMilliseconds: 2000 },
     error: (message: string): Error => new Error(message),
-    fullHeldSaved: allocation, footprintInverseAllocation: null, forwardExecutionBirth: null,
+    fullHeldSaved: allocation, footprintInverseAllocation: null, footprintInverseFullAllocation: null,
+    forwardExecutionBirth: null, nativeDeleteCold: null, nativeDeleteColdUi: null,
     forwardHeldSaved: null, savedReadbackAllocation: null, schematicSavedAllocation: null,
-    viaWriteAllocation: null, schematicWireAllocation: null, schematicRelevanceAllocation: null, schematicDisplayAllocation: null,
+    viaWriteAllocation: null, schematicWireWriterV4Allocation: null, schematicWireWriterV5Allocation: null,
+    schematicWireAllocation: null, schematicRelevanceAllocation: null, schematicDisplayAllocation: null,
     installation: { paths: { powershellExecutable: "inert-node-only" } }, encoded: "inert-unused",
     spawn: (executable: string): ChildProcessWithoutNullStreams => {
       assert.equal(executable, "inert-node-only");
       assert.equal(original, null);
-      original = spawn(process.execPath, ["-e", "process.stdin.resume()"], { stdio: ["pipe", "pipe", "pipe"] });
-      return original;
+      const inert = spawn(process.execPath, ["-e", "process.stdin.resume()"], { stdio: ["pipe", "pipe", "pipe"] });
+      // The extracted enrollment can throw immediately after spawn.
+      context.after(async () => {
+        if (inert.exitCode === null) { const closed = once(inert, "close"); inert.stdin.end(); await closed; }
+      });
+      original = inert;
+      return inert;
     },
   });
   runInContext([helpers, input.source.slice(childStatement.start, ownerStatement.start)].join("\n"), scope);
@@ -117,12 +131,8 @@ async function childFixture(context: TestContext): Promise<Readonly<{
   const child: unknown = runInContext("child", scope);
   assert.equal(child, original);
   assert.ok(original !== null);
-  const inert: ChildProcessWithoutNullStreams = original;
-  context.after(async () => {
-    if (inert.exitCode === null) { const closed = once(inert, "close"); inert.stdin.end(); await closed; }
-  });
   return {
-    allocation, retained, child: inert,
+    allocation, retained, child: original,
     closeOwnerless: (): Promise<unknown> => {
       const result: unknown = runInContext("closeForwardExecutionOwnerlessBirth(fullHeldSaved)", scope);
       assert.ok(types.isPromise(result));

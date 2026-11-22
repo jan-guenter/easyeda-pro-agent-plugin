@@ -1831,3 +1831,75 @@ void test("metadata settlement refuses prior caller history and nonempty status 
   });
  }
 });
+
+/** This actual SDK peer has synthetic operation state only; it creates no
+ * native owner, application, controller facade lease or user project. */
+function interruptedFullWriterPeer(cleanupOriginal:boolean,inverse=false):string{
+ return `import {Server} from ${sdkModule("server/index.js")};
+import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
+const server=new Server({name:'synthetic-original-full-writer',version:'1.0.0'},{capabilities:{tools:{}}});
+const op='${inverse?"footprint-inverse-flow-manager-original":"footprint-forward-flow-manager-original"}',tool='${inverse?"easyeda_control_current_footprint_inverse":"easyeda_control_current_footprint_forward_write"}',calls=[],gate=Promise.withResolvers();let active=0,executes=0,cleanups=0,cleaned=false,settled=false;
+const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
+const refused=()=>({isError:true,content:[{type:'text',text:'synthetic-original-full-writer-refusal'}]});
+server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session',tool].map(name=>({name,inputSchema:{type:'object'}}))}));
+server.setRequestHandler(CallToolRequestSchema,async({params})=>{
+ const q=params.arguments?.request;
+ if(params.name==='easyeda_control_api'&&q?.action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
+ if(params.name==='easyeda_control_session'){if(q?.action==='retire'&&(active!==0||!cleaned||!settled))return refused();const retired=q?.action==='retire';return result({result:{schema:'easyeda-pro-control.session-retirement.v1',state:retired?'retired':'active',activeCalls:active,liveAdmissionOpen:!retired,leaseReleaseAcknowledged:retired,replacementConnectionRequired:retired}});}
+ calls.push({tool:params.name,...q});if(params.name!==tool||q?.operationId!==op)return refused();
+ if(q.action==='execute'){if(++executes!==1||!${inverse?"['confirmValidationOnly','confirmDisposableProject','confirmDisposableCopiedFootprintDelete','confirmDeleteTriggeredPersistence','confirmNoExplicitSave','acceptExistingProfileEffects','acceptNormalOpenEffects','acceptDebuggerPauseEffects','acceptCacheInvalidationEffects','acceptManagerOnlyColdAbsence','acceptUnsupportedNativeUiTaskAbsence']":"['confirmDisposableCopy','confirmCopyTriggeredPersistence','confirmNoExplicitSave','acceptUnsupportedInverse']"}.every(k=>q[k]===true))return refused();active++;await gate.promise;active--;return result({result:{operationId:op,originalReturned:true}});}
+ if(q.action==='cleanup'){if(++cleanups!==1||q.confirmOriginalJobsOnly!==true||Object.keys(q).sort().join(',')!==${inverse?"'action,confirmOriginalJobsOnly,operationId,schema'":"'action,confirmOriginalJobsOnly,operationId'"})return refused();${cleanupOriginal?"active++;await new Promise(r=>setTimeout(r,1250));active--;":""}cleaned=true;gate.resolve();return result({result:{operationId:op,originalCleanupRetained:true}});}
+ if(q.action==='settle-publication'){settled=true;return result({result:{operationId:op,settled:true}});}
+ if(q.action==='inspect')return result({result:{operationId:op,active,executes,cleanups,cleaned,settled,calls}});
+ return refused();
+});setTimeout(()=>{gate.resolve();void server.close();},18000).unref();await server.connect(new StdioServerTransport());`;
+}
+/** Actual MCP client/child interruption custody for the separate inverse route.
+ * The peer owns synthetic state only; no native helper/application is used. */
+void test("inverse manager recovery keeps its own cleanup latch, original connection and generation", {timeout:25_000},async context=>{
+ for(const originalAction of ["execute","cleanup"]as const){
+  const selected=await fixture(interruptedFullWriterPeer(originalAction==="cleanup",true));const outputs:unknown[]=[];
+  await selectedProfile(selected.profilePath,async()=>{
+   const manager=new ForegroundSessionManager(async value=>{outputs.push(value);await Promise.resolve();});
+   context.after(async()=>{if(manager.inspect()["stage"]==="closed"){return;}const deadline=Date.now()+19_000;while(manager.inspect()["closure"]===null&&Date.now()<deadline){await wait(10);}await manager.handle(request({id:"inverse-fixture-shutdown",action:"shutdown"}));});
+   await manager.initialize(selected.root);const pid=manager.inspect()["facadePid"];
+   const operationId="footprint-inverse-flow-manager-original",tool="easyeda_control_current_footprint_inverse";
+   const original={id:`inverse-original-${originalAction}`,tool,timeoutMs:1000,arguments:{request:originalAction==="execute"?{
+    schema:"easyeda-pro-control.footprint-inverse-control.v1",action:"execute",operationId,sourceOperationId:"footprint-forward-flow-manager-original",confirmValidationOnly:true,confirmDisposableProject:true,
+    confirmDisposableCopiedFootprintDelete:true,confirmDeleteTriggeredPersistence:true,confirmNoExplicitSave:true,
+    acceptExistingProfileEffects:true,acceptNormalOpenEffects:true,acceptDebuggerPauseEffects:true,acceptCacheInvalidationEffects:true,
+    acceptManagerOnlyColdAbsence:true,acceptUnsupportedNativeUiTaskAbsence:true,
+   }:{schema:"easyeda-pro-control.footprint-inverse-control.v1",action:"cleanup",operationId,confirmOriginalJobsOnly:true}}};
+   await manager.handle(request(original));assert.equal(manager.inspect()["stage"],"blocked");assert.equal(manager.inspect()["facadePid"],pid);
+   const cleanup=(id:string,action:string,extra:object={}):string=>request({id,action:"cleanup-original",generation:1,interruptedRequestId:original.id,request:{action,...extra}});
+   const interrupted=record(manager.inspect()["interruptedRequest"]);
+   assert.deepEqual(record(interrupted["inverse"]),{action:originalAction,operationId,cleanupAttempted:originalAction==="cleanup"});assert.equal(interrupted["fullWriter"],null);
+   const before=record(record(manager.inspect()["budgets"])["records"])["cleanup"];
+   for(const rejected of [
+    cleanup("inverse-source-forgery","inspect",{sourceOperationId:"footprint-forward-flow-foreign"}),cleanup("inverse-owner-forgery","cleanup",{owner:{}}),
+    cleanup("inverse-execute-replay","execute"),cleanup("inverse-wrong-family","abort"),request({...original,id:"inverse-normal-replay",cleanup:true}),
+    request({id:"inverse-foreign-generation",action:"cleanup-original",generation:2,interruptedRequestId:original.id,request:{action:"inspect"}}),
+    request({id:"inverse-foreign-request",action:"cleanup-original",generation:1,interruptedRequestId:"foreign",request:{action:"inspect"}}),
+   ]){await manager.handle(rejected);assert.equal(record(outputs.at(-1))["dispatched"],false);}
+   const rejectedBudgets=record(record(manager.inspect()["budgets"])["records"]);assert.equal(rejectedBudgets["cleanup"],before);
+   const foreignOutputs:unknown[]=[];const foreign=new ForegroundSessionManager(async value=>{foreignOutputs.push(value);await Promise.resolve();});
+   await foreign.handle(cleanup("inverse-foreign-connection","inspect"));assert.equal(record(foreignOutputs.at(-1))["dispatched"],false);
+   await manager.handle(cleanup("inverse-inspect","inspect"));
+   if(originalAction==="execute"){
+    await manager.handle(retire("inverse-premature-retire",1));assert.equal(record(outputs.at(-1))["retirementRefused"],true);
+    await manager.handle(cleanup("inverse-cleanup-once","cleanup"));await wait(25);
+   }else{await wait(300);}
+   await manager.handle(cleanup("inverse-cleanup-replay","cleanup"));assert.equal(record(outputs.at(-1))["dispatched"],false);
+   await manager.handle(cleanup("inverse-settle","settle-publication"));await manager.handle(cleanup("inverse-final-inspect","inspect"));
+   const finalEnvelope=record(record(outputs.at(-1))["result"]);const inspected=record(finalEnvelope["structuredContent"]),result=record(inspected["result"]);
+   assert.equal(result["cleanups"],1);assert.equal(result["executes"],originalAction==="execute"?1:0);assert.equal(result["settled"],true);
+   const calls=z.array(z.record(z.string(),z.unknown())).parse(result["calls"]);assert.ok(calls.every(call=>call["tool"]===tool&&call["operationId"]===operationId));
+   assert.deepEqual(calls.filter(call=>call["action"]==="cleanup"),[{tool,schema:"easyeda-pro-control.footprint-inverse-control.v1",action:"cleanup",operationId,confirmOriginalJobsOnly:true}]);
+   assert.equal(record(manager.inspect()["interruptedRequest"])["outcome"],"unknown");
+   await manager.handle(retire("inverse-original-retire",1));assert.equal(manager.inspect()["stage"],"between-facades");
+   assert.deepEqual(record(manager.inspect()["closure"]),{pid,exitObserved:true,closeObserved:true,exitCode:0,signal:null,stdinEof:true});
+   await manager.handle(request({id:"inverse-final-shutdown",action:"shutdown"}));assert.equal(manager.inspect()["stage"],"closed");
+  });
+ }
+});

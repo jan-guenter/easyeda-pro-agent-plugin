@@ -4,6 +4,7 @@
 /* oxlint-disable import/max-dependencies -- Keep every original source, intent, native, SQL and saved-generation authority explicit at this one complete lifecycle boundary. */
 import { AsyncLocalStorage } from "node:async_hooks";
 import { types } from "node:util";
+import { originalNativeOrSourceErrorCode } from "./original-native-error-code.ts";
 import { sha256Json } from "./core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CurrentFootprintForwardWriterOpeningProvider, requireCurrentFootprintForwardWriterOpeningInput, requireOriginalCurrentFootprintForwardWriterCompleteOpeningProvider, requireOriginalCurrentFootprintForwardWriterCompleteOpeningPublication, requireOriginalCurrentFootprintForwardWriterCompleteOpeningRequest } from "./current-footprint-forward-writer-opening.ts";
@@ -460,6 +461,13 @@ export class CurrentFootprintForwardWriterWorkflow {
  }
  public retained():Readonly<Record<string,unknown>> {
   this.#current(true);return Object.freeze({profile:"private.current-footprint-forward-writer-workflow-state.v2",operationId:this.#request.operationId,stage:this.#stage,failed:this.#failed,terminal:this.#terminal,writerTerminated:this.#writerTerminated,writerReleased:this.#writerReleased,savedTerminated:this.#savedTerminated,savedReleased:this.#savedReleased,publicationPending:this.#journal.retained().publicationPending,executionAuthorized:false});
+ }
+ public retainedFailureCode():string|null {
+  this.#current(true);
+  const code=originalNativeOrSourceErrorCode(this.#failure);
+  if(code!=="PCB_DIAGNOSTIC_CREATE_PROCESS_REFUSED"){return code;}
+  const win32=this.#provider.status()["createProcessError"];
+  return typeof win32==="number"&&Number.isSafeInteger(win32)&&win32>=0&&win32<=4_294_967_295?`${code}_WIN32_${String(win32)}`:code;
  }
  public retainedFailure():unknown { this.#current(true);return this.#failure; }
  public originalResult(packet:CurrentFootprintForwardWriterWorkflowResult):Readonly<{checkpoint:CurrentFootprintForwardWriterSavedCheckpoint;paired:CurrentFootprintForwardWriterPairedObservation}> {

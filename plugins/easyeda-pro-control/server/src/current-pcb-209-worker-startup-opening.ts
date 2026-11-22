@@ -1,8 +1,12 @@
 /* oxlint-disable eslint/max-classes-per-file -- Keep the private shared core with fixed wrappers so no caller can select a transport factory or constructor profile. */
+/* oxlint-disable import/max-dependencies -- This coordinator joins the fixed parent opener, original construction owner and actor observers without exporting their native capabilities to another owner. */
+import {CurrentFootprintCopyConstructionRunner, CurrentPcb209WorkerConstructionRunner} from "./current-pcb-worker-construction-runner.ts";
+import {CurrentFootprintCopyHeldSavedWorkerStartupTransport, CurrentFootprintCopySavedWorkerStartupTransport, CurrentFootprintCopyWorkerStartupTransport, CurrentFootprintInverseNativeDeleteColdUiWorkerStartupTransport, CurrentFootprintInverseNativeDeleteColdWorkerStartupTransport, CurrentPcb209WorkerStartupTransport, requireOriginalForwardClockPreparationTransport, requireOriginalForwardWriterClockPreparationTransport} from "./current-pcb-worker-startup-transport.ts";
+
 /** Fixed209 original-owner choreography. Legacy opening remains separate. The lifecycle must publish the sealed
  * checkpoint intent before calling open(). This module supplies no journal,
  * owner adoption, public writer or saved-state authority. */
-/* oxlint-disable import/max-dependencies -- This coordinator joins the fixed parent opener, original construction owner and actor observers without exporting their native capabilities to another owner. */
+
 import { types } from "node:util";
 import { z } from "zod";
 import type { CurrentFootprintCopyProducerObservation } from "./current-footprint-copy-producer-runner.ts";
@@ -27,11 +31,11 @@ import { CURRENT_PCB_209_STARTUP_OPENING_FUNCTION } from "./current-pcb-209-star
 import { CURRENT_PCB_209_STARTUP_OPENING_TIMING } from "./current-pcb-209-worker-startup-timing.ts";
 import type { CurrentPcbDiagnosticOpeningPhase, CurrentPcbDiagnosticOpeningResult } from "./current-pcb-diagnostic-opening.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import { CurrentPcb209WorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
+
 import type { CurrentPcbWorkerConstructionOwner, CurrentPcbWorkerConstructionPacketFor, CurrentPcbWorkerConstructionProjectIdentity } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
-import { CurrentFootprintCopyHeldSavedWorkerStartupTransport, CurrentFootprintCopySavedWorkerStartupTransport, CurrentFootprintCopyWorkerStartupTransport, CurrentPcb209WorkerStartupTransport, requireOriginalForwardClockPreparationTransport, requireOriginalForwardWriterClockPreparationTransport } from "./current-pcb-worker-startup-transport.ts";
+
 import type { CurrentPcbWorkerStartupTransportOwner } from "./current-pcb-worker-startup-transport.ts";
 import { currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
 import { CurrentPcb209WorkerStartupActorRunner } from "./current-pcb-209-worker-startup-actor.ts";
@@ -133,6 +137,54 @@ interface OpeningResult<P extends OpeningProfile> {
   readonly executionAuthorized: false;
   readonly persistenceVerified: false;
 }
+
+export interface CurrentFootprintInverseNativeDeleteColdUiConstructionLease{readonly profile:"private.current-footprint-inverse-native-delete-cold-ui-construction-lease.v1"}
+interface NativeDeleteColdUiConstructionOriginal{
+ readonly issuer:object;readonly dependency:CurrentPcbWorkerStartupDependency;readonly source:string;readonly scriptId:string;readonly sessionId:string;readonly uniqueContextId:string;readonly executionContextId:number;readonly originalProject:string;
+ readonly state:CurrentFootprintCopyStatePacket;readonly current:()=>void;readonly reproveAssignments:()=>Promise<void>;
+}
+const nativeDeleteColdUiConstructionLeases=new WeakMap<CurrentFootprintInverseNativeDeleteColdUiConstructionLease,NativeDeleteColdUiConstructionOriginal>();
+/* oxlint-disable typescript/unbound-method -- Invoke only on the same original constructor-captured private-field runner; every current check rechecks these exact methods. */
+const nativeDeleteColdUiRunnerMethods=Object.freeze({require:CurrentFootprintCopyConstructionRunner.prototype.requireOriginal,
+ assignments:CurrentFootprintCopyConstructionRunner.prototype.requireCurrentAssignments,status:CurrentFootprintCopyConstructionRunner.prototype.status});
+/* oxlint-enable typescript/unbound-method */
+const nativeColdUiTransportPrototype=CurrentFootprintInverseNativeDeleteColdUiWorkerStartupTransport.prototype;
+const nativeColdUiTransportDescriptors=Object.getOwnPropertyDescriptors(nativeColdUiTransportPrototype);
+const nativeColdUiTransportBaseCandidate:unknown=Object.getPrototypeOf(nativeColdUiTransportPrototype);
+if(nativeColdUiTransportBaseCandidate===null||typeof nativeColdUiTransportBaseCandidate!=="object"){throw new Error("INVERSE_NATIVE_DELETE_COLD_UI_TRANSPORT_PROTOTYPE");}
+const nativeColdUiTransportBase=nativeColdUiTransportBaseCandidate;
+const nativeColdUiTransportBaseDescriptors=Object.getOwnPropertyDescriptors(nativeColdUiTransportBase);
+/* oxlint-disable typescript/unbound-method -- Call the same original private-field transport getter after exact prototype checks. */
+const nativeColdUiTransportWorker=CurrentFootprintInverseNativeDeleteColdUiWorkerStartupTransport.prototype.originalNativeDeleteColdUiWorker;
+/* oxlint-enable typescript/unbound-method */
+const nativeColdUiDescriptorMatch=(prototype:object,original:PropertyDescriptorMap):boolean=>Reflect.ownKeys(prototype).length===Reflect.ownKeys(original).length&&Object.entries(original).every(([name,held])=>{
+  const actual=Object.getOwnPropertyDescriptor(prototype,name);return actual!==undefined&&actual.value===held.value&&actual.get===held.get&&actual.set===held.set&&actual.writable===held.writable&&actual.enumerable===held.enumerable&&actual.configurable===held.configurable;
+ });
+function requireNativeColdUiTransport(transport:CurrentFootprintInverseNativeDeleteColdUiWorkerStartupTransport):void{
+ if(types.isProxy(transport)||Reflect.ownKeys(transport).length > 0||Object.getPrototypeOf(transport)!==nativeColdUiTransportPrototype||Object.getPrototypeOf(nativeColdUiTransportPrototype)!==nativeColdUiTransportBase||
+  !nativeColdUiDescriptorMatch(nativeColdUiTransportPrototype,nativeColdUiTransportDescriptors)||!nativeColdUiDescriptorMatch(nativeColdUiTransportBase,nativeColdUiTransportBaseDescriptors)){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_ORIGINAL_TRANSPORT_METHODS");}
+}
+export function requireOriginalCurrentFootprintInverseNativeDeleteColdUiConstructionLease(lease:CurrentFootprintInverseNativeDeleteColdUiConstructionLease,issuer:object):Readonly<NativeDeleteColdUiConstructionOriginal>{
+ const original=nativeDeleteColdUiConstructionLeases.get(lease);
+ if(original===undefined||original.issuer!==issuer){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_ORIGINAL_LEASE");}original.current();return original;
+}
+
+const nativeDeleteColdConstructionLeases=new WeakMap<CurrentFootprintInverseNativeDeleteColdConstructionLease,NativeDeleteColdConstructionOriginal>();
+/* oxlint-disable typescript/unbound-method -- Retain exact original methods and reapply them only to the same original private-field runner. */
+const nativeDeleteColdRunnerMethods=Object.freeze({require:CurrentFootprintCopyConstructionRunner.prototype.requireOriginal,
+ assignments:CurrentFootprintCopyConstructionRunner.prototype.requireCurrentAssignments,status:CurrentFootprintCopyConstructionRunner.prototype.status});
+/* oxlint-enable typescript/unbound-method */
+const nativeColdTransportPrototype=CurrentFootprintInverseNativeDeleteColdWorkerStartupTransport.prototype;
+const nativeColdTransportDescriptors=Object.getOwnPropertyDescriptors(nativeColdTransportPrototype);
+const nativeColdTransportBaseCandidate:unknown=Object.getPrototypeOf(nativeColdTransportPrototype);
+if(nativeColdTransportBaseCandidate===null||typeof nativeColdTransportBaseCandidate!=="object"){throw new Error("INVERSE_NATIVE_DELETE_COLD_TRANSPORT_PROTOTYPE");}
+const nativeColdTransportBase=nativeColdTransportBaseCandidate;
+const nativeColdTransportBaseDescriptors=Object.getOwnPropertyDescriptors(nativeColdTransportBase);
+// oxlint-disable-next-line typescript/unbound-method -- Reapply this exact captured getter only to the descriptor-verified original private-field transport.
+const nativeColdTransportWorker=CurrentFootprintInverseNativeDeleteColdWorkerStartupTransport.prototype.originalNativeDeleteColdWorker;
+const nativeColdDescriptorMatch=(prototype:object,original:PropertyDescriptorMap):boolean=>Reflect.ownKeys(prototype).length===Reflect.ownKeys(original).length&&Object.entries(original).every(([name,held])=>{
+  const actual=Object.getOwnPropertyDescriptor(prototype,name);return actual!==undefined&&actual.value===held.value&&actual.get===held.get&&actual.set===held.set&&actual.writable===held.writable&&actual.enumerable===held.enumerable&&actual.configurable===held.configurable;
+ });
 
 class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
   readonly #actorSource: CurrentPcb209ActorClockSourceQualification;
@@ -743,7 +795,9 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
         // Require a capture listener that was never allocated, or infer exit.
         this.#same(); await bounded(this.#assertTermination.call(this.#dependency)); this.#same();
       } else if (!this.#transportTerminationReleased) {
-        await this.#transport.releaseAfterTermination(); this.#transportTerminationReleased = true;
+              if(this.#nativeDeleteColdLeasePending!==null){await observe(this.#nativeDeleteColdLeasePending);}
+              if(this.#nativeDeleteColdUiLeasePending!==null){await observe(this.#nativeDeleteColdUiLeasePending);}
+    await this.#transport.releaseAfterTermination(); this.#transportTerminationReleased = true;
       }
       if (this.#openingDispatch !== null) {
         await bounded(observe(this.#openingDispatch));
@@ -751,6 +805,83 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
       }
       this.#released = true;
     } finally { this.#releasing = false; }
+  }
+
+  #nativeDeleteColdUiLeasePending:Promise<CurrentFootprintInverseNativeDeleteColdUiConstructionLease>|null=null;
+  #nativeDeleteColdUiLeaseInput:Readonly<{result:OpeningResult<P>;assignments:CurrentPcbWorkerConstructionAssignments;state:CurrentFootprintCopyStatePacket}>|null=null;
+
+  #nativeDeleteColdLeasePending:Promise<CurrentFootprintInverseNativeDeleteColdConstructionLease>|null=null;
+
+  #nativeDeleteColdLeaseInput:Readonly<{result:OpeningResult<P>;assignments:CurrentPcbWorkerConstructionAssignments;state:CurrentFootprintCopyStatePacket}>|null=null;
+
+  public prepareNativeDeleteColdUiConstructionLease(this:CurrentPcb209WorkerStartupOpeningCore<"private.current-footprint-copy-construction.v1">,
+    result:OpeningResult<"private.current-footprint-copy-construction.v1">,assignments:CurrentPcbWorkerConstructionAssignments,
+    state:CurrentFootprintCopyStatePacket):Promise<CurrentFootprintInverseNativeDeleteColdUiConstructionLease>{
+    if(this.#nativeDeleteColdUiLeasePending!==null){
+      const original=this.#nativeDeleteColdUiLeaseInput;if(original?.result!==result||original.assignments!==assignments||original.state!==state){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_LEASE_ORIGINAL_ATTEMPT");}return this.#nativeDeleteColdUiLeasePending;
+    }
+    const gate=Promise.withResolvers<null>();
+    const pending=(async():Promise<CurrentFootprintInverseNativeDeleteColdUiConstructionLease>=>{
+      await gate.promise;
+      if(!(this.#transport instanceof CurrentFootprintInverseNativeDeleteColdUiWorkerStartupTransport)||this.#footprintSourceAttempted||state!==this.#footprintPacket||assignments!==this.#assignments){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_LEASE_STATE");}
+      this.#footprintSourceAttempted=true;
+      const transport=await this.requireOriginal(result);const runner=await transport.requireOriginal(result.construction);
+      if(runner!==this.#footprintRunner||!(runner instanceof CurrentFootprintCopyConstructionRunner)){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_LEASE_RUNNER");}
+      requireNativeColdUiTransport(this.#transport);
+      const worker=await nativeColdUiTransportWorker.call(this.#transport,result.construction);requireNativeColdUiTransport(this.#transport);
+      const receiver=await nativeDeleteColdUiRunnerMethods.require.call(runner,result.construction);
+      const current=():void=>{
+        this.#same();requireNativeColdUiTransport(this.#transport);worker.current();
+        if(this.#released||this.#releasing||this.#failure!==null||state!==this.#footprintPacket||assignments!==this.#assignments||runner!==this.#footprintRunner||
+          Object.getPrototypeOf(runner)!==CurrentFootprintCopyConstructionRunner.prototype||Reflect.ownKeys(runner).length > 0||
+          runner.requireOriginal!==nativeDeleteColdUiRunnerMethods.require||runner.requireCurrentAssignments!==nativeDeleteColdUiRunnerMethods.assignments||runner.status!==nativeDeleteColdUiRunnerMethods.status||
+          CurrentFootprintCopyConstructionRunner.prototype.requireOriginal!==nativeDeleteColdUiRunnerMethods.require||CurrentFootprintCopyConstructionRunner.prototype.requireCurrentAssignments!==nativeDeleteColdUiRunnerMethods.assignments||CurrentFootprintCopyConstructionRunner.prototype.status!==nativeDeleteColdUiRunnerMethods.status){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_LEASE_CHANGED");}
+      };
+      current();await nativeDeleteColdUiRunnerMethods.assignments.call(runner,result.construction,assignments);current();
+      let checks=0;
+      const lease:CurrentFootprintInverseNativeDeleteColdUiConstructionLease=Object.freeze({profile:"private.current-footprint-inverse-native-delete-cold-ui-construction-lease.v1"});
+      nativeDeleteColdUiConstructionLeases.set(lease,Object.freeze({issuer:this,dependency:this.#dependency,...worker,originalProject:receiver.project,state,current,
+        reproveAssignments:async():Promise<void>=>{
+          current();if(checks>=2){throw fail("INVERSE_NATIVE_DELETE_COLD_UI_ASSIGNMENTS_CONSUMED");}checks+=1;
+          await nativeDeleteColdUiRunnerMethods.assignments.call(runner,result.construction,assignments);current();
+        }}));current();return lease;
+    })();
+    this.#nativeDeleteColdUiLeaseInput=Object.freeze({result,assignments,state});this.#nativeDeleteColdUiLeasePending=pending;gate.resolve(null);return pending;
+  }
+
+  public prepareNativeDeleteColdConstructionLease(this:CurrentPcb209WorkerStartupOpeningCore<"private.current-footprint-copy-construction.v1">,
+    result:OpeningResult<"private.current-footprint-copy-construction.v1">,assignments:CurrentPcbWorkerConstructionAssignments,
+    state:CurrentFootprintCopyStatePacket):Promise<CurrentFootprintInverseNativeDeleteColdConstructionLease>{
+    if(this.#nativeDeleteColdLeasePending!==null){
+      const original=this.#nativeDeleteColdLeaseInput;if(original?.result!==result||original.assignments!==assignments||original.state!==state){throw fail("INVERSE_NATIVE_DELETE_COLD_LEASE_ORIGINAL_ATTEMPT");}return this.#nativeDeleteColdLeasePending;
+    }
+    const gate=Promise.withResolvers<null>();
+    const pending=(async():Promise<CurrentFootprintInverseNativeDeleteColdConstructionLease>=>{
+      await gate.promise;
+      if(!(this.#transport instanceof CurrentFootprintInverseNativeDeleteColdWorkerStartupTransport)||this.#footprintSourceAttempted||state!==this.#footprintPacket||assignments!==this.#assignments){throw fail("INVERSE_NATIVE_DELETE_COLD_LEASE_STATE");}
+      this.#footprintSourceAttempted=true;
+      const transport=await this.requireOriginal(result);const runner=await transport.requireOriginal(result.construction);
+      if(runner!==this.#footprintRunner||!(runner instanceof CurrentFootprintCopyConstructionRunner)){throw fail("INVERSE_NATIVE_DELETE_COLD_LEASE_RUNNER");}
+      requireNativeColdTransport(this.#transport);
+      const worker=await nativeColdTransportWorker.call(this.#transport,result.construction);requireNativeColdTransport(this.#transport);
+      const receiver=await nativeDeleteColdRunnerMethods.require.call(runner,result.construction);
+      const current=():void=>{
+        this.#same();requireNativeColdTransport(this.#transport);worker.current();
+        if(this.#released||this.#releasing||this.#failure!==null||state!==this.#footprintPacket||assignments!==this.#assignments||runner!==this.#footprintRunner||
+          Object.getPrototypeOf(runner)!==CurrentFootprintCopyConstructionRunner.prototype||Reflect.ownKeys(runner).length > 0||
+          runner.requireOriginal!==nativeDeleteColdRunnerMethods.require||runner.requireCurrentAssignments!==nativeDeleteColdRunnerMethods.assignments||runner.status!==nativeDeleteColdRunnerMethods.status||
+          CurrentFootprintCopyConstructionRunner.prototype.requireOriginal!==nativeDeleteColdRunnerMethods.require||CurrentFootprintCopyConstructionRunner.prototype.requireCurrentAssignments!==nativeDeleteColdRunnerMethods.assignments||CurrentFootprintCopyConstructionRunner.prototype.status!==nativeDeleteColdRunnerMethods.status){throw fail("INVERSE_NATIVE_DELETE_COLD_LEASE_CHANGED");}
+      };
+      current();await nativeDeleteColdRunnerMethods.assignments.call(runner,result.construction,assignments);current();
+      let checks=0;
+      const lease:CurrentFootprintInverseNativeDeleteColdConstructionLease=Object.freeze({profile:"private.current-footprint-inverse-native-delete-cold-construction-lease.v1"});
+      nativeDeleteColdConstructionLeases.set(lease,Object.freeze({issuer:this,dependency:this.#dependency,...worker,originalProject:receiver.project,state,current,
+        reproveAssignments:async():Promise<void>=>{
+          current();if(checks>=2){throw fail("INVERSE_NATIVE_DELETE_COLD_ASSIGNMENTS_CONSUMED");}checks+=1;
+          await nativeDeleteColdRunnerMethods.assignments.call(runner,result.construction,assignments);current();
+        }}));current();return lease;
+    })();
+    this.#nativeDeleteColdLeaseInput=Object.freeze({result,assignments,state});this.#nativeDeleteColdLeasePending=pending;gate.resolve(null);return pending;
   }
 }
 
@@ -842,4 +973,52 @@ export async function originalCurrentFootprintCopyParentPeer(opening: CurrentFoo
   const peer = await originalParentPeer.call(opening, result, dependency);
   if (CurrentPcb209WorkerStartupOpeningCore.prototype.originalParentWorkerPeer !== originalParentPeer) { throw fail("ORIGINAL_METHOD_CHANGED"); }
   return peer;
+}
+
+export interface CurrentFootprintInverseNativeDeleteColdConstructionLease{readonly profile:"private.current-footprint-inverse-native-delete-cold-construction-lease.v1"}
+
+interface NativeDeleteColdConstructionOriginal{
+ readonly issuer:object;readonly dependency:CurrentPcbWorkerStartupDependency;readonly source:string;readonly scriptId:string;readonly sessionId:string;readonly uniqueContextId:string;readonly executionContextId:number;readonly originalProject:string;
+ readonly state:CurrentFootprintCopyStatePacket;readonly current:()=>void;readonly reproveAssignments:()=>Promise<void>;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function requireOriginalCurrentFootprintInverseNativeDeleteColdConstructionLease(lease:CurrentFootprintInverseNativeDeleteColdConstructionLease,issuer:object):Readonly<NativeDeleteColdConstructionOriginal>{
+ const original=nativeDeleteColdConstructionLeases.get(lease);
+ if(original===undefined||original.issuer!==issuer){throw fail("INVERSE_NATIVE_DELETE_COLD_ORIGINAL_LEASE");}original.current();return original;
+}
+
+export class CurrentFootprintInverseNativeDeleteColdStartupOpening extends CurrentPcb209WorkerStartupOpeningCore<"private.current-footprint-copy-construction.v1">{
+ public constructor(handoff:Pick<CurrentPcbWorkerStartupHandoff,"dependency"|"opening"|"actorClockSourceQualification">){
+  super(INTERNAL_OPENING,handoff,dependency=>new CurrentFootprintInverseNativeDeleteColdWorkerStartupTransport(dependency));
+ }
+}
+
+function requireNativeColdTransport(transport:CurrentFootprintInverseNativeDeleteColdWorkerStartupTransport):void{
+ if(types.isProxy(transport)||Reflect.ownKeys(transport).length > 0||Object.getPrototypeOf(transport)!==nativeColdTransportPrototype||Object.getPrototypeOf(nativeColdTransportPrototype)!==nativeColdTransportBase||
+  !nativeColdDescriptorMatch(nativeColdTransportPrototype,nativeColdTransportDescriptors)||!nativeColdDescriptorMatch(nativeColdTransportBase,nativeColdTransportBaseDescriptors)){throw fail("INVERSE_NATIVE_DELETE_COLD_ORIGINAL_TRANSPORT_METHODS");}
+}
+
+export class CurrentFootprintInverseNativeDeleteColdUiStartupOpening extends CurrentPcb209WorkerStartupOpeningCore<"private.current-footprint-copy-construction.v1">{
+ public constructor(handoff:Pick<CurrentPcbWorkerStartupHandoff,"dependency"|"opening"|"actorClockSourceQualification">){
+  super(INTERNAL_OPENING,handoff,dependency=>new CurrentFootprintInverseNativeDeleteColdUiWorkerStartupTransport(dependency));
+ }
 }

@@ -44,10 +44,19 @@ export async function captureCurrentFootprintForwardWriterCompleteNativeGraph(di
     else { need(distribution !== undefined && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$(?![\s\S])/u.test(distribution)); paths.push(`\\\\wsl.localhost\\${distribution}${path.replaceAll("/", "\\")}`); }
   }
   const verify = async (): Promise<void> => { for (const [index] of GRAPH.files.entries()) { const original = identities[index]; need(original !== undefined); await readRole(index, original); } };
-  let bootstrap = "$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';$writerGraphFiles=New-Object 'System.Collections.Generic.List[System.IO.FileStream]';try{";
+  let bootstrap = "$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';" +
+    "$writerGraphFiles=New-Object 'System.Collections.Generic.List[System.IO.FileStream]';" +
+    "function Read-WriterGraphRole([string]$path,[int]$length,[int]$maximum,[string]$expectedHash){" +
+    "$f=[IO.File]::Open($path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);$writerGraphFiles.Add($f);" +
+    "if($f.Length -ne $length -or $f.Length -gt $maximum){throw 'forward-writer-graph-size'};" +
+    "$bytes=New-Object byte[] $length;$offset=0;while($offset -lt $length){" +
+    "$count=$f.Read($bytes,$offset,$length-$offset);if($count -le 0){throw 'forward-writer-graph-eof'};$offset+=$count};" +
+    "if($f.ReadByte() -ne -1){throw 'forward-writer-graph-grew'};" +
+    "$hash=[Security.Cryptography.SHA256]::Create();try{$digest=([BitConverter]::ToString($hash.ComputeHash($bytes))).Replace('-','').ToLowerInvariant()}finally{$hash.Dispose()};" +
+    "if($digest -cne $expectedHash){throw 'forward-writer-graph-hash'};return ,$bytes};try{";
   for (const [index, role] of GRAPH.files.entries()) {
     const path = paths[index]; need(path !== undefined);
-    bootstrap += `$f=[IO.File]::Open('${powershellSingleQuotedBody(path)}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);$writerGraphFiles.Add($f);if($f.Length -ne ${String(role.bytes)} -or $f.Length -gt ${String(role.maximumBytes)}){throw 'forward-writer-graph-size'};$b${String(index)}=New-Object byte[] ([int]$f.Length);$o=0;while($o -lt $f.Length){$n=$f.Read($b${String(index)},$o,$b${String(index)}.Length-$o);if($n -le 0){throw 'forward-writer-graph-eof'};$o+=$n};if($f.ReadByte() -ne -1){throw 'forward-writer-graph-grew'};$h=[Security.Cryptography.SHA256]::Create();try{$d=([BitConverter]::ToString($h.ComputeHash($b${String(index)}))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()};if($d -cne '${role.sha256}'){throw 'forward-writer-graph-hash'};`;
+    bootstrap += `$b${String(index)}=Read-WriterGraphRole '${powershellSingleQuotedBody(path)}' ${String(role.bytes)} ${String(role.maximumBytes)} '${role.sha256}';`;
   }
   bootstrap += `$forwardWriterCoreBytes=$b1;$forwardWriterPhaseBytes=$b2;$forwardWriterProducerBytes=$b3;$forwardWriterStartupBytes=$b4;$forwardWriterSyncBytes=$b5;$forwardWriterTailBytes=$b6;$decoder=New-Object Text.UTF8Encoding($false,$true);& ([ScriptBlock]::Create($decoder.GetString($b0))) -WorkerStartupFootprintForwardWriterComplete209 -CombinedReadyChallenge '${challenge}'}finally{foreach($f in $writerGraphFiles){$f.Dispose()}}`;
   const encodedCharacters=Buffer.from(bootstrap,"utf16le").toString("base64").length;

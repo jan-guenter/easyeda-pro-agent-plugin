@@ -10,6 +10,9 @@ import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, s
 import type { UnknownRecord } from "./core.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CURRENT_COMPLETE_FORWARD_STARTUP_METHODS, CURRENT_COMPLETE_FORWARD_STARTUP_READ,
+  CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULES, CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE,
+  currentCompleteForwardStartupEvidenceMethod } from "./current-footprint-forward-writer-startup-transport.ts";
 import { CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_BUDGET as BUDGET, CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_NORMAL_STAGES as NORMAL,
   CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_PRODUCER_STEPS as PRODUCER_STEPS, CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_PROFILE as PROFILE,
   currentFootprintForwardWriterOpeningIdSchema, currentFootprintForwardWriterOpeningRecordSchema,
@@ -31,7 +34,30 @@ function cleanupEvidence(entry: Entry): void {
   const kind: string = entry.kind;
   const empty = z.object({}).strict();
   switch (kind) {
-    case "failure": { z.object({ phase: z.enum(["new", "launched", "main", "browser", "frames", "ui-source", "sealed"]), originalErrorRetained: z.literal(true), code: z.literal("ORIGINAL_STAGE_FAILED") }).strict().parse(entry.evidence); break;
+    case "failure": {
+       const rendererTransport = z.strictObject({ writeAcknowledged: z.boolean(),
+         rendererPolls: z.number().int().min(0).max(CURRENT_COMPLETE_FORWARD_STARTUP_READ.maximumPolls), rendererBytesObserved: z.boolean() });
+       const browser = z.strictObject({ method: z.enum(CURRENT_COMPLETE_FORWARD_STARTUP_METHODS).nullable(),
+         schedule: z.enum(CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULES).optional(),
+         requestId: z.number().int().min(1).max(CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE.length).nullable().optional(),
+         deadline: z.boolean(), mainPause: z.enum(["forward-head", "selected-sql", "registration", "other"]).nullable().optional(),
+         versionTransport: rendererTransport.optional(), openingTransport: rendererTransport.optional(), windowPresent: z.boolean().nullable().optional(),
+         attachmentEventObserved: z.boolean().optional(),
+         mainHeldSite: z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,47}$(?![\s\S])/u).nullable() });
+      z.strictObject({ phase: z.enum(["new", "launched", "main", "browser", "frames", "ui-source", "sealed"]),
+        originalErrorRetained: z.literal(true), code: z.literal("ORIGINAL_STAGE_FAILED"), browser: browser.optional() })
+        .superRefine((value, context) => {
+          if (value.browser !== undefined && !["main", "browser", "frames"].includes(value.phase)) {
+            context.addIssue({ code: "custom", message: "Renderer evidence requires Start Page discovery" });
+          }
+          const evidence = value.browser;
+          const requestId = evidence?.requestId;
+          if (requestId === undefined || requestId === null) {
+            if (evidence?.openingTransport !== undefined) { context.addIssue({ code: "custom", message: "Renderer transport evidence requires a request" }); }
+          } else if (currentCompleteForwardStartupEvidenceMethod(requestId, evidence?.schedule) !== evidence?.method) {
+            context.addIssue({ code: "custom", message: "Renderer evidence request and method disagree" });
+          }
+        }).parse(entry.evidence); break;
     }
     case "close-intent": { z.object({ hwnd: z.string().regex(/^[1-9]\d{0,18}$(?![\s\S])/u) }).strict().parse(entry.evidence); break;
     }

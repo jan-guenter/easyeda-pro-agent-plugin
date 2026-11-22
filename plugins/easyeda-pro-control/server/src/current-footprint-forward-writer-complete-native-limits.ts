@@ -9,4 +9,4 @@
 import {CURRENT_FOOTPRINT_FORWARD_WRITER_NATIVE_GRAPH_LIMITS as PREVIOUS} from "./current-footprint-forward-writer-native-limits.ts";
 
 const sqlSource=32_768,timerSource=32_768;
-export const CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_NATIVE_GRAPH_LIMITS=Object.freeze({...PREVIOUS,tail:131_072,timerSource,sqlSource,bootstrapEncoded:20_000,aggregate:PREVIOUS.aggregate+131_072+timerSource+sqlSource,compiled:PREVIOUS.compiled+131_072+timerSource+sqlSource});
+export const CURRENT_FOOTPRINT_FORWARD_WRITER_COMPLETE_NATIVE_GRAPH_LIMITS=Object.freeze({...PREVIOUS,tail:131_072,timerSource,sqlSource,bootstrapEncoded:16_000,aggregate:PREVIOUS.aggregate+131_072+timerSource+sqlSource,compiled:PREVIOUS.compiled+131_072+timerSource+sqlSource});

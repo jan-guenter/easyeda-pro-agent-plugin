@@ -1,5 +1,7 @@
 /** Metadata selection only. The original owner independently reproves target
  * membership, frame custody and the full actual UI source before any action. */
+import { win32 } from "node:path";
+import { pathToFileURL } from "node:url";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 
@@ -31,6 +33,40 @@ export function selectCurrentPcb209StartPage(input: unknown): CurrentPcb209Start
   if (pages.length !== 1 || selected === undefined || selected.attached || !start.test(selected.url) || new Set(value.targets.map(row => row.targetId)).size !== value.targets.length) { throw new Error("PCB209_START_PAGE_SELECTION"); }
   return Object.freeze({ targetId: selected.targetId, url: selected.url });
 }
+export interface CurrentPcb209OriginalStartPageRoster {
+  readonly editor: Readonly<CurrentPcb209StartPageSelection & { type: "page"; attached: false }>;
+  readonly ancillaryTargetId: string | null;
+}
+
+function refuseOriginalStartPage(): never { throw new Error("PCB209_START_PAGE_SELECTION"); }
+
+/** Classify an original decoded inventory against the exact launched executable.
+ * Only the editor may leave the owner's private startup roster. */
+export function proveCurrentPcb209OriginalStartPageRoster(
+  targets: readonly Readonly<Record<string, unknown>>[],
+  executable: string,
+  previous?: CurrentPcb209OriginalStartPageRoster,
+): CurrentPcb209OriginalStartPageRoster {
+  if (!/^[A-Z]:\\/u.test(executable) || win32.normalize(executable) !== executable || win32.basename(executable) !== "easyeda-pro.exe") {
+    return refuseOriginalStartPage();
+  }
+  const loaderPath = win32.join(win32.dirname(executable), "resources", "app", "assets", "view", "index.html");
+  const loaderPrefix = `${pathToFileURL(loaderPath, { windows: true }).href}?`;
+  let editor: CurrentPcb209OriginalStartPageRoster["editor"] | null = null;
+  let ancillaryTargetId: string | null = null;
+  for (const { targetId, url, attached } of targets.filter(row => row["type"] === "page")) {
+    if (attached !== false || typeof targetId !== "string" || typeof url !== "string") { return refuseOriginalStartPage(); }
+    if (editor === null && start.test(url)) {
+      editor = Object.freeze({ targetId, type: "page", url, attached });
+    } else if (ancillaryTargetId === null && url.startsWith(loaderPrefix) && url.length > loaderPrefix.length && !/[#\r\n\0]/u.test(url)) {
+      ancillaryTargetId = targetId;
+    } else { return refuseOriginalStartPage(); }
+  }
+  if (editor === null || previous !== undefined && (editor.targetId !== previous.editor.targetId || editor.url !== previous.editor.url ||
+      ancillaryTargetId !== null && ancillaryTargetId !== previous.ancillaryTargetId)) { return refuseOriginalStartPage(); }
+  return Object.freeze({ editor, ancillaryTargetId });
+}
+
 export function selectCurrentPcb209StartPageFrame(input: unknown, selected: CurrentPcb209StartPageSelection): Readonly<{ targetId: string; frameId: string; frameUrl: string }> {
   const original = z.strictObject({ targetId: token, url: z.string().regex(start) }).parse(captureCurrentPcbStringClockReply(selected).value);
   const value = inventory.parse(captureCurrentPcbStringClockReply(input).value); const roots = value.frames.filter(row => row.parentId === undefined); const root = roots[0];

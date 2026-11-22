@@ -4,11 +4,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { setImmediate as nextTurn } from "node:timers/promises";
 import { isRecord, sha256Text } from "../src/core.ts";
+import { issueCurrentPcbDiagnosticNativeRefusal } from "../src/current-pcb-diagnostic-native-refusal.ts";
 import { CurrentFootprintForwardWriterCoordinator } from "../src/current-footprint-forward-writer-coordinator.ts";
 import { CURRENT_FOOTPRINT_FORWARD_WRITER_CONTROL_TOOL, currentFootprintForwardWriterControlActionSchema, currentFootprintForwardWriterControlResultSchema, currentFootprintForwardWriterControlV1ResultSchema } from "../src/current-footprint-forward-writer-control-contract.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { assertNoUnresolvedCurrentPcbDiagnosticLaunches } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import { facadeToolRegistered } from "../src/facade-mode.ts";
+// oxlint-disable-next-line import/max-dependencies -- This integration test needs both the original native error issuer and the separate actual MCP callback fixture.
 import { forwardWriterCallbackFixture } from "./helpers/current-footprint-forward-writer-callback-fixture.ts";
 
 function prepare(suffix:string):Readonly<Record<string,unknown>>{
@@ -38,7 +40,7 @@ void test("strict controlled footprint family preserves confirmations, original 
 });
 void test("execute and cleanup return promptly with original pending work, while replay and competing operations refuse",async()=>{
  const entered=Promise.withResolvers<null>();const gate=Promise.withResolvers<null>();let admissions=0;
- const coordinator=new CurrentFootprintForwardWriterCoordinator(options(async()=>{admissions+=1;entered.resolve(null);await gate.promise;throw new Error("ORIGINAL_CONTROLLED_REFUSAL");}),prepare("prompt"));
+ const coordinator=new CurrentFootprintForwardWriterCoordinator(options(async()=>{admissions+=1;entered.resolve(null);await gate.promise;throw issueCurrentPcbDiagnosticNativeRefusal("pcb-diagnostic-launch-approval");}),prepare("prompt"));
  const operationId="footprint-forward-flow-prompt";assert.equal(coordinator.inspect().state,"prepared");assert.equal(coordinator.hasActiveReservation(),true);
  const result=await coordinator.run(execute(operationId));assert.equal(result.state,"running");assert.equal(result.connectedValidation,false);assert.equal(result.explicitSaveAttempts,0);
  await entered.promise;await assert.rejects(coordinator.run(execute(operationId)),/EXECUTE_CONSUMED/u);
@@ -47,7 +49,7 @@ void test("execute and cleanup return promptly with original pending work, while
  const cleanup=await coordinator.run({action:"cleanup",operationId,confirmOriginalJobsOnly:true});assert.equal(cleanup.cleanup.requested,true);
  gate.resolve(null);await coordinator.shutdownOriginal();assert.equal(admissions,1);assert.equal(coordinator.hasActiveReservation(),false);
  const stopped=coordinator.inspect();assert.equal(stopped.state,"stopped");assert.equal(stopped.execution.failed,true);assert.equal(stopped.cleanup.writerReleased,true);assert.equal(stopped.cleanup.savedReleased,true);
- assert.equal(stopped.diagnostic.code,"ORIGINAL_CONTROLLED_REFUSAL");assert.equal(stopped.ordinaryProjectsSupported,false);
+ assert.equal(stopped.diagnostic.code,"PCB_DIAGNOSTIC_LAUNCH_APPROVAL");assert.equal(stopped.ordinaryProjectsSupported,false);
  await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
 });
 void test("cleanup before execute closes only original local preparation and burns later execution",async()=>{

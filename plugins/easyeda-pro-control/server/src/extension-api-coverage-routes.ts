@@ -859,7 +859,23 @@ groups.push({ namespace: "sch_PrimitiveComponent", methods: ["getAll", "getAllPi
  tests:["current-footprint-forward-writer-coordinator.test.ts","current-footprint-forward-writer-workflow.test.ts","current-footprint-forward-writer-workflow-journal.test.ts","current-footprint-forward-writer-workflow-v2-journal.test.ts","current-footprint-workflow-journal-durability.test.ts","control-session-footprint-forward-writer-adapter.test.ts"],
  validation:"offline-regression;current-live-unclaimed",
  inputDiscovery:{tool:"easyeda_control_api",arguments:{request:{action:"current-footprint-forward-write",query:{includeSchemas:true}}}},
-}});
+ }}, {namespace:"lib_Footprint",methods:["delete"],route:{
+ tool:"easyeda_control_current_footprint_inverse",selector:"execute;original-controlled-disposable-copied-footprint-inverse",implementation:"native-task-equivalent",
+ executionState:"available-with-runtime-guards",
+ scope:"Controlled disposable validation. Selects the completed released copy from the same facade and requires independent delete, persistence, open, debugger, cache and cold-absence confirmations. One attempt uses the original writer and compares full closed SQL before independently checking saved manager absence. Inspect, cleanup and publication settlement retain the same operation. No public SDK parity, ordinary-project admission or connected acceptance is established.",
+ source:["current-footprint-inverse-control-contract.ts","current-footprint-inverse-control-validation.ts","current-footprint-forward-writer-coordinator.ts","current-footprint-inverse-full-workflow.ts","current-footprint-inverse-full-workflow-journal.ts","current-footprint-inverse-full-native-generation.ts","current-footprint-inverse-native-delete-saved-generation.ts","index.ts","../../scripts/control-session-footprint-inverse-adapter.ts","../../scripts/control-session-manager.ts"],
+ tests:["current-footprint-inverse-control.test.ts","current-footprint-inverse-full-factory.test.ts","current-footprint-inverse-full-native-generation.test.ts","current-footprint-inverse-full-workflow-journal.test.ts","control-session-manager.test.ts"],
+ validation:"offline-regression;current-live-unclaimed",
+ inputDiscovery:{tool:"easyeda_control_api",arguments:{request:{action:"current-footprint-inverse",query:{includeSchemas:true}}}},
+ }}, {namespace:"lib_Footprint",methods:["get"],route:{
+  tool:"easyeda_control_current_footprint_inverse_cold_ui",selector:"execute;original-completed-inverse-readonly-native-ui-absence",implementation:"internal-lifecycle-only",
+  executionState:"available-with-runtime-guards",
+  scope:"One read-only disposable continuation of the same facade's completed, released inverse. A separate birth owns the original UI, manager and worker negative task. Completion requires normal close, original root and whole-Job exit, helper release and complete closed SQL comparison. This takes no caller-supplied target or source and provides no general lookup, SDK parity, ordinary-project capability or connected acceptance. Historical inverse results retain their existing schema and values.",
+  source:["current-footprint-inverse-cold-ui-control-contract.ts","current-footprint-inverse-cold-ui-control-validation.ts","current-footprint-inverse-cold-ui-continuation.ts","current-footprint-forward-writer-coordinator.ts","current-footprint-inverse-native-delete-saved-generation.ts","current-footprint-inverse-native-delete-cold-ui-generation.ts","index.ts","../../scripts/control-session-footprint-inverse-cold-ui-adapter.ts","../../scripts/control-session-manager.ts"],
+  tests:["current-footprint-inverse-cold-ui-control.test.ts","current-footprint-inverse-native-delete-cold-ui-admission.test.ts","control-session-manager.test.ts"],
+  validation:"offline-regression;current-live-unclaimed",
+  inputDiscovery:{tool:"easyeda_control_api",arguments:{request:{action:"current-footprint-inverse-cold-ui",query:{includeSchemas:true}}}},
+ }});
 
 export function maintainedApiCoverageRoutes(): ReadonlyMap<string, readonly ApiCoverageRoute[]> {
   const result = new Map<string, ApiCoverageRoute[]>();

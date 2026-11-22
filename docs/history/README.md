@@ -12,6 +12,7 @@
 
 - [Wire V5 net observation codebook](2026-11-22-wire-v5-net-codebook.md). Fixed original watch and geometry selectors, native request encoding and separate request budgets.
 
+- [Original inverse and Wire integration](2026-11-22-original-inverse-and-wire-integration.md), maintained disposable inverse controls, dedicated manager helper and held Wire continuations.
 
 - [Inverse cold successor native helper](2026-11-22-inverse-cold-successor-native-helper.md). Dedicated source custody, fixed readonly startup and manager-GET birth, and compile-only proof.
 
