@@ -1,5 +1,6 @@
 /* oxlint-disable max-classes-per-file -- Fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
+import { CURRENT_COMPLETE_FORWARD_STARTUP_READ, CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE } from "./current-footprint-forward-writer-startup-transport.ts";
 import {currentFootprintInverseNativeDeletePoststateWire, validateCurrentFootprintInverseNativeDeletePoststateCommand} from "./current-footprint-inverse-native-delete-poststate-protocol.ts";
 
 import type {CurrentFootprintInverseNativeDeletePoststateCommand}from"./current-footprint-inverse-native-delete-poststate-protocol.ts";
@@ -475,9 +476,6 @@ const COMMON_FRAME_BYTES = 2 * CURRENT_PCB_COMMON_GRAPH_BYTES + 1024;
 const MAX_CHUNK_BYTES = MAX_FRAME_BYTES + 1;
 const DEADLINE_MS = 5000;
 const completeForwardDiscoveryPipes = new WeakSet<object>();
-export const CURRENT_COMPLETE_FORWARD_BROWSER_STARTUP_READ = Object.freeze({
-  milliseconds: 15_000, emptyPollMilliseconds: 60, maximumPolls: 250,
-});
 type Reply = Readonly<Record<string, unknown>>;
 type Failure = "attachment" | "input" | "output" | "eof" | "closed" | "framing" | "reply" | "remote-error" | "deadline" | "budget";
 type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsolicited" | "reply-duplicate" | "reply-id" | "reply-envelope" | "reply-result" |
@@ -2258,9 +2256,10 @@ class CurrentPcbFixedPipeCore {
       phase: REQUEST_PHASES.find(value => value === phase) ?? "unknown" });
     const deferred = Promise.withResolvers<Reply>();
     let deadline = DEADLINE_MS;
-    if (command.method === "Browser.getVersion" && id === 1 && completeForwardDiscoveryPipes.has(this)) {
-      deadline = CURRENT_COMPLETE_FORWARD_BROWSER_STARTUP_READ.milliseconds;
-    } else if (command.method === "Debugger.getScriptSource") { deadline = 30_000; }
+    if (command.method === "Debugger.getScriptSource") { deadline = 30_000; }
+    else if (completeForwardDiscoveryPipes.has(this) && CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE[id - 1] === command.method) {
+      deadline = CURRENT_COMPLETE_FORWARD_STARTUP_READ.milliseconds;
+    }
     else if (command.method === "Runtime.callFunctionOn" && "awaitPromise" in command.params && command.params.awaitPromise === true) { deadline = 60_000; }
     if (phase === "inverse-public-call" && "inversePublicCall" in command && command.phase === "inverse-public-call-sdk") { deadline = 60_000; }
     if (phase === "inverse-native-get-lookup" && "inverseNativeGetLookup" in command && command.phase === "inverse-native-get-lookup-invoke") { deadline = 60_000; }

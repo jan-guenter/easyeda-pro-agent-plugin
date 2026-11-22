@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- One original full lifecycle composes maintained journal, input, native factory, opening and cleanup; historical v2 provider registries stay separate. */
 /** Producer-capable full opening and same-owner source handoff. The clock,
  * Create and persistence gates remain independent; unknown producers stay held. */
+import { CURRENT_COMPLETE_FORWARD_STARTUP_METHODS, CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE } from "./current-footprint-forward-writer-startup-transport.ts";
 import { types } from "node:util";
 // oxlint-disable-next-line import/no-cycle -- The original preparer registry is consulted only by a later reservation; module evaluation reads no cyclic binding.
 import { requireOriginalCurrentFootprintForwardWriterClockPreparationOperation } from "./current-footprint-forward-writer-clock-preparation.ts";
@@ -79,31 +80,37 @@ export class CurrentFootprintForwardWriterOpeningProvider {
   if(!cleanup) { need(!this.#failed&&this.#abort===null&&!this.#abortDispatched&&!this.#released,"NORMAL_ENDED"); }
   if(this.#owner!==null) { assertOriginalCurrentFootprintForwardWriterNativeOwner(this.#owner);if(completeProviders.has(this)){assertOriginalCurrentFootprintForwardWriterCompleteNativeOwner(this.#owner);}for(const [key,value] of this.#methods??[]) { need(Reflect.get(this.#owner,key)===value,"ORIGINAL_NATIVE_METHOD"); } }
  }
- async #browserFailureEvidence(): Promise<Readonly<Record<string, unknown>>> {
-  if (this.#stage !== "main" || !completeProviders.has(this) || this.#owner === null) { return {}; }
-  try {
-   const status = this.#owner.status();
-   const method = status.diagnosticFailureObservation?.request?.method;
-   const heldSite = status.selectedSqlFence?.["heldSite"];
-   const deadline = status.diagnosticFailureObservation?.code === "deadline";
-   let windowPresent: boolean | null = null;
-   if (deadline) {
-    try { windowPresent = await this.#owner.observeApplicationWindow() !== null; }
-    catch {
-     // An unavailable passive window sample must not replace the original transport error.
+ async #startupFailureEvidence(): Promise<Readonly<Record<string, unknown>>> {
+   if ((this.#stage !== "main" && this.#stage !== "browser" && this.#stage !== "frames") ||
+       !completeProviders.has(this) || this.#owner === null) { return {}; }
+   try {
+    const status = this.#owner.status();
+    const request = status.diagnosticFailureObservation?.request;
+    const method = request !== null && request !== undefined && CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE[request.id - 1] === request.method
+     ? CURRENT_COMPLETE_FORWARD_STARTUP_METHODS.find(value => value === request.method) ?? null : null;
+    const requestId = method === null ? null : request?.id ?? null;
+    const heldSite = status.selectedSqlFence?.["heldSite"];
+    const deadline = status.diagnosticFailureObservation?.code === "deadline";
+    const transport = status.forwardStartupTransport;
+    let windowPresent: boolean | null = null;
+    if (deadline && this.#stage === "main") {
+     try { windowPresent = await this.#owner.observeApplicationWindow() !== null; }
+     catch {
+      // An unavailable passive window sample must not replace the original transport error.
+     }
     }
+    return { browser: {
+     method, requestId, deadline, mainPause: status.forwardStartupMainPause ?? null, windowPresent,
+     ...(requestId !== null && transport?.requestId === requestId ? { openingTransport: {
+      writeAcknowledged: transport.writeAcknowledged, rendererPolls: transport.rendererPolls, rendererBytesObserved: transport.rendererBytesObserved,
+     } } : {}),
+     mainHeldSite: typeof heldSite === "string" && /^[A-Za-z][A-Za-z0-9]{0,47}$(?![\s\S])/u.test(heldSite) ? heldSite : null,
+    } };
+   } catch {
+    // Optional cached diagnostics must not delay original failure publication.
+    return {};
    }
-   return { browser: {
-    method: method === "Browser.getVersion" || method === "Target.getTargets" ? method : null,
-    deadline, mainPause: status.forwardStartupMainPause ?? null, windowPresent,
-     ...(status.forwardStartupVersionTransport === undefined ? {} : { versionTransport: status.forwardStartupVersionTransport }),
-    mainHeldSite: typeof heldSite === "string" && /^[A-Za-z][A-Za-z0-9]{0,47}$(?![\s\S])/u.test(heldSite) ? heldSite : null,
-   } };
-  } catch {
-   // Optional cached diagnostics must not delay original failure publication.
-   return {};
   }
- }
  async #normal<T>(action:()=>Promise<T>):Promise<T> {
   this.#current();need(!this.#busy&&!this.#cleanupBusy,"BUSY");this.#busy=true;
   try { return await action(); }
@@ -112,7 +119,7 @@ export class CurrentFootprintForwardWriterOpeningProvider {
    if(this.#abort===null&&this.#journal.retained().reserved&&!this.#journal.retained().publicationPending&&!this.#failureRecordAttempted) {
     this.#failureRecordAttempted=true;
     try {
-     const browserEvidence = await this.#browserFailureEvidence();
+     const browserEvidence = await this.#startupFailureEvidence();
      await this.#journal.append("failure",{phase:this.#stage,originalErrorRetained:true,code:"ORIGINAL_STAGE_FAILED",...browserEvidence});
     }
     catch(publicationError) {

@@ -270,18 +270,41 @@ void test("diagnostic pipe consumes timeout and ignores late reply without closi
   await assert.rejects(value.pipe.getVersion(), /PIPE_DEADLINE/u); assert.equal(value.sent.length, 1);
 });
 
-void test("complete forward discovery extends only the first original browser version request", async context => {
+void test("complete forward discovery extends the fixed Start Page sequence and keeps later requests bounded", async context => {
   context.mock.timers.enable({ apis: ["setTimeout"] });
   const value = fixture(context, false, false, true);
-  const version = value.pipe.getVersion();
+  const { pipe } = value;
+  const sessionId = "original-session";
+  const unexpected = (): never => assert.fail("Unexpected startup event");
+  const steps = [
+    [() => pipe.getVersion(), {}, false],
+    [() => pipe.getTargets(), {}, false],
+    [() => pipe.getTargets(), {}, false],
+    [() => pipe.attachTarget("original-target", unexpected), { sessionId }, false],
+    [() => pipe.enablePage(), {}, true],
+    [() => pipe.getFrameTree(), {}, true],
+    [() => pipe.getTargets(), {}, false],
+    [() => pipe.getFrameTree(), {}, true],
+    [() => pipe.getTargets(), {}, false],
+    [() => pipe.getFrameTree(), {}, true],
+    [() => pipe.enableRuntime(), {}, true],
+    [() => pipe.enableDebugger(), {}, true],
+    [() => pipe.getScriptSource("source-original"), { scriptSource: "const original = 1;" }, true],
+    [() => pipe.getTargets(), {}, false],
+    [() => pipe.getFrameTree(), {}, true],
+  ] as const;
+  for (const [offset, [request, result, session]] of steps.entries()) {
+    const id = offset + 1;
+    const pending = request();
+    context.mock.timers.tick(id === 13 ? 15_001 : 5001);
+    assert.equal(pipe.status().pendingRequestId, id);
+    value.input.write(wire({ id, result, ...(session ? { sessionId } : {}) }));
+    await pending;
+  }
+  const next = assert.rejects(pipe.getTargets(), /PIPE_DEADLINE/u);
   context.mock.timers.tick(5001);
-  assert.equal(value.pipe.status().pendingRequestId, 1);
-  value.input.write(wire({ id: 1, result: {} }));
-  await version;
-  const targets = assert.rejects(value.pipe.getTargets(), /PIPE_DEADLINE/u);
-  context.mock.timers.tick(5001);
-  await targets;
-  assert.equal(value.sent.length, 2);
+  await next;
+  assert.equal(value.sent.length, 16);
 });
 
 void test("diagnostic pipe rejects every contradictory or unsolicited response envelope", async context => {

@@ -10,6 +10,7 @@ import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, s
 import type { UnknownRecord } from "./core.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CURRENT_COMPLETE_FORWARD_STARTUP_METHODS, CURRENT_COMPLETE_FORWARD_STARTUP_READ, CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE } from "./current-footprint-forward-writer-startup-transport.ts";
 import { CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_BUDGET as BUDGET, CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_NORMAL_STAGES as NORMAL,
   CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_PRODUCER_STEPS as PRODUCER_STEPS, CURRENT_FOOTPRINT_FORWARD_WRITER_OPENING_PROFILE as PROFILE,
   currentFootprintForwardWriterOpeningIdSchema, currentFootprintForwardWriterOpeningRecordSchema,
@@ -32,14 +33,26 @@ function cleanupEvidence(entry: Entry): void {
   const empty = z.object({}).strict();
   switch (kind) {
     case "failure": {
-      const browser = z.strictObject({ method: z.enum(["Browser.getVersion", "Target.getTargets"]).nullable(),
-        deadline: z.boolean(), mainPause: z.enum(["forward-head", "selected-sql", "registration", "other"]).nullable().optional(),
-        versionTransport: z.strictObject({ writeAcknowledged: z.boolean(), rendererPolls: z.number().int().min(0).max(250),
-           rendererBytesObserved: z.boolean() }).optional(), windowPresent: z.boolean().nullable().optional(), mainHeldSite: z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,47}$(?![\s\S])/u).nullable() });
+       const rendererTransport = z.strictObject({ writeAcknowledged: z.boolean(),
+         rendererPolls: z.number().int().min(0).max(CURRENT_COMPLETE_FORWARD_STARTUP_READ.maximumPolls), rendererBytesObserved: z.boolean() });
+       const browser = z.strictObject({ method: z.enum(CURRENT_COMPLETE_FORWARD_STARTUP_METHODS).nullable(),
+         requestId: z.number().int().min(1).max(CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE.length).nullable().optional(),
+         deadline: z.boolean(), mainPause: z.enum(["forward-head", "selected-sql", "registration", "other"]).nullable().optional(),
+         versionTransport: rendererTransport.optional(), openingTransport: rendererTransport.optional(), windowPresent: z.boolean().nullable().optional(),
+         mainHeldSite: z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,47}$(?![\s\S])/u).nullable() });
       z.strictObject({ phase: z.enum(["new", "launched", "main", "browser", "frames", "ui-source", "sealed"]),
         originalErrorRetained: z.literal(true), code: z.literal("ORIGINAL_STAGE_FAILED"), browser: browser.optional() })
         .superRefine((value, context) => {
-          if (value.browser !== undefined && value.phase !== "main") { context.addIssue({ code: "custom", message: "Browser evidence requires the Main stage" }); }
+          if (value.browser !== undefined && !["main", "browser", "frames"].includes(value.phase)) {
+            context.addIssue({ code: "custom", message: "Renderer evidence requires Start Page discovery" });
+          }
+          const evidence = value.browser;
+          const requestId = evidence?.requestId;
+          if (requestId === undefined || requestId === null) {
+            if (evidence?.openingTransport !== undefined) { context.addIssue({ code: "custom", message: "Renderer transport evidence requires a request" }); }
+          } else if (CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE[requestId - 1] !== evidence?.method) {
+            context.addIssue({ code: "custom", message: "Renderer evidence request and method disagree" });
+          }
         }).parse(entry.evidence); break;
     }
     case "close-intent": { z.object({ hwnd: z.string().regex(/^[1-9]\d{0,18}$(?![\s\S])/u) }).strict().parse(entry.evidence); break;

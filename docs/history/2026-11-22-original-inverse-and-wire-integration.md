@@ -134,3 +134,16 @@ and journal only the editor target. The owner checks a fresh roster before
 attaching and verifies the exact editor frame and source through the
 existing path. The prior private journal remains in its original control
 directory with owner-only permissions.
+
+The next disposable run recorded the editor-only browser result and reached
+frame inspection. Its renderer request timed out before a frame result.
+The original Job and helper closed, the fixture matched its full baseline,
+and the original facade retired with acknowledged lease release.
+
+The complete writer now gives each small request in its fixed Start Page
+discovery sequence the 15-second, renderer-first policy. The large original
+UI script source retains its separate 30-second deadline and existing byte
+budgets. The same original Main fence still receives service between reads.
+An opening failure record can retain the fixed request ID and method, native
+write acknowledgment, renderer poll count, nonempty-byte observation and
+original Main pause category. It contains no target URLs or request arguments.
