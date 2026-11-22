@@ -1357,3 +1357,5 @@ layout. The connected ledger retains its generation and case anchors.
 - [2026-11-16 through 2026-11-17: genuine forward backend, retained validation and public review](2026-11-16-through-2026-11-17-genuine-forward-backend.md).
 
 - [Isolated inverse native build inputs](2026-11-17-isolated-inverse-native-inputs.md). Additive V4/cold-UI canonical sources, build outputs and isolated metadata; curated source foundations with runtime validation deferred.
+
+- [Packaged inverse compiler smoke](2026-11-22-packaged-inverse-compiler-smoke.md), direct Windows PowerShell 5.1 verification of both exact packaged helpers and their empty-Job receipts.
