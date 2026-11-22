@@ -5,11 +5,12 @@ import {z} from "zod";
 import type {DiagnosticEvent} from "./current-pcb-diagnostic-protocol.ts";
 import {observeCurrentFootprintInverseNativeDeleteSerialization as observe} from "./current-footprint-inverse-v4-native-delete-serialization-observer.ts";
 import type {CurrentFootprintInverseNativeDeleteSerializationData as Data,CurrentFootprintInverseNativeDeleteSerializationBindings as Observer} from "./current-footprint-inverse-v4-native-delete-serialization-observer.ts";
-import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_ORDER as ORDER,currentFootprintInverseNativeDeleteSerializationHelperCommand as helperCommand,currentFootprintInverseNativeDeleteSerializationKey as key,currentFootprintInverseNativeDeleteSerializationProgram as program,qualifyCurrentFootprintInverseNativeDeleteSerializationHelper as qualify,validateCurrentFootprintInverseNativeDeleteSerializationCommand as validate} from "./current-footprint-inverse-native-delete-serialization-protocol.ts";
+import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_ORDER as ORDER,CURRENT_FOOTPRINT_INVERSE_V4_NATIVE_DELETE_SERIALIZATION_PROTOCOL as protocol} from "./current-footprint-inverse-native-delete-serialization-protocol.ts";
 import type {CurrentFootprintInverseNativeDeleteSerializationCommand as Command} from "./current-footprint-inverse-native-delete-serialization-protocol.ts";
 import {CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_ORDER as ROLES,CURRENT_FOOTPRINT_INVERSE_NATIVE_DELETE_SERIALIZATION_SITES as SITES} from "./current-footprint-inverse-native-delete-serialization-profile.ts";
 import {currentFootprintInverseNativeDeleteSerializationPause as pause} from "./current-footprint-inverse-v4-native-delete-serialization-replies.ts";
 
+const {validate,program,key,helper:helperCommand,qualifyHelper:qualify}=protocol;
 type Role=typeof ROLES[number];type Resume=Parameters<Observer["resume"]>[0];
 interface Helper{readonly command:Command;scriptId:string|null;issued:boolean;attempted:boolean}
 export interface CurrentFootprintInverseNativeDeleteSerializationControllerBindings extends Omit<Observer,"request"|"qualifyHelper"|"retainPoint"|"next"|"resume"|"control">{
