@@ -161,3 +161,13 @@ navigating. The recorded request sequence identifies the new order and
 continues to validate earlier diagnostic records. The renderer's frame-tree
 handler supports the snapshot before page notifications are enabled.
 [Chromium 146 frame-tree handler](https://github.com/chromium/chromium/blob/146.0.7680.188/third_party/blink/renderer/core/inspector/inspector_page_agent.cc)
+
+The frame-first disposable run observed the original application window and
+a matching editor attachment event. Its first Page.getFrameTree write was
+acknowledged and 17 renderer polls returned no bytes. The original Main
+runner recorded no held pause. The Job and helper closed, the facade
+retired and released its lease, and the fixture matched its complete
+original baseline with no SQLite sidecars. The two tests place the
+remaining connected blocker at the attached renderer round trip. The
+forward copy, saved inverse and independent cold UI receipts require a
+later connected result through that exact boundary.
