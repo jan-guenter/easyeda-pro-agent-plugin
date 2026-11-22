@@ -1,7 +1,7 @@
 /* oxlint-disable import/max-dependencies -- One original full lifecycle composes maintained journal, input, native factory, opening and cleanup; historical v2 provider registries stay separate. */
 /** Producer-capable full opening and same-owner source handoff. The clock,
  * Create and persistence gates remain independent; unknown producers stay held. */
-import { CURRENT_COMPLETE_FORWARD_STARTUP_METHODS, CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE } from "./current-footprint-forward-writer-startup-transport.ts";
+import { CURRENT_COMPLETE_FORWARD_STARTUP_METHODS, CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULE, CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE } from "./current-footprint-forward-writer-startup-transport.ts";
 import { types } from "node:util";
 // oxlint-disable-next-line import/no-cycle -- The original preparer registry is consulted only by a later reservation; module evaluation reads no cyclic binding.
 import { requireOriginalCurrentFootprintForwardWriterClockPreparationOperation } from "./current-footprint-forward-writer-clock-preparation.ts";
@@ -93,14 +93,15 @@ export class CurrentFootprintForwardWriterOpeningProvider {
     const deadline = status.diagnosticFailureObservation?.code === "deadline";
     const transport = status.forwardStartupTransport;
     let windowPresent: boolean | null = null;
-    if (deadline && this.#stage === "main") {
+    if (deadline) {
      try { windowPresent = await this.#owner.observeApplicationWindow() !== null; }
      catch {
       // An unavailable passive window sample must not replace the original transport error.
      }
     }
     return { browser: {
-     method, requestId, deadline, mainPause: status.forwardStartupMainPause ?? null, windowPresent,
+     method, requestId, schedule: CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULE, deadline, mainPause: status.forwardStartupMainPause ?? null, windowPresent,
+     attachmentEventObserved: status.forwardStartupAttachmentObserved ?? false,
      ...(requestId !== null && transport?.requestId === requestId ? { openingTransport: {
       writeAcknowledged: transport.writeAcknowledged, rendererPolls: transport.rendererPolls, rendererBytesObserved: transport.rendererBytesObserved,
      } } : {}),

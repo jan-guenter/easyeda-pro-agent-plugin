@@ -4,9 +4,11 @@ export const CURRENT_COMPLETE_FORWARD_STARTUP_METHODS = [
   "Page.getFrameTree", "Runtime.enable", "Debugger.enable", "Debugger.getScriptSource",
 ] as const;
 
+export const CURRENT_COMPLETE_FORWARD_STARTUP_SCHEDULE = "frame-tree-before-page-events";
+
 export const CURRENT_COMPLETE_FORWARD_STARTUP_SEQUENCE = Object.freeze([
   "Browser.getVersion", "Target.getTargets",
-  "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Target.getTargets", "Page.getFrameTree",
+  "Target.getTargets", "Target.attachToTarget", "Page.getFrameTree", "Page.enable", "Target.getTargets", "Page.getFrameTree",
   "Target.getTargets", "Page.getFrameTree", "Runtime.enable", "Debugger.enable", "Debugger.getScriptSource", "Target.getTargets", "Page.getFrameTree",
 ] satisfies (typeof CURRENT_COMPLETE_FORWARD_STARTUP_METHODS[number])[]);
 

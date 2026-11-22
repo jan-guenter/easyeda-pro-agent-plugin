@@ -147,3 +147,17 @@ budgets. The same original Main fence still receives service between reads.
 An opening failure record can retain the fixed request ID and method, native
 write acknowledgment, renderer poll count, nonempty-byte observation and
 original Main pause category. It contains no target URLs or request arguments.
+
+The next exact run qualified the editor roster and attached to the original
+target. Its native helper acknowledged request 5, Page.enable. The original
+renderer returned no bytes in 17 polls before the deadline. The original
+Main runner recorded no held pause. The Job and helper closed, and the
+disposable fixture remained identical with no SQLite sidecars.
+
+The complete writer now reads the first frame tree immediately after
+attachment. It still requires the original Page.enable acknowledgment,
+then reproves the target and frame tree before collecting UI source or
+navigating. The recorded request sequence identifies the new order and
+continues to validate earlier diagnostic records. The renderer's frame-tree
+handler supports the snapshot before page notifications are enabled.
+[Chromium 146 frame-tree handler](https://github.com/chromium/chromium/blob/146.0.7680.188/third_party/blink/renderer/core/inspector/inspector_page_agent.cc)

@@ -5007,6 +5007,7 @@ class CurrentPcbRetainedOwnerCore {
     mainNativeFailure?: Readonly<{ action: MainNativeAction; code: string }> | null;
     selectedSqlFence?: Readonly<Record<string, unknown>> | null;
     forwardStartupMainPause?: ReturnType<CurrentFootprintCopyMainBackendRunner["retainedForwardStartupPause"]>;
+    forwardStartupAttachmentObserved?: boolean;
     forwardStartupTransport?: Readonly<{ requestId: number | null; writeAcknowledged: boolean; rendererPolls: number; rendererBytesObserved: boolean }>;
     mainCloseDetachAttempted?: boolean; mainCloseDetached?: boolean;
     combinedAbortAttempted?: boolean; combinedAbortDispatchAttempted?: boolean; combinedOutputCleanupOnly?: boolean;
@@ -5081,7 +5082,10 @@ class CurrentPcbRetainedOwnerCore {
       pcbObservationConsumed: this.#pcbObservationConsumed, pcbFrameObservation: this.#pcbFrameObservation, pcbSourceQualified: this.#pcbSourceQualified,
       stringPrecreateConsumed: this.#stringPrecreateConsumed, commonBaselineConsumed: this.#commonBaselineConsumed,
       ...(selectedFileMainPurpose(this.#purpose) ? { selectedSqlFence: this.#mainRunner?.selectedSqlFenceState() ?? null } : {}),
-      ...(footprintForwardWriterCompleteFactories.has(this) ? { forwardStartupMainPause: this.#mainRunner?.retainedForwardStartupPause() ?? null } : {}),
+      ...(footprintForwardWriterCompleteFactories.has(this) ? {
+        forwardStartupMainPause: this.#mainRunner?.retainedForwardStartupPause() ?? null,
+        forwardStartupAttachmentObserved: this.#stagedContext?.diagnosticAttachmentObserved() ?? false,
+      } : {}),
       ...(this.#forwardStartupTransport === null ? {} : { forwardStartupTransport: Object.freeze({
         requestId: this.#forwardStartupTransport.requestId,
         writeAcknowledged: this.#forwardStartupTransport.writeAcknowledged,
@@ -5351,9 +5355,14 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
       }
       context.selectTarget(targets);
       await this.#attach(context, targetId, polling);
+      if (polling === "startup") {
+        context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree(), polling));
+      }
       const page = await this.#transfer(() => this.#pipe.enablePage(), polling);
       if (!exact(page, [])) { throw error("PAGE_ENABLE_REPLY"); }
-      context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree(), polling));
+      if (polling === "default") {
+        context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree(), polling));
+      }
       context.observeTarget(await this.#transfer(() => this.#pipe.getTargets(), polling));
       return context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree(), polling));
     } catch (caughtError) { this.#input.emit("error", error("FRAME_INSPECTION_FAILED")); throw caughtError; }

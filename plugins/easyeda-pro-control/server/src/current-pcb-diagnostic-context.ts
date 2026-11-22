@@ -167,6 +167,10 @@ export class CurrentPcbDiagnosticContext {
     this.#sessionId = sessionId;
     if (this.#attachmentEvent !== null && this.#attachmentEvent["sessionId"] !== sessionId) { this.#refuse(); }
   }
+  /** Bounded telemetry for the original flat-attach handshake. */
+  public diagnosticAttachmentObserved(): boolean {
+    return !this.#failed && this.#sessionId !== null && this.#attachmentEvent?.["sessionId"] === this.#sessionId;
+  }
   public observeFrame(reply: Row): void {
     this.assertCurrent();
     try {
