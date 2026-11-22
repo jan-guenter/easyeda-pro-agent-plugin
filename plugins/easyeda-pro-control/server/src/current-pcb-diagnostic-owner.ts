@@ -4179,6 +4179,12 @@ class CurrentPcbRetainedOwnerCore {
   #schematicArguments: CurrentSchematicDisplayOperationArguments | null = null;
   #schematicNavigationAttempted = false;
   #schematicNavigationDispatchAttempted = false;
+  #schematicWireV5Navigation: Readonly<{
+    pipe: CurrentSchematicWireWriterV5Pipe;
+    context: CurrentPcbDiagnosticContext;
+    parent: ReturnType<CurrentPcbDiagnosticContext["openingContext"]>;
+    pending: Promise<RecordValue>;
+  }> | null = null;
   #schematicNavigationResult: ReturnType<typeof validateGeneratedSchematicNavigation> | null = null;
   #schematicWindowTabId: string | null = null;
   #schematicSdkBinding: string | null = null;
@@ -5393,7 +5399,7 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
     } catch (caughtError) { this.#schematicFailed = true; throw caughtError; } finally { this.#busy = false; }
   }
   public async openGeneratedSchematicWireWriterV5(argumentsValue: GeneratedSchematicWireEditNativeArguments): Promise<ReturnType<typeof validateGeneratedSchematicNavigation>> {
-    assertOriginalCurrentSchematicWireWriterV5Owner(this); requireSchematicArguments(this, argumentsValue); const result = await this.#openGeneratedSchematicOperation(argumentsValue); return result;
+    assertOriginalCurrentSchematicWireWriterV5Owner(this); requireSchematicArguments(this, argumentsValue); const result = await this.#openGeneratedSchematicOperation(argumentsValue, true); return result;
   }
   /** Distinct original v4 read stages. Actual Modify/Save remain unavailable
    * until the original tail's setter/worker/Main reservation is complete. */
@@ -5565,7 +5571,25 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
       if (!exact(enrolled, ["enrolled"]) || enrolled["enrolled"] !== true) { throw error("SCHEMATIC_DISPLAY_REGISTRATION_NATIVE_ENROLL"); } return intent;
     })(); this.#schematicDisplayRegistrationPromise = promise; return promise;
   }
-  async #openGeneratedSchematicOperation(argumentsValue: CurrentSchematicDisplayOperationArguments): Promise<ReturnType<typeof validateGeneratedSchematicNavigation>> {
+  /** The existing V5 renderer navigation is written and still pending in the
+   * original UI context. This timing check supplies no paused frame or reads. */
+  public requireOriginalSchematicWireV5NavigationPending(argumentsValue: GeneratedSchematicWireEditNativeArguments): void {
+    assertOriginalCurrentSchematicWireWriterV5Owner(this);
+    const selected = this.#schematicReadContext(argumentsValue);
+    const original = this.#schematicWireV5Navigation;
+    if (original === null || !this.#busy || this.#schematicArguments !== argumentsValue || !this.#schematicNavigationDispatchAttempted ||
+        selected.pipe !== original.pipe || selected.context !== original.context || this.#schematicSdkBinding !== null ||
+        this.#schematicNavigationResult !== null || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed ||
+        canonicalJson(selected.context.openingContext()) !== canonicalJson(original.parent)) {
+      throw error("WIRE_V5_NAVIGATION_ORIGINAL_OWNER");
+    }
+    selected.current();
+    original.pipe.requireOriginalSchematicWireV5NavigationPending(
+      original.pending, original.parent.sessionId, original.parent.uniqueContextId, argumentsValue.target,
+    );
+  }
+
+  async #openGeneratedSchematicOperation(argumentsValue: CurrentSchematicDisplayOperationArguments, retainWireV5Navigation = false): Promise<ReturnType<typeof validateGeneratedSchematicNavigation>> {
     const selected = this.#schematicReadContext(argumentsValue);
     if (this.#schematicNavigationAttempted || this.#projectOpeningConsumed || this.#schematicArguments !== null) { throw error("SCHEMATIC_DISPLAY_OPEN_CONSUMED"); }
     this.#enter(true); this.#schematicNavigationAttempted = true; this.#projectOpeningConsumed = true; this.#schematicArguments = argumentsValue;
@@ -5583,7 +5607,22 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
       if (isSchematicRelevanceDisplayArguments(argumentsValue)) { registrationIntent = await this.#prepareSchematicDisplayRegistration(argumentsValue); selected.current(); registration = schematicDisplayRegistrationIntents.get(registrationIntent) ?? null; if (registration === null) { throw error("SCHEMATIC_DISPLAY_REGISTRATION_ORIGINAL"); } }
       selected.context.beginSchematicOpeningTransition(argumentsValue.target.projectUuid, argumentsValue.target.pageUuid);
       let raw: RecordValue;
-      if (registration === null) { raw = await this.#transfer(() => { this.#schematicNavigationDispatchAttempted = true; return selected.pipe.observeSchematicOperation("navigate", parent.uniqueContextId, argumentsValue.target); }); selected.current(); }
+      if (registration === null) {
+        const pipe = selected.pipe;
+        raw = await this.#transfer(() => {
+          this.#schematicNavigationDispatchAttempted = true;
+          if (retainWireV5Navigation) {
+            if (!(pipe instanceof CurrentSchematicWireWriterV5Pipe)) { throw error("WIRE_V5_NAVIGATION_ORIGINAL_PIPE"); }
+            return pipe.observeSchematicWireV5Navigation(parent.uniqueContextId, argumentsValue.target, pending => {
+              selected.current();
+              if (this.#schematicWireV5Navigation !== null) { throw error("WIRE_V5_NAVIGATION_CONSUMED"); }
+              this.#schematicWireV5Navigation = Object.freeze({ pipe, context: selected.context, parent, pending });
+            });
+          }
+          return pipe.observeSchematicOperation("navigate", parent.uniqueContextId, argumentsValue.target);
+        });
+        selected.current();
+      }
       else {
         const held = registration; const pipe = selected.pipe; const intent = registrationIntent; if (!(pipe instanceof CurrentSchematicRelevanceDisplayWritePipe) || intent === null) { throw error("SCHEMATIC_DISPLAY_REGISTRATION_PIPE"); }
         this.#schematicDisplayUiHelper = { source: `(${CURRENT_SCHEMATIC_RELEVANCE_DISPLAY_NAVIGATION_FUNCTION})`, scriptId: null };
@@ -5603,7 +5642,11 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
       const targets = await this.#transfer(() => selected.pipe.getTargets()); selected.current(); const frames = await this.#transfer(() => selected.pipe.getFrameTree()); selected.current();
       selected.context.finishSchematicOpeningTransition(targets, frames, value["documentTitle"]); selected.current(); await this.#observeOpeningAncillary(); selected.current();
       await this.#verifyInstallation(); selected.current(); await this.#verify(); selected.current(); return result;
-    } finally { if (isSchematicRelevanceDisplayArguments(argumentsValue)) { this.#schematicDisplayUiHelper = null; } this.#busy = false; }
+    } finally {
+      this.#schematicWireV5Navigation = null;
+      if (isSchematicRelevanceDisplayArguments(argumentsValue)) { this.#schematicDisplayUiHelper = null; }
+      this.#busy = false;
+    }
   }
   /** Source read stages are reachable. Modify waits for the actual accessor
    * closure/source proof and worker custody; Save additionally needs exact

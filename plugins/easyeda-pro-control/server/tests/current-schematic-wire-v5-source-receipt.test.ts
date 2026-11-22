@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { PassThrough, Writable } from "node:stream";
 import { test } from "node:test";
+import { setImmediate } from "node:timers/promises";
 import type { TestContext } from "node:test";
 
 import {
   CurrentSchematicWireWriterV5Pipe, requireCurrentSchematicWireV5BundleSourceReceive,
 } from "../src/current-pcb-diagnostic-pipe.ts";
+import { currentSchematicWireWriterV5NativeCommand } from "../src/current-schematic-wire-writer-v5-native-command.ts";
 
 const session = "original-session";
 const script = "original-schematic";
@@ -16,7 +18,7 @@ const command = {
 
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
 
-async function attached(context: TestContext): Promise<Readonly<{
+async function attached(context: TestContext, observeWrite?: (chunk: Buffer) => void): Promise<Readonly<{
   pipe: CurrentSchematicWireWriterV5Pipe;
   input: PassThrough;
   acknowledge: (failure?: Error) => void;
@@ -24,7 +26,7 @@ async function attached(context: TestContext): Promise<Readonly<{
   const input = new PassThrough();
   let pending: ((failure?: Error | null) => void) | null = null;
   // oxlint-disable-next-line promise/prefer-await-to-callbacks -- The Writable holds its real completion until the fixture releases it.
-  const output = new Writable({ write(_chunk, _encoding, callback): void { assert.equal(pending, null); pending = callback; } });
+  const output = new Writable({ write(chunk: Buffer, _encoding, callback): void { assert.equal(pending, null); pending = callback; observeWrite?.(chunk); } });
   const pipe = new CurrentSchematicWireWriterV5Pipe(input, output);
   pipe.start();
   context.after(() => { input.destroy(); output.destroy(); });
@@ -102,4 +104,53 @@ void test("a foreign session or a failed write cannot settle a V5 source receipt
   assert.equal(broken.pipe.status().pendingRequestId, 2);
   broken.acknowledge(new Error("inert native write refusal"));
   await rejectedWrite;
+});
+
+void test("V5 opening retains one exact acknowledged navigation with the existing bytes and no auxiliary dispatch", async context => {
+  const target = Object.freeze({
+    rawWindowsPath: String.raw`C:\Disposable\wire-navigation-custody-fixture.eprj2`,
+    projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), schematicUuid: "c".repeat(32),
+    pageUuid: "d".repeat(32), expectedSourceSha256: "e".repeat(64),
+  });
+  const binding = "original-ui-context";
+  const receipts: Promise<Record<string, unknown>>[] = [];
+  const writes: Buffer[] = [];
+  const fixture = await attached(context, chunk => {
+    if (writes.length === 1) { assert.equal(receipts.length, 1); }
+    writes.push(chunk);
+  });
+
+  const pending = fixture.pipe.observeSchematicWireV5Navigation(binding, target, value => { receipts.push(value); });
+  const observed = Promise.allSettled([pending]);
+  const original = receipts[0]; assert.ok(original !== undefined);
+  const command = currentSchematicWireWriterV5NativeCommand("navigate", binding, target);
+  assert.deepEqual(writes[1], wire({ id: 2, ...command, sessionId: session }));
+  assert.equal(fixture.pipe.status().requestCount, 2);
+  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, target), /NOT_ORIGINAL_PENDING/u);
+
+  fixture.acknowledge();
+  await setImmediate();
+  fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, target);
+  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(pending, session, binding, target), /NOT_ORIGINAL_PENDING/u);
+  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, "other", binding, target), /NOT_ORIGINAL_PENDING/u);
+  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, "other", target), /CONTEXT_CHANGED/u);
+  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, { ...target, pageUuid: "f".repeat(32) }), /CONTEXT_CHANGED/u);
+  await assert.rejects(fixture.pipe.getVersion(), /RETAINED_PENDING_SCOPE/u);
+  assert.equal(writes.length, 2);
+
+  fixture.input.write(wire({ id: 2, result: { written: true }, sessionId: session }));
+  const [outcome] = await observed;
+  assert.ok(outcome?.status === "fulfilled");
+  assert.equal(outcome.value, await original);
+  assert.throws(() => fixture.pipe.requireOriginalSchematicWireV5NavigationPending(original, session, binding, target), /NOT_ORIGINAL_PENDING/u);
+  await assert.rejects(fixture.pipe.observeSchematicWireV5Navigation(binding, target, (): void => { assert.fail("Unexpected retry"); }), /NAVIGATION_CONSUMED/u);
+  assert.equal(writes.length, 2);
+
+  const broken = await attached(context);
+  const failed = broken.pipe.observeSchematicWireV5Navigation(binding, target, value => { receipts.push(value); });
+  const failedOriginal = receipts[1]; assert.ok(failedOriginal !== undefined);
+  const rejected = assert.rejects(failed, /PIPE_OUTPUT/u);
+  broken.acknowledge(new Error("inert native write refusal"));
+  await rejected;
+  assert.throws(() => broken.pipe.requireOriginalSchematicWireV5NavigationPending(failedOriginal, session, binding, target), /NOT_ORIGINAL_PENDING/u);
 });
