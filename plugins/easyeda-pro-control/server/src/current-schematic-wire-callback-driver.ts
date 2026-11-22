@@ -213,8 +213,10 @@ export class CurrentSchematicWireCallbackDriver{
   if(command.phase!=="wire-tick-body-arm"&&command.phase!=="wire-action-complete-arm"&&command.phase!=="wire-postcondition-arm"){return;}
   const reply=capture(raw).value;
   const {breakpointId}=z.looseObject({breakpointId:handle}).parse(reply);
-  const priorPoints=command.phase==="wire-tick-body-arm"?[...this.#points,...this.#tickBodyPoints]:
-   command.phase==="wire-action-complete-arm"?[...this.#points,...this.#tickBodyPoints,...this.#completePoints]:[...this.#completePoints,...this.#postPoints];
+  let priorPoints:readonly Readonly<{id:string}>[];
+  if(command.phase==="wire-tick-body-arm"){priorPoints=[...this.#points,...this.#tickBodyPoints];}
+  else if(command.phase==="wire-action-complete-arm"){priorPoints=[...this.#points,...this.#tickBodyPoints,...this.#completePoints];}
+  else{priorPoints=[...this.#completePoints,...this.#postPoints];}
   need(!priorPoints.some(point=>point.id===breakpointId));
   const point={id:breakpointId,attempted:false,removed:false};
   if(command.phase==="wire-tick-body-arm"){this.#tickBodyPoints.push({...point,role:command.role});}
