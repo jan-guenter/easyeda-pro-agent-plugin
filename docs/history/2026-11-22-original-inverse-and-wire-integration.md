@@ -126,3 +126,11 @@ terminated and the helper released. The registered fixture had its exact
 previous bytes and no SQLite sidecars. There was no explicit Save attempt.
 The facade retired with acknowledged lease release and exit code zero;
 the same foreground manager remains available for the next candidate.
+
+The complete writer and full inverse now qualify the startup roster against
+the verified executable directory. They require one original Start Page,
+permit one unattached bundled account view at its exact installed path,
+and journal only the editor target. The owner checks a fresh roster before
+attaching and verifies the exact editor frame and source through the
+existing path. The prior private journal remains in its original control
+directory with owner-only permissions.
