@@ -5,14 +5,14 @@ import { PassThrough, Writable } from "node:stream";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
-import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import { CurrentFootprintCopyForwardDiscoveryPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringWorkerCommand } from "../src/current-pcb-string-commands.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 import { CURRENT_RENDERER_CAPTURE_PARAMS, DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticNativeRequest, diagnosticPadShapes209Params, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticWorkerEvaluationParams, visualDiagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 
 /** Real Node byte streams only, with no Windows process, application, bridge,
  * filesystem, socket or native process-owner authority in these tests. */
-function fixture(context: TestContext, delayedWrite = false, stringPurpose = false): Readonly<{
+function fixture(context: TestContext, delayedWrite = false, stringPurpose = false, completeWriter = false): Readonly<{
   input: PassThrough; output: Writable; pipe: CurrentPcbDiagnosticPipe; sent: Buffer[];
   acknowledge: (error?: Error) => void;
 }> {
@@ -27,7 +27,9 @@ function fixture(context: TestContext, delayedWrite = false, stringPurpose = fal
     }
   } });
   const Pipe = stringPurpose ? CurrentPcbStringPrecreatePipe : CurrentPcbDiagnosticPipe;
-  const pipe = new Pipe(input, output);
+  const pipe = completeWriter ? new CurrentFootprintCopyForwardDiscoveryPipe(input, output, () => {
+    // The fixture sends replies only.
+  }, true) : new Pipe(input, output);
   context.after(async () => {
     // These are synthetic test streams, never real diagnostic-pipe shutdown.
     const closed = [input, output].filter(stream => !stream.closed).map(async stream => { await once(stream, "close"); });
@@ -266,6 +268,20 @@ void test("diagnostic pipe consumes timeout and ignores late reply without closi
   value.input.emit("error", new Error("later private detail"));
   assert.equal(value.pipe.status().failure, "deadline");
   await assert.rejects(value.pipe.getVersion(), /PIPE_DEADLINE/u); assert.equal(value.sent.length, 1);
+});
+
+void test("complete forward discovery extends only the first original browser version request", async context => {
+  context.mock.timers.enable({ apis: ["setTimeout"] });
+  const value = fixture(context, false, false, true);
+  const version = value.pipe.getVersion();
+  context.mock.timers.tick(5001);
+  assert.equal(value.pipe.status().pendingRequestId, 1);
+  value.input.write(wire({ id: 1, result: {} }));
+  await version;
+  const targets = assert.rejects(value.pipe.getTargets(), /PIPE_DEADLINE/u);
+  context.mock.timers.tick(5001);
+  await targets;
+  assert.equal(value.sent.length, 2);
 });
 
 void test("diagnostic pipe rejects every contradictory or unsolicited response envelope", async context => {

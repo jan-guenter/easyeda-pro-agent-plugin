@@ -75,8 +75,14 @@ void test("actual209 source delegates each reprove original project identity and
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${program.code}\n})`);
   assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(specifier: string): unknown => {
-    if (specifier === "./current-pcb-worker-construction-runner.ts") { return { CurrentPcb209WorkerConstructionRunner: ProducerRunner }; }
-    if (specifier === "./current-pcb-worker-startup-transport.ts") { return { CurrentPcb209WorkerStartupTransport: Transport }; }
+    if (specifier === "./current-pcb-worker-construction-runner.ts" || specifier === "./current-pcb-worker-startup-transport.ts") {
+      const original: unknown = actualRequire(specifier);
+      assert.ok(original !== null && typeof original === "object");
+      // The opening snapshots the actual cold-start siblings at module load.
+      return specifier === "./current-pcb-worker-construction-runner.ts"
+        ? { ...original, CurrentPcb209WorkerConstructionRunner: ProducerRunner }
+        : { ...original, CurrentPcb209WorkerStartupTransport: Transport };
+    }
     if (specifier === "./current-pcb-209-actor-clock-source.ts") {
       return { requireCurrentPcb209ActorClockSourceQualification: (): void => undefined };
     }

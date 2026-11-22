@@ -79,15 +79,24 @@ export class CurrentFootprintForwardWriterOpeningProvider {
   if(!cleanup) { need(!this.#failed&&this.#abort===null&&!this.#abortDispatched&&!this.#released,"NORMAL_ENDED"); }
   if(this.#owner!==null) { assertOriginalCurrentFootprintForwardWriterNativeOwner(this.#owner);if(completeProviders.has(this)){assertOriginalCurrentFootprintForwardWriterCompleteNativeOwner(this.#owner);}for(const [key,value] of this.#methods??[]) { need(Reflect.get(this.#owner,key)===value,"ORIGINAL_NATIVE_METHOD"); } }
  }
- #browserFailureEvidence(): Readonly<Record<string, unknown>> {
+ async #browserFailureEvidence(): Promise<Readonly<Record<string, unknown>>> {
   if (this.#stage !== "main" || !completeProviders.has(this) || this.#owner === null) { return {}; }
   try {
    const status = this.#owner.status();
    const method = status.diagnosticFailureObservation?.request?.method;
    const heldSite = status.selectedSqlFence?.["heldSite"];
+   const deadline = status.diagnosticFailureObservation?.code === "deadline";
+   let windowPresent: boolean | null = null;
+   if (deadline) {
+    try { windowPresent = await this.#owner.observeApplicationWindow() !== null; }
+    catch {
+     // An unavailable passive window sample must not replace the original transport error.
+    }
+   }
    return { browser: {
     method: method === "Browser.getVersion" || method === "Target.getTargets" ? method : null,
-    deadline: status.diagnosticFailureObservation?.code === "deadline",
+    deadline, mainPause: status.forwardStartupMainPause ?? null, windowPresent,
+     ...(status.forwardStartupVersionTransport === undefined ? {} : { versionTransport: status.forwardStartupVersionTransport }),
     mainHeldSite: typeof heldSite === "string" && /^[A-Za-z][A-Za-z0-9]{0,47}$(?![\s\S])/u.test(heldSite) ? heldSite : null,
    } };
   } catch {
@@ -103,7 +112,8 @@ export class CurrentFootprintForwardWriterOpeningProvider {
    if(this.#abort===null&&this.#journal.retained().reserved&&!this.#journal.retained().publicationPending&&!this.#failureRecordAttempted) {
     this.#failureRecordAttempted=true;
     try {
-     await this.#journal.append("failure",{phase:this.#stage,originalErrorRetained:true,code:"ORIGINAL_STAGE_FAILED",...this.#browserFailureEvidence()});
+     const browserEvidence = await this.#browserFailureEvidence();
+     await this.#journal.append("failure",{phase:this.#stage,originalErrorRetained:true,code:"ORIGINAL_STAGE_FAILED",...browserEvidence});
     }
     catch(publicationError) {
      // oxlint-disable-next-line eslint/preserve-caught-error -- Original operation error remains the cause; separate publication failure is retained in this aggregate.

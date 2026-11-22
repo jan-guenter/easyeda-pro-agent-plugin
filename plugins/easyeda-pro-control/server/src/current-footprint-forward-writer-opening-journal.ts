@@ -33,7 +33,9 @@ function cleanupEvidence(entry: Entry): void {
   switch (kind) {
     case "failure": {
       const browser = z.strictObject({ method: z.enum(["Browser.getVersion", "Target.getTargets"]).nullable(),
-        deadline: z.boolean(), mainHeldSite: z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,47}$(?![\s\S])/u).nullable() });
+        deadline: z.boolean(), mainPause: z.enum(["forward-head", "selected-sql", "registration", "other"]).nullable().optional(),
+        versionTransport: z.strictObject({ writeAcknowledged: z.boolean(), rendererPolls: z.number().int().min(0).max(250),
+           rendererBytesObserved: z.boolean() }).optional(), windowPresent: z.boolean().nullable().optional(), mainHeldSite: z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,47}$(?![\s\S])/u).nullable() });
       z.strictObject({ phase: z.enum(["new", "launched", "main", "browser", "frames", "ui-source", "sealed"]),
         originalErrorRetained: z.literal(true), code: z.literal("ORIGINAL_STAGE_FAILED"), browser: browser.optional() })
         .superRefine((value, context) => {

@@ -135,7 +135,7 @@ void test("Wire requested tree, title and FT preparation completes before any ch
   const ft = Promise.withResolvers<null>(), title = Promise.withResolvers<null>(), tree = Promise.withResolvers<null>();
   const calls: string[] = [];
   const value = await fixture("current-schematic-wire-parser-service-coordinator.ts", [[" public arm():Promise<void>", " public runUiProviders()"]], `
-    #armTask=null;#treeBeforeTask=bindings.tree.promise;#titleBefore=bindings.title.promise;#titleFtBefore=bindings.ft.promise;
+    #armTask=null;#treeBeforeTask=bindings.tree.promise;#titleBefore=bindings.title.promise;#titleFtBefore=bindings.ft.promise;#titleFtV5Before=null;
     #parser={arm:async()=>{bindings.calls.push("parser");}};#rpc={arm:async()=>{bindings.calls.push("rpc");}};
     #service={arm:async()=>{bindings.calls.push("service");}};#uiRuntime={arm:async()=>{bindings.calls.push("ui");}};
     #treeRuntime={arm:async()=>{bindings.calls.push("tree");}};#title={arm:async()=>{bindings.calls.push("title");}};
@@ -513,7 +513,7 @@ function titleLifecycleFixture(request: (command: unknown) => Promise<unknown>, 
     #input={variant:0,scriptId:"123.sch"};#before={};#preparing=false;#prepared=0;#preparedSources=0;#normal=0;#cleanup=0;#sources=0;
     #points=[];#attempts=[];#source=null;#functions=Promise.resolve();#prepareTask=null;#ftPrepareTask=null;#armTask=null;#runTask=null;#finishTask=null;#removeTask=null;#ftRemoveTask=null;#retireTask=null;
     #tail=Promise.resolve();#settled=false;#packet=null;#armed=false;#closing=false;#uncertain=false;#failure=null;#notificationFailure=null;
-    #ftEnabled=true;#ftArray="123.array";#ftPoint=null;#ftRemoveAttempted=false;#ftRemoved=false;#ftNormal=0;#ftCleanup=0;#ftSources=0;#completed=4;#cell="123.cell";
+    #ftEnabled=true;#ftV5=false;#ftArray="123.array";#ftPoint=null;#ftRemoveAttempted=false;#ftRemoved=false;#ftNormal=0;#ftCleanup=0;#ftSources=0;#completed=4;#cell="123.cell";
     #transport=bindings.transport;#current(cleanup=false){if(!cleanup){need(!this.#closing&&this.#failure===null);need(!bindings.exited());}}
     #fail(cause){this.#failure??=Object.freeze({cause});}async #currentFtArray(){}
     armFt(){return this.#armFtReturn();}holdTasks(prepare,ft,run,finish){this.#prepareTask=prepare;this.#ftPrepareTask=ft;this.#runTask=run;this.#finishTask=finish;}

@@ -2850,6 +2850,15 @@ export class CurrentFootprintCopyMainBackendRunner {
       originalError: this.#stockReadonlyObserved, originalRethrowResumed: this.#stockReadonlyResumed,
       normalReturnProven: false, successfulInitializationProven: false, retryAllowed: false, selectedProjectWriteGrant: false, executionAuthorized: false }));
   }
+  /** The unresolved original Main pause, without frame identifiers or source text. */
+  public retainedForwardStartupPause(): "forward-head" | "selected-sql" | "registration" | "other" | null {
+    const pause = this.#pause;
+    if (pause === null || pause.resumed) { return null; }
+    if (pause.forwardHeadSite !== undefined) { return "forward-head"; }
+    if (pause.sqlSite !== undefined) { return "selected-sql"; }
+    return pause.registration ? "registration" : "other";
+  }
+
   public selectedSqlFenceState(): Readonly<Record<string, unknown>> {
     return Object.freeze({ profile: "private.selected-file-main-sql-fence.v1", originalBootstrapRetained: this.#selectedSqlBootstrap !== null,
       ready: this.#sqlReady, conditionalBreakpoints: Math.max(0, this.#sqlBreakpoints.size - 2), nativePrimitivesReplaced: false,

@@ -872,7 +872,7 @@ groups.push({ namespace: "sch_PrimitiveComponent", methods: ["getAll", "getAllPi
   executionState:"available-with-runtime-guards",
   scope:"One read-only disposable continuation of the same facade's completed, released inverse. A separate birth owns the original UI, manager and worker negative task. Completion requires normal close, original root and whole-Job exit, helper release and complete closed SQL comparison. This takes no caller-supplied target or source and provides no general lookup, SDK parity, ordinary-project capability or connected acceptance. Historical inverse results retain their existing schema and values.",
   source:["current-footprint-inverse-cold-ui-control-contract.ts","current-footprint-inverse-cold-ui-control-validation.ts","current-footprint-inverse-cold-ui-continuation.ts","current-footprint-forward-writer-coordinator.ts","current-footprint-inverse-native-delete-saved-generation.ts","current-footprint-inverse-native-delete-cold-ui-generation.ts","index.ts","../../scripts/control-session-footprint-inverse-cold-ui-adapter.ts","../../scripts/control-session-manager.ts"],
-  tests:["current-footprint-inverse-cold-ui-control.test.ts","current-footprint-inverse-native-delete-saved-generation.test.ts","control-session-manager.test.ts"],
+  tests:["current-footprint-inverse-cold-ui-control.test.ts","current-footprint-inverse-native-delete-cold-ui-admission.test.ts","control-session-manager.test.ts"],
   validation:"offline-regression;current-live-unclaimed",
   inputDiscovery:{tool:"easyeda_control_api",arguments:{request:{action:"current-footprint-inverse-cold-ui",query:{includeSchemas:true}}}},
  }});

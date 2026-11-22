@@ -474,6 +474,10 @@ const MAX_FRAME_BYTES = TRANSPORT.maximumFrameBytes;
 const COMMON_FRAME_BYTES = 2 * CURRENT_PCB_COMMON_GRAPH_BYTES + 1024;
 const MAX_CHUNK_BYTES = MAX_FRAME_BYTES + 1;
 const DEADLINE_MS = 5000;
+const completeForwardDiscoveryPipes = new WeakSet<object>();
+export const CURRENT_COMPLETE_FORWARD_BROWSER_STARTUP_READ = Object.freeze({
+  milliseconds: 15_000, emptyPollMilliseconds: 60, maximumPolls: 250,
+});
 type Reply = Readonly<Record<string, unknown>>;
 type Failure = "attachment" | "input" | "output" | "eof" | "closed" | "framing" | "reply" | "remote-error" | "deadline" | "budget";
 type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsolicited" | "reply-duplicate" | "reply-id" | "reply-envelope" | "reply-result" |
@@ -2221,7 +2225,9 @@ class CurrentPcbFixedPipeCore {
       phase: REQUEST_PHASES.find(value => value === phase) ?? "unknown" });
     const deferred = Promise.withResolvers<Reply>();
     let deadline = DEADLINE_MS;
-    if (command.method === "Debugger.getScriptSource") { deadline = 30_000; }
+    if (command.method === "Browser.getVersion" && id === 1 && completeForwardDiscoveryPipes.has(this)) {
+      deadline = CURRENT_COMPLETE_FORWARD_BROWSER_STARTUP_READ.milliseconds;
+    } else if (command.method === "Debugger.getScriptSource") { deadline = 30_000; }
     else if (command.method === "Runtime.callFunctionOn" && "awaitPromise" in command.params && command.params.awaitPromise === true) { deadline = 60_000; }
     if (phase === "inverse-public-call" && "inversePublicCall" in command && command.phase === "inverse-public-call-sdk") { deadline = 60_000; }
     if (phase === "inverse-native-get-lookup" && "inverseNativeGetLookup" in command && command.phase === "inverse-native-get-lookup-invoke") { deadline = 60_000; }
@@ -3011,8 +3017,9 @@ export class CurrentFootprintCombinedDiscoveryPipe extends CurrentPcbFixedPipeCo
 /** The born forward owner's original counter observes every discovery event
  * before this parser can retain or deliver it. This callback grants no owner. */
 export class CurrentFootprintCopyForwardDiscoveryPipe extends CurrentPcbFixedPipeCore {
-  public constructor(input: Readable, output: Writable, observeEventBytes: (bytes: number) => void) {
+  public constructor(input: Readable, output: Writable, observeEventBytes: (bytes: number) => void, completeWriter = false) {
     super(input, output, "forward-discovery", observeEventBytes);
+    if (completeWriter) { completeForwardDiscoveryPipes.add(this); }
   }
   public observeSavedCacheNative(command: CurrentFootprintSavedCacheCommand): Promise<Reply> { return this.savedCacheNative(command); }
   public observeSavedCacheAccessor(command: CurrentFootprintSavedCacheAccessorCommand): Promise<Reply> { return this.savedCacheAccessor(command); }

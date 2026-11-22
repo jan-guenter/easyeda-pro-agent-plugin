@@ -9092,7 +9092,7 @@
           ],
           "tests": [
             "current-footprint-inverse-cold-ui-control.test.ts",
-            "current-footprint-inverse-native-delete-saved-generation.test.ts",
+            "current-footprint-inverse-native-delete-cold-ui-admission.test.ts",
             "control-session-manager.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",

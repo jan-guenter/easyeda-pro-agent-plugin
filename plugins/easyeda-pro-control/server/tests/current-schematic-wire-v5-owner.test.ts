@@ -37,7 +37,7 @@ async function harness(failTitle:number|null):Promise<Readonly<{owner:Harness;ar
    this.#trace.push(command.phase);if(command.method==="Debugger.getScriptSource"){return Promise.resolve({scriptSource:`(${PROGRAMS.continuity})`});}
    assert.equal(command.phase,"wire-globals-check");assert.equal(command.params.objectId,capture.reflection);assert.deepEqual(command.params.arguments,[{objectId:capture.roots},{objectId:capture.tuple}]);scripts+=1;assert.ok(owner!==null);assert.equal(owner.observeGlobalsEvent({sessionId:realm.sessionId,method:"Debugger.scriptParsed",params:{scriptId:`guard${String(scripts)}`,executionContextId:realm.contextId,url:"",length:PROGRAMS.continuity.length+2}}),true);return Promise.resolve({result:{type:"boolean",value:true}});
   }
-  public observeSchematicWireV5Title(command:CurrentSchematicWireV5TitleCommand):Promise<unknown>{this.#trace.push(command.phase);titleReads+=1;if(titleReads===failTitle){return Promise.reject(this.#failure);}return Promise.resolve(command.method==="Debugger.getScriptSource"?(titleReads===1?targetSource:busSource):{result:[]});}
+  public observeSchematicWireV5Title(command:CurrentSchematicWireV5TitleCommand):Promise<unknown>{this.#trace.push(command.phase);titleReads+=1;if(titleReads===failTitle){return Promise.reject(this.#failure);}if(command.method==="Debugger.getScriptSource"){return Promise.resolve(titleReads===1?targetSource:busSource);}return Promise.resolve({result:[]});}
   public endSchematicWireGlobalsAfterOriginalExit():void{this.#ended=true;assert.equal(this.#ended,true);throw new Error("unused-inert-exit");}
  }
  interface Transport{readonly request:(command:unknown)=>Promise<unknown>}

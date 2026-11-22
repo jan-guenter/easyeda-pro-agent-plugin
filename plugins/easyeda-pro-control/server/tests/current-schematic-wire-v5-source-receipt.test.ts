@@ -23,7 +23,8 @@ async function attached(context: TestContext): Promise<Readonly<{
 }>> {
   const input = new PassThrough();
   let pending: ((failure?: Error | null) => void) | null = null;
-  const output = new Writable({ write(_chunk, _encoding, callback) { assert.equal(pending, null); pending = callback; } });
+  // oxlint-disable-next-line promise/prefer-await-to-callbacks -- The Writable holds its real completion until the fixture releases it.
+  const output = new Writable({ write(_chunk, _encoding, callback): void { assert.equal(pending, null); pending = callback; } });
   const pipe = new CurrentSchematicWireWriterV5Pipe(input, output);
   pipe.start();
   context.after(() => { input.destroy(); output.destroy(); });
@@ -31,6 +32,7 @@ async function attached(context: TestContext): Promise<Readonly<{
     assert.ok(pending !== null);
     const callback = pending;
     pending = null;
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Release this retained Writable completion with the fixture-selected outcome.
     callback(failure);
   };
   const attaching = pipe.attachTarget("original-target", () => { assert.fail("Unexpected renderer event"); });

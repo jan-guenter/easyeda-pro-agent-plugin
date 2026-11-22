@@ -274,7 +274,8 @@ jobs:
   facade-tests:
     name: facade-tests (${{ matrix.shard }}/8)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # Keep the serial shard ceiling above setup plus the slowest complete test run.
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:

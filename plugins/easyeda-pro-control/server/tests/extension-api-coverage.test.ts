@@ -581,7 +581,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 219, "implemented-native-equivalent": 48, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 77, omitted: 498,
+    "implemented-public-subset": 219, "implemented-native-equivalent": 49, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 77, omitted: 497,
   });
 });
 
@@ -1200,13 +1200,32 @@ void test("Component point discovery retains both bounded representations withou
   }
 });
 
-void test("footprint deletion remains omitted while its current retained inverse prefixes are discoverable evidence", () => {
-  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.lib_Footprint.delete"); assert.ok(row?.omission);
-  assert.equal(row.status, "omitted"); assert.deepEqual(row.routes, []);
-  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
-  for (const file of ["current-footprint-inverse-public-delete-intent.ts", "current-footprint-inverse-delete-worker-admission.ts",
-    "current-footprint-inverse-delete-callback-collector.ts", "current-footprint-inverse-native-fragment.ts", "current-footprint-delete-observed-saved-source.ts"]) {
-    assert.ok(row.omission.evidence.includes(file), file);
+void test("footprint deletion discovers only its same-facade disposable inverse without claiming connected saved acceptance", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.lib_Footprint.delete"); assert.ok(row);
+  assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+  assert.equal(row.routes.length, 1); assert.equal(row.completeDeclaredContractSupported, false);
+  assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+  const route = row.routes[0]; assert.ok(route);
+  assert.equal(route.tool, "easyeda_control_current_footprint_inverse");
+  assert.equal(route.selector, "execute;original-controlled-disposable-copied-footprint-inverse");
+  assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.executionState, "available-with-runtime-guards");
+  assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+  for (const requirement of ["completed released copy from the same facade", "independent delete", "full closed SQL", "saved manager absence", "No public SDK parity, ordinary-project admission or connected acceptance"]) {
+    assert.ok(route.scope.includes(requirement), requirement);
+  }
+  for (const file of ["current-footprint-inverse-full-workflow.ts", "current-footprint-inverse-native-delete-saved-generation.ts", "current-footprint-forward-writer-coordinator.ts"]) {
+    assert.ok(route.source.includes(file), file);
+  }
+  assert.ok(route.inputDiscovery);
+  const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"])).result;
+  assert.ok(isRecord(discovery)); assert.ok(isRecord(discovery["inputSchema"]));
+  assert.equal(discovery["tool"], route.tool); assert.equal(discovery["validationOnly"], true);
+  assert.equal(discovery["originalCompletedForwardCoordinatorRequired"], true);
+  assert.equal(discovery["independentInverseConfirmationsRequired"], true);
+  assert.equal(discovery["managerOnlyColdAbsence"], true); assert.equal(discovery["maximumInverseAttempts"], 1);
+  assert.equal(discovery["maximumExplicitSaveAttempts"], 0);
+  for (const flag of ["connectedValidation", "ordinaryProjectsSupported", "generalSdkWriter", "nativeUiTaskAbsenceVerified", "publicSdkParity", "wholeInverseVerified", "executionAuthorized", "saveAuthorized"]) {
+    assert.equal(discovery[flag], false, flag);
   }
 });
 
@@ -1382,11 +1401,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
       assert.ok(isRecord(result["requestSchema"])); assert.equal(result["designExecutionAuthorized"], false);
     } else if (request["action"] === "pcb209-component-spatial") {
       assert.ok(isRecord(result["requestSchema"])); assert.equal(result["executionAuthorized"], false);
-    } else if (["generated-schematic-opening", "project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "schematic209-relevance-display-write", "current-footprint-forward-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) {
+    } else if (["generated-schematic-opening", "project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "schematic209-relevance-display-write", "current-footprint-forward-write", "current-footprint-inverse", "current-footprint-inverse-cold-ui", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["generated-schematic-opening", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "schematic209-relevance-display-write", "current-footprint-forward-write", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["generated-schematic-opening", "project-schematic-operation", "pcb209-opening", "pcb209-spatial", "pcb209-via-write", "schematic209-relevance-display-write", "current-footprint-forward-write", "current-footprint-inverse", "current-footprint-inverse-cold-ui", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "footprint-forward-prewrite", "footprint-forward-source-validation", "netlist-files", "library-files", "pcb209-ordinary-read", "schematic-page-opening", "schematic-page-read"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];

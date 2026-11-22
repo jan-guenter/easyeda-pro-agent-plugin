@@ -18,6 +18,10 @@ review the independent confirmations for delete-triggered persistence,
 ordinary opening, debugger pauses, cache effects and scoped manager absence.
 No explicit Save is dispatched.
 
+This is an implemented validation route, not a record of completed connected
+forward-copy or saved-inverse acceptance. Its inventory status and offline
+tests do not satisfy the same-facade completed-forward gate before allocation.
+
 The controller retains the original writer through the native delete and
 persistence path. Completion requires full closed SQL after writer closure,
 a separately born manager read of the saved state, and original writer and

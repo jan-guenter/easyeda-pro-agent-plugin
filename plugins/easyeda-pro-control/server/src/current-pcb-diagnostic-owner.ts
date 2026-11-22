@@ -101,7 +101,7 @@ import type {CurrentFootprintInverseNativeReferencePcbCall, CurrentFootprintInve
 import {captureCurrentFootprintInverseNativeDeleteColdSuccessor} from "./current-footprint-inverse-native-delete-cold-successor-helper.ts";
 import type {CurrentFootprintInverseNativeDeleteColdSuccessorCapture} from "./current-footprint-inverse-native-delete-cold-successor-helper.ts";
 import {captureCurrentFootprintInverseNativeContinuationV4Helper} from "./current-footprint-inverse-native-continuation-v4-helper.ts";
-import {CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentFootprintInverseNativeContinuationV4Pipe, CurrentFootprintInversePipe, CurrentFootprintInverseNativeContinuationV4Pipe as CurrentFootprintInverseV4Pipe, CurrentPcbComponentSpatialPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaSavedReadbackPipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, CurrentSchematicRelevanceDisplayWritePipe, CurrentSchematicRelevanceSavedReadbackPipe, CurrentSchematicWireEditPipe, CurrentSchematicWireWriterV4Pipe, CurrentSchematicWireWriterV5Pipe, requireCurrentSchematicWireV5BundleSourceReceive, assertOriginalCurrentFootprintInversePipe, assertOriginalCurrentFootprintInverseNativeContinuationV4Pipe as assertOriginalCurrentFootprintInverseV4Pipe, decodeCurrentPcbDiagnosticJson} from "./current-pcb-diagnostic-pipe.ts";
+import {CURRENT_COMPLETE_FORWARD_BROWSER_STARTUP_READ, CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentFootprintInverseNativeContinuationV4Pipe, CurrentFootprintInverseNativeContinuationV4Pipe as CurrentFootprintInverseV4Pipe, CurrentFootprintInversePipe, CurrentPcbComponentSpatialPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbViaSavedReadbackPipe, CurrentPcbViaWritePipe, CurrentPcbWorkerStartupDiscoveryPipe, CurrentSchematicDisplayWritePipe, CurrentSchematicRelevanceDisplayWritePipe, CurrentSchematicRelevanceSavedReadbackPipe, CurrentSchematicWireEditPipe, CurrentSchematicWireWriterV4Pipe, CurrentSchematicWireWriterV5Pipe, assertOriginalCurrentFootprintInverseNativeContinuationV4Pipe as assertOriginalCurrentFootprintInverseV4Pipe, assertOriginalCurrentFootprintInversePipe, decodeCurrentPcbDiagnosticJson, requireCurrentSchematicWireV5BundleSourceReceive} from "./current-pcb-diagnostic-pipe.ts";
 import type {CurrentFootprintInverseNativeReferenceReadiness, CurrentFootprintInverseNativeReferenceReadinessBindings, CurrentFootprintInverseNativeReferenceWorkerCompletion, CurrentFootprintInverseNativeReferenceWorkerCompletionBindings} from "./current-footprint-inverse-native-reference-worker.ts";
 import type {CurrentFootprintInversePreparedCheckpoint} from "./current-footprint-inverse-prepared-checkpoint.ts";
 import type {CurrentFootprintInverseFullPreparation, requireOriginalCurrentFootprintInverseFullPreparation as RequireInverseFullPreparation, verifyCurrentFootprintInverseFullPreparation as VerifyInverseFullPreparation} from "./current-footprint-inverse-full-preparation.ts";
@@ -1378,7 +1378,7 @@ import { fileURLToPath } from "node:url";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
 
-import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
+import type { CurrentPcbDiagnosticFailureObservation, CurrentSchematicWireV5BundleSourceReceive } from "./current-pcb-diagnostic-pipe.ts";
 import { CurrentPcbSpatialPipe, spatialDiagnosticNativeRequest } from "./current-pcb-spatial-pipe.ts";
 import { CURRENT_PCB_SPATIAL_ARC_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PAD_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_PROFILE, CURRENT_PCB_SPATIAL_REQUEST_DERIVATION, CURRENT_PCB_SPATIAL_TRACK_REQUEST_DERIVATION } from "./current-pcb-spatial-profile.ts";
 import { CURRENT_PCB_209_SPATIAL_SOURCE_PROFILE } from "./current-pcb-209-spatial-source-profile.ts";
@@ -1586,7 +1586,6 @@ import {CURRENT_SCHEMATIC_WIRE_WRITER_V5_NATIVE_PROFILE,CURRENT_SCHEMATIC_WIRE_W
 import {currentSchematicWireWriterV5NativeRequest,decodeCurrentSchematicWireWriterV5Capture} from "./current-schematic-wire-writer-v5-protocol.ts";
 import {CurrentSchematicWireParserServiceCoordinator} from "./current-schematic-wire-parser-service-coordinator.ts";
 import type {CurrentSchematicWireParserServiceData} from "./current-schematic-wire-parser-service-coordinator.ts";
-import type { CurrentSchematicWireV5BundleSourceReceive } from "./current-pcb-diagnostic-pipe.ts";
 import { qualifyCurrentSchematicWireEncoderSource } from "./current-schematic-wire-encoder-source.ts";
 import type { CurrentSchematicWireEncoderSourceCheckpoint } from "./current-schematic-wire-encoder-source.ts";
 import {currentSchematicWireV5TitleWire,validateCurrentSchematicWireV5TitleCommand} from "./current-schematic-wire-v5-title-protocol.ts";
@@ -3987,6 +3986,12 @@ class CurrentPcbRetainedOwnerCore {
   #noProcessProof: Readonly<NoProcessProof> | null = null;
   #nativeLaunchError: string | null = null;
   #nativeSendError: string | null = null;
+  #forwardStartupVersionTransport: {
+    active: boolean;
+    writeAcknowledged: boolean;
+    rendererPolls: number;
+    rendererBytesObserved: boolean;
+  } | null = null;
   #mainNativeFailure: Readonly<{ action: MainNativeAction; code: string }> | null = null;
   #observationFailure: CurrentPcbObservationFailure | null = null;
   #closeConsumed = false;
@@ -4933,7 +4938,7 @@ class CurrentPcbRetainedOwnerCore {
     else if (this.#purpose === "pcb-component-spatial209") { this.#pipe = new CurrentPcbComponentSpatialPipe(this.#input, this.#output); }
     else if (this.#purpose === "pcb-spatial209") { this.#pipe = new CurrentPcbSpatialPipe(this.#input, this.#output); }
     else if (this.#purpose === "footprint-held-cache209") { this.#pipe = new CurrentFootprintHeldCacheDiagnosticPipe(this.#input, this.#output, (bytes): void => { this.#heldSavedEventBytes(bytes); }); }
-    else if (forwardBirthPurpose(this.#purpose)) { this.#pipe = new CurrentFootprintCopyForwardDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
+    else if (forwardBirthPurpose(this.#purpose)) { this.#pipe = new CurrentFootprintCopyForwardDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }, completeBirth !== null); }
     else if (saved !== null) { this.#pipe = new CurrentFootprintCopyForwardSavedDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
     else if (inverseV4Allocation!==undefined) { this.#pipe=new CurrentFootprintInverseNativeContinuationV4Pipe(this.#input,this.#output); }
     else if (this.#purpose === CURRENT_FOOTPRINT_INVERSE_NATIVE_PURPOSE) { this.#pipe = new CurrentFootprintInversePipe(this.#input, this.#output); }
@@ -4981,6 +4986,8 @@ class CurrentPcbRetainedOwnerCore {
     visual209RetainedObservation?: Readonly<RecordValue>; visualObservationCurrent?: false; visualObservationAccepted?: false;
     mainNativeFailure?: Readonly<{ action: MainNativeAction; code: string }> | null;
     selectedSqlFence?: Readonly<Record<string, unknown>> | null;
+    forwardStartupMainPause?: ReturnType<CurrentFootprintCopyMainBackendRunner["retainedForwardStartupPause"]>;
+    forwardStartupVersionTransport?: Readonly<{ writeAcknowledged: boolean; rendererPolls: number; rendererBytesObserved: boolean }>;
     mainCloseDetachAttempted?: boolean; mainCloseDetached?: boolean;
     combinedAbortAttempted?: boolean; combinedAbortDispatchAttempted?: boolean; combinedOutputCleanupOnly?: boolean;
     combinedReadiness?: CurrentFootprintCombinedFactoryFailureDiagnostics | null;
@@ -5054,6 +5061,12 @@ class CurrentPcbRetainedOwnerCore {
       pcbObservationConsumed: this.#pcbObservationConsumed, pcbFrameObservation: this.#pcbFrameObservation, pcbSourceQualified: this.#pcbSourceQualified,
       stringPrecreateConsumed: this.#stringPrecreateConsumed, commonBaselineConsumed: this.#commonBaselineConsumed,
       ...(selectedFileMainPurpose(this.#purpose) ? { selectedSqlFence: this.#mainRunner?.selectedSqlFenceState() ?? null } : {}),
+      ...(footprintForwardWriterCompleteFactories.has(this) ? { forwardStartupMainPause: this.#mainRunner?.retainedForwardStartupPause() ?? null } : {}),
+      ...(this.#forwardStartupVersionTransport === null ? {} : { forwardStartupVersionTransport: Object.freeze({
+        writeAcknowledged: this.#forwardStartupVersionTransport.writeAcknowledged,
+        rendererPolls: this.#forwardStartupVersionTransport.rendererPolls,
+        rendererBytesObserved: this.#forwardStartupVersionTransport.rendererBytesObserved,
+      }) }),
       ...(schematicDisplayPurpose(this.#purpose) ? { originalSchematicWorker: this.#schematicWorkerController?.status() ?? null, originalSchematicSaveBodyRetained: this.#schematicSaveCapturedBody !== null } : {}),
       ...(this.#purpose === CURRENT_PCB_VIA_WRITE_NATIVE_PURPOSE ? { originalViaWorker: this.#viaWorkerController?.status() ?? null, originalViaClockSetupSettled: this.#viaClockSetupSettled } : {}),
       profile: this.#purpose, workerStartupHandoffConsumed: this.#startupHandoffConsumed,
@@ -5172,12 +5185,12 @@ const inverseFullCutoff=inverseFull?.sourceKind==="full"?():void=>{
     this.#enter(true); this.#browserObservationConsumed = true;
     const completeWriter = footprintForwardWriterCompleteFactories.has(this);
     try {
-      const version = await this.#transfer(() => this.#pipe.getVersion(), completeWriter);
+      const version = await this.#transfer(() => this.#pipe.getVersion(), completeWriter ? "startup-version" : "default");
       if (!exact(version, ["protocolVersion", "product", "revision", "userAgent", "jsVersion"]) ||
           Object.values(version).some(value => typeof value !== "string" || value.length > 8192 || value.includes("\0"))) {
         throw error("BROWSER_VERSION_REPLY");
       }
-      this.#browserTargets = diagnosticTargetInventory(await this.#transfer(() => this.#pipe.getTargets(), completeWriter));
+      this.#browserTargets = diagnosticTargetInventory(await this.#transfer(() => this.#pipe.getTargets(), completeWriter ? "browser" : "default"));
       if (bornFootprintTransport(this.#purpose) || heldCachePurpose(this.#purpose)) { this.#savedCacheBrowserVersion = Object.freeze(structuredClone(version)); }
       return diagnosticBoundedObservation({ schema: "easyeda-pro-control.pcb-diagnostic-browser-observation.v1", version: structuredClone(version),
         targets: this.#browserTargets.map(value => diagnosticTargetSummary(value)), projectFreeVerified: false, profileIsolated: false,
@@ -18529,16 +18542,24 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
     try { return await this.#transfer(() => kind === "version" ? this.#pipe.getVersion() : this.#pipe.getTargets()); }
     finally { this.#busy = false; }
   }
-  async #pollRenderer(): Promise<void> {
+  async #pollRenderer(emptyPollMilliseconds = 20): Promise<void> {
     this.#available(); const chunk = await this.#request({ action: "poll" });
     if (!exact(chunk, ["bytes"]) || typeof chunk["bytes"] !== "string" || chunk["bytes"].length > TRANSPORT.maximumNativePollBase64Units ||
       !/^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(chunk["bytes"])) { throw error("PIPE_CHUNK"); }
     const bytes = Buffer.from(chunk["bytes"], "base64");
     if (bytes.toString("base64") !== chunk["bytes"] || bytes.length > TRANSPORT.maximumNativePollBytes) { throw error("PIPE_CHUNK"); }
-    if (bytes.length > 0) { this.#input.write(bytes); } else { await delay(20); }
+    const startup = this.#forwardStartupVersionTransport;
+    if (startup?.active === true) {
+      startup.rendererPolls += 1;
+      startup.rendererBytesObserved ||= bytes.length > 0;
+    }
+    if (bytes.length > 0) { this.#input.write(bytes); } else { await delay(emptyPollMilliseconds); }
   }
-  async #transfer(request: () => Promise<RecordValue>, preferRendererPolling = false): Promise<RecordValue> {
+  async #transfer(request: () => Promise<RecordValue>, polling: "default" | "browser" | "startup-version" = "default"): Promise<RecordValue> {
     if (this.#startupParent !== null) { throw error("STARTUP_LEGACY_TRANSFER_DISABLED"); }
+    const startup = polling === "startup-version" ? CURRENT_COMPLETE_FORWARD_BROWSER_STARTUP_READ : null;
+    const startupTransport = startup === null ? null : { active: true, writeAcknowledged: false, rendererPolls: 0, rendererBytesObserved: false };
+    if (startupTransport !== null) { this.#forwardStartupVersionTransport = startupTransport; }
     try {
       if (!this.#launchSucceeded) { throw error("CLEANUP_ONLY"); }
       await this.#verify(); this.#available();
@@ -18549,10 +18570,15 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
         try { return { value: await reply }; } catch (caughtError) { return { cause: caughtError }; } finally { settled = true; }
       })();
       await this.#send;
+      const preferRendererPolling = polling !== "default";
+
       while (selectedFileMainPurpose(this.#purpose) ? !settled : this.#pipe.status().pendingRequestId !== null) {
         // Cold browser discovery may already have a reply queued. Read it before servicing a Main pause.
         if (preferRendererPolling) {
-          await this.#pollRenderer();
+          if (startup !== null && startupTransport !== null && startupTransport.rendererPolls >= startup.maximumPolls) {
+            throw error("FORWARD_WRITER_BROWSER_VERSION_POLL_BOUND");
+          }
+          await this.#pollRenderer(startup?.emptyPollMilliseconds);
           if (settled) { break; }
         }
         if (selectedFileMainPurpose(this.#purpose) && this.#mainRunner !== null && this.#savedReadbackEarlyActorStage === null && this.#schematicSavedEarlyStage === null && (this.#purpose===CURRENT_FOOTPRINT_INVERSE_NATIVE_CONTINUATION_V4_PROFILE.purpose?this.#inverseV4ActorStage:this.#inverseActorStage) === null) { await this.#mainRunner.pumpSelectedSqlFence(); }
@@ -18581,6 +18607,8 @@ let historyCommandStage:CurrentSchematicRelevanceHistoryCommandStage="history";l
       // Its prior request pending until the byte transport's later deadline.
       // This local adapter error preserves every native endpoint and normal close.
       this.#input.emit("error", error("DISCOVERY_FAILED")); throw caughtError;
+    } finally {
+      if (startupTransport !== null) { startupTransport.active = false; }
     }
   }
   /** Encode one Buffer through its fixed purpose-specific native grammar and
@@ -18745,8 +18773,10 @@ if(this.#purpose===CURRENT_FOOTPRINT_INVERSE_NATIVE_CONTINUATION_V4_PROFILE.purp
           if (!chunk.equals(Buffer.from(`${JSON.stringify(fixed.wire)}\0`))) { throw error("WIRE_V5_TITLE_ORIGINAL_WIRE"); }
         }
       };
+      const startupTransport = this.#forwardStartupVersionTransport;
       const result = await this.#request(encoded, reproveWireV5);
       if (!exact(result, ["written"]) || result["written"] !== true) { throw error("WRITE_ACK"); }
+      if (startupTransport?.active === true) { startupTransport.writeAcknowledged = true; }
       // oxlint-disable-next-line promise/prefer-await-to-callbacks, eslint/no-useless-return -- Writable completion must be the terminal branch operation.
       callback(); return;
     } catch {

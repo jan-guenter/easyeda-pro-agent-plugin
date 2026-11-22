@@ -105,3 +105,15 @@ uses the same owned transport and request limits. A bounded private failure
 record retains the browser method, deadline flag and held Main fence site when
 observed. This diagnostic supports the next original disposable run and does
 not issue any project mutation or Save authority.
+
+The renderer-first retest reached the same browser deadline. The captured
+original request was Browser.getVersion and the selected-file fence reported
+no held SQL site. The root Job and helper closed and the disposable fixture
+matched its baseline. The complete writer now gives that first original
+read a 15-second window at a 60-millisecond empty-poll interval, with the
+same 250-poll ceiling and no second request. The private failure record also
+captures the original Main pause category and a passive window sample.
+It records whether the native pipe acknowledged the first write, how many
+renderer polls returned, and whether any bytes arrived. Prior disposable
+Via runs with the same synchronous write implementation produced both
+successful discovery and the same first-request timeout.
