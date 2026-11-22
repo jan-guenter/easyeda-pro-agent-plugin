@@ -73,6 +73,14 @@ node --import ./scripts/test-isolation.ts --test --test-reporter=tap \
   server/tests/current-footprint-inverse-native-delete-main-baseline.test.ts
 ```
 
+The second review exposed a cleanup-order regression in the BEGIN return
+pause. The repair retains the original hit ID after removal so result reads
+and history handoff can still prove the same paused frame. The focused
+custody case exercised successful cleanup, a different hit ID, and a removed
+callback point. It passed with the pinned Node runtime, strict TypeScript,
+and type-aware lint.
+[Returned pause repair](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/273439f2e364d8c20c78818487521ed749d32e60).
+
 The Wire follow-up checks the original Map descriptor roster, retains
 acknowledged callback breakpoint IDs, and replaces title placeholders in
 one pass. It also fixes cleanup sequencing and makes the negative
