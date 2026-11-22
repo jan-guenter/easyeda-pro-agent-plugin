@@ -1,7 +1,7 @@
 import{CURRENT_FOOTPRINT_INVERSE_V4_MAIN_JOINT as DELETE_V4_JOINT}from"./current-footprint-inverse-v4-main-joint-data.ts";
 import{CurrentFootprintInverseV4SelectedMainRequestReader}from"./current-footprint-inverse-v4-selected-main-request-reader.ts";
 import{CurrentFootprintInverseNativeDeleteMainTailController,requireCurrentFootprintInverseNativeDeleteMainTailPrerequisite}from"./current-footprint-inverse-native-delete-main-tail-controller.ts";
-import type{CurrentFootprintInverseNativeDeleteMainTailObservation}from"./current-footprint-inverse-native-delete-main-tail-controller.ts";
+import type{CurrentFootprintInverseNativeDeleteMainTailObservation,CurrentFootprintInverseNativeDeleteMainTailResumeReceipt}from"./current-footprint-inverse-native-delete-main-tail-controller.ts";
 import type{CurrentFootprintInverseNativeDeleteMainReadCommand}from"./current-footprint-inverse-native-delete-main-read-protocol.ts";
 import{currentFootprintInverseNativeDeleteMainTailReadonlyRoster}from"./current-footprint-inverse-native-delete-main-tail-source.ts";
 import {deriveCurrentFootprintInverseNativeDeleteMainTailPreflight} from "./current-footprint-inverse-native-delete-main-tail-data.ts";
@@ -3008,9 +3008,9 @@ export class CurrentFootprintCopyMainBackendRunner {
       observeRequest:async():Promise<CurrentSelectedFileMainRequestObservation>=>{same();need(!this.#busy&&this.#pause!==null&&this.#pause===this.#deleteMainDelivered&&this.#pause.sqlSite==="driver","INVERSE_DELETE_MAIN_TAIL_DRIVER");this.#busy=true;try{return await this.#observeSelectedMainRequest(this.#pause);}finally{this.#busy=false;}},
       requireRequest:(packet):void=>{same();this.requireOriginalSelectedMainRequest(packet);need(selectedRequestPackets.get(packet)?.pause===this.#deleteMainDelivered,"INVERSE_DELETE_MAIN_TAIL_REQUEST");},
       originalRequestObjectId:(packet):string=>{same();this.requireOriginalSelectedMainRequest(packet);const captured=selectedRequestPackets.get(packet);need(captured!==undefined&&captured.pause===this.#deleteMainDelivered,"INVERSE_DELETE_MAIN_TAIL_CAPTURE");need(this.#selectedRequestReader!==null,"INVERSE_DELETE_MAIN_TAIL_READER");return this.#selectedRequestReader.requireOriginalCapture(packet);},
-      resume:async(identity,command):Promise<unknown>=>{
+      resume:async(identity,command):Promise<CurrentFootprintInverseNativeDeleteMainTailResumeReceipt>=>{
         same();const pause=this.#pause;need(pause!==null&&pause===identity&&pause===this.#deleteMainDelivered&&!pause.resumeAttempted&&!pause.resumed&&this.#deleteMainEvents.length===0,"INVERSE_DELETE_MAIN_TAIL_RESUME_ONCE");
-        pause.resumeAttempted=true;const reply=await send(command,false);same();await this.#wait(()=>pause.resumed);same();const resumed=this.#deleteMainEvents.shift();need(resumed?.method==="Debugger.resumed","INVERSE_DELETE_MAIN_TAIL_RESUMED");empty.parse(resumed.params);this.#deleteMainDelivered=null;if(this.#sqlHeld===pause){this.#sqlHeld=null;}return reply;
+        pause.resumeAttempted=true;const reply=await send(command,false);same();await this.#wait(()=>pause.resumed);same();const resumed=this.#deleteMainEvents.shift();need(resumed?.method==="Debugger.resumed","INVERSE_DELETE_MAIN_TAIL_RESUMED");empty.parse(resumed.params);this.#deleteMainDelivered=null;if(this.#sqlHeld===pause){this.#sqlHeld=null;}return Object.freeze({identity:pause,command,reply,event:resumed});
       },
       effects:(packet):Promise<CurrentProjectHistorySqlEffects>=>{same();return this.originalFootprintInverseNativeDeleteMainEffects(source,packet);},fail:(cause):void=>{this.#fail(cause);},
     });

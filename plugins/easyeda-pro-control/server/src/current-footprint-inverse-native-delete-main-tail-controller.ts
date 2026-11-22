@@ -4,6 +4,7 @@
 import {z}from"zod";
 import {createHash}from"node:crypto";
 import {freezeDeep}from"./sqlite-inventory-core.ts";
+import {captureCurrentPcbStringClockReply}from"./current-pcb-string-clock-reply.ts";
 import type {CurrentProjectHistorySqlEffects}from"./current-project-history-sql-effects.ts";
 import type {CurrentFootprintSavedFlowCacheData}from"./current-footprint-saved-flow-cache-data.ts";
 import type {CurrentFootprintInverseMainHistoryBaseline}from"./current-footprint-inverse-main-history-baseline.ts";
@@ -44,13 +45,20 @@ export function requireCurrentFootprintInverseNativeDeleteMainTailPrerequisite(o
  // Backend invokes this only on the original Core Source registry result.
  return raw;
 }
+export interface CurrentFootprintInverseNativeDeleteMainTailResumeReceipt {
+ readonly identity:object;
+ readonly command:CurrentFootprintInverseNativeDeleteMainReadCommand;
+ readonly reply:unknown;
+ readonly event:CurrentFootprintInverseNativeDeleteMainEvent;
+}
 export interface CurrentFootprintInverseNativeDeleteMainTailHost extends Omit<CurrentFootprintInverseNativeDeleteMainReadHost,"expected"|"send"|"resume">{
  readonly nextEvent:()=>Promise<CurrentFootprintInverseNativeDeleteMainEvent>;
  readonly observeRequest:()=>Promise<CurrentSelectedFileMainRequestObservation>;
  readonly requireRequest:(value:CurrentSelectedFileMainRequestObservation)=>void;
  readonly originalRequestObjectId:(value:CurrentSelectedFileMainRequestObservation)=>string;
  readonly send:(command:CurrentFootprintInverseNativeDeleteMainReadCommand,cleanup:boolean)=>Promise<unknown>;
- readonly resume:(identity:object,command:CurrentFootprintInverseNativeDeleteMainReadCommand)=>Promise<unknown>;
+ /** Return the actual event already consumed for this exact delivered pause. */
+ readonly resume:(identity:object,command:CurrentFootprintInverseNativeDeleteMainReadCommand)=>Promise<CurrentFootprintInverseNativeDeleteMainTailResumeReceipt>;
  readonly effects:(packet:CurrentFootprintInverseNativeDeleteMainHistoryCompletion)=>Promise<CurrentProjectHistorySqlEffects>;
 }
 export interface CurrentFootprintInverseNativeDeleteMainTailObservation{
@@ -67,6 +75,7 @@ const handle=z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const callFrame=z.looseObject({callFrameId:handle});
 const pausedParams=z.looseObject({hitBreakpoints:z.tuple([handle]),callFrames:z.array(callFrame).min(1).max(64)});
 const paused=z.strictObject({method:z.literal("Debugger.paused"),params:pausedParams});
+const resumed=z.strictObject({method:z.literal("Debugger.resumed"),params:z.strictObject({})});
 const bodyValue=z.strictObject({projectUuid:z.string(),historyUuid:z.string(),cipherHexParts:z.array(z.string().regex(/^(?:[a-f0-9]{2})+$/u)).min(1).max(8)});
 export class CurrentFootprintInverseNativeDeleteMainTailController{
  readonly #source:CurrentFootprintInverseNativeDeleteMainSource;readonly #original:CurrentFootprintInverseNativeDeleteMainSourceOriginal;readonly #host:CurrentFootprintInverseNativeDeleteMainTailHost;
@@ -118,7 +127,11 @@ export class CurrentFootprintInverseNativeDeleteMainTailController{
  #custody(kind:Kind):CurrentFootprintInverseNativeDeleteMainReadCustody{const value=this.#custodies.get(kind);need(value!==undefined,"ORIGINAL_CUSTODY");return value;}
  async #request(command:CurrentFootprintInverseNativeDeleteMainReadCommand,cleanup:boolean,identity:object|null):Promise<unknown>{
   this.#same();if(cleanup){this.#cleanup+=1;need(this.#cleanup<=6,"CLEANUP_BOUND");}else{this.#normal+=1;need(this.#normal<=30,"NATIVE_WIRE_BOUND");}
-  const raw=await(identity===null?this.#host.send(command,cleanup):this.#host.resume(identity,command));this.#same();return raw;
+  if(identity===null){const raw=await this.#host.send(command,cleanup);this.#same();return raw;}
+  const receipt=await this.#host.resume(identity,command);this.#same();
+  need(receipt.identity===identity&&receipt.command===command,"ORIGINAL_RESUME_RECEIPT");
+  resumed.parse(captureCurrentPcbStringClockReply(receipt.event).value);
+  return receipt.reply;
  }
  public consume(source:CurrentFootprintInverseNativeDeleteMainSource,command:CurrentFootprintInverseNativeDeleteMainReadCommand,id:number):void{
   this.#same();need(source===this.#source,"ORIGINAL_SOURCE");this.#custody(command.kind).consume(command,id);

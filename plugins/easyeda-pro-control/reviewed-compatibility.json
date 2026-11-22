@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "e6729289df399609c9b9e4835e25443746859cbc19c840544679a5071f3be46b",
+      "sha256": "b4d917248f40b88319dbae230ca190d08aed32018965f7f9980f79bcb76e7146",
       "fileCount": 3377,
       "files": [
         {
@@ -1003,8 +1003,8 @@
         },
         {
           "relativePath": "current-footprint-copy-main-backend-runner.ts",
-          "bytes": 443886,
-          "sha256": "e6ebbdb1771c87c11a056597bfa07274e50dd022d0a59737b8584de55e24b34c"
+          "bytes": 444046,
+          "sha256": "b607d5271ce162f49240f8586bfaa4d5de8c951d280eb205f8a59eaa904a23d2"
         },
         {
           "relativePath": "current-footprint-copy-main-backend-source.ts",
@@ -4198,8 +4198,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-drain-controller.ts",
-          "bytes": 26281,
-          "sha256": "e55adb87d311064c01261cff79b2359e43a19233b8d1c36a8effc61872ba8c72"
+          "bytes": 26953,
+          "sha256": "c1099643c0974c44f6085af9d996ca70cce95ba385d33cff4921091d1a2e78b5"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-drain-cursor.ts",
@@ -4258,8 +4258,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-drain-sync-cursor.ts",
-          "bytes": 10498,
-          "sha256": "074c1696ed0d9daf0db6daf3b9ea0831bafeeb81520cb5a6a4fa9d4def81b232"
+          "bytes": 10792,
+          "sha256": "543595dc78751cb3820dc18976fc1d39fa1e76072d7186a008589fc2e24d7c76"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-drain-sync-programs.ts",
@@ -4533,8 +4533,8 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-controller.ts",
-          "bytes": 19880,
-          "sha256": "1a88c5f50c008ca161ad8264be313b5ac703606dbd7b0f9657595e8a9b5446e9"
+          "bytes": 20415,
+          "sha256": "c3fca2e82dd65ced031e9fcf36e33fbeef1ddb33421cac59c453035716431ade"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-history-ack.ts",
@@ -4613,13 +4613,13 @@
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-tail-controller.ts",
-          "bytes": 19068,
-          "sha256": "f66b133f588828ce10f261d3c38aa2ab2f5937738c7cc71104cbf08ae4d120c4"
+          "bytes": 19868,
+          "sha256": "c90b3b6ba57f6b8238814028ef7837d798ce5970831238b9a582b9ed7f45b13f"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-tail-data.ts",
-          "bytes": 16117,
-          "sha256": "c0fb90c729ccff9587be1abb601788c03f3c3ea8af500944aea602c79071b3e0"
+          "bytes": 16121,
+          "sha256": "6ea5ee45a22ebdd3c3fd1a60bed0f14d2e430f7f2dbdc11b5dd9d4eb62d7671f"
         },
         {
           "relativePath": "current-footprint-inverse-native-delete-main-tail-source.ts",
@@ -16896,7 +16896,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "f4fdf8afedbfa8f4e6e4ecd1e80e7b21a077d6141c00b9e5bd200812a7f76521",
+      "sha256": "3e8988821823625be21ff66a83b114b1b110aa6e5b45999b38444000c7e2ba44",
       "fileCount": 3,
       "files": [
         {
@@ -16906,19 +16906,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 20113652,
-          "sha256": "ad44a03695d40a525bc4eb43b396072fddbe24b330ee78a85502cb0a76171724"
+          "bytes": 20114459,
+          "sha256": "af4db940b4a0ed5a6cf0e8aa8d05dd26b949e21bfb10014244a85f16039851ad"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 642490,
-          "sha256": "2cfaedfbb74fecd798e4b7451c2399f07d494a68f8bc5e2a8b725f51bfd9e009"
+          "sha256": "9ed7762cf070bfbf0d8c94680be4587a946013171cf956480adb2b0bb5c52334"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-22T20:20:49.359Z",
+  "reviewedAt": "2026-11-22T20:40:21.120Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

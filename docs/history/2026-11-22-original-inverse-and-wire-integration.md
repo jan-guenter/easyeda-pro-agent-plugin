@@ -303,3 +303,10 @@ at both the host decoder and the packaged helper. The focused fixture
 accepted request 6,910 and refused 6,911 in that stage. The original V5
 title and discovery lanes still accepted their separately budgeted
 request 6,911.
+
+The Main tail now requires a receipt for the original empty
+`Debugger.resumed` event already consumed by the retained transport.
+The tail accepts another pause only after it validates that receipt.
+The owned upload's expected GET follows its successful history POST.
+The prefix stops if an unexpected original GET or HEAD appears before
+that boundary, where the later read continuation has no reservation.

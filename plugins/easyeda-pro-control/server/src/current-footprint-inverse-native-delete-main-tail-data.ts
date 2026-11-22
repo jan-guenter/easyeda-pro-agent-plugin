@@ -32,7 +32,7 @@ const object=z.record(z.string(),z.unknown());
 function need(value:boolean,code:string):asserts value{if(!value){throw new Error(`INVERSE_NATIVE_DELETE_MAIN_TAIL_DATA_${code}`);}}
 function cell(value:SqlCell|undefined):Scalar{
  need(value!==undefined,"CELL");if(value.kind==="null"){return null;}if(value.kind==="integer"){const n=Number(value.decimal);need(Number.isSafeInteger(n)&&String(n)===value.decimal,"INTEGER");return n;}
- need(value.kind==="text","TEXT");const bytes=Buffer.from(value.hex,"hex"),text=new TextDecoder("utf-8",{fatal:true}).decode(bytes);need(Buffer.from(text).equals(bytes),"utf8");return text;
+ need(value.kind==="text","TEXT");const bytes=Buffer.from(value.hex,"hex"),text=new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(bytes);need(Buffer.from(text).equals(bytes),"utf8");return text;
 }
 function rows(before:NativeSqlInventory,name:string):readonly Readonly<Record<string,Scalar>>[]{
  const matches=before.tables.filter(table=>table.name===name);need(matches.length===1&&matches[0]!==undefined,"TABLE");const table=matches[0];const names=table.columns.map(col=>{need(typeof col["name"]==="string","COLUMN");return col["name"];});
@@ -108,7 +108,8 @@ export function compareCurrentFootprintInverseNativeDeleteMainTailRows(original:
  const value=currentFootprintInverseMainHistoryValueSchema.parse(input);const head=value.rows[0],old=preflight.before.heads[0];need(head!==undefined&&old!==undefined&&value.rows.length===preflight.headCount+1&&value.projectUuid===preflight.projectUuid&&value.branchUuid===preflight.branchUuid&&value.historyUuid===effects.historyUuid&&value.historyUuid===branch.historyUuid,"ROWS_IDENTITY");
  need(canonicalJson(value.rows.slice(1))===canonicalJson(original.historyBaseline.rows)&&head.id===preflight.headLastId&&head.uuid===effects.historyUuid&&head.iv===head.uuid&&head.parent===old.uuid&&head.key===effects.keyHex&&head.is_lock===0&&head.num===0&&head.snapshot_num===0&&head.lock_time==="1970-01-01 08:00:00","APPEND_ROW");
  const windows=effects.nativeCallbacks.filter(row=>row.slot==="head");const window=windows[0];need(windows.length===1&&window!==undefined&&window.changes===1&&window.lastID===head.id&&window.afterEpochMs>=window.beforeEpochMs,"HEAD_CALLBACK");
- for(const key of["created_at","updated_at"]as const){const epoch=date(head[key]);need(epoch>=Math.floor(window.beforeEpochMs/1000)*1000&&epoch<=Math.floor(window.afterEpochMs/1000)*1000,"HEAD_SQL_TIME");}
+ const epoch=date(head.created_at);
+ need(head.created_at===head.updated_at&&epoch>=Math.floor(window.beforeEpochMs/1000)*1000&&epoch<=Math.floor(window.afterEpochMs/1000)*1000,"HEAD_SQL_TIME");
  return freezeDeep(value);
 }
 export function deriveCurrentFootprintInverseNativeDeleteMainTailCache(original:Original,preflight:CurrentFootprintInverseNativeDeleteMainTailPreflight,effects:CurrentProjectHistorySqlEffects,branch:CurrentFootprintInverseNativeDeleteMainTailBranch,raw:unknown):CurrentFootprintSavedFlowCacheData{

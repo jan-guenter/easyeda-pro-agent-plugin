@@ -90,7 +90,7 @@ export class CurrentFootprintInverseNativeDeleteMainController {
    beginRequest:(value,cleanup)=>begin.request(value,cleanup),requireBeginArmed:()=>{ begin.requireArmed(); },originalBeginResult:()=>begin.result(),
    historyRequest:(value,cleanup)=>history.request(value,cleanup),requireHistoryArmed:()=>{ history.requireArmed(); },startHistory:()=>history.start(),originalHistoryEffects:()=>history.result(),
    nextEvent:host.nextEvent,observeRequest:host.observeRequest,requireOriginalRequest:host.requireRequest,
-   continueReadonlyRequest:():Promise<void>=>{throw new Error("INVERSE_NATIVE_DELETE_MAIN_UNRESERVED_HTTP_READ");},
+   continueReadonlyRequest:(packet):Promise<void>=>this.#refuseUnreservedReadonlyRequest(packet),
    requireOriginalControllerBody:same,requireOriginalActorSql:actor,
    continuePlannedDriver:async(packet)=>{host.requireRequest(packet);await this.#resume(host.pause().identity,{phase:"inverse-native-delete-main-driver-step",method:"Debugger.resume",params:{}});},
    continuePlannedContext:async()=>{await this.#resume(host.pause().identity,{phase:"inverse-native-delete-main-context-step",method:"Debugger.resume",params:{}});},
@@ -106,6 +106,13 @@ export class CurrentFootprintInverseNativeDeleteMainController {
  #fail(cause:unknown):void{if(!this.#failed){this.#failed=true;this.#failure=cause;try{this.#host.fail(cause);}catch{
   // Failure handoff cannot replace the retained original cause or strand its join.
   }}}
+ /** The owned upload's reads are a post-history successor, not an HTTP
+  * allowance in this prefix. A concurrent original read consumes normal work
+  * before handing the held request to the original owner's failure cleanup. */
+ #refuseUnreservedReadonlyRequest(packet:CurrentSelectedFileMainRequestObservation):never{
+  this.#same();this.#host.requireRequest(packet);need(packet.method==="GET"||packet.method==="HEAD","ORIGINAL_HTTP_READ");
+  const error=new Error("INVERSE_NATIVE_DELETE_MAIN_UNRESERVED_HTTP_READ");this.#fail(error);throw error;
+ }
  public get arming():Readonly<{scriptId:string;lineNumber:number;columnNumber:number}>|null{return this.#arming;}
  public prepare():Promise<void>{need(this.#prepare===null,"PREPARE_CONSUMED");const pending=this.#prepareNow();this.#prepare=pending;void this.#handled(pending);return pending;}
  async #prepareNow():Promise<void>{try{this.#same();this.#original.assertBeforeOriginalUpload();

@@ -36,6 +36,10 @@ const paused=z.looseObject({hitBreakpoints:z.tuple([handle])});
 interface Helper{readonly origin:Command;readonly command:Command;issued:boolean;attempted:boolean;scriptId:string|null}
 interface Held{readonly event:DiagnosticEvent;readonly role:AnyRole;readonly lane:Lane;packet:object|null}
 interface Resume{readonly held:Held;readonly barrier:ReturnType<typeof Promise.withResolvers<null>>;attempted:boolean;observed:boolean}
+interface OriginalPoll {
+ readonly pending: Promise<void>;
+ readonly notifyFailure: () => void;
+}
 export interface CurrentFootprintInverseNativeDeleteDrainBindings{
  readonly source:string;readonly scriptId:string;readonly sessionId:string;readonly contextId:number;readonly project:string;
  readonly intrinsics:string;readonly reflection:string;readonly uploadRecipe:string;readonly initial:string;readonly segments:string;readonly initialIndexBody:string;
@@ -61,12 +65,12 @@ export class CurrentFootprintInverseNativeDeleteDrainController{
  #recipe:Recipe|null=null;#dependencies:string|null=null;#observer:Observer|null=null;#delete:Delete|null=null;#cursor:Cursor|null=null;#sync:Sync|null=null;
  #helper:Helper|null=null;#held:Held|null=null;#resume:Resume|null=null;
  #arming:Readonly<{role:DeleteRole;resolved:string|null}>|null=null;
- #prepare:Promise<void>|null=null;#run:Promise<Readonly<CurrentFootprintInverseNativeDeleteDrainData>>|null=null;#work:Promise<void>=Promise.resolve();#poll:Promise<void>|null=null;
+ #prepare:Promise<void>|null=null;#run:Promise<Readonly<CurrentFootprintInverseNativeDeleteDrainData>>|null=null;#work:Promise<void>=Promise.resolve();#poll:OriginalPoll|null=null;
  #prepared=false;#started=false;#reading=false;#settling=false;#ended=false;#failed=false;#failure:unknown;
  #normal=0;#helpers=0;#events=0;#resumes=0;#syncEntries=0;#data:Readonly<CurrentFootprintInverseNativeDeleteDrainData>|null=null;
  public constructor(bindings:CurrentFootprintInverseNativeDeleteDrainBindings){qualifyCurrentProjectSaveProducerSource(bindings.source);qualifyCurrentProjectSaveProducerCacheSource(bindings.source);qualifyCurrentPcbViaPostHistorySyncSource(bindings.source);this.#b=Object.freeze({...bindings});for(const role of sourceRoles){const id=bindings.originalPoint(role);need(!this.#points.has(id),"DISTINCT_SOURCE_POINTS");this.#points.set(id,role);}originals.add(this);Object.freeze(this);}
  #current():void{if(this.#failed){throw this.#failure;}this.#b.current();need(!this.#ended,"ENDED");}
- #fail(cause:unknown):void{if(!this.#failed){this.#failed=true;this.#failure=cause;this.#resume?.barrier.reject(cause);try{this.#b.fail(cause);}catch{
+ #fail(cause:unknown):void{if(!this.#failed){this.#failed=true;this.#failure=cause;this.#poll?.notifyFailure();this.#resume?.barrier.reject(cause);try{this.#b.fail(cause);}catch{
  // Failure handoff cannot replace the retained original cause or strand its join.
  }}}
  async #handled(pending:Promise<unknown>):Promise<void>{try{await pending;}catch(error){this.#fail(error);}}
@@ -134,13 +138,29 @@ export class CurrentFootprintInverseNativeDeleteDrainController{
   if(this.#sync?.progress().canSettle===true){reader=this.#sync;}else if(this.#cursor?.progress().canSettle===true){reader=this.#cursor;}if(reader===null){return;}
   this.#settling=true;const original=reader,previous=this.#work;const work=(async():Promise<void>=>{try{await previous;this.#current();await original.settle();this.#current();}finally{this.#settling=false;}})();this.#work=work;void this.#handled(work);
  }
+ async #pollOriginalEvent(): Promise<void> {
+  this.#current();
+  need(this.#poll === null, "ONE_POLL");
+  const pending = this.#b.poll();
+  need(types.isPromise(pending), "ORIGINAL_POLL");
+  const failure = Promise.withResolvers<null>();
+  const original = { pending, notifyFailure: (): void => { failure.resolve(null); } };
+  this.#poll = original;
+  if (this.#failed) { original.notifyFailure(); }
+  // Wake the drain on failure while original-exit cleanup still owns the poll.
+  const settled = (async (): Promise<void> => {
+   try { await pending; } finally { this.#poll = null; }
+  })();
+  await Promise.race([settled, failure.promise]);
+  this.#current();
+ }
  public start():Promise<Readonly<CurrentFootprintInverseNativeDeleteDrainData>>{this.#current();need(this.#prepared&&!this.#started&&this.#run===null&&this.#b.originalUploadWritten(),"ORIGINAL_START");this.#started=true;const out=Promise.withResolvers<Readonly<CurrentFootprintInverseNativeDeleteDrainData>>();this.#run=out.promise;
   void(async():Promise<void>=>{try{const began=performance.now();for(let polls=0;this.#cursor?.progress().completed!==true||this.#sync?.progress().completed!==true;polls+=1){this.#current();need(polls<24_000&&performance.now()-began<30_000,"EVENT_DEADLINE");this.#queueSettlement();
-    need(this.#poll===null,"ONE_POLL");const pending=this.#b.poll();need(types.isPromise(pending),"ORIGINAL_POLL");this.#poll=pending;try{await pending;}finally{this.#poll=null;}}
+    await this.#pollOriginalEvent();}
    await this.#work;this.#current();await this.#b.requireLocalCompleted();this.#current();await this.#b.requireMainCompleted();this.#current();await this.#b.requireInnerDeleteReturned();this.#current();need(this.#cursor!==null&&this.#sync!==null&&this.#observer!==null&&this.#delete!==null,"COMPLETED_READERS");this.#cursor.requireCompleted();this.#sync.requireCompleted();this.#observer.requireCompleted();this.#delete.requireCompleted();need(this.#normal>=198&&this.#normal<=213&&this.#helpers>=106&&this.#helpers<=108&&this.#requests.length>=304&&this.#requests.length<=321&&this.#resumes===29&&this.#held===null&&this.#resume===null&&this.#helper===null,"COMPLETE_ROSTER");await this.#control("complete");this.#current();need(this.#controls.length===61,"COMPLETE_CONTROLS");this.#data=Object.freeze({profile:"private.current-footprint-inverse-native-delete-drain-data.v1",originalUploaderJoined:true,originalDetachedCacheDeleteJoined:true,originalNaturalSyncJoined:true,originalNewSegmentsJoined:true,actualMainResponsesJoined:true,originalInnerDeletePromiseJoined:true,actualResumes:29,originalDeleteCallerJoined:false,persistenceVerified:false,wholeInverseVerified:false});out.resolve(this.#data);
-  }catch(error){this.#fail(error);out.reject(error);}})();void this.#handled(out.promise);return out.promise;}
+  }catch(error){this.#fail(error);out.reject(this.#failure);}})();void this.#handled(out.promise);return out.promise;}
  public requireOriginal(data:Readonly<CurrentFootprintInverseNativeDeleteDrainData>):void{this.#current();need(this.#data===data&&this.#run!==null&&this.#held===null&&this.#resume===null&&this.#helper===null,"ORIGINAL_DATA");}
- public async settleAfterOriginalExit():Promise<void>{this.#b.assertOriginalExit();this.#ended=true;this.#resume?.barrier.reject(new Error("INVERSE_NATIVE_DELETE_DRAIN_ORIGINAL_EXIT"));const pending:Promise<unknown>[]=[...this.#requests,...this.#controls,this.#work];for(const value of[this.#prepare,this.#run,this.#poll]){if(value!==null){pending.push(value);}}if(this.#recipe!==null){pending.push(this.#recipe.settleAfterOriginalExit());}if(this.#delete!==null){pending.push(this.#delete.settleAfterOriginalExit());}await Promise.allSettled(pending);this.#b.assertOriginalExit();}
+ public async settleAfterOriginalExit():Promise<void>{this.#b.assertOriginalExit();this.#ended=true;this.#resume?.barrier.reject(new Error("INVERSE_NATIVE_DELETE_DRAIN_ORIGINAL_EXIT"));const pending:Promise<unknown>[]=[...this.#requests,...this.#controls,this.#work];for(const value of[this.#prepare,this.#run,this.#poll?.pending??null]){if(value!==null){pending.push(value);}}if(this.#recipe!==null){pending.push(this.#recipe.settleAfterOriginalExit());}if(this.#delete!==null){pending.push(this.#delete.settleAfterOriginalExit());}await Promise.allSettled(pending);this.#b.assertOriginalExit();}
 }
 Object.freeze(CurrentFootprintInverseNativeDeleteDrainController.prototype);Object.freeze(CurrentFootprintInverseNativeDeleteDrainController);
 export function assertOriginalCurrentFootprintInverseNativeDeleteDrainController(value:CurrentFootprintInverseNativeDeleteDrainController):void{need(value!==null&&typeof value==="object"&&!types.isProxy(value)&&originals.has(value)&&Object.getPrototypeOf(value)===CurrentFootprintInverseNativeDeleteDrainController.prototype&&Reflect.ownKeys(value).length===0,"ORIGINAL_CONTROLLER");}
